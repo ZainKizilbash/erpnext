@@ -104,6 +104,8 @@ project_fields = [
 
 	{"label": "Vehicle Panel Detail", "fieldname": "vehicle_panels", "fieldtype": "Table",
 		"insert_after": "project_templates", "options": "Project Panel Detail", "hidden": 1},
+	{"label": "Total No of Panel", "fieldname": "total_panel_qty", "fieldtype": "Data",
+		"insert_after": "vehicle_panels", "read_only": 1, "no_copy": 1, "hidden": 1},
 ]
 
 # Applies To Project Fields
