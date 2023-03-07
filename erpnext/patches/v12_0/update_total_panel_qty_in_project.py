@@ -15,6 +15,3 @@ def execute():
 		doc = frappe.get_doc("Project", project)
 		total_panel_qty = sum([d.panel_qty for d in doc.get('vehicle_panels', [])])
 		doc.db_set("total_panel_qty", total_panel_qty, update_modified=False)
-
-	if projects:
-		frappe.db.commit()
