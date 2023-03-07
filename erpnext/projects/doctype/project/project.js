@@ -947,11 +947,16 @@ erpnext.projects.ProjectController = class ProjectController extends erpnext.con
 	vehicle_panel_job() {
 		this.update_panel_template_description();
 	}
+	panel_qty() {
+		this.update_total_panel_qty();
+	}
 	vehicle_panels_add() {
 		this.update_panel_template_description();
+		this.update_total_panel_qty();
 	}
 	vehicle_panels_remove() {
 		this.update_panel_template_description();
+		this.update_total_panel_qty();
 	}
 
 	toggle_vehicle_panels_visibility() {
@@ -961,6 +966,7 @@ erpnext.projects.ProjectController = class ProjectController extends erpnext.con
 
 		var panel_template_rows = (this.frm.doc.project_templates || []).filter(el => el.is_panel_job == 1);
 		this.frm.set_df_property('vehicle_panels', 'hidden', panel_template_rows.length ? 0 : 1);
+		this.frm.set_df_property('total_panel_qty', 'hidden', panel_template_rows.length ? 0 : 1);
 	}
 
 	set_was_panel_job() {
@@ -991,6 +997,14 @@ erpnext.projects.ProjectController = class ProjectController extends erpnext.con
 		}
 
 		this.frm.refresh_field('project_templates');
+	}
+
+	update_total_panel_qty() {
+		let total_panel_qty = 0;
+		for (let d of (this.frm.doc.vehicle_panels || [])) {
+			total_panel_qty += d.panel_qty;
+		}
+		this.frm.set_value("total_panel_qty", total_panel_qty);
 	}
 };
 

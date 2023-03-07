@@ -846,6 +846,9 @@ class Project(StatusUpdater):
 		if not self.meta.has_field('vehicle_panels'):
 			return
 
+		if self.meta.has_field('total_panel_qty'):
+			self.total_panel_qty = sum([d.panel_qty for d in self.get('vehicle_panels', [])])
+
 		panel_project_templates = [d for d in self.project_templates if d.get('is_panel_job')]
 		if not panel_project_templates:
 			self.vehicle_panels = []
