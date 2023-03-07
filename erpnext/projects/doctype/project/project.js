@@ -950,11 +950,16 @@ erpnext.projects.ProjectController = erpnext.contacts.QuickContacts.extend({
 	vehicle_panel_job: function() {
 		this.update_panel_template_description();
 	},
+	panel_qty: function() {
+		this.update_total_panel_qty();
+	},
 	vehicle_panels_add: function() {
 		this.update_panel_template_description();
+		this.update_total_panel_qty();
 	},
 	vehicle_panels_remove: function() {
 		this.update_panel_template_description();
+		this.update_total_panel_qty();
 	},
 
 	toggle_vehicle_panels_visibility: function() {
@@ -964,6 +969,7 @@ erpnext.projects.ProjectController = erpnext.contacts.QuickContacts.extend({
 
 		var panel_template_rows = (this.frm.doc.project_templates || []).filter(el => el.is_panel_job == 1);
 		this.frm.set_df_property('vehicle_panels', 'hidden', panel_template_rows.length ? 0 : 1);
+		this.frm.set_df_property('total_panel_qty', 'hidden', panel_template_rows.length ? 0 : 1);
 	},
 
 	set_was_panel_job: function () {
@@ -995,6 +1001,14 @@ erpnext.projects.ProjectController = erpnext.contacts.QuickContacts.extend({
 
 		this.frm.refresh_field('project_templates');
 	},
+
+	update_total_panel_qty: function() {
+		let total_panel_qty = 0;
+		for (let d of (this.frm.doc.vehicle_panels || [])) {
+			total_panel_qty += d.panel_qty;
+		}
+		this.frm.set_value("total_panel_qty", total_panel_qty);
+	}
 });
 
 $.extend(cur_frm.cscript, new erpnext.projects.ProjectController({frm: cur_frm}));
