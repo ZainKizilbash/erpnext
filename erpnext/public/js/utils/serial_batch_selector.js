@@ -226,7 +226,7 @@ erpnext.stock.SerialBatchSelector = Class.extend({
 								query: "erpnext.controllers.queries.get_batch_no",
 							};
 						},
-						change: function() {
+						onchange: function() {
 							let control = this;
 							let row = control.doc;
 
@@ -277,17 +277,19 @@ erpnext.stock.SerialBatchSelector = Class.extend({
 						in_list_view: 1,
 						reqd: 1,
 						default: 0,
-						change: function() {
+						onchange: function() {
 							let control = this;
 							let row = control.doc;
 
 							if (!row.batch_no && flt(row.selected_qty) != 0) {
-								control.set_value(0);
+								row.selected_qty = 0;
+								control.refresh();
 								frappe.throw(__("Please select a Batch first"));
 							}
 
 							if (flt(row.selected_qty) > flt(row.available_qty)) {
-								control.set_value(0);
+								row.selected_qty = 0;
+								control.refresh();
 								frappe.throw(__(`Selected Qty cannot be greater than Available Qty`));
 							}
 

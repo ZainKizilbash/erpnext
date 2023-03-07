@@ -934,14 +934,14 @@ erpnext.vehicles.VehicleBookingOrder = class VehicleBookingOrder extends erpnext
 			fields: [
 				{label: __("Customer is {0}", [me.frm.doc.company]), fieldname: "customer_is_company", fieldtype: "Check",
 					default: me.frm.doc.customer_is_company, depends_on: "eval:!doc.customer",
-					change: () => get_customer_details()
+					onchange: () => get_customer_details()
 				},
 
 				{label: __("Customer (User)"), fieldname: "customer", fieldtype: "Link", options: "Customer",
 					default: me.frm.doc.customer, bold: 1,
 					depends_on: "eval:!doc.customer_is_company",
 					get_query: () => erpnext.queries.customer(),
-					change: () => get_customer_details()
+					onchange: () => get_customer_details()
 				},
 
 				{label: __("Lessee/User Name"), fieldname: "lessee_name", fieldtype: "Data",
@@ -955,7 +955,7 @@ erpnext.vehicles.VehicleBookingOrder = class VehicleBookingOrder extends erpnext
 				{label: __("Financer"), fieldname: "financer", fieldtype: "Link", options: "Customer",
 					default: me.frm.doc.financer,
 					get_query: () => erpnext.queries.customer(),
-					change: () => get_customer_details()
+					onchange: () => get_customer_details()
 				},
 
 				{label: __("Financer Name"), fieldname: "financer_name", fieldtype: "Data",
@@ -964,7 +964,7 @@ erpnext.vehicles.VehicleBookingOrder = class VehicleBookingOrder extends erpnext
 				{label: __("Finance Type"), fieldname: "finance_type", fieldtype: "Select", options: "\nFinanced\nLeased",
 					default: me.frm.doc.finance_type,
 					depends_on: "financer",
-					change: () => get_customer_details()
+					onchange: () => get_customer_details()
 				},
 
 				{fieldtype: 'Section Break'},
@@ -976,7 +976,7 @@ erpnext.vehicles.VehicleBookingOrder = class VehicleBookingOrder extends erpnext
 						me.set_dynamic_link(values);
 						return erpnext.queries.address_query(values);
 					},
-					change: () => get_address_display()
+					onchange: () => get_address_display()
 				},
 
 				{fieldtype: 'Column Break'},
@@ -993,7 +993,7 @@ erpnext.vehicles.VehicleBookingOrder = class VehicleBookingOrder extends erpnext
 						me.set_customer_dynamic_link(values);
 						return erpnext.queries.contact_query(values);
 					},
-					change: () => get_contact_details()
+					onchange: () => get_contact_details()
 				},
 
 				{label: __("Customer Contact Name"), fieldname: "contact_display", fieldtype: "Data",
@@ -1007,7 +1007,7 @@ erpnext.vehicles.VehicleBookingOrder = class VehicleBookingOrder extends erpnext
 						me.set_financer_dynamic_link(values);
 						return erpnext.queries.contact_query(values);
 					},
-					change: () => get_contact_details()
+					onchange: () => get_contact_details()
 				},
 
 				{label: __("Financer Contact Name"), fieldname: "financer_contact_display", fieldtype: "Data",
