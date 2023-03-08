@@ -9,7 +9,7 @@
    "label": "Top Buying Items"
   }
  ],
- "content": "[{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Buying Module</b></span>\",\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Order\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Receipt\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Supplier\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Details Report\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Supplier Quotation\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Invoice\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Item\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Analytics Report\",\"col\":3}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Top Suppliers\",\"col\":6}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Top Buying Items\",\"col\":6}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Buying Documents</b></span>\",\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"Purchasing Transactions\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Suppliers\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Items\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Price List\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Price List\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Special Prices\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Settings\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Key Reports\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Supplier Scorecard\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Supplier Scorecard\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Other Reports\",\"col\":3}}]",
+ "content": "[{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Buying Module</b></span>\",\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Order\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Receipt\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Supplier\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Details Report\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Supplier Quotation\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Invoice\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Item\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Analytics Report\",\"col\":3}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Top Suppliers\",\"col\":6}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Top Buying Items\",\"col\":6}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Buying Documents</b></span>\",\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"Purchasing Transactions\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Suppliers\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Items\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Price List\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Special Prices\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Settings\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Key Reports\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Supplier Scorecard\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Other Reports\",\"col\":3}}]",
  "creation": "2022-11-16 04:31:56.825385",
  "docstatus": 0,
  "doctype": "Workspace",
@@ -17,6 +17,7 @@
  "hide_custom": 0,
  "icon": "buying",
  "idx": 0,
+ "is_hidden": 0,
  "label": "Buying",
  "links": [
   {
@@ -541,7 +542,7 @@
    "type": "Link"
   }
  ],
- "modified": "2022-12-18 16:39:32.300783",
+ "modified": "2023-03-08 13:52:29.807514",
  "modified_by": "Administrator",
  "module": "Buying",
  "name": "Buying",
