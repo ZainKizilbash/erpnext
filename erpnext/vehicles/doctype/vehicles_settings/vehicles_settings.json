@@ -13,6 +13,9 @@
   "default_payment_terms",
   "default_booking_terms",
   "default_quotation_terms",
+  "section_break_9",
+  "default_service_cr",
+  "default_service_cr_name",
   "section_break_11",
   "vehicle_allocation_periodicity",
   "column_break_8",
@@ -367,11 +370,28 @@
    "fieldname": "feedback_valid_after_service_days",
    "fieldtype": "Int",
    "label": "Feedback For Service After Days"
+  },
+  {
+   "fieldname": "default_service_cr",
+   "fieldtype": "Link",
+   "label": "Default Service CR",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "section_break_9",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fetch_from": "default_service_cr.employee_name",
+   "fieldname": "default_service_cr_name",
+   "fieldtype": "Data",
+   "label": "Default Service CR Name",
+   "read_only": 1
   }
  ],
  "icon": "fa fa-cog",
  "issingle": 1,
- "modified": "2023-01-09 12:14:56.330578",
+ "modified": "2023-03-09 15:59:04.041198",
  "modified_by": "Administrator",
  "module": "Vehicles",
  "name": "Vehicles Settings",

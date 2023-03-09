@@ -32,8 +32,19 @@ class VehicleServiceReceipt(VehicleTransactionController):
 		self.update_project_vehicle_status()
 		self.cancel_vehicle_log()
 
+	def set_missing_values(self, doc=None, for_validate=False):
+		super().set_missing_values(doc=None, for_validate=False)
+		self.set_service_cr_details()
+
 	def set_title(self):
 		self.title = self.get('customer_name') or self.get('customer')
+
+	def set_service_cr_details(self):
+		self.service_cr = frappe.db.get_single_value('Vehicles Settings', 'default_service_cr')
+
+		service_cr = frappe.get_cached_doc("Employee", self.service_cr) if self.service_cr else frappe._dict()
+		self.service_cr_name = service_cr.employee_name
+		self.service_cr_contact_no = service_cr.cell_number
 
 	def validate_duplicate_receipt(self):
 		if self.get('project'):

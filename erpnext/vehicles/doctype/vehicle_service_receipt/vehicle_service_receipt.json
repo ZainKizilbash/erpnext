@@ -14,6 +14,9 @@
   "project_workshop",
   "column_break_8",
   "service_advisor",
+  "service_cr",
+  "service_cr_name",
+  "service_cr_contact_no",
   "column_break_11",
   "company",
   "posting_date",
@@ -348,12 +351,36 @@
    "label": "Project Workshop",
    "options": "Project Workshop",
    "reqd": 1
+  },
+  {
+   "fieldname": "service_cr",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "Service CR",
+   "no_copy": 1,
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fieldname": "service_cr_name",
+   "fieldtype": "Data",
+   "label": "Service CR Name",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "service_cr_contact_no",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Service CR Contact No",
+   "no_copy": 1,
+   "read_only": 1
   }
  ],
  "icon": "fa fa-file-text",
  "image_field": "image",
  "is_submittable": 1,
- "modified": "2022-08-05 15:08:23.681234",
+ "modified": "2023-03-09 15:56:50.520911",
  "modified_by": "Administrator",
  "module": "Vehicles",
  "name": "Vehicle Service Receipt",
