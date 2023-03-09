@@ -1243,7 +1243,7 @@ def get_items_data_template():
 
 
 def set_sales_data_customer_amounts(data, project):
-	set_depreciation_in_invoice_items(data, project)
+	set_depreciation_in_invoice_items(data, project, force=True)
 
 	for d in data:
 		d.has_customer_depreciation = 0
@@ -1963,7 +1963,7 @@ def make_sales_invoice(project_name, target_doc=None, depreciation_type=None, cl
 
 		target_doc.run_method("set_missing_values")
 
-		set_depreciation_in_invoice_items(target_doc.get('items'), project)
+		set_depreciation_in_invoice_items(target_doc.get('items'), project, force=True)
 		target_doc.run_method("reset_taxes_and_charges")
 
 		target_doc.run_method("calculate_taxes_and_totals")
@@ -2146,7 +2146,7 @@ def check_if_doc_exists(doctype, project, filters=None):
 		frappe.throw(_("{0} already exists").format(frappe.get_desk_link(doctype, existing)))
 
 
-def set_depreciation_in_invoice_items(items_list, project):
+def set_depreciation_in_invoice_items(items_list, project, force=False):
 	non_standard_depreciation_items = {}
 	for d in project.non_standard_depreciation:
 		if d.depreciation_item_code:
@@ -2155,7 +2155,7 @@ def set_depreciation_in_invoice_items(items_list, project):
 	materials_item_groups = project.get_item_groups_subtree(project.materials_item_group)
 	for d in items_list:
 		if d.is_stock_item or d.item_group in materials_item_groups or d.item_code in non_standard_depreciation_items:
-			if not flt(d.depreciation_percentage):
+			if force or not flt(d.depreciation_percentage):
 				if d.item_code in non_standard_depreciation_items:
 					d.depreciation_percentage = non_standard_depreciation_items[d.item_code]
 				else:
