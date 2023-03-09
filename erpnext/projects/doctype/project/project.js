@@ -82,9 +82,7 @@ erpnext.projects.ProjectController = class ProjectController extends erpnext.con
 		});
 
 		// depreciation item
-		me.frm.set_query('depreciation_item_code', 'non_standard_depreciation', () => erpnext.queries.item({
-			is_stock_item: 1,
-		}));
+		me.frm.set_query('depreciation_item_code', 'non_standard_depreciation', () => erpnext.queries.item());
 
 		me.frm.set_query("project_template", "project_templates",
 			() => erpnext.queries.project_template(me.frm.doc.applies_to_item));
