@@ -2154,7 +2154,7 @@ def set_depreciation_in_invoice_items(items_list, project):
 
 	materials_item_groups = project.get_item_groups_subtree(project.materials_item_group)
 	for d in items_list:
-		if d.is_stock_item or d.item_group in materials_item_groups:
+		if d.is_stock_item or d.item_group in materials_item_groups or d.item_code in non_standard_depreciation_items:
 			if not flt(d.depreciation_percentage):
 				if d.item_code in non_standard_depreciation_items:
 					d.depreciation_percentage = non_standard_depreciation_items[d.item_code]
