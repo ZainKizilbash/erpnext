@@ -614,11 +614,16 @@ def set_multiple_status(names, status):
 		opp.save()
 
 
-def auto_close_opportunity():
-	""" auto close the `Replied` Opportunities after 7 days """
+def auto_mark_opportunity_as_lost():
+	if not frappe.db.get_single_value("CRM Settings", "auto_mark_opportunity_as_lost"):
+		return
+
 	mark_opportunity_lost_after_days = frappe.db.get_single_value("CRM Settings", "mark_opportunity_lost_after_days")
 	if mark_opportunity_lost_after_days < 1:
 		return
+
+	lost_reason = frappe.db.get_single_value("CRM Settings", None, "opportunity_auto_lost_reason")
+	lost_reasons_list = [frappe.get_cached_doc("Opportunity Lost Reason", lost_reason)]
 
 	opportunities = frappe.db.sql("""
 		select name from tabOpportunity
@@ -627,7 +632,7 @@ def auto_close_opportunity():
 
 	for opportunity in opportunities:
 		doc = frappe.get_doc("Opportunity", opportunity.get("name"))
-		doc.set_status(update=True, status="Closed")
+		doc.set_is_lost(True, lost_reasons_list=lost_reasons_list)
 
 
 @frappe.whitelist()
