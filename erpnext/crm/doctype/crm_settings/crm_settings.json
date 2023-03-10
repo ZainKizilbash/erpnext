@@ -6,7 +6,7 @@
  "field_order": [
   "campaign_naming_by",
   "column_break_2",
-  "close_opportunity_after_days",
+  "mark_opportunity_lost_after_days",
   "opportunity_contact_no_mandatory",
   "column_break_3",
   "default_opportunity_type_for_schedule",
@@ -20,12 +20,6 @@
    "fieldtype": "Select",
    "label": "Campaign Naming By",
    "options": "Customer Name\nNaming Series"
-  },
-  {
-   "default": "15",
-   "fieldname": "close_opportunity_after_days",
-   "fieldtype": "Int",
-   "label": "Auto Close Opportunity After Days (Default 15)"
   },
   {
    "default": "0",
@@ -61,10 +55,16 @@
    "fieldname": "opportunity_contact_no_mandatory",
    "fieldtype": "Check",
    "label": "Contact No Mandatory In Opportunity"
+  },
+  {
+   "default": "15",
+   "fieldname": "mark_opportunity_lost_after_days",
+   "fieldtype": "Int",
+   "label": "Auto Mark Opportunity As Lost After Days (Default 15)"
   }
  ],
  "issingle": 1,
- "modified": "2023-02-06 14:36:11.814508",
+ "modified": "2023-03-09 19:42:14.973203",
  "modified_by": "Administrator",
  "module": "CRM",
  "name": "CRM Settings",
