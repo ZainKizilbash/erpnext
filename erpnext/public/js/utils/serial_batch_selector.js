@@ -386,7 +386,10 @@ erpnext.stock.SerialBatchSelector = Class.extend({
 						}
 
 						this.doc.qty += batch.selected_qty
-						console.log(key, this.doc.grouped_qty)
+					}
+
+					if (!this.item.batch_no) {
+						this.doc.qty += this.item.qty
 					}
 
 					this.dialog.fields_dict.batches.grid.df.data = this.doc.batches;
