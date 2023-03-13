@@ -41,11 +41,18 @@ erpnext.stock.SerialBatchSelector = Class.extend({
 			warehouse: this.item[this.warehouse_field],
 			batches: [],
 			serial_no: this.has_serial_no ? this.item.serial_no : null,
-			grouped_qty: {}
+		}
+
+		if (this.has_batch_no) {
+			this.doc.qty = frappe.utils.sum(
+				(this.frm.doc.items || [])
+					.filter(d => d.item_code == this.doc.item_code && d[this.warehouse_field] == this.doc.warehouse)
+					.map(d => d.qty)
+			);
 		}
 
 		this.make_dialog();
-		this.load_all_batches();
+		this.load_all_batches(false);
 	},
 
 	make_dialog: function() {
@@ -65,6 +72,9 @@ erpnext.stock.SerialBatchSelector = Class.extend({
 			fields: fields,
 			size: "large",
 			doc: this.doc,
+			on_hide: () => {
+				this.on_close && this.on_close(this, this.item);
+			}
 		});
 
 		this.dialog.set_primary_action(__('Select'), () => {
@@ -73,11 +83,6 @@ erpnext.stock.SerialBatchSelector = Class.extend({
 				this.update_items();
 				this.dialog.hide();
 			}
-		});
-
-		this.dialog.set_secondary_action_label(__("Close"));
-		this.dialog.set_secondary_action(() => {
-			this.on_close && this.on_close(this, this.item);
 		});
 
 		if (this.on_make_dialog) {
@@ -105,7 +110,7 @@ erpnext.stock.SerialBatchSelector = Class.extend({
 				label: __("Warehouse"),
 				reqd: 1,
 				onchange: () => {
-					this.load_all_batches();
+					this.load_all_batches(true);
 				},
 				get_query: () => {
 					return {
@@ -356,8 +361,12 @@ erpnext.stock.SerialBatchSelector = Class.extend({
 		];
 	},
 
-	load_all_batches: function () {
-		frappe.call({
+	load_all_batches: function (update_qty) {
+		if (!this.doc.item_code || !this.doc.warehouse) {
+			return;
+		}
+
+		return frappe.call({
 			method: "erpnext.stock.doctype.batch.batch.get_sufficient_batch_or_fifo",
 			args: {
 				qty: 0,
@@ -365,35 +374,20 @@ erpnext.stock.SerialBatchSelector = Class.extend({
 				warehouse: this.doc.warehouse,
 				conversion_factor: this.item.conversion_factor,
 				sales_order_item: this.item.sales_order_item,
-				include_unselected_batches: true,
+				include_unselected_batches: 1,
 			},
 			callback: (r) => {
 				if (r.message) {
-					this.doc.batches = r.message
-					this.doc.qty = 0
+					let batches = r.message;
+					let selected_qty_map = this.get_selected_qty_from_transaction()
 
-					this.update_grouped_qty()
-
-					for (let batch of this.doc.batches) {
-						if (!batch.batch_no) {
-							continue
+					for (let batch of batches) {
+						if (batch.batch_no) {
+							batch.selected_qty = flt(selected_qty_map[batch.batch_no]);
 						}
-
-						key = this.item.item_code + "_" + this.doc.warehouse + "_" + batch.batch_no
-
-						if (this.doc.grouped_qty[key] != null) {
-							batch.selected_qty += this.doc.grouped_qty[key]
-						}
-
-						this.doc.qty += batch.selected_qty
 					}
 
-					if (!this.item.batch_no) {
-						this.doc.qty += this.item.qty
-					}
-
-					this.dialog.fields_dict.batches.grid.df.data = this.doc.batches;
-					this.dialog.refresh();
+					this.set_batch_nos(batches, update_qty);
 				}
 			}
 		});
@@ -461,12 +455,12 @@ erpnext.stock.SerialBatchSelector = Class.extend({
 						item.qty = 0;
 					}
 
-					item = frappe.model.copy_doc(this.item, true, this.frm.doc, 'items');
+					let item = frappe.model.copy_doc(this.item, true, this.frm.doc, 'items');
 					item.batch_no = batch.batch_no;
 					item.qty = batch.selected_qty;
 					item.warehouse = this.doc.warehouse;
 				} else {
-					item = frappe.model.copy_doc(this.item, true, this.frm.doc, 'items');
+					let item = frappe.model.copy_doc(this.item, true, this.frm.doc, 'items');
 					item.batch_no = batch.batch_no;
 					item.qty = batch.selected_qty;
 					item.warehouse = this.doc.warehouse;
@@ -505,18 +499,18 @@ erpnext.stock.SerialBatchSelector = Class.extend({
 		this.dialog.fields_dict.qty.refresh();
 	},
 
-	update_grouped_qty: function () {
-		this.doc.grouped_qty = {}
-		for (let item of this.frm.doc.items) {
-			if (item.batch_no) {
-				key = item.item_code + "_" + item.warehouse + "_" + item.batch_no
-				
-				if (this.doc.grouped_qty[key] != null) {
-					this.doc.grouped_qty[key] += item.qty
-				} else {
-					this.doc.grouped_qty[key] = item.qty
+	get_selected_qty_from_transaction: function () {
+		let selected_qty = {};
+
+		for (let item of this.frm.doc.items || []) {
+			if (item.item_code == this.item.item_code && item[this.warehouse_field] == this.doc.warehouse && item.batch_no) {
+				if (selected_qty[item.batch_no] == null) {
+					selected_qty[item.batch_no] = 0;
 				}
+				selected_qty[item.batch_no] += item.qty;
 			}
 		}
+
+		return selected_qty;
 	},
 });
