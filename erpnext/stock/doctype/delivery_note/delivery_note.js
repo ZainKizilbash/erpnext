@@ -237,26 +237,38 @@ erpnext.stock.DeliveryNoteController = class DeliveryNoteController extends erpn
 	}
 
 	get_items_from_sales_order() {
-		if (!this.frm.doc.customer) {
-			frappe.throw({
-				title: __("Mandatory"),
-				message: __("Please Select a Customer")
-			});
-		}
 		erpnext.utils.map_current_doc({
 			method: "erpnext.selling.doctype.sales_order.sales_order.make_delivery_note",
 			source_doctype: "Sales Order",
 			target: this.frm,
-			setters: {
-				customer: this.frm.doc.customer || undefined,
-				project: this.frm.doc.project || undefined,
-			},
-			columns: ['customer_name', 'project'],
+			setters: [
+				{
+					fieldtype: 'Link',
+					label: __('Customer'),
+					options: 'Customer',
+					fieldname: 'customer',
+					default: this.frm.doc.customer || undefined,
+				},
+				{
+					fieldtype: 'Link',
+					label: __('Project'),
+					options: 'Project',
+					fieldname: 'project',
+					default: this.frm.doc.project || undefined,
+				},
+				{
+					fieldtype: 'DateRange',
+					label: __('Date Range'),
+					fieldname: 'transaction_date',
+				}
+			],
+			columns: ['customer_name', 'transaction_date', 'project'],
 			get_query_filters: {
 				docstatus: 1,
 				status: ["not in", ["Closed", "On Hold"]],
 				per_delivered: ["<", 99.99],
 				company: this.frm.doc.company,
+				customer: this.frm.doc.customer || undefined,
 			}
 		});
 	}

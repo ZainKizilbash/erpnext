@@ -95,10 +95,21 @@ erpnext.accounts.PurchaseInvoice = class PurchaseInvoice extends erpnext.buying.
 					method: "erpnext.buying.doctype.purchase_order.purchase_order.make_purchase_invoice",
 					source_doctype: "Purchase Order",
 					target: me.frm,
-					setters: {
-						supplier: me.frm.doc.supplier || undefined,
-					},
-					columns: ['supplier_name'],
+					setters: [
+						{
+							fieldtype: 'Link',
+							label: __('Supplier'),
+							options: 'Supplier',
+							fieldname: 'supplier',
+							default: me.frm.doc.supplier || undefined,
+						},
+						{
+							fieldtype: 'DateRange',
+							label: __('Date Range'),
+							fieldname: 'transaction_date',
+						}
+					],
+					columns: ['supplier_name', 'transaction_date'],
 					get_query_filters: {
 						supplier: me.frm.doc.supplier || undefined,
 						docstatus: 1,
@@ -115,11 +126,26 @@ erpnext.accounts.PurchaseInvoice = class PurchaseInvoice extends erpnext.buying.
 					source_doctype: "Purchase Receipt",
 					target: me.frm,
 					date_field: "posting_date",
-					setters: {
-						supplier: me.frm.doc.supplier || undefined,
-						bill_no: undefined,
-					},
-					columns: ['supplier_name', 'bill_no'],
+					setters: [
+						{
+							fieldtype: 'Link',
+							label: __('Supplier'),
+							options: 'Supplier',
+							fieldname: 'supplier',
+							default: me.frm.doc.supplier || undefined,
+						},
+						{
+							fieldtype: 'Data',
+							label: __('Bill No'),
+							fieldname: 'bill_no',
+						},
+						{
+							fieldtype: 'DateRange',
+							label: __('Date Range'),
+							fieldname: 'posting_date',
+						}
+					],
+					columns: ['supplier_name', 'bill_no', 'posting_date'],
 					get_query_filters: {
 						supplier: me.frm.doc.supplier || undefined,
 						docstatus: 1,

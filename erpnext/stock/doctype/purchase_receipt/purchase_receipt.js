@@ -129,25 +129,35 @@ erpnext.stock.PurchaseReceiptController = class PurchaseReceiptController extend
 
 		if(!this.frm.doc.is_return && this.frm.doc.status!="Closed") {
 			if (this.frm.doc.docstatus == 0) {
-				this.frm.add_custom_button(__('Purchase Order'),
-					function () {
-						erpnext.utils.map_current_doc({
-							method: "erpnext.buying.doctype.purchase_order.purchase_order.make_purchase_receipt",
-							source_doctype: "Purchase Order",
-							target: me.frm,
-							setters: {
-								supplier: me.frm.doc.supplier || undefined,
+				this.frm.add_custom_button(__('Purchase Order'), function () {
+					erpnext.utils.map_current_doc({
+						method: "erpnext.buying.doctype.purchase_order.purchase_order.make_purchase_receipt",
+						source_doctype: "Purchase Order",
+						target: me.frm,
+						setters: [
+							{
+								fieldtype: 'Link',
+								label: __('Supplier'),
+								options: 'Supplier',
+								fieldname: 'supplier',
+								default: me.frm.doc.supplier || undefined,
 							},
-							columns: ['supplier_name'],
-							get_query_filters: {
-								supplier: me.frm.doc.supplier || undefined,
-								docstatus: 1,
-								status: ["not in", ["Closed", "On Hold"]],
-								per_received: ["<", 99.99],
-								company: me.frm.doc.company
+							{
+								fieldtype: 'DateRange',
+								label: __('Date Range'),
+								fieldname: 'transaction_date',
 							}
-						})
-					}, __("Get Items From"));
+						],
+						columns: ['supplier_name', 'transaction_date'],
+						get_query_filters: {
+							supplier: me.frm.doc.supplier || undefined,
+							docstatus: 1,
+							status: ["not in", ["Closed", "On Hold"]],
+							per_received: ["<", 99.99],
+							company: me.frm.doc.company
+						}
+					});
+				}, __("Get Items From"));
 			}
 
 			if(this.frm.doc.docstatus == 1 && this.frm.doc.status!="Closed") {

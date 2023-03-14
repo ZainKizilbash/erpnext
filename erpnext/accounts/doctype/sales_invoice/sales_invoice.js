@@ -300,7 +300,6 @@ erpnext.accounts.SalesInvoiceController = class SalesInvoiceController extends e
 			method: "erpnext.selling.doctype.quotation.quotation.make_sales_invoice",
 			source_doctype: "Quotation",
 			target: me.frm,
-			date_field: "transaction_date",
 			setters: [
 				{
 					fieldtype: 'Link',
@@ -315,9 +314,14 @@ erpnext.accounts.SalesInvoiceController = class SalesInvoiceController extends e
 					options: 'Project',
 					fieldname: 'project',
 					default: me.frm.doc.project || undefined,
+				},
+				{
+					fieldtype: 'DateRange',
+					label: __('Date Range'),
+					fieldname: 'transaction_date',
 				}
 			],
-			columns: ['customer_name', 'project'],
+			columns: ['customer_name', 'transaction_date', 'project'],
 			get_query_filters: {
 				docstatus: 1,
 				status: ["!=", "Lost"],
@@ -334,12 +338,28 @@ erpnext.accounts.SalesInvoiceController = class SalesInvoiceController extends e
 			method: "erpnext.selling.doctype.sales_order.sales_order.make_sales_invoice",
 			source_doctype: "Sales Order",
 			target: me.frm,
-			date_field: "transaction_date",
-			setters: {
-				customer: me.frm.doc.customer || undefined,
-				project: me.frm.doc.project || undefined,
-			},
-			columns: ['customer_name', 'project'],
+			setters: [
+				{
+					fieldtype: 'Link',
+					label: __('Customer'),
+					options: 'Customer',
+					fieldname: 'customer',
+					default: me.frm.doc.customer || undefined,
+				},
+				{
+					fieldtype: 'Link',
+					label: __('Project'),
+					options: 'Project',
+					fieldname: 'project',
+					default: me.frm.doc.project || undefined,
+				},
+				{
+					fieldtype: 'DateRange',
+					label: __('Date Range'),
+					fieldname: 'transaction_date',
+				}
+			],
+			columns: ['customer_name', 'transaction_date', 'project'],
 			get_query: function() {
 				var filters = {
 					company: me.frm.doc.company,
@@ -367,12 +387,28 @@ erpnext.accounts.SalesInvoiceController = class SalesInvoiceController extends e
 			method: "erpnext.stock.doctype.delivery_note.delivery_note.make_sales_invoice",
 			source_doctype: "Delivery Note",
 			target: me.frm,
-			date_field: "posting_date",
-			setters: {
-				customer: me.frm.doc.customer || undefined,
-				project: me.frm.doc.project || undefined,
-			},
-			columns: ['customer_name', 'project'],
+			setters: [
+				{
+					fieldtype: 'Link',
+					label: __('Customer'),
+					options: 'Customer',
+					fieldname: 'customer',
+					default: me.frm.doc.customer || undefined,
+				},
+				{
+					fieldtype: 'Link',
+					label: __('Project'),
+					options: 'Project',
+					fieldname: 'project',
+					default: me.frm.doc.project || undefined,
+				},
+				{
+					fieldtype: 'DateRange',
+					label: __('Date Range'),
+					fieldname: 'posting_date',
+				}
+			],
+			columns: ['customer_name', 'posting_date', 'project'],
 			get_query: function() {
 				var filters = {
 					company: me.frm.doc.company,
@@ -403,7 +439,6 @@ erpnext.accounts.SalesInvoiceController = class SalesInvoiceController extends e
 			method: "erpnext.projects.doctype.project.project.make_sales_invoice",
 			source_doctype: "Project",
 			target: me.frm,
-			date_field: "project_date",
 			setters: [
 				{
 					label: __("Customer"),
@@ -417,9 +452,14 @@ erpnext.accounts.SalesInvoiceController = class SalesInvoiceController extends e
 					fieldname: 'project_type',
 					fieldtype: 'Link',
 					options: 'Project Type',
+				},
+				{
+					fieldtype: 'DateRange',
+					label: __('Date Range'),
+					fieldname: 'project_date',
 				}
 			],
-			columns: ['customer_name', 'project_type'],
+			columns: ['customer_name', 'project_date', 'project_type'],
 			get_query: function() {
 				var filters = {
 					company: me.frm.doc.company,

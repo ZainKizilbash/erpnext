@@ -570,6 +570,7 @@ def make_purchase_receipt(source_name, target_doc=None):
 
 	def update_item(source, target, source_parent, target_parent):
 		target.qty = get_pending_qty(source)
+		target.received_qty = target.qty + flt(target.rejected_qty)
 
 	doc = get_mapped_doc("Purchase Order", source_name,	{
 		"Purchase Order": {

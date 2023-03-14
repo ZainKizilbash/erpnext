@@ -239,34 +239,40 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 		}
 
 		if (me.frm.doc.docstatus === 0) {
-			me.frm.add_custom_button(__('Quotation'),
-				function() {
-					erpnext.utils.map_current_doc({
-						method: "erpnext.selling.doctype.quotation.quotation.make_sales_order",
-						source_doctype: "Quotation",
-						target: me.frm,
-						setters: [
-							{
-								label: "Customer",
-								fieldname: "party_name",
-								fieldtype: "Link",
-								options: "Customer",
-								default: me.frm.doc.customer || undefined
-							},{
-								fieldtype: 'Link',
-								label: __('Project'),
-								options: 'Project',
-								fieldname: 'project',
-								default: me.frm.doc.project || undefined,
-							}
-						],
-						get_query_filters: {
-							company: me.frm.doc.company,
-							docstatus: 1,
-							status: ["!=", "Lost"]
+			me.frm.add_custom_button(__('Quotation'), function() {
+				erpnext.utils.map_current_doc({
+					method: "erpnext.selling.doctype.quotation.quotation.make_sales_order",
+					source_doctype: "Quotation",
+					target: me.frm,
+					setters: [
+						{
+							label: "Customer",
+							fieldname: "party_name",
+							fieldtype: "Link",
+							options: "Customer",
+							default: me.frm.doc.customer || undefined
+						},
+						{
+							fieldtype: 'Link',
+							label: __('Project'),
+							options: 'Project',
+							fieldname: 'project',
+							default: me.frm.doc.project || undefined,
+						},
+						{
+							fieldtype: 'DateRange',
+							label: __('Date Range'),
+							fieldname: 'transaction_date',
 						}
-					})
-				}, __("Get Items From"));
+					],
+					columns: ['customer_name', 'transaction_date', 'project'],
+					get_query_filters: {
+						company: me.frm.doc.company,
+						docstatus: 1,
+						status: ["!=", "Lost"]
+					}
+				})
+			}, __("Get Items From"));
 
 			me.add_get_applicable_items_button();
 			me.add_get_project_template_items_button();

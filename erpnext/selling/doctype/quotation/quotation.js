@@ -129,7 +129,7 @@ erpnext.selling.QuotationController = class QuotationController extends erpnext.
 						target: me.frm,
 						setters: [
 							{
-								label: "Party",
+								label: "Customer",
 								fieldname: "party_name",
 								fieldtype: "Link",
 								options: me.frm.doc.quotation_to,
@@ -140,9 +140,9 @@ erpnext.selling.QuotationController = class QuotationController extends erpnext.
 								fieldname: "opportunity_type",
 								fieldtype: "Link",
 								options: "Opportunity Type",
-								default: me.frm.doc.order_type || undefined
 							}
 						],
+						columns: ['customer_name', 'transaction_date', 'opportunity_type'],
 						get_query_filters: {
 							status: ["not in", ["Lost", "Closed"]],
 							company: me.frm.doc.company
