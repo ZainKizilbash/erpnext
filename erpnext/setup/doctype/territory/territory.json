@@ -121,7 +121,7 @@
  "icon": "fa fa-map-marker",
  "idx": 1,
  "is_tree": 1,
- "modified": "2023-03-13 16:23:24.022880",
+ "modified": "2023-03-14 14:13:39.132020",
  "modified_by": "Administrator",
  "module": "Setup",
  "name": "Territory",
@@ -131,8 +131,10 @@
  "permissions": [
   {
    "create": 1,
+   "delete": 1,
    "email": 1,
    "export": 1,
+   "import": 1,
    "print": 1,
    "read": 1,
    "report": 1,
