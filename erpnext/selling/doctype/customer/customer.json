@@ -28,6 +28,7 @@
   "more_info",
   "customer_details",
   "column_break_45",
+  "date_of_birth",
   "language",
   "column_break_24",
   "tax_overseas_cnic",
@@ -382,7 +383,7 @@
   {
    "description": "Additional information regarding the customer.",
    "fieldname": "customer_details",
-   "fieldtype": "Text",
+   "fieldtype": "Small Text",
    "in_preview": 1,
    "label": "Customer Details",
    "oldfieldname": "customer_details",
@@ -660,12 +661,17 @@
    "label": "Linked Supplier",
    "no_copy": 1,
    "options": "Supplier"
+  },
+  {
+   "fieldname": "date_of_birth",
+   "fieldtype": "Date",
+   "label": "Date of Birth"
   }
  ],
  "icon": "fa fa-user",
  "idx": 363,
  "image_field": "image",
- "modified": "2022-12-07 13:25:41.900571",
+ "modified": "2023-03-15 16:08:43.620169",
  "modified_by": "Administrator",
  "module": "Selling",
  "name": "Customer",
