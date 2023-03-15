@@ -123,8 +123,7 @@
  "icon": "fa fa-map-marker",
  "idx": 1,
  "is_tree": 1,
- "links": [],
- "modified": "2023-01-12 13:28:04.613985",
+ "modified": "2023-03-14 14:13:39.132020",
  "modified_by": "Administrator",
  "module": "Setup",
  "name": "Territory",
@@ -148,11 +147,14 @@
    "write": 1
   },
   {
+   "create": 1,
+   "delete": 1,
    "email": 1,
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "Sales Manager"
+   "role": "Sales Manager",
+   "write": 1
   },
   {
    "email": 1,
