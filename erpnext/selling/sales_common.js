@@ -647,7 +647,7 @@ erpnext.selling.SellingController = class SellingController extends erpnext.Tran
 		}, __("Prices"));
 	}
 
-	set_cost_as_rate() {
+	set_rate_as_cost() {
 		var me = this;
 		frappe.call({
 			method: "set_rate_as_cost",
