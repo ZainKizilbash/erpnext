@@ -20,7 +20,7 @@ def get_data():
 			},
 			{
 				'label': _('Reference'),
-				'items': ['Quotation', 'Pick List', 'Auto Repeat']
+				'items': ['Quotation', 'Pick List']
 			},
 			{
 				'label': _('Procurement'),
