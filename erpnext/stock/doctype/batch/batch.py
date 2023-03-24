@@ -387,12 +387,13 @@ def get_sufficient_batch_or_fifo(item_code, warehouse, qty=1.0, conversion_facto
 			selected_batches.append(frappe._dict({
 				'batch_no': None,
 				'available_qty': 0,
-				'selected_qty': remaining_stock_qty
+				'selected_qty': remaining_stock_qty / conversion_factor
 			}))
 
 		total_selected_qty = stock_qty - remaining_stock_qty
-		frappe.msgprint(_("Only {0} {1} found in {2}").format(
+		frappe.msgprint(_("Only {0} {1} of {2} found in {3}").format(
 			frappe.format(total_selected_qty, df={"fieldtype": "Float", "precision": 6}),
+			frappe.get_cached_value("Item", item_code, "stock_uom"),
 			frappe.get_desk_link('Item', item_code),
 			frappe.get_desk_link('Warehouse', warehouse)
 		))
