@@ -145,8 +145,8 @@ class ShiftType(Document):
 			if shift_details and shift_details.shift_type.name == self.name:
 				mark_absent(employee, date, self.name)
 
-	def get_assigned_employees(self, from_date=None, consider_default_shift=False):
-		filters = {'date': ('>=', from_date), 'shift_type': self.name, 'docstatus': '1'}
+	def get_assigned_employee(self, from_date=None, consider_default_shift=False):
+		filters = {'start_date':('>=', from_date), 'shift_type': self.name, 'docstatus': '1'}
 		if not from_date:
 			del filters['date']
 
