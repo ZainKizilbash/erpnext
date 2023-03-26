@@ -30,7 +30,7 @@ force_fields = [
 	'address_display', 'contact_display', 'financer_contact_display',
 	'contact_email', 'contact_mobile', 'contact_phone', 'contact_designation',
 	'father_name', 'husband_name',
-	'tax_id', 'tax_cnic', 'tax_strn', 'tax_status', 'tax_overseas_cnic', 'passport_no',
+	'tax_id', 'tax_cnic', 'tax_strn', 'tax_status', 'passport_no',
 	'withholding_tax_amount', 'exempt_from_vehicle_withholding_tax'
 ]
 force_fields += address_fields
@@ -401,7 +401,6 @@ def get_party_tax_ids(args, party, financer):
 	out.tax_strn = financer.get('tax_strn') if financer else party.get('tax_strn')
 
 	out.tax_cnic = party.get('tax_cnic')
-	out.tax_overseas_cnic = party.get('tax_overseas_cnic')
 	out.passport_no = party.get('passport_no')
 
 	return out
