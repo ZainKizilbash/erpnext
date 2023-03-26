@@ -802,3 +802,4 @@ erpnext.patches.v12_0.rename_field_auto_create_opportunity_before_days
 erpnext.patches.v12_0.set_inter_company_delivery_note_reference
 erpnext.patches.v12_0.update_total_panel_qty_in_project
 execute:frappe.delete_doc_if_exists("Custom Field", "Customer_date_of_birth")
+erpnext.patches.v13_0.update_start_end_date_for_old_shift_assignment
