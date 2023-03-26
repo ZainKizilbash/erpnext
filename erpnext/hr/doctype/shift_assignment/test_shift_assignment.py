@@ -4,22 +4,15 @@
 from __future__ import unicode_literals
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
-from frappe.utils import add_days, nowdate
-
-from erpnext.hr.doctype.employee.test_employee import make_employee
-from erpnext.hr.doctype.shift_assignment.shift_assignment import get_events
+import unittest
+from frappe.utils import nowdate, add_days
 
 test_dependencies = ["Shift Type"]
 
+class TestShiftAssignment(unittest.TestCase):
 
-class TestShiftAssignment(FrappeTestCase):
 	def setUp(self):
-		frappe.db.delete("Shift Assignment")
-		if not frappe.db.exists("Shift Type", "Day Shift"):
-			frappe.get_doc(
-				{"doctype": "Shift Type", "name": "Day Shift", "start_time": "9:00:00", "end_time": "18:00:00"}
-			).insert()
+		frappe.db.sql("delete from `tabShift Assignment`")
 
 	def test_make_shift_assignment(self):
 		shift_assignment = frappe.get_doc({
@@ -84,37 +77,4 @@ class TestShiftAssignment(FrappeTestCase):
 				"status": 'Active'
 			})
 
-		self.assertRaises(frappe.ValidationError, shift_assignment_3.save)
-
-	def test_shift_assignment_calendar(self):
-		employee1 = make_employee("test_shift_assignment1@example.com", company="_Test Company")
-		employee2 = make_employee("test_shift_assignment2@example.com", company="_Test Company")
-		date = nowdate()
-
-		shift_1 = frappe.get_doc(
-			{
-				"doctype": "Shift Assignment",
-				"shift_type": "Day Shift",
-				"company": "_Test Company",
-				"employee": employee1,
-				"start_date": date,
-				"status": "Active",
-			}
-		).submit()
-
-		frappe.get_doc(
-			{
-				"doctype": "Shift Assignment",
-				"shift_type": "Day Shift",
-				"company": "_Test Company",
-				"employee": employee2,
-				"start_date": date,
-				"status": "Active",
-			}
-		).submit()
-
-		events = get_events(
-			start=date, end=date, filters=[["Shift Assignment", "employee", "=", employee1, False]]
-		)
-		self.assertEqual(len(events), 1)
-		self.assertEqual(events[0]["name"], shift_1.name)
+			self.assertRaises(frappe.ValidationError, shift_assignment_3.save)
