@@ -100,7 +100,23 @@ class ShiftType(Document):
 		# Half Day if Early Exit Minutes
 		if cint(self.half_day_if_exit_minutes) and out_time\
 				and out_time < logs[0].shift_end - timedelta(minutes=cint(self.half_day_if_exit_minutes)):
-			status = 'Half Day'
+			if cint(self.half_day_if_monthly_early_exit_count) > 0:
+				employee = logs[0].employee
+				log_date = getdate(logs[0].shift_start)
+				month_start_date = frappe.utils.get_first_day(log_date)
+
+				early_exit_count = frappe.db.sql("""
+					select count(*)
+					from `tabAttendance`
+					where docstatus = 1 and early_exit = 1
+						and employee = %(employee)s and attendance_date between %(from_date)s and %(to_date)s
+				""", {"employee": employee, "from_date": month_start_date, "to_date": log_date})
+				early_exit_count = cint(early_exit_count[0][0]) if early_exit_count else 0
+
+				if early_exit_count >= cint(self.half_day_if_monthly_early_exit_count):
+					status = 'Half Day'
+			else:
+				status = 'Half Day'
 
 		# Half Day / Absent if working hours less than
 		if not ignore_working_hour_threshold:
