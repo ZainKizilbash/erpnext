@@ -20,6 +20,7 @@ def execute(filters=None):
 
 	attendance_map = get_attendance_map(filters)
 	checkin_map = get_employee_checkin_map(filters)
+	late_deduction_leave_map = get_late_deduction_leave_map(filters)
 
 	employees = list(set([e for e in checkin_map] + [e for e in attendance_map]))
 	employees = sorted(employees)
@@ -127,6 +128,21 @@ def execute(filters=None):
 		if leave_policy:
 			row['total_late_deduction'] = leave_policy.get_lwp_from_late_days(row['total_late_entry'])
 			row['total_deduction'] += row['total_late_deduction']
+
+		# Late Deduction Leaves
+		employee_late_leaves = late_deduction_leave_map.get(employee) or {}
+		for leave_type, late_deduction_leave_count in employee_late_leaves.items():
+			leave_details = leave_type_map.get(leave_type, frappe._dict())
+			leave_details.has_entry = True
+
+			leave_fieldname = "leave_{0}".format(scrub(leave_details.name))
+			row.setdefault(leave_fieldname, 0)
+			row[leave_fieldname] += late_deduction_leave_count
+			row['total_deduction'] -= late_deduction_leave_count
+
+			if leave_details.is_lwp:
+				row['total_deduction'] += late_deduction_leave_count
+				row['total_lwp'] += late_deduction_leave_count
 
 		data.append(row)
 
@@ -409,3 +425,20 @@ def shift_ended(shift, checkins=None, attendance_date=None):
 	else:
 		shift_not_ended = [chk for chk in checkins if last_sync_of_checkin < chk.shift_actual_end]
 		return not shift_not_ended
+
+
+def get_late_deduction_leave_map(filters):
+	leave_data = frappe.db.sql("""
+		select employee, leave_type, -1 * sum(leaves) as leaves
+		from `tabLeave Ledger Entry`
+		where docstatus = 1 and is_late_deduction = 1
+			and from_date <= %(to_date)s and %(from_date)s <= to_date
+		group by employee, leave_type
+	""", filters, as_dict=1)
+
+	leave_map = {}
+	for d in leave_data:
+		leave_map.setdefault(d.employee, {})
+		leave_map[d.employee][d.leave_type] = d.leaves
+
+	return leave_map

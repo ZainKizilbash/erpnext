@@ -21,7 +21,9 @@
   "from_date",
   "to_date",
   "half_day",
+  "late_deduction",
   "half_day_date",
+  "total_late_days",
   "total_leave_days",
   "section_break_5",
   "description",
@@ -122,6 +124,7 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:!doc.late_deduction",
    "fieldname": "half_day",
    "fieldtype": "Check",
    "label": "Half Day"
@@ -268,13 +271,28 @@
    "label": "Branch",
    "options": "Branch",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "late_deduction",
+   "fieldtype": "Check",
+   "label": "For Late Deduction"
+  },
+  {
+   "depends_on": "late_deduction",
+   "fieldname": "total_late_days",
+   "fieldtype": "Float",
+   "label": "Total Late Days",
+   "no_copy": 1,
+   "precision": "1",
+   "read_only": 1
   }
  ],
  "icon": "fa fa-calendar",
  "idx": 1,
  "is_submittable": 1,
  "max_attachments": 3,
- "modified": "2021-09-03 19:12:55.667553",
+ "modified": "2023-03-26 16:20:44.270090",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Leave Application",
