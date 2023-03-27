@@ -3,7 +3,6 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
-import itertools
 from datetime import timedelta
 
 import frappe
@@ -14,10 +13,12 @@ from erpnext.hr.doctype.shift_assignment.shift_assignment import get_actual_star
 from erpnext.hr.doctype.employee_checkin.employee_checkin import mark_attendance_and_link_log, calculate_working_hours
 from erpnext.hr.doctype.attendance.attendance import mark_absent
 from erpnext.hr.doctype.employee.employee import get_holiday_list_for_employee
+from collections import OrderedDict
 
 
 class ShiftType(Document):
-	def process_auto_attendance(self):
+	@frappe.whitelist()
+	def enqueue_auto_attendance(self):
 		if not self.process_attendance_after:
 			frappe.msgprint(_("Cannot Process Auto Attendance because <b>'Process Attendance After'</b> is not set"))
 			return
@@ -25,7 +26,16 @@ class ShiftType(Document):
 			frappe.msgprint(_("Cannot Process Auto Attendance because <b>'Last Sync of Checkin'</b> is not set"))
 			return
 
-		self.update_shift_in_logs()
+		self.queue_action('process_auto_attendance', timeout=600)
+		frappe.msgprint(_("Auto Attendance Marking Started"), alert=True)
+
+	def process_auto_attendance(self):
+		if not self.process_attendance_after:
+			return
+		if not self.last_sync_of_checkin:
+			return
+
+		self.update_shift_in_logs(publish_progress=True)
 
 		filters = {
 			'skip_auto_attendance': '0',
@@ -36,15 +46,36 @@ class ShiftType(Document):
 		}
 
 		logs = frappe.get_all('Employee Checkin', fields="*", filters=filters, order_by="employee, time")
-		for key, group in itertools.groupby(logs, key=lambda x: (x['employee'], x['shift_start'])):
-			single_shift_logs = list(group)
-			attendance_status, working_hours, late_entry, early_exit = self.get_attendance(single_shift_logs)
-			mark_attendance_and_link_log(single_shift_logs, attendance_status, key[1].date(), working_hours, late_entry, early_exit, self.name)
+		grouped_logs = OrderedDict()
+		for d in logs:
+			key = (d.employee, d.shift_start)
+			if key not in grouped_logs:
+				grouped_logs[key] = []
 
-		for employee in self.get_assigned_employees(self.process_attendance_after, True):
+			grouped_logs[key].append(d)
+
+		assigned_employees = self.get_assigned_employees(self.process_attendance_after, True)
+
+		total_tasks = len(grouped_logs) + len(assigned_employees)
+		completed_tasks = 0
+
+		for (employee, shift_start), single_shift_logs in grouped_logs.items():
+			attendance_status, working_hours, late_entry, early_exit = self.get_attendance(single_shift_logs)
+			mark_attendance_and_link_log(single_shift_logs, attendance_status, shift_start.date(),
+				working_hours, late_entry, early_exit, self.name)
+
+			completed_tasks += 1
+			frappe.publish_progress(completed_tasks * 100 / total_tasks,
+				title=_("Marking Attendance..."), description=_("Marking Attendance from Checkins"))
+
+		for employee in assigned_employees:
 			self.mark_absent_for_dates_with_no_attendance(employee)
 
-	def update_shift_in_logs(self):
+			completed_tasks += 1
+			frappe.publish_progress(completed_tasks * 100 / total_tasks,
+				title=_("Marking Attendance..."), description=_("Marking Absents for missing Attendances"))
+
+	def update_shift_in_logs(self, publish_progress=False):
 		filters = {
 			'skip_auto_attendance': '0',
 			'attendance': ('is', 'not set'),
@@ -54,6 +85,10 @@ class ShiftType(Document):
 		}
 
 		logs = frappe.get_all('Employee Checkin', fields="name", filters=filters)
+
+		total_tasks = len(logs)
+		completed_tasks = 0
+
 		for log in logs:
 			keys = ("shift", "shift_actual_start", "shift_actual_end", "shift_start", "shift_end")
 
@@ -67,6 +102,11 @@ class ShiftType(Document):
 				log_doc.flags.ignore_permissions = True
 				log_doc.flags.ignore_validate = True
 				log_doc.save()
+
+			completed_tasks += 1
+			if publish_progress:
+				frappe.publish_progress(completed_tasks * 100 / total_tasks,
+					title=_("Preparing Checkins..."))
 
 	def get_attendance(self, logs, ignore_working_hour_threshold=False):
 		"""Return attendance_status, working_hours for a set of logs belonging to a single shift.
@@ -161,8 +201,13 @@ class ShiftType(Document):
 			if shift_details and shift_details.shift_type.name == self.name:
 				mark_absent(employee, date, self.name)
 
-	def get_assigned_employee(self, from_date=None, consider_default_shift=False):
-		filters = {'start_date':('>', from_date), 'shift_type': self.name, 'docstatus': '1'}
+	def get_assigned_employees(self, from_date=None, consider_default_shift=False):
+		filters = {
+			'start_date': ('>', from_date),
+			'shift_type': self.name,
+			'docstatus': 1
+		}
+
 		if not from_date:
 			del filters["start_date"]
 
