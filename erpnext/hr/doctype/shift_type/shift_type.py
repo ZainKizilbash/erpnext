@@ -141,19 +141,7 @@ class ShiftType(Document):
 		if cint(self.half_day_if_exit_minutes) and out_time\
 				and out_time < logs[0].shift_end - timedelta(minutes=cint(self.half_day_if_exit_minutes)):
 			if cint(self.half_day_if_monthly_early_exit_count) > 0:
-				employee = logs[0].employee
-				log_date = getdate(logs[0].shift_start)
-				month_start_date = frappe.utils.get_first_day(log_date)
-
-				early_exit_count = frappe.db.sql("""
-					select count(*)
-					from `tabAttendance`
-					where docstatus = 1 and early_exit = 1
-						and employee = %(employee)s and attendance_date between %(from_date)s and %(to_date)s
-				""", {"employee": employee, "from_date": month_start_date, "to_date": log_date})
-				early_exit_count = cint(early_exit_count[0][0]) if early_exit_count else 0
-
-				if early_exit_count >= cint(self.half_day_if_monthly_early_exit_count):
+				if self.is_half_day_on_multiple_early_exit_applicable(logs[0].employee, logs[0].shift_start):
 					status = 'Half Day'
 			else:
 				status = 'Half Day'
@@ -171,6 +159,25 @@ class ShiftType(Document):
 				status = 'Absent'
 
 		return status, total_working_hours, late_entry, early_exit
+
+	def is_half_day_on_multiple_early_exit_applicable(self, employee, log_date):
+		log_date = getdate(log_date)
+
+		month_start_date = frappe.utils.get_first_day(log_date)
+		to_date = frappe.utils.add_days(log_date, -1)
+
+		if to_date < month_start_date:
+			return False
+
+		early_exit_count = frappe.db.sql("""
+			select count(*)
+			from `tabAttendance`
+			where docstatus = 1 and early_exit = 1
+				and employee = %(employee)s and attendance_date between %(from_date)s and %(to_date)s
+		""", {"employee": employee, "from_date": month_start_date, "to_date": to_date})
+		early_exit_count = cint(early_exit_count[0][0]) if early_exit_count else 0
+
+		return early_exit_count >= cint(self.half_day_if_monthly_early_exit_count)
 
 	def mark_absent_for_dates_with_no_attendance(self, employee):
 		"""Marks Absents for the given employee on working days in this shift which have no attendance marked.
