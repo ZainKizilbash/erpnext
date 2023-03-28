@@ -6,44 +6,54 @@ from __future__ import unicode_literals
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import cint, cstr, date_diff, flt, formatdate, getdate, now_datetime, nowdate
+from frappe.utils import cint, cstr, formatdate, getdate, now_datetime, nowdate, get_datetime
 from erpnext.hr.doctype.employee.employee import get_holiday_list_for_employee
 from erpnext.hr.doctype.holiday_list.holiday_list import is_holiday
 from datetime import timedelta, datetime
 
+
 class ShiftAssignment(Document):
 	def validate(self):
+		self.validate_employee_mandatory()
 		self.validate_overlapping_dates()
 
 		if self.end_date:
 			self.validate_from_to_dates('start_date', 'end_date')
 
+	def validate_employee_mandatory(self):
+		if not self.global_shift:
+			if not self.employee:
+				frappe.throw(_("Employee is mandatory"))
+		else:
+			self.employee = None
+			self.employee_name = None
+			self.department = None
+			self.designation = None
+
 	def validate_overlapping_dates(self):
 		if not self.name:
 			self.name = "New Shift Assignment"
 
-		condition = """and (
-				end_date is null
-				or
-					%(start_date)s between start_date and end_date
-		"""
+		condition = """and (end_date is null or %(start_date)s between start_date and end_date"""
 
 		if self.end_date:
-			condition  += """ or
-					%(end_date)s between start_date and end_date
-					or
-					start_date between %(start_date)s and %(end_date)s
-				) """
+			condition += """ or %(end_date)s between start_date and end_date
+				or start_date between %(start_date)s and %(end_date)s) """
 		else:
-			condition += """ ) """
+			condition += " ) "
+
+		if self.global_shift:
+			condition += " and global_shift = 1"
+		else:
+			condition += " and employee = %(employee)s"
 
 		assigned_shifts = frappe.db.sql("""
-			select name, shift_type, start_date ,end_date, docstatus, status
+			select name, shift_type, start_date, end_date, docstatus, status
 			from `tabShift Assignment`
 			where
-				employee=%(employee)s and docstatus = 1
+				docstatus = 1
 				and name != %(name)s
-				and status = "Active"
+				and status = 'Active'
 				{0}
 		""".format(condition), {
 			"employee": self.employee,
@@ -51,35 +61,47 @@ class ShiftAssignment(Document):
 			"start_date": self.start_date,
 			"end_date": self.end_date,
 			"name": self.name
-		}, as_dict = 1)
+		}, as_dict=1)
 
 		if len(assigned_shifts):
 			self.throw_overlap_error(assigned_shifts[0])
 
 	def throw_overlap_error(self, shift_details):
 		shift_details = frappe._dict(shift_details)
+		msg = ""
+		title = "Duplicate Shift"
+
 		if shift_details.docstatus == 1 and shift_details.status == "Active":
-			msg = _("Employee {0} already has Active Shift {1}: {2}").format(frappe.bold(self.employee), frappe.bold(self.shift_type), frappe.bold(shift_details.name))
+			if self.global_shift:
+				msg = _("There is already a global Active Shift {0}: {1}").format(
+					frappe.bold(self.shift_type), frappe.bold(shift_details.name)
+				)
+			else:
+				msg = _("Employee {0} already has Active Shift {1}: {2}").format(
+					frappe.bold(self.employee), frappe.bold(self.shift_type), frappe.bold(shift_details.name)
+				)
+
 		if shift_details.start_date:
-			msg += _(" from {0}").format(getdate(self.start_date).strftime("%d-%m-%Y"))
+			msg += _(" from {0}").format(formatdate(self.start_date))
 			title = "Ongoing Shift"
 			if shift_details.end_date:
-				msg += _(" to {0}").format(getdate(self.end_date).strftime("%d-%m-%Y"))
+				msg += _(" to {0}").format(formatdate(self.end_date))
 				title = "Active Shift"
+
 		if msg:
 			frappe.throw(msg, title=title)
+
 
 @frappe.whitelist()
 def get_events(start, end, filters=None):
 	from frappe.desk.calendar import get_event_conditions
 
-	employee = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, ["name", "company"],
-		as_dict=True)
+	employee = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, ["name", "company"], as_dict=True)
 	if employee:
 		employee, company = employee.name, employee.company
 	else:
-		employee=''
-		company=frappe.db.get_value("Global Defaults", None, "default_company")
+		employee = ''
+		company = frappe.db.get_value("Global Defaults", None, "default_company")
 
 	conditions = get_event_conditions("Shift Assignment", filters)
 	events = add_assignments(start, end, conditions=conditions)
@@ -98,10 +120,11 @@ def add_assignments(start, end, conditions=None):
 			or (%(start_date)s between start_date and end_date and %(end_date)s between start_date and end_date)
 		)
 		and docstatus = 1"""
+
 	if conditions:
 		query += conditions
 
-	records = frappe.db.sql(query, {"start_date":start, "end_date":end}, as_dict=True)
+	records = frappe.db.sql(query, {"start_date": start, "end_date": end}, as_dict=True)
 	shift_timing_map = get_shift_type_timing([d.shift_type for d in records])
 
 	for d in records:
@@ -109,16 +132,15 @@ def add_assignments(start, end, conditions=None):
 		daily_event_end = d.end_date if d.end_date else getdate()
 		delta = timedelta(days=1)
 		while daily_event_start <= daily_event_end:
-			start_timing = frappe.utils.get_datetime(daily_event_start)+ shift_timing_map[d.shift_type]['start_time']
-			end_timing = frappe.utils.get_datetime(daily_event_start)+ shift_timing_map[d.shift_type]['end_time']
+			start_timing = get_datetime(daily_event_start) + shift_timing_map[d.shift_type]['start_time']
+			end_timing = get_datetime(daily_event_start) + shift_timing_map[d.shift_type]['end_time']
 			daily_event_start += delta
 			e = {
 				"name": d.name,
 				"doctype": "Shift Assignment",
 				"start_date": start_timing,
 				"end_date": end_timing,
-				"title": cstr(d.employee_name) + ": "+ \
-					cstr(d.shift_type),
+				"title": cstr(d.employee_name) + ": " + cstr(d.shift_type),
 				"docstatus": d.docstatus,
 				"allDay": 0
 			}
@@ -127,9 +149,10 @@ def add_assignments(start, end, conditions=None):
 
 	return events
 
+
 def get_shift_type_timing(shift_types):
 	shift_timing_map = {}
-	data = frappe.get_all("Shift Type", filters = {"name": ("IN", shift_types)}, fields = ['name', 'start_time', 'end_time'])
+	data = frappe.get_all("Shift Type", filters={"name": ("IN", shift_types)}, fields=['name', 'start_time', 'end_time'])
 
 	for d in data:
 		shift_timing_map[d.name] = d
@@ -147,19 +170,11 @@ def get_employee_shift(employee, for_date=nowdate(), consider_default_shift=Fals
 	"""
 	default_shift = frappe.db.get_value('Employee', employee, 'default_shift', cache=1)
 	shift_type_name = None
-	shift_assignment_details = frappe.db.get_value('Shift Assignment', {
-		"employee": employee,
-		"start_date": ('<=', for_date),
-		"docstatus": '1',
-		"status": "Active"
-	}, ['shift_type', 'end_date'])
 
-	if shift_assignment_details:
-		shift_type_name = shift_assignment_details[0]
-
-		# if end_date present means that shift is over after end_date else it is a ongoing shift.
-		if shift_assignment_details[1] and for_date > shift_assignment_details[1]:
-			shift_type_name = None
+	assigned_shift = get_employee_shift_assignment(employee, for_date,
+		consider_global_shift=consider_default_shift and default_shift)
+	if assigned_shift:
+		shift_type_name = assigned_shift
 
 	if not shift_type_name and consider_default_shift:
 		shift_type_name = default_shift
@@ -204,9 +219,49 @@ def get_employee_shift(employee, for_date=nowdate(), consider_default_shift=Fals
 	return get_shift_details(shift_type_name, for_date)
 
 
+def get_employee_shift_assignment(employee, for_date, consider_global_shift=False):
+	assigned_shift = None
+	for_date = getdate(for_date)
+	args = {"employee": employee, "for_date": for_date}
+
+	employee_shift_assingment = frappe.db.sql_list("""
+		select shift_type
+		from `tabShift Assignment`
+		where docstatus = 1 and status = 'Active'
+			and employee = %(employee)s
+			and start_date <= %(for_date)s and (end_date >= %(for_date)s or end_date is null)
+		order by start_date desc
+		limit 1
+	""", args)
+
+	if employee_shift_assingment:
+		assigned_shift = employee_shift_assingment[0]
+
+	if not assigned_shift and consider_global_shift:
+		company = frappe.db.get_value("Employee", employee, "company", cache=1)
+		args["company"] = company
+
+		global_shift_assingment = frappe.db.sql_list("""
+			select shift_type
+			from `tabShift Assignment`
+			where docstatus = 1 and status = 'Active'
+				and global_shift = 1 and company = %(company)s
+				and start_date <= %(for_date)s and (end_date >= %(for_date)s or end_date is null)
+			order by start_date desc
+			limit 1
+		""", args)
+
+		if global_shift_assingment:
+			assigned_shift = global_shift_assingment[0]
+
+	return assigned_shift
+
+
 def get_employee_shift_timings(employee, for_timestamp=now_datetime(), consider_default_shift=False):
 	"""Returns previous shift, current/upcoming shift, next_shift for the given timestamp and employee
 	"""
+	for_timestamp = get_datetime(for_timestamp)
+
 	# write and verify a test case for midnight shift.
 	prev_shift = curr_shift = next_shift = None
 	curr_shift = get_employee_shift(employee, for_timestamp.date(), consider_default_shift, 'forward')
@@ -262,6 +317,8 @@ def get_actual_start_end_datetime_of_shift(employee, for_datetime, consider_defa
 		None is returned if the timestamp is outside any actual shift timings.
 		Shift Details is also returned(current/upcoming i.e. if timestamp not in any actual shift then details of next shift returned)
 	"""
+	for_datetime = get_datetime(for_datetime)
+
 	actual_shift_start = actual_shift_end = shift_details = None
 	shift_timings_as_per_timestamp = get_employee_shift_timings(employee, for_datetime, consider_default_shift)
 	timestamp_list = []
