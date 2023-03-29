@@ -172,7 +172,7 @@ class ShiftType(Document):
 		early_exit_count = frappe.db.sql("""
 			select count(*)
 			from `tabAttendance`
-			where docstatus = 1 and early_exit = 1
+			where docstatus = 1 and early_exit = 1 and status = 'Present'
 				and employee = %(employee)s and attendance_date between %(from_date)s and %(to_date)s
 		""", {"employee": employee, "from_date": month_start_date, "to_date": to_date})
 		early_exit_count = cint(early_exit_count[0][0]) if early_exit_count else 0
