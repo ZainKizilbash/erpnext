@@ -662,7 +662,8 @@ def auto_mark_opportunity_as_lost():
 
 	opportunities = frappe.db.sql("""
 		SELECT name FROM tabOpportunity
-		WHERE status = 'Replied' AND modified < DATE_SUB(CURDATE(), INTERVAL %s DAY)
+		WHERE status IN ('Open', 'Replied', 'Quotation')
+		AND modified < DATE_SUB(CURDATE(), INTERVAL %s DAY)
 	""", (mark_opportunity_lost_after_days), as_dict=True)
 
 	for opportunity in opportunities:
