@@ -619,15 +619,17 @@ def auto_mark_opportunity_as_lost():
 		return
 
 	mark_opportunity_lost_after_days = frappe.db.get_single_value("CRM Settings", "mark_opportunity_lost_after_days")
-	if mark_opportunity_lost_after_days < 1:
+	if cint(mark_opportunity_lost_after_days) < 1:
 		return
 
-	lost_reason = frappe.db.get_single_value("CRM Settings", None, "opportunity_auto_lost_reason")
-	lost_reasons_list = [frappe.get_cached_doc("Opportunity Lost Reason", lost_reason)]
+	lost_reasons_list = []
+	lost_reason = frappe.db.get_single_value("CRM Settings", "opportunity_auto_lost_reason")
+	if lost_reason:
+		lost_reasons_list.append(frappe.get_cached_doc("Opportunity Lost Reason", lost_reason))
 
 	opportunities = frappe.db.sql("""
-		select name from tabOpportunity
-		where status='Replied' and modified<DATE_SUB(CURDATE(), INTERVAL %s DAY)
+		SELECT name FROM tabOpportunity
+		WHERE status = 'Replied' AND modified < DATE_SUB(CURDATE(), INTERVAL %s DAY)
 	""", (mark_opportunity_lost_after_days), as_dict=True)
 
 	for opportunity in opportunities:
