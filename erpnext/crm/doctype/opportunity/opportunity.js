@@ -52,11 +52,9 @@ erpnext.crm.Opportunity = frappe.ui.form.Controller.extend({
 					__("Communication"));
 
 				if (!["Lost", "Closed", "Converted"].includes(me.frm.doc.status)) {
-					if (me.frm.doc.status !== "Quotation") {
-						me.frm.add_custom_button(__('Lost'), () => {
-							me.frm.events.set_as_lost_dialog(me.frm);
-						}, __("Status"));
-					}
+					me.frm.add_custom_button(__("Lost"), () => {
+						me.frm.events.set_as_lost_dialog(me.frm);
+					}, __("Status"));
 
 					me.frm.add_custom_button(__("Close"), () => {
 						me.frm.set_value("status", "Closed");
@@ -66,10 +64,14 @@ erpnext.crm.Opportunity = frappe.ui.form.Controller.extend({
 
 				if (["Lost", "Closed"].includes(me.frm.doc.status)) {
 					me.frm.add_custom_button(__("Reopen"), () => {
-						me.frm.set_value("lost_reasons", [])
-						me.frm.set_value("order_lost_reason", null)
-						me.frm.set_value("status", "Open");
-						me.frm.save();
+						if (me.frm.doc.status == "Lost") {
+							me.frm.events.update_lost_status(me.frm, false);
+						} else {
+							me.frm.set_value("lost_reasons", [])
+							me.frm.set_value("order_lost_reason", null)
+							me.frm.set_value("status", "Open");
+							me.frm.save();
+						}
 					}, __("Status"));
 				}
 			}

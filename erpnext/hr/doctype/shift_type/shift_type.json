@@ -23,6 +23,7 @@
   "column_break_18",
   "half_day_if_exit_minutes",
   "early_exit_grace_period",
+  "half_day_if_monthly_early_exit_count",
   "enable_exit_grace_period",
   "cb_18",
   "working_hours_threshold_for_half_day",
@@ -101,7 +102,7 @@
    "default": "0",
    "fieldname": "enable_entry_grace_period",
    "fieldtype": "Check",
-   "label": "Enable Entry Grace Period"
+   "label": "Enable Late Entry Grace Period"
   },
   {
    "depends_on": "enable_entry_grace_period",
@@ -118,7 +119,7 @@
    "default": "0",
    "fieldname": "enable_exit_grace_period",
    "fieldtype": "Check",
-   "label": "Enable Exit Grace Period"
+   "label": "Enable Early Exit Grace Period"
   },
   {
    "depends_on": "eval:doc.enable_exit_grace_period",
@@ -205,9 +206,16 @@
    "fieldname": "missing_checkin_no_late_entry",
    "fieldtype": "Check",
    "label": "Do Not Mark Late If Missing Checkout"
+  },
+  {
+   "depends_on": "eval:doc.enable_exit_grace_period && doc.half_day_if_exit_minutes",
+   "description": "Number of early exits in a month for considering half day for early exits",
+   "fieldname": "half_day_if_monthly_early_exit_count",
+   "fieldtype": "Int",
+   "label": "Mark Half Day if n Early Exits in a Month"
   }
  ],
- "modified": "2022-12-01 14:32:02.645612",
+ "modified": "2023-03-27 11:53:20.345879",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Shift Type",

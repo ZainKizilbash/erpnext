@@ -249,8 +249,20 @@ class Opportunity(TransactionBase):
 	def set_is_lost(self, is_lost, lost_reasons_list=None, detailed_reason=None):
 		is_lost = cint(is_lost)
 
-		if is_lost and (self.has_active_quotation() or self.is_converted()):
-			frappe.throw(_("Cannot declare as Lost because there are active documents against Opportunity"))
+		if is_lost and self.is_converted():
+			frappe.throw(_("Cannot declare as Lost because Opportunity is already converted"))
+
+		quotations = get_active_quotations(self.name) if is_lost else self.get_lost_quotations()
+		vehicle_quotations = get_active_vehicle_quotations(self.name) if is_lost else self.get_lost_vehicle_quotations()
+
+		for name in quotations:
+			doc = frappe.get_doc("Quotation", name)
+			doc.flags.from_opportunity = True
+			doc.set_is_lost(is_lost, lost_reasons_list, detailed_reason)
+		for name in vehicle_quotations:
+			doc = frappe.get_doc("Vehicle Quotation", name)
+			doc.flags.from_opportunity = True
+			doc.set_is_lost(is_lost, lost_reasons_list, detailed_reason)
 
 		if is_lost:
 			self.set_status(update=True, status="Lost")
@@ -276,15 +288,15 @@ class Opportunity(TransactionBase):
 		enqueue_template_sms(self, notification_type="Opportunity Greeting")
 
 	def has_active_quotation(self):
-		vehicle_quotation = get_active_vehicle_quotation(self.name, include_draft=False)
+		quotations = get_active_quotations(self.name)
+		if quotations:
+			return True
 
-		quotation = frappe.get_all('Quotation', {
-			'opportunity': self.name,
-			'status': ("not in", ['Lost', 'Closed']),
-			'docstatus': 1
-		}, 'name')
+		vehicle_quotations = get_active_vehicle_quotations(self.name)
+		if vehicle_quotations:
+			return True
 
-		return quotation or vehicle_quotation
+		return False
 
 	def is_converted(self):
 		if self.has_ordered_quotation():
@@ -296,7 +308,7 @@ class Opportunity(TransactionBase):
 
 		appointment = frappe.db.get_value("Appointment", {
 			"opportunity": self.name,
-			"docstatus": 1,
+			"docstatus": (">", 0),
 		})
 
 		if appointment:
@@ -314,22 +326,32 @@ class Opportunity(TransactionBase):
 		return quotation
 
 	def has_lost_quotation(self):
-		lost_vehicle_quotation = frappe.db.get_value("Vehicle Quotation", {
-			"opportunity": self.name,
-			"docstatus": 1,
-			"status": 'Lost'
-		})
+		lost_quotations = self.get_lost_quotations()
+		lost_vehicle_quotations = self.get_lost_vehicle_quotations()
 
-		lost_quotation = frappe.db.get_value("Quotation", {
-			"opportunity": self.name,
-			"docstatus": 1,
-			"status": 'Lost'
-		})
-
-		if lost_quotation or lost_vehicle_quotation:
+		if lost_quotations or lost_vehicle_quotations:
 			if self.has_active_quotation():
 				return False
-			return True
+			else:
+				return True
+
+	def get_lost_quotations(self):
+		lost_quotations = frappe.get_all("Quotation", {
+			"opportunity": self.name,
+			"docstatus": 1,
+			"status": 'Lost'
+		})
+
+		return [d.name for d in lost_quotations]
+
+	def get_lost_vehicle_quotations(self):
+		lost_vehicle_quotations = frappe.get_all("Vehicle Quotation", {
+			"opportunity": self.name,
+			"docstatus": 1,
+			"status": 'Lost'
+		})
+
+		return [d.name for d in lost_vehicle_quotations]
 
 	def has_communication(self):
 		return frappe.db.get_value("Communication", filters={
@@ -467,10 +489,10 @@ def make_request_for_quotation(source_name, target_doc=None):
 
 @frappe.whitelist()
 def make_vehicle_quotation(source_name, target_doc=None):
-	existing_quotation = get_active_vehicle_quotation(source_name, include_draft=True)
-	if existing_quotation:
+	existing_quotations = get_active_vehicle_quotations(source_name, include_draft=True)
+	if existing_quotations:
 		frappe.throw(_("{0} already exists against Opportunity")
-			.format(frappe.get_desk_link("Vehicle Quotation", existing_quotation)))
+			.format(frappe.get_desk_link("Vehicle Quotation", existing_quotations[0])))
 
 	def set_missing_values(source, target):
 		add_sales_person_from_source(source, target)
@@ -510,9 +532,9 @@ def make_vehicle_booking_order(source_name, target_doc=None):
 
 		add_sales_person_from_source(source, target)
 
-		existing_quotation = get_active_vehicle_quotation(source_name, include_draft=False)
-		if existing_quotation:
-			target.vehicle_quotation = existing_quotation
+		existing_quotations = get_active_vehicle_quotations(source_name)
+		if existing_quotations:
+			target.vehicle_quotation = existing_quotations[0]
 
 		target.run_method("set_missing_values")
 		target.run_method("calculate_taxes_and_totals")
@@ -578,7 +600,17 @@ def make_supplier_quotation(source_name, target_doc=None):
 	return doclist
 
 
-def get_active_vehicle_quotation(opportunity, include_draft=False):
+def get_active_quotations(opportunity):
+	quotations = frappe.get_all('Quotation', {
+		'opportunity': opportunity,
+		'status': ("not in", ['Lost', 'Closed']),
+		'docstatus': 1
+	}, 'name')
+
+	return [d.name for d in quotations]
+
+
+def get_active_vehicle_quotations(opportunity, include_draft=False):
 	filters = {
 		"opportunity": opportunity,
 		"status": ("not in", ['Lost', 'Closed'])
@@ -589,7 +621,8 @@ def get_active_vehicle_quotation(opportunity, include_draft=False):
 	else:
 		filters["docstatus"] = 1
 
-	return frappe.db.get_value("Vehicle Quotation", filters)
+	quotations = frappe.get_all("Vehicle Quotation", filters)
+	return [d.name for d in quotations]
 
 
 def get_vehicle_booking_order(opportunity, include_draft=False):

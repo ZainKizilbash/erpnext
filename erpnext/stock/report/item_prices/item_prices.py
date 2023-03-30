@@ -169,6 +169,7 @@ def get_data(filters):
 
 				if d.price_list == filters.standard_price_list:
 					items_map[d.item_code].standard_rate = d.price_list_rate
+					items_map[d.item_code].standard_rate_valid_from = d.valid_from
 
 				show_amounts = has_valuation_read_permission()
 				if show_amounts:
@@ -200,6 +201,8 @@ def get_data(filters):
 				d["rate_old_" + scrub(price_list)] = price.previous_price
 			if price.item_price:
 				d["item_price_" + scrub(price_list)] = price.item_price
+			if price.valid_from:
+				d["valid_from_" + scrub(price_list)] = price.valid_from
 
 		d['print_rate'] = d.get("rate_" + scrub(selected_price_list)) if selected_price_list else d.standard_rate
 
@@ -311,6 +314,11 @@ def get_columns(filters, price_lists):
 	]
 
 	if filters.standard_price_list:
+		if filters.show_valid_from:
+			columns.append({
+				"fieldname": "standard_rate_valid_from", "label": _("Valid From Std Rate"), "fieldtype": "Date", "width": 80
+			})
+
 		columns += [
 			{"fieldname": "standard_rate", "label": _("Standard Rate"), "fieldtype": "Currency", "width": 110,
 				"editable": 1, "price_list": filters.standard_price_list,
@@ -320,6 +328,11 @@ def get_columns(filters, price_lists):
 
 	for price_list in price_lists:
 		if price_list != filters.standard_price_list:
+			if filters.show_valid_from:
+				columns.append({
+					"fieldname": "valid_from_" + scrub(price_list), "label": _("Valid From {0}".format(price_list)), "fieldtype": "Date", "width": 80
+				})
+
 			columns.append({
 				"fieldname": "rate_" + scrub(price_list),
 				"label": price_list,

@@ -21,6 +21,7 @@ class Quotation(SellingController):
 		self.status_map = [
 			["Draft", None],
 			["Open", "eval:self.docstatus==1"],
+			["Expired", "eval:self.valid_till and getdate(self.valid_till) < getdate()"],
 			["Lost", "eval:self.status=='Lost'"],
 			["Ordered", "has_sales_order_or_invoice"],
 			["Cancelled", "eval:self.docstatus==2"],
@@ -149,7 +150,7 @@ class Quotation(SellingController):
 
 		self.update_child_table("lost_reasons")
 
-		if self.get('opportunity'):
+		if self.get('opportunity') and not self.flags.from_opportunity:
 			opp = frappe.get_doc("Opportunity", self.opportunity)
 			opp.set_is_lost(is_lost, lost_reasons_list, detailed_reason)
 

@@ -10,21 +10,27 @@
   "employee_name",
   "department",
   "shift_type",
+  "global_shift",
+  "status",
   "column_break_3",
   "company",
-  "date",
+  "start_date",
+  "end_date",
   "shift_request",
   "amended_from"
  ],
  "fields": [
   {
+   "depends_on": "eval:!doc.global_shift",
    "fieldname": "employee",
    "fieldtype": "Link",
+   "in_standard_filter": 1,
    "label": "Employee",
    "options": "Employee",
-   "reqd": 1
+   "search_index": 1
   },
   {
+   "depends_on": "eval:!doc.global_shift",
    "fetch_from": "employee.employee_name",
    "fieldname": "employee_name",
    "fieldtype": "Data",
@@ -32,6 +38,7 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval:!doc.global_shift",
    "fetch_from": "employee.department",
    "fieldname": "department",
    "fieldtype": "Link",
@@ -43,9 +50,11 @@
    "fieldname": "shift_type",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Shift Type",
    "options": "Shift Type",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "column_break_3",
@@ -57,12 +66,6 @@
    "label": "Company",
    "options": "Company",
    "reqd": 1
-  },
-  {
-   "fieldname": "date",
-   "fieldtype": "Date",
-   "in_list_view": 1,
-   "label": "Date"
   },
   {
    "fieldname": "shift_request",
@@ -79,10 +82,44 @@
    "options": "Shift Assignment",
    "print_hide": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Start Date",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "End Date",
+   "search_index": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "Active",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Active\nInactive"
+  },
+  {
+   "default": "0",
+   "fieldname": "global_shift",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "Applicable to All Employees with Default Shift",
+   "search_index": 1
   }
  ],
  "is_submittable": 1,
- "modified": "2020-03-03 15:37:18.612552",
+ "modified": "2023-03-30 12:02:01.414021",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Shift Assignment",
@@ -125,7 +162,7 @@
    "write": 1
   }
  ],
- "sort_field": "modified",
+ "sort_field": "start_date",
  "sort_order": "DESC",
  "title_field": "employee_name",
  "track_changes": 1

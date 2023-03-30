@@ -57,7 +57,8 @@
    "label": "Shift",
    "no_copy": 1,
    "options": "Shift Type",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "column_break_4",
@@ -157,7 +158,8 @@
    "fieldtype": "Column Break"
   }
  ],
- "modified": "2022-12-01 00:44:33.448238",
+ "links": [],
+ "modified": "2022-07-19 15:38:41.767539",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Employee Checkin",

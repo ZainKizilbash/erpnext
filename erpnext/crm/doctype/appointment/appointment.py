@@ -91,6 +91,9 @@ class Appointment(StatusUpdater):
 		self.auto_unassign()
 		self.send_appointment_cancellation_notification()
 
+	def after_delete(self):
+		self.update_opportunity_status()
+
 	def get_disallow_on_submit_fields(self):
 		if self.status in ["Closed", "Rescheduled"]:
 			self.flags.disallow_on_submit = self.get_fields_for_disallow_on_submit(['remarks'])

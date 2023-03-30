@@ -89,12 +89,15 @@ frappe.ui.form.on("Leave Application", {
 				frm.set_value('employee', perm['Employee'].map(perm_doc => perm_doc.doc)[0]);
 			}
 		}
+		frm.trigger("toggle_leave_days_read_only");
 		frm.trigger("make_dashboard");
 	},
 
 	employee: function(frm) {
 		frm.trigger("make_dashboard");
 		frm.trigger("get_leave_balance");
+		frm.trigger("get_number_of_late_days");
+		frm.trigger("calculate_total_days");
 		frm.trigger("set_leave_approver");
 	},
 
@@ -116,21 +119,34 @@ frappe.ui.form.on("Leave Application", {
 			else {
 				frm.trigger("half_day_datepicker");
 			}
-		}
-		else {
+		} else {
 			frm.set_value("half_day_date", "");
 		}
 		frm.trigger("calculate_total_days");
 	},
 
+	late_deduction: function(frm) {
+		if (frm.doc.late_deduction) {
+			frm.doc.half_day = 0;
+			frm.doc.half_day_date = "";
+			frm.refresh_field("half_day");
+			frm.refresh_field("half_day_date");
+		}
+		frm.trigger("get_number_of_late_days");
+		frm.trigger("calculate_total_days");
+		frm.trigger("toggle_leave_days_read_only");
+	},
+
 	from_date: function(frm) {
 		frm.trigger("make_dashboard");
 		frm.trigger("half_day_datepicker");
+		frm.trigger("get_number_of_late_days");
 		frm.trigger("calculate_total_days");
 	},
 
 	to_date: function(frm) {
 		frm.trigger("half_day_datepicker");
+		frm.trigger("get_number_of_late_days");
 		frm.trigger("calculate_total_days");
 	},
 
@@ -191,15 +207,46 @@ frappe.ui.form.on("Leave Application", {
 					"to_date": frm.doc.to_date,
 					"half_day": frm.doc.half_day,
 					"half_day_date": frm.doc.half_day_date,
+					"late_deduction": frm.doc.late_deduction,
 				},
 				callback: function(r) {
-					if (r && r.message) {
+					if (r) {
 						frm.set_value('total_leave_days', r.message);
+						if (frm.doc.late_deduction) {
+							frm.set_value('total_late_deduction', r.message);
+						} else {
+							frm.set_value('total_late_deduction', 0);
+						}
 						frm.trigger("get_leave_balance");
 					}
 				}
 			});
 		}
+	},
+
+	get_number_of_late_days: function(frm) {
+		if (frm.doc.late_deduction && frm.doc.from_date && frm.doc.to_date && frm.doc.employee) {
+			return frappe.call({
+				method: 'erpnext.hr.doctype.leave_application.leave_application.get_number_of_late_days',
+				args: {
+					"employee": frm.doc.employee,
+					"from_date": frm.doc.from_date,
+					"to_date": frm.doc.to_date,
+				},
+				callback: function(r) {
+					if (r) {
+						frm.set_value('total_late_days', r.message);
+					}
+				}
+			});
+		} else {
+			frm.set_value("total_late_days", 0);
+		}
+	},
+
+	toggle_leave_days_read_only: function (frm) {
+		frm.set_df_property("total_leave_days", "read_only", cint(!frm.doc.late_deduction));
+		frm.set_df_property("total_leave_days", "reqd", cint(frm.doc.late_deduction));
 	},
 
 	set_leave_approver: function(frm) {
