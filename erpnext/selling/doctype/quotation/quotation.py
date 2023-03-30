@@ -150,7 +150,7 @@ class Quotation(SellingController):
 
 		self.update_child_table("lost_reasons")
 
-		if self.get('opportunity'):
+		if self.get('opportunity') and not self.flags.from_opportunity:
 			opp = frappe.get_doc("Opportunity", self.opportunity)
 			opp.set_is_lost(is_lost, lost_reasons_list, detailed_reason)
 

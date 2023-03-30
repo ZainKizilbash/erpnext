@@ -54,7 +54,7 @@ frappe.ui.form.on(cur_frm.doctype, {
 				var reasons = values["lost_reason"];
 				var detailed_reason = values["detailed_reason"];
 
-				frm.events.update_lost_status(frm, true, reasons, detailed_reason)
+				frm.events.update_lost_status(frm, true, reasons, detailed_reason);
 				dialog.hide();
 			},
 			primary_action_label: __('Declare Lost')
