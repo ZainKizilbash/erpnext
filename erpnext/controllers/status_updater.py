@@ -236,6 +236,8 @@ def get_allowance_for(allowance_type, item_code=None):
 	if not allowance:
 		if allowance_type == "billing":
 			allowance = flt(frappe.get_cached_value('Accounts Settings', None, 'over_billing_allowance'))
+		elif allowance_type == "production":
+			allowance = flt(frappe.get_cached_value('Manufacturing Settings', None, 'overproduction_percentage_for_work_order'))
 		else:
 			allowance = flt(frappe.get_cached_value('Stock Settings', None, 'over_delivery_receipt_allowance'))
 
