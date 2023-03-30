@@ -1461,15 +1461,15 @@ def make_work_orders(items, sales_order, company, project=None):
 
 		work_order = frappe.new_doc("Work Order")
 		work_order.update({
-			'production_item':i['item_code'],
-			'bom_no':i.get('bom'),
-			'qty':i['pending_qty'],
-			'company':company,
-			'sales_order':sales_order,
-			'sales_order_item':i['sales_order_item'],
-			'project':project,
-			'fg_warehouse':i['warehouse'],
-			'description':i['description']
+			'production_item': i['item_code'],
+			'bom_no': i.get('bom'),
+			'qty': i['pending_qty'],
+			'company': company,
+			'sales_order': sales_order,
+			'sales_order_item': i['sales_order_item'],
+			'project': project,
+			'fg_warehouse': i['warehouse'],
+			'description': i['description']
 		})
 
 		frappe.utils.call_hook_method("update_work_order_from_sales_order", work_order)
