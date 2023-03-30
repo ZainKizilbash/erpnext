@@ -19,6 +19,7 @@ from frappe.model.mapper import get_mapped_doc
 primary_address_fields = [
 	{'customer_field': 'address_line1', 'address_field': 'address_line1'},
 	{'customer_field': 'address_line2', 'address_field': 'address_line2'},
+	{'customer_field': 'address_line3', 'address_field': 'address_line3'},
 	{'customer_field': 'city', 'address_field': 'city'},
 	{'customer_field': 'state', 'address_field': 'state'},
 	{'customer_field': 'country', 'address_field': 'country'},
@@ -182,7 +183,8 @@ class Customer(TransactionBase):
 			if self.flags.pull_contact or push_or_pull == "pull":
 				to_set = {'customer_primary_contact': contact.name}
 				for d in primary_contact_fields:
-					to_set[d['customer_field']] = contact.get(d['contact_field'])
+					if self.meta.has_field(d['customer_field']):
+						to_set[d['customer_field']] = contact.get(d['contact_field'])
 
 				self.update(to_set)
 				frappe.db.set_value("Customer", self.name, to_set, None,
@@ -227,7 +229,8 @@ class Customer(TransactionBase):
 			if self.flags.pull_address or push_or_pull == "pull":
 				to_set = {'customer_primary_address': address.name, 'primary_address': get_address_display(address.as_dict())}
 				for d in primary_address_fields:
-					to_set[d['customer_field']] = address.get(d['address_field'])
+					if self.meta.has_field(d['customer_field']):
+						to_set[d['customer_field']] = address.get(d['address_field'])
 
 				self.update(to_set)
 				frappe.db.set_value("Customer", self.name, to_set, None,
