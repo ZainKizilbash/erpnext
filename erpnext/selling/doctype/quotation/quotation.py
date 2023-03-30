@@ -21,6 +21,7 @@ class Quotation(SellingController):
 		self.status_map = [
 			["Draft", None],
 			["Open", "eval:self.docstatus==1"],
+			["Expired", "eval:self.valid_till and getdate(self.valid_till) < getdate()"],
 			["Lost", "eval:self.status=='Lost'"],
 			["Ordered", "has_sales_order_or_invoice"],
 			["Cancelled", "eval:self.docstatus==2"],

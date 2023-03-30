@@ -17,6 +17,7 @@ class VehicleQuotation(VehicleBookingController):
 		self.status_map = [
 			["Draft", None],
 			["Open", "eval:self.docstatus==1"],
+			["Expired", "eval:self.valid_till and getdate(self.valid_till) < getdate()"],
 			["Lost", "eval:self.status=='Lost'"],
 			["Ordered", "has_vehicle_booking_order"],
 			["Cancelled", "eval:self.docstatus==2"],
