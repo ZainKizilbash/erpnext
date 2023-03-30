@@ -257,9 +257,11 @@ class SalarySlip(TransactionBase):
 		self.leave_with_pay = flt(leave_count.leave_with_pay)
 
 		actual_lwp = flt(leave_count.leave_without_pay)
+		late_leave_with_pay = flt(leave_count.late_leave_with_pay)
+
 		self.actual_late_days = self.calculate_late_days(holidays)
 		actual_late_lwp = leave_policy.get_lwp_from_late_days(self.actual_late_days) if leave_policy else 0
-		actual_lwp_with_late = actual_lwp + actual_late_lwp
+		actual_lwp_with_late = actual_lwp + actual_late_lwp - late_leave_with_pay
 		self.actual_leave_without_pay = flt(actual_lwp_with_late)
 
 		late_lwp = leave_policy.get_lwp_from_late_days(late_days) if leave_policy else 0
@@ -333,6 +335,7 @@ class SalarySlip(TransactionBase):
 		out = frappe._dict({
 			'leave_without_pay': 0,
 			'leave_with_pay': 0,
+			'late_leave_with_pay': 0,
 			'total_leave': 0,
 		})
 
@@ -347,6 +350,7 @@ class SalarySlip(TransactionBase):
 				FROM `tabLeave Application` app, `tabLeave Type` type
 				WHERE type.name = app.leave_type
 				AND app.docstatus = 1
+				AND app.late_deduction = 0
 				AND app.employee = %(employee)s
 				AND CASE
 					WHEN type.include_holiday != 1 THEN %(dt)s not in ('{0}') and %(dt)s between from_date and to_date and ifnull(app.salary_slip, '') = ''
@@ -363,6 +367,24 @@ class SalarySlip(TransactionBase):
 					out.leave_without_pay += leave_count
 				else:
 					out.leave_with_pay += leave_count
+
+		# Late Deduction Leaves
+		late_leave_data = frappe.db.sql("""
+			select type.is_lwp, -1 * sum(lle.leaves) as leaves
+			from `tabLeave Ledger Entry` lle
+			left join `tabLeave Type` type on type.name = lle.leave_type
+			where lle.docstatus = 1 and lle.is_late_deduction = 1
+				and lle.from_date <= %(end_dt)s and %(st_dt)s <= lle.to_date
+			group by lle.is_lwp
+		""", {"employee": self.employee, "st_dt": start_date, "end_dt": end_date}, as_dict=1)
+
+		for lle in late_leave_data:
+			out.total_leave += lle.leaves
+			if lle.is_lwp:
+				out.leave_without_pay += lle.leaves
+			else:
+				out.late_leave_with_pay += lle.leaves
+				out.leave_with_pay += lle.leaves
 
 		if not cint(frappe.get_cached_value("HR Settings", None, "do_not_consider_absent_as_lwp")):
 			absent = frappe.db.sql("""

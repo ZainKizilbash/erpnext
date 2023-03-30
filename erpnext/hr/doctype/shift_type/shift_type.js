@@ -7,7 +7,7 @@ frappe.ui.form.on('Shift Type', {
 			frappe.confirm(__("Are you sure you want to Mark Auto Attendance"), () => {
 				frm.call({
 					doc: frm.doc,
-					method: 'process_auto_attendance',
+					method: 'enqueue_auto_attendance',
 					freeze: true
 				});
 			});

@@ -74,11 +74,6 @@ frappe.query_reports["Item Prices"] = {
 			options:"Price List"
 		},
 		{
-			fieldname: "filter_items_without_price",
-			label: __("Filter Items Without Price"),
-			fieldtype: "Check"
-		},
-		{
 			fieldname: "filter_price_list_by",
 			label: __("Filter Price List By"),
 			fieldtype: "Select",
@@ -123,7 +118,16 @@ frappe.query_reports["Item Prices"] = {
 			options: "Default UOM\nStock UOM\nContents UOM",
 			default: "Default UOM"
 		},
-
+		{
+			fieldname: "filter_items_without_price",
+			label: __("Filter Items Without Price"),
+			fieldtype: "Check"
+		},
+		{
+			fieldname: "show_valid_from",
+			label: __("Show Valid From Date"),
+			fieldtype: "Check"
+		},
 	],
 	formatter: function(value, row, column, data, default_formatter) {
 		var original_value = value;

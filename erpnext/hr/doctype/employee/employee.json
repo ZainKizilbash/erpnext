@@ -48,6 +48,7 @@
   "column_break_49",
   "leave_policy",
   "leave_approver",
+  "shift_request_approver",
   "column_break_44",
   "holiday_list",
   "contact_details",
@@ -873,6 +874,14 @@
    "fieldname": "mother_name",
    "fieldtype": "Data",
    "label": "Mother Name"
+  },
+  {
+   "fieldname": "shift_request_approver",
+   "fieldtype": "Link",
+   "label": "Shift Request Approver",
+   "options": "User",
+   "show_days": 1,
+   "show_seconds": 1
   }
  ],
  "icon": "fa fa-user",

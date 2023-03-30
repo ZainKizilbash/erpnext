@@ -22,6 +22,7 @@
   "leave_approvers",
   "expense_section",
   "expense_approvers",
+  "shift_request_approver",
   "lft",
   "rgt",
   "old_parent"
@@ -139,6 +140,14 @@
   {
    "fieldname": "column_break_5",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "shift_request_approver",
+   "fieldtype": "Table",
+   "label": "Shift Request Approver",
+   "options": "Department Approver",
+   "show_days": 1,
+   "show_seconds": 1
   }
  ],
  "icon": "fa fa-sitemap",

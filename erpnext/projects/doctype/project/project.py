@@ -1166,6 +1166,11 @@ def get_service_items(project, get_sales_invoice=True):
 		inner join `tabSales Order` p on p.name = i.parent
 		where p.docstatus = 1 and {0}
 			and p.project = %s
+			and (p.status != 'Closed' or exists(select sum(si_item.amount)
+				from `tabSales Invoice Item` si_item
+				where si_item.docstatus = 1 and si_item.sales_order_item = i.name
+				having sum(si_item.amount) > 0)
+			)
 		order by p.transaction_date, p.creation, i.idx
 	""".format(is_service_condition), project.name, as_dict=1)
 	set_sales_data_customer_amounts(so_data, project)
