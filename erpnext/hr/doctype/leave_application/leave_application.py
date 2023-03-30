@@ -216,15 +216,30 @@ class LeaveApplication(Document):
 
 	def validate_balance_leaves(self):
 		if self.from_date and self.to_date:
-			self.total_leave_days = get_number_of_leave_days(self.employee, self.leave_type,
-				self.from_date, self.to_date, self.half_day, self.half_day_date, self.late_deduction)
 
 			if self.late_deduction:
 				self.half_day = 0
 				self.half_day_date = None
+
 				self.total_late_days = get_number_of_late_days(self.employee, self.from_date, self.to_date)
+				self.total_late_deduction = get_number_of_leave_days(self.employee, self.leave_type,
+					self.from_date, self.to_date, self.half_day, self.half_day_date, late_deduction=1)
+
+				if not self.total_leave_days:
+					self.total_leave_days = self.total_late_deduction
+
+				if self.total_leave_days > self.total_late_deduction:
+					frappe.throw(_("Total Leave Days cannot be greater than Total Late Deduction"))
+				if self.total_leave_days <= 0:
+					frappe.throw(_("Total Leave Days must be greater than zero"))
+				if self.total_leave_days % 0.5 != 0:
+					frappe.throw(_("Total Leave Days must be a multiple of 0.5"))
 			else:
+				self.total_leave_days = get_number_of_leave_days(self.employee, self.leave_type,
+					self.from_date, self.to_date, self.half_day, self.half_day_date)
+
 				self.total_late_days = 0
+				self.total_late_deduction = 0
 
 			if self.total_leave_days <= 0:
 				frappe.throw(_("The day(s) on which you are not applicable for leaves."))

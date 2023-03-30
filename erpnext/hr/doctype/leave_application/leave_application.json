@@ -24,6 +24,7 @@
   "late_deduction",
   "half_day_date",
   "total_late_days",
+  "total_late_deduction",
   "total_leave_days",
   "section_break_5",
   "description",
@@ -286,13 +287,22 @@
    "no_copy": 1,
    "precision": "1",
    "read_only": 1
+  },
+  {
+   "depends_on": "late_deduction",
+   "fieldname": "total_late_deduction",
+   "fieldtype": "Float",
+   "label": "Total Late Deduction",
+   "no_copy": 1,
+   "precision": "1",
+   "read_only": 1
   }
  ],
  "icon": "fa fa-calendar",
  "idx": 1,
  "is_submittable": 1,
  "max_attachments": 3,
- "modified": "2023-03-26 16:20:44.270090",
+ "modified": "2023-03-30 12:36:02.498636",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Leave Application",

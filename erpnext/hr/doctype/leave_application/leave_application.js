@@ -89,6 +89,7 @@ frappe.ui.form.on("Leave Application", {
 				frm.set_value('employee', perm['Employee'].map(perm_doc => perm_doc.doc)[0]);
 			}
 		}
+		frm.trigger("toggle_leave_days_read_only");
 		frm.trigger("make_dashboard");
 	},
 
@@ -133,6 +134,7 @@ frappe.ui.form.on("Leave Application", {
 		}
 		frm.trigger("get_number_of_late_days");
 		frm.trigger("calculate_total_days");
+		frm.trigger("toggle_leave_days_read_only");
 	},
 
 	from_date: function(frm) {
@@ -210,6 +212,11 @@ frappe.ui.form.on("Leave Application", {
 				callback: function(r) {
 					if (r) {
 						frm.set_value('total_leave_days', r.message);
+						if (frm.doc.late_deduction) {
+							frm.set_value('total_late_deduction', r.message);
+						} else {
+							frm.set_value('total_late_deduction', 0);
+						}
 						frm.trigger("get_leave_balance");
 					}
 				}
@@ -235,6 +242,11 @@ frappe.ui.form.on("Leave Application", {
 		} else {
 			frm.set_value("total_late_days", 0);
 		}
+	},
+
+	toggle_leave_days_read_only: function (frm) {
+		frm.set_df_property("total_leave_days", "read_only", cint(!frm.doc.late_deduction));
+		frm.set_df_property("total_leave_days", "reqd", cint(frm.doc.late_deduction));
 	},
 
 	set_leave_approver: function(frm) {
