@@ -293,7 +293,7 @@ scheduler_events = {
 	"daily": [
 		"erpnext.stock.reorder_item.reorder_item",
 		"erpnext.support.doctype.issue.issue.auto_close_tickets",
-		"erpnext.crm.doctype.opportunity.opportunity.auto_close_opportunity",
+		"erpnext.crm.doctype.opportunity.opportunity.auto_mark_opportunity_as_lost",
 		"erpnext.controllers.accounts_controller.update_invoice_status",
 		"erpnext.vehicles.doctype.vehicle_booking_order.vehicle_booking_order.update_overdue_status",
 		"erpnext.accounts.doctype.fiscal_year.fiscal_year.auto_create_fiscal_year",

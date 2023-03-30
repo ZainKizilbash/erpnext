@@ -646,20 +646,28 @@ def set_multiple_status(names, status):
 		opp.save()
 
 
-def auto_close_opportunity():
-	""" auto close the `Replied` Opportunities after 7 days """
-	auto_close_after_days = frappe.db.get_single_value("CRM Settings", "close_opportunity_after_days")
-	if auto_close_after_days < 1:
+def auto_mark_opportunity_as_lost():
+	if not frappe.db.get_single_value("CRM Settings", "auto_mark_opportunity_as_lost"):
 		return
 
+	mark_opportunity_lost_after_days = frappe.db.get_single_value("CRM Settings", "mark_opportunity_lost_after_days")
+	if cint(mark_opportunity_lost_after_days) < 1:
+		return
+
+	lost_reasons_list = []
+	lost_reason = frappe.db.get_single_value("CRM Settings", "opportunity_auto_lost_reason")
+	if lost_reason:
+		lost_reasons_list.append(frappe.get_cached_doc("Opportunity Lost Reason", lost_reason))
+
 	opportunities = frappe.db.sql("""
-		select name from tabOpportunity
-		where status='Replied' and modified<DATE_SUB(CURDATE(), INTERVAL %s DAY)
-	""", (auto_close_after_days), as_dict=True)
+		SELECT name FROM tabOpportunity
+		WHERE status IN ('Open', 'Replied', 'Quotation')
+		AND modified < DATE_SUB(CURDATE(), INTERVAL %s DAY)
+	""", (mark_opportunity_lost_after_days), as_dict=True)
 
 	for opportunity in opportunities:
 		doc = frappe.get_doc("Opportunity", opportunity.get("name"))
-		doc.set_status(status="Closed")
+		doc.set_is_lost(True, lost_reasons_list=lost_reasons_list)
 
 
 @frappe.whitelist()
