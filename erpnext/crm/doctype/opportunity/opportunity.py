@@ -296,7 +296,7 @@ class Opportunity(TransactionBase):
 
 		appointment = frappe.db.get_value("Appointment", {
 			"opportunity": self.name,
-			"docstatus": 1,
+			"docstatus": (">", 0),
 		})
 
 		if appointment:
