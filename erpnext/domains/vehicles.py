@@ -395,6 +395,7 @@ data = {
 	'properties': [
 		{"doctype": "Item", "fieldname": "is_vehicle", "property": "in_standard_filter", "value": 1},
 		{"doctype": "Customer", "fieldname": "is_insurance_company", "property": "in_standard_filter", "value": 1},
+		{"doctype": "Customer", "fieldname": "is_insurance_company", "property": "hidden", "value": 0},
 		{"doctype": "Sales Invoice", "fieldname": "bill_to", "property": "hidden", "value": 0},
 		{"doctype": "Sales Invoice", "fieldname": "claim_billing", "property": "hidden", "value": 0},
 		{"doctype": "Project", "fieldname": "bill_to", "property": "hidden", "value": 0},

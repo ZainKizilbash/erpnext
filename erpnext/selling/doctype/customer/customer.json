@@ -15,12 +15,14 @@
   "customer_name",
   "reference",
   "lead_name",
+  "disabled",
+  "is_insurance_company",
   "column_break0",
   "customer_group",
   "territory",
   "image",
-  "disabled",
-  "is_insurance_company",
+  "column_break_07btd",
+  "customer_details",
   "identification_section",
   "tax_cnic",
   "column_break_9",
@@ -64,17 +66,15 @@
   "column_break_54",
   "contact_html",
   "more_info",
+  "industry",
+  "market_segment",
+  "column_break_45",
   "date_of_birth",
   "passport_no",
+  "column_break_24",
   "language",
   "so_not_required",
   "dn_not_required",
-  "column_break_45",
-  "industry",
-  "market_segment",
-  "column_break_24",
-  "customer_details",
-  "sales_team_tab",
   "sales_team_section",
   "sales_team",
   "account_manager",
@@ -422,6 +422,7 @@
   {
    "fieldname": "sales_team_section_break",
    "fieldtype": "Section Break",
+   "hidden": 1,
    "label": "Sales Partner",
    "oldfieldtype": "Section Break",
    "options": "fa fa-group"
@@ -445,12 +446,12 @@
   {
    "fieldname": "sales_team_section",
    "fieldtype": "Section Break",
-   "label": "Sales Persons"
+   "label": "Sales Team"
   },
   {
    "fieldname": "sales_team",
    "fieldtype": "Table",
-   "label": "Sales Team Details",
+   "label": "Sales Persons",
    "oldfieldname": "sales_team",
    "oldfieldtype": "Table",
    "options": "Sales Team"
@@ -522,6 +523,7 @@
    "default": "0",
    "fieldname": "is_insurance_company",
    "fieldtype": "Check",
+   "hidden": 1,
    "label": "Is Insurance Company"
   },
   {
@@ -650,11 +652,6 @@
    "label": "Date of Birth"
   },
   {
-   "fieldname": "sales_team_tab",
-   "fieldtype": "Tab Break",
-   "label": "Sales Team"
-  },
-  {
    "fieldname": "accounting_tab",
    "fieldtype": "Tab Break",
    "label": "Accounting"
@@ -666,8 +663,7 @@
   },
   {
    "fieldname": "identification_section",
-   "fieldtype": "Section Break",
-   "label": "Identification & Tax Id"
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "column_break_2xnol",
@@ -680,13 +676,17 @@
   {
    "fieldname": "column_break_oqeav",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_07btd",
+   "fieldtype": "Column Break"
   }
  ],
  "icon": "fa fa-user",
  "idx": 363,
  "image_field": "image",
  "links": [],
- "modified": "2023-03-30 14:30:44.089917",
+ "modified": "2023-03-31 16:47:54.062451",
  "modified_by": "Administrator",
  "module": "Selling",
  "name": "Customer",
