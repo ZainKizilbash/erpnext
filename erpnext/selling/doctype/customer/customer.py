@@ -181,30 +181,37 @@ class Customer(TransactionBase):
 
 		if contact:
 			if self.flags.pull_contact or push_or_pull == "pull":
-				to_set = {'customer_primary_contact': contact.name}
-				for d in primary_contact_fields:
-					if self.meta.has_field(d['customer_field']):
-						to_set[d['customer_field']] = contact.get(d['contact_field'])
-
-				self.update(to_set)
-				frappe.db.set_value("Customer", self.name, to_set, None,
-					notify=cint(self.flags.pull_contact), update_modified=cint(self.flags.pull_contact))
+				self.pull_primary_contact(contact)
 
 			elif push_or_pull == "push":
-				data_changed = any([cstr(self.get(d['customer_field'])) != cstr(contact.get(d['contact_field']))
-					for d in primary_contact_fields])
+				self.push_primary_contact(contact)
+				self.pull_primary_contact(contact)
 
-				if data_changed:
-					for field in primary_contact_fields:
-						if not field.get('custom_setter'):
-							value = self.get(field['customer_field'])
-							if not value and field.get('default_from'):
-								value = self.get(field.get('default_from'))
+	def pull_primary_contact(self, contact):
+		to_set = {'customer_primary_contact': contact.name}
+		for d in primary_contact_fields:
+			if self.meta.has_field(d['customer_field']):
+				to_set[d['customer_field']] = contact.get(d['contact_field'])
 
-							contact.set(field['contact_field'], value)
+		self.update(to_set)
+		frappe.db.set_value("Customer", self.name, to_set, None,
+			notify=cint(self.flags.pull_contact), update_modified=cint(self.flags.pull_contact))
 
-					contact.flags.from_linked_document = ("Customer", self.name)
-					contact.save(ignore_permissions=True)
+	def push_primary_contact(self, contact):
+		data_changed = any([cstr(self.get(d['customer_field'])) != cstr(contact.get(d['contact_field']))
+			for d in primary_contact_fields])
+
+		if data_changed:
+			for field in primary_contact_fields:
+				if not field.get('custom_setter'):
+					value = self.get(field['customer_field'])
+					if not value and field.get('default_from'):
+						value = self.get(field.get('default_from'))
+
+					contact.set(field['contact_field'], value)
+
+			contact.flags.from_linked_document = ("Customer", self.name)
+			contact.save(ignore_permissions=True)
 
 	def update_primary_address(self):
 		push_or_pull = None
@@ -227,34 +234,37 @@ class Customer(TransactionBase):
 
 		if address:
 			if self.flags.pull_address or push_or_pull == "pull":
-				to_set = {'customer_primary_address': address.name, 'primary_address': get_address_display(address.as_dict())}
-				for d in primary_address_fields:
-					if self.meta.has_field(d['customer_field']):
-						to_set[d['customer_field']] = address.get(d['address_field'])
-
-				self.update(to_set)
-				frappe.db.set_value("Customer", self.name, to_set, None,
-					notify=cint(self.flags.pull_address), update_modified=cint(self.flags.pull_address))
+				self.pull_primary_address(address)
 
 			elif push_or_pull == "push":
-				data_changed = any([cstr(self.get(d['customer_field'])) != cstr(address.get(d['address_field']))
-					for d in primary_address_fields])
+				self.push_primary_address(address)
+				self.pull_primary_address(address)
 
-				if data_changed:
-					for field in primary_address_fields:
-						if not field.get('custom_setter'):
-							value = self.get(field['customer_field'])
-							if not value and field.get('default_from'):
-								value = self.get(field.get('default_from'))
+	def pull_primary_address(self, address):
+		to_set = {'customer_primary_address': address.name, 'primary_address': get_address_display(address.as_dict())}
+		for d in primary_address_fields:
+			if self.meta.has_field(d['customer_field']):
+				to_set[d['customer_field']] = address.get(d['address_field'])
 
-							address.set(field['address_field'], value)
+		self.update(to_set)
+		frappe.db.set_value("Customer", self.name, to_set, None,
+			notify=cint(self.flags.pull_address), update_modified=cint(self.flags.pull_address))
 
-					address.flags.from_linked_document = ("Customer", self.name)
-					address.save(ignore_permissions=True)
+	def push_primary_address(self, address):
+		data_changed = any([cstr(self.get(d['customer_field'])) != cstr(address.get(d['address_field']))
+			for d in primary_address_fields])
 
-				self.primary_address = get_address_display(address.as_dict())
-				frappe.db.set_value("Customer", self.name, 'primary_address', self.primary_address,
-					notify=cint(self.flags.pull_address), update_modified=cint(self.flags.pull_address))
+		if data_changed:
+			for field in primary_address_fields:
+				if not field.get('custom_setter'):
+					value = self.get(field['customer_field'])
+					if not value and field.get('default_from'):
+						value = self.get(field.get('default_from'))
+
+					address.set(field['address_field'], value)
+
+			address.flags.from_linked_document = ("Customer", self.name)
+			address.save(ignore_permissions=True)
 
 	def update_customer_in_lead(self):
 		'''If Customer created from Lead, update lead status to "Converted"
