@@ -29,6 +29,7 @@ class ShiftType(Document):
 		self.queue_action('process_auto_attendance', timeout=600)
 		frappe.msgprint(_("Auto Attendance Marking Started"), alert=True)
 
+	@frappe.whitelist()
 	def process_auto_attendance(self):
 		if not self.process_attendance_after:
 			return
@@ -209,25 +210,41 @@ class ShiftType(Document):
 				mark_absent(employee, date, self.name)
 
 	def get_assigned_employees(self, from_date=None, consider_default_shift=False):
-		filters = {
-			'start_date': ('>', from_date),
-			'shift_type': self.name,
-			'docstatus': 1
+		args = {
+			"shift_type": self.name,
+			"from_date": from_date
 		}
+		assignment_date_condition = ""
+		if from_date:
+			assignment_date_condition = " and (end_date >= %(from_date)s or end_date is null)"
 
-		if not from_date:
-			del filters["start_date"]
+		shift_assignment_employees = frappe.db.sql_list("""
+			select distinct employee
+			from `tabShift Assignment`
+			where docstatus = 1 and global_shift = 0 and status = 'Active'
+				and shift_type = %(shift_type)s
+				{0}
+		""".format(assignment_date_condition), args)
 
-		assigned_employees = frappe.get_all('Shift Assignment', 'employee', filters, as_list=True)
-		assigned_employees = [x[0] for x in assigned_employees]
+		employees = shift_assignment_employees.copy()
 
 		if consider_default_shift:
-			filters = {'default_shift': self.name}
-			default_shift_employees = frappe.get_all('Employee', 'name', filters, as_list=True)
-			default_shift_employees = [x[0] for x in default_shift_employees]
-			return list(set(assigned_employees+default_shift_employees))
+			default_shift_employees = frappe.db.sql_list("""
+				select e.name
+				from `tabEmployee` e
+				where (e.default_shift = %(shift_type)s or (ifnull(e.default_shift, '') != '' and exists(
+					select sa.name
+					from `tabShift Assignment` sa
+					where sa.company = e.company and sa.docstatus = 1 and sa.global_shift = 1 and sa.status = 'Active'
+						and sa.shift_type = %(shift_type)s
+						{0}
+				)))
+			""".format(assignment_date_condition), args)
 
-		return assigned_employees
+			employees += default_shift_employees
+			employees = list(set(employees))
+
+		return employees
 
 
 def process_auto_attendance_for_all_shifts():
