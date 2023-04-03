@@ -658,7 +658,7 @@ def auto_mark_opportunity_as_lost():
 	lost_reasons_list = []
 	lost_reason = frappe.db.get_single_value("CRM Settings", "opportunity_auto_lost_reason")
 	if lost_reason:
-		lost_reasons_list.append(frappe.get_cached_doc("Opportunity Lost Reason", lost_reason))
+		lost_reasons_list.append({'lost_reason': lost_reason})
 
 	opportunities = frappe.db.sql("""
 		SELECT name FROM tabOpportunity
