@@ -938,6 +938,8 @@ def make_delivery_note(source_name, target_doc=None, warehouse=None, skip_item_m
 	if not skip_item_mapping:
 		mapper["Sales Order Item"] = get_item_mapper_for_delivery(allow_duplicate=allow_duplicate)
 
+	frappe.utils.call_hook_method("update_delivery_note_from_sales_order_mapper", mapper)
+
 	target_doc = get_mapped_doc("Sales Order", source_name, mapper, target_doc, set_missing_values)
 
 	return target_doc
@@ -1195,6 +1197,8 @@ def make_sales_invoice(source_name, target_doc=None, ignore_permissions=False,
 
 	if only_items:
 		mapping = {dt: dt_mapping for dt, dt_mapping in mapping.items() if dt == "Sales Order Item"}
+
+	frappe.utils.call_hook_method("update_sales_invoice_from_sales_order_mapper", mapping)
 
 	doclist = get_mapped_doc("Sales Order", source_name, mapping, target_doc,
 		postprocess=postprocess if not skip_postprocess else None,

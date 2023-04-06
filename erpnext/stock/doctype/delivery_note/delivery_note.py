@@ -679,6 +679,8 @@ def make_sales_invoice(source_name, target_doc=None, only_items=None, skip_postp
 		}
 	}
 
+	frappe.utils.call_hook_method("update_sales_invoice_from_delivery_note_mapper", mapping)
+
 	if only_items:
 		mapping = {dt: dt_mapping for dt, dt_mapping in mapping.items() if dt == "Delivery Note Item"}
 
