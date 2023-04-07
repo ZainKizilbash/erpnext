@@ -281,10 +281,14 @@ def get_item_conditions(filters, for_item_dt):
 
 	if filters.get("item_code"):
 		is_template = frappe.db.get_value("Item", filters.get('item_code'), 'has_variants')
+		item_variant_of_field = "variant_of" if for_item_dt else "item_code"
+		item_code_field = "name" if for_item_dt else "item_code"
+
 		if is_template:
-			conditions.append("item.{}=%(item_code)s".format("variant_of" if for_item_dt else "item_code"))
+			conditions.append("(item.{0} = %(item_code)s or item.{1} = %(item_code)s)".format(
+				item_code_field, item_variant_of_field))
 		else:
-			conditions.append("item.{} = %(item_code)s".format("name" if for_item_dt else "item_code"))
+			conditions.append("item.{0} = %(item_code)s".format(item_code_field))
 	else:
 		if filters.get("brand"):
 			conditions.append("item.brand=%(brand)s")
