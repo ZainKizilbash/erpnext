@@ -13,7 +13,8 @@
   "column_break_2",
   "ignore_workstation_time_overlap",
   "ignore_user_time_overlap",
-  "ignore_employee_time_overlap"
+  "ignore_employee_time_overlap",
+  "appointment_required"
  ],
  "fields": [
   {
@@ -75,10 +76,16 @@
    "fieldtype": "Link",
    "label": "Consumables Item Group",
    "options": "Item Group"
+  },
+  {
+   "default": "0",
+   "fieldname": "appointment_required",
+   "fieldtype": "Check",
+   "label": "Appointment Required for Project"
   }
  ],
  "issingle": 1,
- "modified": "2022-12-26 12:16:20.528811",
+ "modified": "2023-04-07 18:07:05.121064",
  "modified_by": "Administrator",
  "module": "Projects",
  "name": "Projects Settings",

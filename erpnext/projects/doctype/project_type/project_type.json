@@ -17,6 +17,7 @@
   "cash_billing",
   "has_stin",
   "validations_section",
+  "appointment_not_required",
   "bill_to_mandatory",
   "insurance_company_mandatory",
   "column_break_12",
@@ -112,9 +113,15 @@
    "fieldtype": "Link",
    "label": "Claim Billing Type",
    "options": "Claim Billing Type"
+  },
+  {
+   "default": "0",
+   "fieldname": "appointment_not_required",
+   "fieldtype": "Check",
+   "label": "Bypass Mandatory Appointment Requirement"
   }
  ],
- "modified": "2022-12-22 17:25:40.720598",
+ "modified": "2023-04-07 18:13:27.534155",
  "modified_by": "Administrator",
  "module": "Projects",
  "name": "Project Type",
