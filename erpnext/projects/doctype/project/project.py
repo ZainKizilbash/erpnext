@@ -122,6 +122,9 @@ class Project(StatusUpdater):
 		if 'Vehicles' in frappe.get_active_domains():
 			self.update_odometer()
 
+	def before_insert(self):
+		self.validate_appointment_required()
+
 	def after_insert(self):
 		self.set_project_in_sales_order_and_quotation()
 
@@ -591,6 +594,17 @@ class Project(StatusUpdater):
 
 			if self.get('applies_to_item') and self.applies_to_item != vehicle_booking_order.item_code:
 				frappe.throw(_("Vehicle Variant Code does not match with Vehicle Booking Order {0}").format(self.vehicle_booking_order))
+
+	def validate_appointment_required(self):
+		if self.get('appointment'):
+			return
+
+		appointment_required = frappe.get_cached_value("Projects Settings", None, "appointment_required")
+		appointment_bypassed = self.project_type and frappe.get_cached_value("Project Type", self.project_type,
+			"appointment_not_required")
+
+		if appointment_required and not appointment_bypassed:
+			frappe.throw(_("Appointment is mandatory, please select an Appointment first"))
 
 	def validate_appointment(self):
 		if self.get('appointment'):

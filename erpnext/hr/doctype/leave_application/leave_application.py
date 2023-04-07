@@ -72,13 +72,13 @@ class LeaveApplication(Document):
 					frappe.throw(_("Please set Date of Joining for {0}")
 						.format(frappe.get_desk_link("Employee", self.employee)))
 
-				leave_days = get_approved_leaves_for_period(self.employee, False, date_of_joining, self.from_date)
+				# leave_days = get_approved_leaves_for_period(self.employee, False, date_of_joining, self.from_date)
 				number_of_days = date_diff(getdate(self.from_date), date_of_joining)
 				if number_of_days >= 0:
-					holidays = 0
+					# holidays = 0
 					# if not frappe.db.get_value("Leave Type", self.leave_type, "include_holiday"):
 					# 	holidays = get_holidays(self.employee, date_of_joining, self.from_date)
-					number_of_days = number_of_days - leave_days - holidays
+					# number_of_days = number_of_days - leave_days - holidays
 					if number_of_days < leave_type.applicable_after:
 						frappe.throw(_("{0} applicable {1} days after joining date").format(self.leave_type, leave_type.applicable_after))
 
@@ -215,37 +215,20 @@ class LeaveApplication(Document):
 
 	def validate_balance_leaves(self):
 		if self.from_date and self.to_date:
+			self.set_leave_details()
 
 			if self.late_deduction:
-				self.half_day = 0
-				self.half_day_date = None
-
-				self.total_late_days = get_number_of_late_days(self.employee, self.from_date, self.to_date)
-				self.total_late_deduction = get_number_of_leave_days(self.employee, self.leave_type,
-					self.from_date, self.to_date, self.half_day, self.half_day_date, late_deduction=1)
-
-				if not self.total_leave_days:
-					self.total_leave_days = self.total_late_deduction
-
 				if self.total_leave_days > self.total_late_deduction:
 					frappe.throw(_("Total Leave Days cannot be greater than Total Late Deduction"))
 				if self.total_leave_days <= 0:
 					frappe.throw(_("Total Leave Days must be greater than zero"))
 				if self.total_leave_days % 0.5 != 0:
 					frappe.throw(_("Total Leave Days must be a multiple of 0.5"))
-			else:
-				self.total_leave_days = get_number_of_leave_days(self.employee, self.leave_type,
-					self.from_date, self.to_date, self.half_day, self.half_day_date)
-
-				self.total_late_days = 0
-				self.total_late_deduction = 0
 
 			if self.total_leave_days <= 0:
 				frappe.throw(_("The day(s) on which you are not applicable for leaves."))
 
 			if not is_lwp(self.leave_type):
-				self.leave_balance = get_leave_balance_on(self.employee, self.leave_type, self.from_date, self.to_date,
-					consider_all_leaves_in_the_allocation_period=True)
 				if self.status != "Rejected" and (self.leave_balance < self.total_leave_days or not self.leave_balance):
 					if frappe.db.get_value("Leave Type", self.leave_type, "allow_negative"):
 						frappe.msgprint(_("Note: There is not enough leave balance for Leave Type {0}")
@@ -253,6 +236,31 @@ class LeaveApplication(Document):
 					else:
 						frappe.throw(_("There is not enough leave balance for Leave Type {0}")
 							.format(self.leave_type))
+
+	def set_leave_details(self):
+		if not self.from_date or not self.to_date:
+			return
+
+		if self.late_deduction:
+			self.half_day = 0
+			self.half_day_date = None
+
+			self.total_late_days = get_number_of_late_days(self.employee, self.from_date, self.to_date)
+			self.total_late_deduction = get_number_of_leave_days(self.employee, self.leave_type,
+				self.from_date, self.to_date, self.half_day, self.half_day_date, late_deduction=1)
+
+			if not self.total_leave_days:
+				self.total_leave_days = self.total_late_deduction
+		else:
+			self.total_leave_days = get_number_of_leave_days(self.employee, self.leave_type,
+				self.from_date, self.to_date, self.half_day, self.half_day_date)
+
+			self.total_late_days = 0
+			self.total_late_deduction = 0
+
+		if not is_lwp(self.leave_type):
+			self.leave_balance = get_leave_balance_on(self.employee, self.leave_type, self.from_date, self.to_date,
+				consider_all_leaves_in_the_allocation_period=True)
 
 	def validate_leave_overlap(self):
 		if not self.name:
@@ -453,6 +461,7 @@ class LeaveApplication(Document):
 			))
 			create_leave_ledger_entry(self, args, submit)
 
+
 def get_allocation_expiry(employee, leave_type, to_date, from_date):
 	''' Returns expiry of carry forward allocation in leave ledger entry '''
 	expiry = frappe.get_all("Leave Ledger Entry",
@@ -497,14 +506,12 @@ def get_number_of_leave_days(employee, leave_type, from_date, to_date, half_day=
 
 @frappe.whitelist()
 def get_number_of_late_days(employee, from_date, to_date):
-	late_days = 0
-
 	late_days = frappe.db.sql("""
-		SELECT count(t1.name)
-		FROM `tabAttendance` as t1
-		WHERE t1.docstatus = 1
-			AND t1.status = 'Present'
-			AND t1.late_entry = 1
+		SELECT count(name)
+		FROM `tabAttendance`
+		WHERE docstatus = 1
+			AND status = 'Present'
+			AND late_entry = 1
 			AND ifnull(leave_application, '') = ''
 			AND employee = %(employee)s
 			AND attendance_date between %(from_date)s AND %(to_date)s
@@ -854,7 +861,7 @@ def get_approved_leaves_for_period(employee, leave_type, from_date, to_date):
 	if leave_type:
 		query += "and leave_type=%(leave_type)s"
 
-	leave_applications = frappe.db.sql(query,{
+	leave_applications = frappe.db.sql(query, {
 		"from_date": from_date,
 		"to_date": to_date,
 		"employee": employee,

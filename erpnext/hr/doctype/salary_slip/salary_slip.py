@@ -374,6 +374,7 @@ class SalarySlip(TransactionBase):
 			from `tabLeave Ledger Entry` lle
 			left join `tabLeave Type` type on type.name = lle.leave_type
 			where lle.docstatus = 1 and lle.is_late_deduction = 1
+				and lle.employee = %(employee)s
 				and lle.from_date <= %(end_dt)s and %(st_dt)s <= lle.to_date
 			group by lle.is_lwp
 		""", {"employee": self.employee, "st_dt": start_date, "end_dt": end_date}, as_dict=1)

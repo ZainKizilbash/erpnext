@@ -137,9 +137,11 @@ def execute(filters=None):
 			leave_fieldname = "leave_{0}".format(scrub(leave_details.name))
 			row.setdefault(leave_fieldname, 0)
 			row[leave_fieldname] += late_deduction_leave_count
+			row['total_late_deduction'] -= late_deduction_leave_count
 			row['total_deduction'] -= late_deduction_leave_count
 
 			if leave_details.is_lwp:
+				row['total_late_deduction'] += late_deduction_leave_count
 				row['total_deduction'] += late_deduction_leave_count
 				row['total_lwp'] += late_deduction_leave_count
 
