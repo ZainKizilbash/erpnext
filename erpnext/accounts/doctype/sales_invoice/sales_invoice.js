@@ -90,6 +90,8 @@ erpnext.accounts.SalesInvoiceController = erpnext.selling.SellingController.exte
 			this.show_stock_ledger();
 		}
 
+		me.add_update_customer_name_button();
+
 		this.add_view_gross_profit_button();
 
 		if (me.frm.doc.docstatus == 0) {
@@ -100,10 +102,6 @@ erpnext.accounts.SalesInvoiceController = erpnext.selling.SellingController.exte
 		}
 		if (me.frm.doc.docstatus == 1) {
 			me.add_update_price_list_button();
-		}
-
-		if (me.frm.doc.docstatus == 1) {
-			me.add_update_customer_name_button();
 		}
 
 		if (doc.docstatus == 1 && doc.outstanding_amount!=0

@@ -656,9 +656,11 @@ erpnext.selling.SellingController = erpnext.TransactionController.extend({
 
 	add_update_customer_name_button: function () {
 		let me = this;
-		me.frm.add_custom_button(__("Update Customer Name from Master"), function() {
-			me.update_customer_name_from_master();
-		}, __("Update"));
+		if (me.frm.doc.docstatus == 1 && me.frm.has_perm("submit")) {
+			me.frm.add_custom_button(__("Set Updated Customer Name"), function () {
+				return me.update_customer_name_from_master();
+			}, __("Update"));
+		}
 	},
 
 	update_customer_name_from_master: function () {
