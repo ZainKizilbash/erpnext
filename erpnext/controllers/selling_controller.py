@@ -592,3 +592,38 @@ class SellingController(StockController):
 			cost_rate = get_incoming_rate(args, raise_error_if_no_rate=False)
 
 		return cost_rate
+
+
+@frappe.whitelist()
+def update_customer_name_from_master(doctype, name):
+	from erpnext.accounts.party import get_party_name
+
+	if doctype not in ("Quotation", "Sales Order", "Delivery Note", "Sales Invoice"):
+		frappe.throw(_("DocType {0} not allowed").format(doctype))
+
+	doc = frappe.get_doc(doctype, name)
+
+	if doc.docstatus != 1:
+		frappe.throw(_("{0} {1} is not submitted").format(doctype, name))
+
+	doc.check_permission("submit")
+
+	doc._doc_before_save = frappe.get_doc(doc.as_dict())
+
+	if doc.doctype == "Quotation":
+		party_type = doc.party_type
+		party = doc.party_name
+	else:
+		party_type = "Customer"
+		party = doc.get("customer")
+
+	if party_type and party:
+		doc.customer_name = get_party_name(party_type, party)
+		doc.db_set("customer_name", doc.customer_name)
+
+	if doc.get("bill_to"):
+		doc.bill_to_name = get_party_name("Customer", doc.bill_to)
+		doc.db_set("bill_to_name", doc.bill_to_name)
+
+	doc.notify_update()
+	doc.save_version()

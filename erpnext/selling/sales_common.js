@@ -654,4 +654,30 @@ erpnext.selling.SellingController = erpnext.TransactionController.extend({
 		});
 	},
 
+	add_update_customer_name_button: function () {
+		let me = this;
+		me.frm.add_custom_button(__("Update Customer Name from Master"), function() {
+			me.update_customer_name_from_master();
+		}, __("Update"));
+	},
+
+	update_customer_name_from_master: function () {
+		let me = this;
+		if (me.frm.doc.__islocal) {
+			return;
+		}
+
+		return frappe.call({
+			method: "erpnext.controllers.selling_controller.update_customer_name_from_master",
+			args: {
+				doctype: me.frm.doc.doctype,
+				name: me.frm.doc.name,
+			},
+			callback: function (r) {
+				if (!r.exc) {
+					me.frm.reload_doc();
+				}
+			}
+		})
+	},
 });
