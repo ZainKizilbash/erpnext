@@ -625,5 +625,10 @@ def update_customer_name_from_master(doctype, name):
 		doc.bill_to_name = get_party_name("Customer", doc.bill_to)
 		doc.db_set("bill_to_name", doc.bill_to_name)
 
+	if doc.meta.has_field("title"):
+		doc.run_method("set_title")
+		if doc.get("title"):
+			doc.db_set("title", doc.get("title"))
+
 	doc.notify_update()
 	doc.save_version()
