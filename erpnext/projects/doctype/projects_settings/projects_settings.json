@@ -11,10 +11,11 @@
   "sublet_item_group",
   "sales_order_print_heading",
   "column_break_2",
+  "appointment_required",
+  "validate_ready_to_close",
   "ignore_workstation_time_overlap",
   "ignore_user_time_overlap",
-  "ignore_employee_time_overlap",
-  "appointment_required"
+  "ignore_employee_time_overlap"
  ],
  "fields": [
   {
@@ -82,10 +83,16 @@
    "fieldname": "appointment_required",
    "fieldtype": "Check",
    "label": "Appointment Required for Project"
+  },
+  {
+   "default": "0",
+   "fieldname": "validate_ready_to_close",
+   "fieldtype": "Check",
+   "label": "Validate Project Must be Ready To Close for Billing"
   }
  ],
  "issingle": 1,
- "modified": "2023-04-07 18:07:05.121064",
+ "modified": "2023-04-10 14:27:55.985337",
  "modified_by": "Administrator",
  "module": "Projects",
  "name": "Projects Settings",

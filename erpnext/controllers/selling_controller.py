@@ -538,6 +538,13 @@ class SellingController(StockController):
 		for project in projects:
 			doc = frappe.get_doc("Project", project)
 			doc.validate_project_status_for_transaction(self)
+
+			if self.doctype in ("Delivery Note", "Sales Invoice") and self.docstatus == 1:
+				doc.validate_vehicle_not_received()
+
+			if self.doctype == "Sales Invoice" and self.docstatus == 1:
+				doc.validate_ready_to_close()
+
 			doc.set_billing_and_delivery_status(update=True)
 			doc.set_sales_amount(update=True)
 			doc.set_gross_margin(update=True)
