@@ -930,18 +930,23 @@ class Project(StatusUpdater):
 
 		return sales_data
 
-	def get_sales_invoices(self):
+	def get_sales_invoices(self, exclude_indirect_invoice=False):
+		if exclude_indirect_invoice:
+			project_condition = "inv.project = %(project)s"
+		else:
+			project_condition = """inv.project = %(project)s or exists(
+				select item.name from `tabSales Invoice Item` item
+				where item.parent = inv.name and item.project = %(project)s)"""
+
 		return frappe.db.sql("""
 			select inv.name, inv.customer, inv.bill_to
 			from `tabSales Invoice` inv
-			where inv.docstatus = 1 and (inv.project = %(project)s or exists(
-				select item.name from `tabSales Invoice Item` item
-				where item.parent = inv.name and item.project = %(project)s))
+			where inv.docstatus = 1 and ({0})
 			order by posting_date, posting_time, creation
-		""", {'project': self.name}, as_dict=1)
+		""".format(project_condition), {'project': self.name}, as_dict=1)
 
 	def get_invoice_for_vehicle_gate_pass(self):
-		all_invoices = self.get_sales_invoices()
+		all_invoices = self.get_sales_invoices(exclude_indirect_invoice=True)
 		direct_invoices = [d for d in all_invoices if d.customer == d.bill_to == self.customer]
 
 		sales_invoice = None
