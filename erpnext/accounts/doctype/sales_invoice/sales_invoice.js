@@ -64,6 +64,8 @@ erpnext.accounts.SalesInvoiceController = class SalesInvoiceController extends e
 			this.show_stock_ledger();
 		}
 
+		me.add_update_customer_name_button();
+
 		this.add_view_gross_profit_button();
 
 		if (me.frm.doc.docstatus == 0) {

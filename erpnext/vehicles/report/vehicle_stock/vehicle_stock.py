@@ -282,12 +282,14 @@ class VehicleStockReport(object):
 
 			# Stock Status
 			if d.qty > 0:
-				if d.vehicle_booking_order and not d.open_stock:
+				if d.vehicle_booking_order:
 					d.status = "In Stock"
-					d.status_color = "#743ee2"
+					# if d.open_stock:
+					# 	d.status += " (Open)"
+					d.status_color = "purple" if d.open_stock else "#743ee2"
 				else:
 					d.status = "Open Stock"
-					d.status_color = "purple" if d.vehicle_booking_order else "blue"
+					d.status_color = "blue"
 
 				if d.has_delivery_return:
 					d.status += " (Returned)"

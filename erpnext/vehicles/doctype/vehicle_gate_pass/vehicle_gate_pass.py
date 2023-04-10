@@ -65,7 +65,7 @@ class VehicleGatePass(VehicleTransactionController):
 
 			if cstr(sales_invoice.project) != cstr(self.project):
 				frappe.throw(_("Repair Order does not match in {0}")
-					.format(frappe.get_desk_link("Project", self.project)))
+					.format(frappe.get_desk_link("Sales Invoice", sales_invoice.name)))
 
 			if self.docstatus == 1:
 				if sales_invoice.docstatus != 1:

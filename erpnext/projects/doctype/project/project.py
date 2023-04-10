@@ -431,6 +431,13 @@ class Project(StatusUpdater):
 				'status': self.status,
 			}, None)
 
+	def validate_ready_to_close(self):
+		if not frappe.get_cached_value("Projects Settings", None, "validate_ready_to_close"):
+			return
+
+		if not self.ready_to_close:
+			frappe.throw(_("{0} is not ready to close").format(frappe.get_desk_link(self.doctype, self.name)))
+
 	def reopen_status(self, update=True):
 		self.ready_to_close = 0
 		self.ready_to_close_dt = None
@@ -929,18 +936,23 @@ class Project(StatusUpdater):
 
 		return sales_data
 
-	def get_sales_invoices(self):
+	def get_sales_invoices(self, exclude_indirect_invoice=False):
+		if exclude_indirect_invoice:
+			project_condition = "inv.project = %(project)s"
+		else:
+			project_condition = """inv.project = %(project)s or exists(
+				select item.name from `tabSales Invoice Item` item
+				where item.parent = inv.name and item.project = %(project)s)"""
+
 		return frappe.db.sql("""
 			select inv.name, inv.customer, inv.bill_to
 			from `tabSales Invoice` inv
-			where inv.docstatus = 1 and (inv.project = %(project)s or exists(
-				select item.name from `tabSales Invoice Item` item
-				where item.parent = inv.name and item.project = %(project)s))
+			where inv.docstatus = 1 and ({0})
 			order by posting_date, posting_time, creation
-		""", {'project': self.name}, as_dict=1)
+		""".format(project_condition), {'project': self.name}, as_dict=1)
 
 	def get_invoice_for_vehicle_gate_pass(self):
-		all_invoices = self.get_sales_invoices()
+		all_invoices = self.get_sales_invoices(exclude_indirect_invoice=True)
 		direct_invoices = [d for d in all_invoices if d.customer == d.bill_to == self.customer]
 
 		sales_invoice = None
@@ -1017,6 +1029,11 @@ class Project(StatusUpdater):
 				"vehicle_status": self.vehicle_status,
 				"project_date": self.project_date
 			}, update_modified=update_modified)
+
+	def validate_vehicle_not_received(self):
+		if self.get("vehicle_status") == "Not Received":
+			frappe.throw(_("Vehicle has not been received against {0}").format(
+				frappe.get_desk_link(self.doctype, self.name)))
 
 	def set_project_date(self):
 		self.project_date = getdate(
@@ -1957,6 +1974,8 @@ def make_sales_invoice(project_name, target_doc=None, depreciation_type=None, cl
 	claim_billing = cint(claim_billing)
 
 	project = frappe.get_doc("Project", project_name)
+	project.validate_vehicle_not_received()
+	project.validate_ready_to_close()
 	project_details = get_project_details(project, "Sales Invoice")
 
 	# Make Sales Invoice Target Document
@@ -2007,6 +2026,8 @@ def get_delivery_note(project_name):
 	from erpnext.selling.doctype.sales_order.sales_order import make_delivery_note
 
 	project = frappe.get_doc("Project", project_name)
+	project.validate_vehicle_not_received()
+
 	project_details = get_project_details(project, "Delivery Note")
 
 	# Create Sales Invoice
@@ -2130,6 +2151,8 @@ def get_vehicle_service_receipt(project):
 def get_vehicle_gate_pass(project, sales_invoice=None):
 	doc = frappe.get_doc("Project", project)
 	check_if_doc_exists("Vehicle Gate Pass", doc.name, {'docstatus': 0})
+	doc.validate_ready_to_close()
+
 	target = frappe.new_doc("Vehicle Gate Pass")
 	set_vehicle_transaction_values(doc, target)
 

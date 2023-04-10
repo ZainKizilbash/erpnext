@@ -516,8 +516,11 @@ class VehicleTransactionController(StockController):
 			project.validate_project_status_for_transaction(self)
 
 			# mark ready to close if not already marked
-			if self.doctype == "Vehicle Gate Pass" and self.docstatus == 1 and not project.ready_to_close:
-				project.set_ready_to_close(update=True)
+			if self.doctype == "Vehicle Gate Pass" and self.docstatus == 1:
+				project.validate_ready_to_close()
+
+				if not project.ready_to_close:
+					project.set_ready_to_close(update=True)
 
 			project.set_vehicle_status(update=True)
 			project.set_status(update=True)
