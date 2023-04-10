@@ -172,14 +172,14 @@
   {
    "fieldname": "state",
    "fieldtype": "Data",
-   "label": "State",
+   "label": "Province/State",
    "oldfieldname": "state",
    "oldfieldtype": "Select"
   },
   {
    "fieldname": "pin",
    "fieldtype": "Data",
-   "label": "PIN",
+   "label": "Postal Code",
    "oldfieldname": "pin",
    "oldfieldtype": "Int"
   },
@@ -238,7 +238,7 @@
  "idx": 1,
  "is_tree": 1,
  "links": [],
- "modified": "2023-01-12 13:27:55.208355",
+ "modified": "2023-04-11 01:02:55.396676",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Warehouse",

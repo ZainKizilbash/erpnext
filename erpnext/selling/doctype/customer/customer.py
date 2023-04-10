@@ -580,7 +580,7 @@ def make_address(args, is_primary_address=1):
 
 	address = frappe.get_doc({
 		'doctype': 'Address',
-		'address_title': args.get('name'),
+		'address_title': args.get('customer_name') or args.get('name'),
 		'address_line1': args.get('address_line1'),
 		'address_line2': args.get('address_line2'),
 		'city': args.get('city'),
