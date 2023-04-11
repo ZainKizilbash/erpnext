@@ -441,8 +441,11 @@ def _get_delivery_notes_to_be_billed(doctype="Delivery Note", txt="", searchfiel
 	select_fields = ", ".join(["`tabDelivery Note`.{0}".format(f) for f in fields])
 	limit = "limit {0}, {1}".format(start, page_len) if page_len else ""
 
+	if not filters:
+		filters = {}
+
 	claim_customer_cond = ""
-	if cint(filters.get('claim_billing')):
+	if isinstance(filters, dict) and cint(filters.get('claim_billing')):
 		if filters.get('customer'):
 			claim_customer_op = "dni.claim_customer = {0}".format(frappe.db.escape(filters.get('customer')))
 			filters.pop("customer")
