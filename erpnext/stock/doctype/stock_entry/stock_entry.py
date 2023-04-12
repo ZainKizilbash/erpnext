@@ -279,6 +279,12 @@ class StockEntry(StockController):
 			project.set_status(update=True)
 			project.notify_update()
 
+	def set_missing_values(self, for_validate=False):
+		for d in self.get("items"):
+			self.set_missing_item_values(d)
+
+		self.set_transfer_qty()
+
 	def validate_item(self):
 		from erpnext.stock.doctype.item.item import validate_end_of_life
 
