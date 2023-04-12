@@ -24,7 +24,7 @@ def send_message(subject="Website Query", message="", sender="", phone_no="", fu
 				email_id=sender,
 				lead_name=full_name or sender.split('@')[0].title(),
 				company_name=organization,
-				phone=phone_no,
+				mobile_no=phone_no,
 			)).insert(ignore_permissions=True)
 
 	opportunity = frappe.get_doc(dict(
