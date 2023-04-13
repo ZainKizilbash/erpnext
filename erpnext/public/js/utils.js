@@ -325,6 +325,10 @@ $.extend(erpnext.utils, {
 	},
 
 	format_ntn: function(frm, fieldname) {
+		if (frappe.sys_defaults.country != "Pakistan") {
+			return;
+		}
+
 		let value = frm.doc[fieldname];
 		if (value) {
 			value = erpnext.utils.get_formatted_ntn(value);
@@ -349,6 +353,10 @@ $.extend(erpnext.utils, {
 	},
 
 	format_cnic: function(frm, fieldname) {
+		if (frappe.sys_defaults.country != "Pakistan") {
+			return;
+		}
+
 		let value = frm.doc[fieldname];
 		if (value) {
 			value = erpnext.utils.get_formatted_cnic(value);
@@ -379,6 +387,10 @@ $.extend(erpnext.utils, {
 	},
 
 	format_strn: function(frm, fieldname) {
+		if (frappe.sys_defaults.country != "Pakistan") {
+			return;
+		}
+
 		let value = frm.doc[fieldname];
 		if (value) {
 			value = erpnext.utils.get_formatted_strn(value);
@@ -405,6 +417,10 @@ $.extend(erpnext.utils, {
 	},
 
 	format_mobile_pakistan: function (frm, fieldname) {
+		if (frappe.sys_defaults.country != "Pakistan") {
+			return;
+		}
+
 		let value = frm.doc[fieldname];
 		if (value) {
 			value = erpnext.utils.get_formatted_mobile_pakistan(value);
@@ -414,6 +430,10 @@ $.extend(erpnext.utils, {
 	},
 
 	format_mobile_pakistan_in_contact: function (frm) {
+		if (frappe.sys_defaults.country != "Pakistan") {
+			return;
+		}
+
 		$.each(frm.doc.phone_nos || [], function (i, d) {
 			if (d.is_primary_mobile_no) {
 				d.phone = erpnext.utils.get_formatted_mobile_pakistan(d.phone);
