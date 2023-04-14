@@ -938,7 +938,7 @@ def make_delivery_note(source_name, target_doc=None, warehouse=None, skip_item_m
 	if not skip_item_mapping:
 		mapper["Sales Order Item"] = get_item_mapper_for_delivery(allow_duplicate=allow_duplicate)
 
-	frappe.utils.call_hook_method("update_delivery_note_from_sales_order_mapper", mapper)
+	frappe.utils.call_hook_method("update_delivery_note_from_sales_order_mapper", mapper, "Delivery Note")
 
 	target_doc = get_mapped_doc("Sales Order", source_name, mapper, target_doc, set_missing_values)
 
@@ -1131,11 +1131,14 @@ def make_packing_slip(source_name, target_doc=None, warehouse=None):
 			"field_map": {
 				"name": "sales_order_item",
 				"parent": "sales_order",
+				"warehouse": "source_warehouse",
 			},
 			"postprocess": update_item,
 			"condition": item_condition,
 		}
 	}
+
+	frappe.utils.call_hook_method("update_packing_slip_from_sales_order_mapper", mapper, "Packing Slip")
 
 	target_doc = get_mapped_doc("Sales Order", source_name, mapper, target_doc, set_missing_values)
 
@@ -1198,7 +1201,7 @@ def make_sales_invoice(source_name, target_doc=None, ignore_permissions=False,
 	if only_items:
 		mapping = {dt: dt_mapping for dt, dt_mapping in mapping.items() if dt == "Sales Order Item"}
 
-	frappe.utils.call_hook_method("update_sales_invoice_from_sales_order_mapper", mapping)
+	frappe.utils.call_hook_method("update_sales_invoice_from_sales_order_mapper", mapping, "Sales Invoice")
 
 	doclist = get_mapped_doc("Sales Order", source_name, mapping, target_doc,
 		postprocess=postprocess if not skip_postprocess else None,
