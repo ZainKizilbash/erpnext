@@ -1116,6 +1116,9 @@ def make_delivery_note(source_name, target_doc=None):
 	so_item_mapper = get_item_mapper_for_delivery(allow_duplicate=True)
 	packing_slip_item_mapper = get_packing_slip_item_mapper("Delivery Note Item")
 
+	frappe.utils.call_hook_method("update_delivery_note_from_packing_slip_mapper", so_item_mapper, "Sales Order Item")
+	frappe.utils.call_hook_method("update_delivery_note_from_packing_slip_mapper", packing_slip_item_mapper, "Packing Slip Item")
+
 	# Map Packing Slip Items
 	for ps_item in packing_slip.get("items"):
 		if not mapper_item_condition(ps_item, target_doc):
