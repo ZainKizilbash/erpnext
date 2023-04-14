@@ -667,6 +667,10 @@ def validate_party_frozen_disabled(party_type, party_name):
 
 def validate_ntn_cnic_strn(ntn=None, cnic=None, strn=None):
 	import re
+
+	if frappe.db.get_default("country") != 'Pakistan':
+		return
+
 	cnic_regex = re.compile(r'^.....-.......-.$')
 	ntn_regex = re.compile(r'^.......-.$')
 	strn_regex = re.compile(r'^..-..-....-...-..$')
@@ -697,6 +701,11 @@ def validate_cnic_in_contact(doc, method):
 
 
 def validate_mobile_pakistan(mobile_no, throw=True):
+	import re
+
+	if frappe.db.get_default("country") != 'Pakistan':
+		return
+
 	if not mobile_no:
 		return
 
@@ -704,7 +713,6 @@ def validate_mobile_pakistan(mobile_no, throw=True):
 	if mobile_no[:1] == "+" or mobile_no[:2] == "00":
 		return
 
-	import re
 	mobile_regex = re.compile(r'^03\d\d-\d\d\d\d\d\d\d$')
 
 	if not mobile_regex.match(mobile_no):

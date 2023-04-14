@@ -6,18 +6,24 @@ import frappe
 
 
 @frappe.whitelist(allow_guest=True)
-def send_message(subject="Website Query", message="", sender="", phone_no="", full_name="", organization=""):
+def send_message(subject="Website Query", message="", sender="", phone_no="", mobile_no="", full_name="", organization=""):
 	from frappe.www.contact import send_message as website_send_message
 	lead = customer = None
 
 	website_send_message(subject, message, sender)
 
-	customer = frappe.db.sql("""select distinct dl.link_name from `tabDynamic Link` dl
-		left join `tabContact` c on dl.parent=c.name where dl.link_doctype='Customer'
-		and c.email_id = %s""", sender)
+	customer = frappe.db.sql("""
+		select distinct dl.link_name
+		from `tabDynamic Link` dl
+		left join `tabContact` c on dl.parent=c.name
+		where dl.link_doctype='Customer' and c.email_id = %s
+	""", sender)
+
+	if customer:
+		customer = customer[0][0]
 
 	if not customer:
-		lead = frappe.db.get_value('Lead', dict(email_id=sender))
+		lead = frappe.db.get_value('Lead', {"email_id": sender})
 		if not lead:
 			new_lead = frappe.get_doc(dict(
 				doctype='Lead',
@@ -25,7 +31,29 @@ def send_message(subject="Website Query", message="", sender="", phone_no="", fu
 				lead_name=full_name or sender.split('@')[0].title(),
 				company_name=organization,
 				phone=phone_no,
+				mobile_no=mobile_no,
 			)).insert(ignore_permissions=True)
+		else:
+			old_lead = frappe.get_doc("Lead", lead)
+			old_lead_changed = False
+			if full_name:
+				old_lead.lead_name = full_name or sender.split('@')[0].title()
+				old_lead_changed = True
+			if organization:
+				old_lead.company_name = organization
+				old_lead_changed = True
+			if phone_no:
+				old_lead.phone = phone_no
+				old_lead_changed = True
+
+			# Set current number as primary and set old as secondary
+			if mobile_no and old_lead.mobile_no and old_lead.mobile_no != mobile_no:
+				old_lead.mobile_no_2 = old_lead.mobile_no
+				old_lead.mobile_no = mobile_no
+				old_lead_changed = True
+
+			if old_lead_changed:
+				old_lead.save(ignore_permissions=True)
 
 	opportunity = frappe.get_doc(dict(
 		doctype='Opportunity',
@@ -36,7 +64,7 @@ def send_message(subject="Website Query", message="", sender="", phone_no="", fu
 	))
 
 	if customer:
-		opportunity.party_name = customer[0][0]
+		opportunity.party_name = customer
 	elif lead:
 		opportunity.party_name = lead
 	else:
@@ -50,8 +78,11 @@ def send_message(subject="Website Query", message="", sender="", phone_no="", fu
 		"content": message,
 		"sender": sender,
 		"sent_or_received": "Received",
-		'reference_doctype': 'Opportunity',
-		'reference_name': opportunity.name
+		"reference_doctype": 'Opportunity',
+		"reference_name": opportunity.name,
+		"timeline_links": [
+			{"link_doctype": opportunity.opportunity_from, "link_name": opportunity.party_name}
+		]
 	})
 	comm.insert(ignore_permissions=True)
 
