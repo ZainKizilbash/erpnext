@@ -3,10 +3,11 @@
 
 
 import frappe
+import json
 
 
 @frappe.whitelist(allow_guest=True)
-def send_message(subject="Website Query", message="", sender="", phone_no="", mobile_no="", full_name="", organization=""):
+def send_message(subject="Website Query", message="", sender="", phone_no="", mobile_no="", full_name="", organization="", opportunity_args=None):
 	from frappe.www.contact import send_message as website_send_message
 	lead = customer = None
 
@@ -60,8 +61,14 @@ def send_message(subject="Website Query", message="", sender="", phone_no="", mo
 		opportunity_from='Customer' if customer else 'Lead',
 		status='Open',
 		title=subject,
-		contact_email=sender,
+		contact_email=sender
 	))
+
+	opportunity_args = json.loads(opportunity_args) if opportunity_args else {}
+
+	for k, v in opportunity_args.items():
+		if opportunity.meta.has_field(k):
+			opportunity.set(k, v)
 
 	if customer:
 		opportunity.party_name = customer
