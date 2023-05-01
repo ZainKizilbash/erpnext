@@ -668,7 +668,17 @@ def auto_mark_opportunity_as_lost():
 
 	for opportunity in opportunities:
 		doc = frappe.get_doc("Opportunity", opportunity.get("name"))
-		doc.set_is_lost(True, lost_reasons_list=lost_reasons_list)
+		try:
+			doc.set_is_lost(True, lost_reasons_list=lost_reasons_list)
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			traceback = frappe.get_traceback()
+			frappe.log_error(
+				title=_("Error: auto_mark_opportunity_as_lost for Opportunity: {}").format(doc.name),
+				message=traceback,
+			)
+			frappe.db.commit()
 
 
 @frappe.whitelist()
