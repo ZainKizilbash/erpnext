@@ -11,7 +11,7 @@ def send_message(subject="Website Query", message="", sender="", phone_no="", mo
 	from frappe.www.contact import send_message as website_send_message
 	lead = customer = None
 
-	website_send_message(subject, message, sender)
+	website_send_message(sender=sender, subject=subject, message=message)
 
 	customer = frappe.db.sql("""
 		select distinct dl.link_name
