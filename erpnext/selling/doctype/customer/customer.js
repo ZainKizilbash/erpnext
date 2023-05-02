@@ -86,9 +86,9 @@ frappe.ui.form.on("Customer", {
 					"address_name": frm.doc.customer_primary_address
 				},
 				callback: function(r) {
-					$.each(r.message || {}, (k, v) => {
-						frm.set_value(k, v);
-					})
+					if (r.message) {
+						frm.set_value(r.message);
+					}
 				}
 			});
 		}
@@ -102,9 +102,9 @@ frappe.ui.form.on("Customer", {
 					"contact_name": frm.doc.customer_primary_contact
 				},
 				callback: function(r) {
-					$.each(r.message || {}, (k, v) => {
-						frm.set_value(k, v);
-					})
+					if (r.message) {
+						frm.set_value(r.message);
+					}
 				}
 			});
 		}
