@@ -417,7 +417,7 @@ def has_website_permission(doc, ptype, user, verbose=False):
 
 def update_issue(contact, method):
 	"""Called when Contact is deleted"""
-	frappe.db.sql("""UPDATE `tabIssue` set contact='' where contact=%s""", contact.name)
+	frappe.db.sql("""UPDATE `tabIssue` set contact_person = '' where contact_person = %s""", contact.name)
 
 
 def get_holidays(holiday_list_name):
