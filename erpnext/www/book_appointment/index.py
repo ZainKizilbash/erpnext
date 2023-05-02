@@ -108,7 +108,7 @@ def filter_timeslots(date, timeslots):
 
 def convert_to_guest_timezone(guest_tz, datetimeobject):
 	guest_tz = pytz.timezone(guest_tz)
-	local_timezone = pytz.timezone(frappe.utils.get_time_zone())
+	local_timezone = pytz.timezone(frappe.utils.get_system_timezone())
 	datetimeobject = local_timezone.localize(datetimeobject)
 	datetimeobject = datetimeobject.astimezone(guest_tz)
 	return datetimeobject
@@ -116,7 +116,7 @@ def convert_to_guest_timezone(guest_tz, datetimeobject):
 def convert_to_system_timezone(guest_tz,datetimeobject):
 	guest_tz = pytz.timezone(guest_tz)
 	datetimeobject = guest_tz.localize(datetimeobject)
-	system_tz = pytz.timezone(frappe.utils.get_time_zone())
+	system_tz = pytz.timezone(frappe.utils.get_system_timezone())
 	datetimeobject = datetimeobject.astimezone(system_tz)
 	return datetimeobject
 
