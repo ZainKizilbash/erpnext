@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 import frappe
 from frappe import _
 from frappe.utils import getdate, today, add_days, cint, combine_datetime
+from erpnext.hr.doctype.holiday_list.holiday_list import get_default_holiday_list
 
 
 def execute(filters=None):
@@ -33,8 +34,9 @@ class VehicleServiceFeedback:
 
 		if self.filters.date_type == "Feedback Due Date":
 			self.filters.date_field = "vgp.posting_date"
-			self.filters.from_date = add_days(self.filters.from_date, -1 * self.filters.feedback_valid_after_service_days)
-			self.filters.to_date = add_days(self.filters.to_date, -1 * self.filters.feedback_valid_after_service_days)
+			self.filters.from_date = self.subtract_working_days_from_date(self.filters.from_date, self.filters.feedback_valid_after_service_days)
+			self.filters.to_date = self.subtract_working_days_from_date(self.filters.to_date, self.filters.feedback_valid_after_service_days)
+
 		elif self.filters.date_type == "Feedback Date":
 			self.filters.date_field = "cf.feedback_date"
 		else:
@@ -58,6 +60,23 @@ class VehicleServiceFeedback:
 				AND {conditions}
 			ORDER BY {date_field}, vgp.creation
 		""".format(conditions=conditions, date_field=self.filters.date_field), self.filters, as_dict=1)
+
+	def subtract_working_days_from_date(self, date, no_of_working_days_to_subtract):
+		holiday_list_name = get_default_holiday_list(self.filters.company) if self.filters.company else None
+
+		if holiday_list_name:
+			holiday_dates = frappe.db.sql_list("""
+				select holiday_date from `tabHoliday` where parent=%s and holiday_date<=%s
+			""", [holiday_list_name, date])
+
+			if holiday_dates:
+				while no_of_working_days_to_subtract:
+					date = add_days(date, -1)
+
+					if date not in holiday_dates:
+						no_of_working_days_to_subtract -= 1
+
+		return date
 
 	def process_data(self):
 		for d in self.data:
