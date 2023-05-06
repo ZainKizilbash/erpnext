@@ -345,7 +345,7 @@
    "fieldname": "po_no",
    "fieldtype": "Data",
    "in_standard_filter": 1,
-   "label": "Customer's Purchase Order",
+   "label": "Customer's Purchase Order No",
    "oldfieldname": "po_no",
    "oldfieldtype": "Data",
    "width": "100px"
@@ -1794,7 +1794,7 @@
  "is_calendar_and_gantt": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-03-02 17:41:18.563320",
+ "modified": "2023-05-06 15:03:24.821845",
  "modified_by": "Administrator",
  "module": "Selling",
  "name": "Sales Order",
