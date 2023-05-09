@@ -564,6 +564,24 @@ def change_pdi_requested(vehicle_booking_order, pdi_requested):
 
 
 @frappe.whitelist()
+def change_vehicle_transfer_required(vehicle_booking_order, vehicle_transfer_required):
+	vbo_doc = get_document_for_update(vehicle_booking_order)
+	can_transfer_vehicle(vbo_doc, throw=True)
+
+	vehicle_transfer_required = cint(vehicle_transfer_required)
+
+	transfer_enabled_disabled = _("Enabled" if vehicle_transfer_required else "Disabled")
+	if vehicle_transfer_required == cint(vbo_doc.vehicle_transfer_required):
+		frappe.throw(_("Vehicle Transfer is already {0}").format(transfer_enabled_disabled))
+
+	vbo_doc.vehicle_transfer_required = vehicle_transfer_required
+	vbo_doc.set_transfer_status()
+	save_document_for_update(vbo_doc)
+
+	frappe.msgprint(_("Vehicle Transfer {0}").format(transfer_enabled_disabled), indicator='green', alert=True)
+
+
+@frappe.whitelist()
 def change_cancellation(vehicle_booking_order, cancelled):
 	vbo_doc = get_document_for_update(vehicle_booking_order)
 	can_change_cancellation(vbo_doc, throw=True)

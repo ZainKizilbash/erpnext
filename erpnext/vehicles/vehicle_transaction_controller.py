@@ -483,6 +483,17 @@ class VehicleTransactionController(StockController):
 			vbo.set_transfer_customer(update=True)
 			vbo.notify_update()
 
+	def update_vehicle_booking_order_transfer(self, doc=None):
+		if not doc:
+			doc = self
+
+		vehicle_booking_order = self.get_vehicle_booking_order(doc)
+		if vehicle_booking_order:
+			vbo = frappe.get_doc("Vehicle Booking Order", vehicle_booking_order)
+			vbo.set_transfer_status(update=True)
+			vbo.set_status(update=True)
+			vbo.notify_update()
+
 	def update_vehicle_invoice(self, doc=None, update_vehicle=True):
 		if not doc:
 			doc = self
