@@ -245,7 +245,7 @@ erpnext.vehicles.VehicleBookingOrder = erpnext.vehicles.VehicleBookingController
 			}
 
 			if (this.can_change('vehicle_transfer')) {
-				this.frm.add_custom_button(__("Change Vehicle Transfer Required"), () => this.change_vehicle_transfer_required(),
+				this.frm.add_custom_button(__("Change Transfer Required"), () => this.change_vehicle_transfer_required(),
 					__("Change"));
 			}
 
@@ -359,6 +359,15 @@ erpnext.vehicles.VehicleBookingOrder = erpnext.vehicles.VehicleBookingController
 			invoice_status_color = "green";
 		}
 
+		var transfer_status_color;
+		if (me.frm.doc.transfer_status == "Not Applicable") {
+			transfer_status_color = "grey";
+		} else if (me.frm.doc.transfer_status == "To Transfer") {
+			transfer_status_color = "yellow";
+		} else if (me.frm.doc.transfer_status == "Transferred") {
+			transfer_status_color = "green";
+		}
+
 		var registration_status_color;
 		if (me.frm.doc.registration_status == "Not Ordered") {
 			registration_status_color = "grey";
@@ -405,6 +414,10 @@ erpnext.vehicles.VehicleBookingOrder = erpnext.vehicles.VehicleBookingController
 				contents: __('Invoice Status: {0}{1}', [me.frm.doc.invoice_status,
 					me.frm.doc.invoice_status == "Issued" && me.frm.doc.invoice_issued_for ? " For " + me.frm.doc.invoice_issued_for : ""]),
 				indicator: invoice_status_color
+			},
+			{
+				contents: __('Transfer Status: {0}', [me.frm.doc.transfer_status]),
+				indicator: transfer_status_color
 			},
 			{
 				contents: __('Registration Status: {0}', [me.frm.doc.registration_status]),
