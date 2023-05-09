@@ -45,6 +45,7 @@ class VehicleBookingOrder(VehicleBookingController):
 		self.set_registration_status()
 		self.set_pdi_status()
 		self.set_transfer_customer()
+		self.set_transfer_status()
 		self.set_status()
 
 	def before_submit(self):
@@ -512,6 +513,20 @@ class VehicleBookingOrder(VehicleBookingController):
 				"transfer_lessee_name": self.transfer_lessee_name,
 			})
 
+	def set_transfer_status(self, update=False):
+		if self.vehicle_transfer_required:
+			if frappe.db.exists("Vehicle Transfer Letter", {"vehicle_booking_order": self.name, "docstatus": 1}):
+				self.transfer_status = "Transferred"
+			else:
+				self.transfer_status = "To Transfer"
+		else:
+			self.transfer_status = "Not Applicable"
+
+		if update:
+			self.db_set({
+				'transfer_status': self.transfer_status
+			})
+
 	def set_status(self, update=False, status=None, update_modified=True):
 		if self.is_new():
 			if self.get('amended_from'):
@@ -553,6 +568,9 @@ class VehicleBookingOrder(VehicleBookingController):
 
 			elif self.invoice_status != "Delivered":
 				self.status = "To Deliver Invoice"
+
+			elif self.transfer_status == "To Transfer":
+				self.status = "To Transfer"
 
 			else:
 				self.status = "Completed"

@@ -102,6 +102,7 @@
   "bill_date",
   "lr_no",
   "priority",
+  "vehicle_transfer_required",
   "delivery_overdue",
   "section_break_73",
   "vehicle_allocation",
@@ -134,6 +135,7 @@
   "column_break_71",
   "delivery_status",
   "invoice_status",
+  "transfer_status",
   "invoice_issued_for",
   "column_break_126",
   "registration_status",
@@ -533,7 +535,7 @@
    "in_standard_filter": 1,
    "label": "Status",
    "no_copy": 1,
-   "options": "Draft\nTo Receive Payment\nPayment Overdue\nTo Assign Allocation\nTo Deposit Payment\nTo Receive Vehicle\nTo Receive Invoice\nTo Deliver Vehicle\nTo Deliver Invoice\nCompleted\nCancelled Booking\nCancelled",
+   "options": "Draft\nTo Receive Payment\nPayment Overdue\nTo Assign Allocation\nTo Deposit Payment\nTo Receive Vehicle\nTo Receive Invoice\nTo Deliver Vehicle\nTo Deliver Invoice\nTo Transfer\nCompleted\nCancelled Booking\nCancelled",
    "read_only": 1,
    "reqd": 1,
    "search_index": 1
@@ -1173,12 +1175,30 @@
    "label": "Opportunity Item",
    "no_copy": 1,
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "vehicle_transfer_required",
+   "fieldtype": "Check",
+   "label": "Vehicle Transfer Required",
+   "permlevel": 2
+  },
+  {
+   "default": "Not Applicable",
+   "fieldname": "transfer_status",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Transfer Status",
+   "no_copy": 1,
+   "options": "Not Applicable\nTo Transfer\nTransferred",
+   "read_only": 1,
+   "reqd": 1
   }
  ],
  "icon": "fa fa-file-text",
  "image_field": "image",
  "is_submittable": 1,
- "modified": "2023-01-16 14:55:48.004963",
+ "modified": "2023-05-09 12:10:14.925907",
  "modified_by": "Administrator",
  "module": "Vehicles",
  "name": "Vehicle Booking Order",

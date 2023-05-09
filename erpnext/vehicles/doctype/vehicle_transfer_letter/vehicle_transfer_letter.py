@@ -26,10 +26,12 @@ class VehicleTransferLetter(VehicleTransactionController):
 
 	def on_submit(self):
 		self.update_vehicle_booking_order_transfer_customer()
+		self.update_vehicle_booking_order_transfer()
 		self.make_vehicle_log()
 
 	def on_cancel(self):
 		self.update_vehicle_booking_order_transfer_customer()
+		self.update_vehicle_booking_order_transfer()
 		self.cancel_vehicle_log()
 
 	def validate_same_owner(self):
