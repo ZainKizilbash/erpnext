@@ -1172,22 +1172,10 @@ class AccountsController(TransactionBase):
 				if group_item.amount_before_depreciation else group_item.depreciation_percentage
 
 	def group_items_by_item_tax_and_item_group(self):
-		grouped = OrderedDict()
-
-		for item in self.items:
-			group_data = grouped.setdefault(cstr(item.item_tax_template), frappe._dict({"items": []}))
-			group_data['items'].append(item)
-
+		grouped = self.group_items_by(key="item_tax_template")
 		for item_tax_template, group_data in grouped.items():
 			# group item groups in item tax template group
 			group_data.item_groups = self.group_items_by_item_group(group_data['items'])
-
-			# calculate group totals
-			for group_field, item_field in print_total_fields_from_items:
-				group_data[group_field] = sum([flt(d.get(item_field)) for d in group_data['items']])
-				group_data["base_" + group_field] = group_data[group_field] * self.conversion_rate
-
-			self.calculate_taxes_for_group(group_data)
 
 		# reset item index
 		item_idx = 1
@@ -1200,20 +1188,7 @@ class AccountsController(TransactionBase):
 		return grouped
 
 	def group_items_by_item_group(self, items):
-		grouped = OrderedDict()
-
-		for item in items:
-			item_group_print_heading = self.get_item_group_print_heading(item)
-			group_data = grouped.setdefault(item_group_print_heading, frappe._dict({"items": []}))
-			group_data['items'].append(item)
-
-		# calculate group totals
-		for item_group, group_data in grouped.items():
-			for group_field, item_field in print_total_fields_from_items:
-				group_data[group_field] = sum([flt(d.get(item_field)) for d in group_data['items']])
-				group_data["base_" + group_field] = group_data[group_field] * self.conversion_rate
-
-			self.calculate_taxes_for_group(group_data)
+		grouped = self.group_items_by(key=lambda row: self.get_item_group_print_heading(row), items=items)
 
 		# Sort by Item Group Order
 		out = OrderedDict()
@@ -1235,6 +1210,33 @@ class AccountsController(TransactionBase):
 				item_idx += 1
 
 		return out
+
+	def group_items_by(self, key, items=None):
+		grouped = OrderedDict()
+
+		if not items:
+			items = self.get("items") or []
+
+		for item in items:
+			if callable(key):
+				key_value = key(item)
+			elif isinstance(key, (tuple, list)):
+				key_value = (cstr(item.get(k)) for k in key)
+			else:
+				key_value = cstr(item.get(key))
+
+			group_data = grouped.setdefault(key_value, frappe._dict({"items": []}))
+			group_data['items'].append(item)
+
+		# calculate group totals
+		for key_value, group_data in grouped.items():
+			for group_field, item_field in print_total_fields_from_items:
+				group_data[group_field] = sum([flt(d.get(item_field)) for d in group_data['items']])
+				group_data["base_" + group_field] = group_data[group_field] * self.conversion_rate
+
+			self.calculate_taxes_for_group(group_data)
+
+		return grouped
 
 	def get_item_group_print_heading(self, item):
 		from erpnext.setup.doctype.item_group.item_group import get_item_group_print_heading
