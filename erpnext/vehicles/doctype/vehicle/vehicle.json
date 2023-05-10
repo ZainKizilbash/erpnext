@@ -83,8 +83,9 @@
   "is_booked",
   "cb_64",
   "reserved_customer",
-  "column_break_67",
   "reserved_customer_name",
+  "column_break_67",
+  "reserved_sales_person",
   "sec_customer_vehicle_selector",
   "customer_vehicle_selector_html",
   "more_info",
@@ -740,10 +741,18 @@
    "default": "<label class=\"control-label\">abcdef</label>",
    "fieldname": "maintenance_schedule_html",
    "fieldtype": "HTML"
+  },
+  {
+   "depends_on": "is_reserved",
+   "fieldname": "reserved_sales_person",
+   "fieldtype": "Link",
+   "label": "Reserved By Sales Person",
+   "no_copy": 1,
+   "options": "Sales Person"
   }
  ],
  "image_field": "image",
- "modified": "2022-12-12 16:21:19.770827",
+ "modified": "2023-05-10 12:33:55.131459",
  "modified_by": "Administrator",
  "module": "Vehicles",
  "name": "Vehicle",
