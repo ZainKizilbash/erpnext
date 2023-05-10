@@ -499,9 +499,9 @@ class Item(WebsiteGenerator):
 						.format(d.idx, frappe.bold(d.from_uom), frappe.bold(d.to_uom)), alert=True)
 					if abs(predefined_conv_factor) >= 1:
 						d.from_qty = 1
-						d.to_qty = flt(predefined_conv_factor, self.precision("to_qty", "uom_conversion_graph"))
+						d.to_qty = flt(predefined_conv_factor, self.precision("conversion_factor", "uoms"))
 					else:
-						d.from_qty = flt(1/flt(predefined_conv_factor), self.precision("from_qty", "uom_conversion_graph"))
+						d.from_qty = flt(1/flt(predefined_conv_factor), self.precision("conversion_factor", "uoms"))
 						d.to_qty = 1
 
 			if d.from_uom not in uoms:
