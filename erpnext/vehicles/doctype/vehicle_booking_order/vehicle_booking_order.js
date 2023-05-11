@@ -244,6 +244,11 @@ erpnext.vehicles.VehicleBookingOrder = class VehicleBookingOrder extends erpnext
 					__("Change"));
 			}
 
+			if (this.can_change('vehicle_transfer')) {
+				this.frm.add_custom_button(__("Change Transfer Required"), () => this.change_vehicle_transfer_required(),
+					__("Change"));
+			}
+
 			if (this.can_change('item')) {
 				this.frm.add_custom_button(__("Change Vehicle Item (Variant)"), () => this.change_item(),
 					__("Change"));
@@ -353,6 +358,15 @@ erpnext.vehicles.VehicleBookingOrder = class VehicleBookingOrder extends erpnext
 			invoice_status_color = "green";
 		}
 
+		var transfer_status_color;
+		if (me.frm.doc.transfer_status == "Not Applicable") {
+			transfer_status_color = "grey";
+		} else if (me.frm.doc.transfer_status == "To Transfer") {
+			transfer_status_color = "yellow";
+		} else if (me.frm.doc.transfer_status == "Transferred") {
+			transfer_status_color = "green";
+		}
+
 		var registration_status_color;
 		if (me.frm.doc.registration_status == "Not Ordered") {
 			registration_status_color = "light-gray";
@@ -399,6 +413,10 @@ erpnext.vehicles.VehicleBookingOrder = class VehicleBookingOrder extends erpnext
 				contents: __('Invoice Status: {0}{1}', [me.frm.doc.invoice_status,
 					me.frm.doc.invoice_status == "Issued" && me.frm.doc.invoice_issued_for ? " For " + me.frm.doc.invoice_issued_for : ""]),
 				indicator: invoice_status_color
+			},
+			{
+				contents: __('Transfer Status: {0}', [me.frm.doc.transfer_status]),
+				indicator: transfer_status_color
 			},
 			{
 				contents: __('Registration Status: {0}', [me.frm.doc.registration_status]),
@@ -1225,6 +1243,30 @@ erpnext.vehicles.VehicleBookingOrder = class VehicleBookingOrder extends erpnext
 				});
 			}
 		)
+	}
+
+	change_vehicle_transfer_required() {
+		var me = this;
+
+		var new_vehicle_transfer_required = cint(me.frm.doc.vehicle_transfer_required) ? 0 : 1;
+		var action_label = new_vehicle_transfer_required ? "Enable Vehicle Transfer" : "Disable Vehicle Transfer";
+
+		frappe.confirm(__(`Are you sure you want to <b>${__(action_label)}</b> for this booking order?`),
+			function() {
+				frappe.call({
+					method: "erpnext.vehicles.doctype.vehicle_booking_order.change_booking.change_vehicle_transfer_required",
+					args: {
+						vehicle_booking_order: me.frm.doc.name,
+						vehicle_transfer_required: new_vehicle_transfer_required
+					},
+					callback: function (r) {
+						if (!r.exc) {
+							me.frm.reload_doc();
+						}
+					}
+				});
+			}
+		);
 	}
 
 	change_cancellation() {

@@ -28,6 +28,7 @@
   "alt_uom",
   "alt_uom_size",
   "standard_rate",
+  "standard_working_hours",
   "opening_stock",
   "valuation_rate",
   "disabled",
@@ -1362,6 +1363,13 @@
    "fieldname": "is_packaging_material",
    "fieldtype": "Check",
    "label": "Is Packaging Material"
+  },
+  {
+   "depends_on": "eval:!doc.is_stock_item && !doc.is_fixed_asset",
+   "fieldname": "standard_working_hours",
+   "fieldtype": "Float",
+   "label": "Standard Working Hours",
+   "precision": "2"
   }
  ],
  "has_web_view": 1,
@@ -1369,7 +1377,7 @@
  "idx": 2,
  "image_field": "image",
  "links": [],
- "modified": "2023-05-06 14:46:55.530587",
+ "modified": "2023-05-04 15:49:57.027555",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Item",

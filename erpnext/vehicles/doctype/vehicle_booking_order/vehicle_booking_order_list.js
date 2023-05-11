@@ -15,6 +15,8 @@ frappe.listview_settings['Vehicle Booking Order'] = {
 			indicator = [__(doc.status), "red", `status,=,${doc.status}`];
 		} else if(doc.status === "Cancelled Booking") {
 			indicator = [__(doc.status), "grey", `status,=,${doc.status}`];
+		} else if(doc.status === "To Transfer") {
+			indicator = [__(doc.status), "yellow", `status,=,${doc.status}`];
 		}
 
 		if (cint(doc.delivery_overdue) && indicator && ["To Receive Vehicle", "To Deliver Vehicle"].includes(doc.status)) {

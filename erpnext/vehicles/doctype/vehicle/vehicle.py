@@ -511,6 +511,21 @@ def warn_vehicle_reserved(vehicle, customer=None):
 
 
 @frappe.whitelist()
+def warn_vehicle_reserved_by_sales_person(vehicle, sales_person=None, throw=False):
+	vehicle_details = frappe.db.get_value("Vehicle", vehicle,
+		['is_reserved', 'reserved_sales_person'], as_dict=1)
+
+	if not vehicle_details or not vehicle_details.is_reserved:
+		return
+
+	if vehicle_details.reserved_sales_person and vehicle_details.reserved_sales_person != sales_person:
+		frappe.msgprint(_("Vehicle {0} is reserved by Sales Person {1}").format(
+			frappe.get_desk_link("Vehicle", vehicle),
+			frappe.bold(vehicle_details.reserved_sales_person)
+		), title="Reserved", indicator="red" if throw else "orange", raise_exception=throw)
+
+
+@frappe.whitelist()
 def get_vehicle_image(vehicle=None, item_code=None):
 	image = None
 

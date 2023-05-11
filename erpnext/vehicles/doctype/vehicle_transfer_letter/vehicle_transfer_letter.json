@@ -16,6 +16,7 @@
   "column_break_8",
   "financer",
   "financer_name",
+  "sales_person",
   "column_break_11",
   "company",
   "posting_date",
@@ -433,12 +434,19 @@
    "fieldtype": "Link",
    "label": "Territory",
    "options": "Territory"
+  },
+  {
+   "fieldname": "sales_person",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Sales Person",
+   "options": "Sales Person"
   }
  ],
  "icon": "fa fa-file-text",
  "image_field": "image",
  "is_submittable": 1,
- "modified": "2022-10-22 16:09:32.676733",
+ "modified": "2023-05-10 14:04:25.283266",
  "modified_by": "Administrator",
  "module": "Vehicles",
  "name": "Vehicle Transfer Letter",
