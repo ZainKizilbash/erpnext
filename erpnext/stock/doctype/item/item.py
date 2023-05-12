@@ -101,9 +101,6 @@ class Item(WebsiteGenerator):
 		if self.standard_rate:
 			self.add_price()
 
-		if self.opening_stock:
-			self.set_opening_stock()
-
 	def validate(self):
 		super(Item, self).validate()
 
@@ -182,36 +179,6 @@ class Item(WebsiteGenerator):
 				"valid_from": None
 			})
 			item_price.insert()
-
-	def set_opening_stock(self):
-		'''set opening stock'''
-		from erpnext.stock.get_item_details import get_default_warehouse
-		from erpnext.stock.doctype.stock_entry.stock_entry_utils import make_stock_entry
-
-		if not self.is_stock_item or self.has_serial_no or self.has_batch_no:
-			return
-
-		company = erpnext.get_default_company()
-		default_warehouse_args = {}
-		if company:
-			default_warehouse_args['company'] = company
-
-		default_warehouse = get_default_warehouse(self, default_warehouse_args)
-
-		if not company and default_warehouse:
-			company = frappe.db.get_value("Warehouse", default_warehouse, "company")
-		if company and not default_warehouse:
-			default_warehouse = frappe.db.get_value('Warehouse', {'warehouse_name': _('Stores'), 'company': company})
-
-		if not company or not default_warehouse:
-			return
-
-		if not self.valuation_rate:
-			frappe.throw(_("Valuation Rate is mandatory if Opening Stock entered"))
-
-		stock_entry = make_stock_entry(item_code=self.name, target=default_warehouse, qty=self.opening_stock,
-			rate=self.valuation_rate, company=company)
-		stock_entry.add_comment("Comment", _("Opening Stock"))
 
 	def make_route(self):
 		if not self.route:

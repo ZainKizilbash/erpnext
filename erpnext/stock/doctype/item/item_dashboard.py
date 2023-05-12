@@ -15,32 +15,28 @@ def get_data():
 		},
 		'transactions': [
 			{
-				'label': _('Groups'),
-				'items': ['BOM', 'Product Bundle', 'Item Alternative']
-			},
-			{
-				'label': _('Pricing'),
-				'items': ['Item Price', 'Pricing Rule']
-			},
-			{
-				'label': _('Sell'),
+				'label': _('Sales'),
 				'items': ['Quotation', 'Sales Order', 'Delivery Note', 'Sales Invoice']
 			},
 			{
-				'label': _('Buy'),
+				'label': _('Purchase'),
 				'items': ['Purchase Order', 'Purchase Receipt', 'Purchase Invoice', 'Landed Cost Voucher']
 			},
 			{
 				'label': _('Stock'),
-				'items': ['Stock Entry', 'Stock Reconciliation']
-			},
-			{
-				'label': _('Service'),
-				'items': ['Project', 'Maintenance Visit', 'Warranty Claim']
+				'items': ['Stock Entry', 'Stock Reconciliation', 'Packing Slip']
 			},
 			{
 				'label': _('Request'),
-				'items': ['Material Request', 'Supplier Quotation', 'Request for Quotation']
+				'items': ['Material Request', 'Supplier Quotation', 'Request for Quotation', 'Project']
+			},
+			{
+				'label': _('Configuration'),
+				'items': ['BOM', 'Item Alternative', 'Item Default Rule']
+			},
+			{
+				'label': _('Pricing'),
+				'items': ['Item Price', 'Pricing Rule']
 			},
 			{
 				'label': _('Traceability'),
@@ -50,9 +46,5 @@ def get_data():
 				'label': _('Manufacture'),
 				'items': ['Production Plan', 'Work Order', 'Item Manufacturer']
 			},
-			{
-				'label': _('Configuration'),
-				'items': ['Item Default Rule']
-			}
 		]
 	}
