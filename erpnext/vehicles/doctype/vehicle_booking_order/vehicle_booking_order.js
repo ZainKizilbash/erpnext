@@ -416,10 +416,6 @@ erpnext.vehicles.VehicleBookingOrder = erpnext.vehicles.VehicleBookingController
 				indicator: invoice_status_color
 			},
 			{
-				contents: __('Transfer Status: {0}', [me.frm.doc.transfer_status]),
-				indicator: transfer_status_color
-			},
-			{
 				contents: __('Registration Status: {0}', [me.frm.doc.registration_status]),
 				indicator: registration_status_color
 			},
@@ -427,7 +423,32 @@ erpnext.vehicles.VehicleBookingOrder = erpnext.vehicles.VehicleBookingController
 				contents: __('PDI Status: {0}', [me.frm.doc.pdi_status]),
 				indicator: pdi_status_color
 			},
+			{
+				contents: __('Transfer Status: {0}', [me.frm.doc.transfer_status]),
+				indicator: transfer_status_color
+			},
 		]);
+
+		if (me.frm.doc.__onload && me.frm.doc.__onload.is_reserved) {
+			fulfilment_items.push({
+				contents: __('Reserved: Yes'),
+				indicator: "red"
+			});
+
+			if (me.frm.doc.__onload.reserved_sales_person) {
+				fulfilment_items.push({
+					contents: __('Reserved By: {0}', [me.frm.doc.__onload.reserved_sales_person]),
+					indicator: "red"
+				});
+			}
+
+			if (me.frm.doc.__onload.reserved_customer) {
+				fulfilment_items.push({
+					contents: __('Reserved For: {0}', [me.frm.doc.__onload.reserved_customer]),
+					indicator: "red"
+				});
+			}
+		}
 
 		me.add_indicator_section(__("Fulfilment"), fulfilment_items);
 
