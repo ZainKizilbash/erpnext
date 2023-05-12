@@ -1293,6 +1293,7 @@ def get_item_override_values(args, validate=False):
 	item_fields = {
 		'item_naming_by': 'Data',
 		'naming_series': 'Data',
+		'stock_uom': 'Data',
 		'is_stock_item': 'YesNo',
 		'is_fixed_asset': 'YesNo',
 		'has_serial_no': 'YesNo',

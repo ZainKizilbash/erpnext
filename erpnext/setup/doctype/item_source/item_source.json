@@ -10,6 +10,7 @@
  "field_order": [
   "item_source_name",
   "item_override_settings_section",
+  "stock_uom",
   "item_naming_by",
   "item_naming_series",
   "column_break_6",
@@ -137,11 +138,17 @@
    "fieldtype": "Select",
    "label": "Is Customer Provided Item",
    "options": "\nNo\nYes"
+  },
+  {
+   "fieldname": "stock_uom",
+   "fieldtype": "Link",
+   "label": "Default Unit of Measure",
+   "options": "UOM"
   }
  ],
  "icon": "fa fa-certificate",
  "links": [],
- "modified": "2023-03-01 14:20:00.838183",
+ "modified": "2023-05-12 16:19:50.791847",
  "modified_by": "Administrator",
  "module": "Setup",
  "name": "Item Source",

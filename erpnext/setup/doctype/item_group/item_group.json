@@ -19,6 +19,7 @@
   "abbreviation",
   "is_print_heading",
   "override_item_settings_section",
+  "stock_uom",
   "item_naming_by",
   "item_naming_series",
   "column_break_11",
@@ -284,6 +285,12 @@
    "fieldname": "abbreviation",
    "fieldtype": "Data",
    "label": "Abbreviation"
+  },
+  {
+   "fieldname": "stock_uom",
+   "fieldtype": "Link",
+   "label": "Default Unit of Measure",
+   "options": "UOM"
   }
  ],
  "icon": "fa fa-sitemap",
@@ -292,7 +299,7 @@
  "is_tree": 1,
  "links": [],
  "max_attachments": 3,
- "modified": "2023-03-01 14:55:07.308688",
+ "modified": "2023-05-12 16:19:11.197714",
  "modified_by": "Administrator",
  "module": "Setup",
  "name": "Item Group",
