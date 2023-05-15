@@ -15,6 +15,7 @@ class calculate_taxes_and_totals(object):
 	def __init__(self, doc):
 		self.doc = doc
 		self.calculate()
+		frappe.utils.call_hook_method("calculate_taxes_and_totals", self)
 
 	def calculate(self):
 		if not len(self.doc.get("items")):

@@ -306,8 +306,6 @@ class AccountsController(TransactionBase):
 			self.calculate_commission()
 			self.calculate_sales_team_contribution(self.get('base_net_total'))
 
-		frappe.utils.call_hook_method("calculate_taxes_and_totals", self)
-
 	def validate_date_with_fiscal_year(self):
 		if self.meta.get_field("fiscal_year"):
 			date_field = ""
