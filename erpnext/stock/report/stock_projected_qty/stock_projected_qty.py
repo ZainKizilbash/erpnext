@@ -93,7 +93,7 @@ def get_grouped_data(columns, data, filters, item_map):
 	for i in range(2):
 		group_label = filters.get("group_by_" + str(i + 1), "").replace("Group by ", "")
 
-		if not group_label or group_label == "Ungrouped":
+		if not group_label:
 			continue
 		elif group_label == "Item":
 			group_field = "item_code"
@@ -123,8 +123,7 @@ def get_grouped_data(columns, data, filters, item_map):
 
 
 def get_columns(filters, show_item_name=True):
-	item_col_width = 150 if filters.get('group_by_1', 'Ungrouped') != 'Ungrouped' or filters.get('group_by_2', 'Ungrouped') != 'Ungrouped'\
-		else 100
+	item_col_width = 150 if filters.get('group_by_1') or filters.get('group_by_2') else 100
 
 	columns = [
 		{"label": _("Item Code"), "fieldname": "item_code", "fieldtype": "Link", "options": "Item", "width": item_col_width if show_item_name else 250},

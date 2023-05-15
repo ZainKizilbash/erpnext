@@ -58,7 +58,7 @@ erpnext.stock.StockController = class StockController extends frappe.ui.form.Con
 					from_date: me.frm.doc.posting_date,
 					to_date: me.frm.doc.posting_date,
 					company: me.frm.doc.company,
-					group_by: "Ungrouped"
+					group_by: ""
 				};
 				frappe.set_route("query-report", "Stock Ledger");
 			}, __("View"));

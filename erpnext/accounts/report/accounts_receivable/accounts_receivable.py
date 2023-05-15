@@ -66,11 +66,11 @@ class ReceivablePayableReport(object):
 				"fieldname": "party",
 				"filter_fieldname": scrub(self.filters.get("party_type")),
 				"options": self.filters.get("party_type"),
-				"width": party_column_width if self.filters.get("group_by", "Ungrouped") == "Ungrouped" else 300
+				"width": party_column_width if not self.filters.get("group_by") else 300
 			}
 		]
 
-		if self.filters.get("group_by", "Ungrouped") != "Ungrouped":
+		if self.filters.get("group_by"):
 			columns = list(reversed(columns))
 
 		if self.party_naming_by == "Naming Series":
@@ -443,10 +443,10 @@ class ReceivablePayableReport(object):
 
 		group_by = [None]
 		group_by_labels = {}
-		if level1 and level1 != "Ungrouped":
+		if level1:
 			group_by.append(level1_fieldname)
 			group_by_labels[level1_fieldname] = level1
-		if level2 and level2 != "Ungrouped":
+		if level2:
 			group_by.append(level2_fieldname)
 			group_by_labels[level2_fieldname] = level2
 

@@ -137,15 +137,15 @@ frappe.query_reports["Purchase Details"] = {
 			fieldname: "group_by_1",
 			label: __("Group By Level 1"),
 			fieldtype: "Select",
-			options: ["Ungrouped", "Group by Supplier", "Group by Supplier Group", "Group by Transaction",
+			options: ["", "Group by Supplier", "Group by Supplier Group", "Group by Transaction",
 				"Group by Item", "Group by Item Group", "Group by Brand"],
-			default: "Ungrouped"
+			default: ""
 		},
 		{
 			fieldname: "group_by_2",
 			label: __("Group By Level 2"),
 			fieldtype: "Select",
-			options: ["Ungrouped", "Group by Supplier", "Group by Supplier Group", "Group by Transaction",
+			options: ["", "Group by Supplier", "Group by Supplier Group", "Group by Transaction",
 				"Group by Item", "Group by Item Group", "Group by Brand"],
 			default: "Group by Supplier"
 		},
@@ -153,7 +153,7 @@ frappe.query_reports["Purchase Details"] = {
 			fieldname: "group_by_3",
 			label: __("Group By Level 3"),
 			fieldtype: "Select",
-			options: ["Ungrouped", "Group by Supplier", "Group by Supplier Group", "Group by Transaction",
+			options: ["", "Group by Supplier", "Group by Supplier Group", "Group by Transaction",
 				"Group by Item", "Group by Item Group", "Group by Brand"],
 			default: "Group by Transaction"
 		},

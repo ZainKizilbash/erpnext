@@ -71,7 +71,7 @@ def get_grouped_data(columns, data, filters):
 	for i in range(2):
 		group_label = filters.get("group_by_" + str(i + 1), "").replace("Group by ", "")
 
-		if not group_label or group_label == "Ungrouped":
+		if not group_label:
 			continue
 		else:
 			group_field = scrub(group_label)

@@ -145,7 +145,7 @@ class VehicleAllocationRegisterReport(object):
 		for i in range(3):
 			group_label = self.filters.get("group_by_" + str(i + 1), "").replace("Group by ", "")
 
-			if not group_label or group_label == "Ungrouped":
+			if not group_label:
 				continue
 			elif group_label == "Variant":
 				group_field = "original_item_code"

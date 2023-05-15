@@ -259,7 +259,7 @@ class SalesPurchaseDetailsReport(object):
 		for i in range(3):
 			group_label = self.filters.get("group_by_" + str(i + 1), "").replace("Group by ", "")
 
-			if not group_label or group_label == "Ungrouped":
+			if not group_label:
 				continue
 			if group_label in ['Customer', 'Supplier']:
 				group_field = "party"

@@ -63,14 +63,14 @@ frappe.query_reports["Stock Projected Qty"] = {
 			fieldname: "group_by_1",
 			label: __("Group By Level 1"),
 			fieldtype: "Select",
-			options: ["Ungrouped", "Group by Item", "Group by Warehouse", "Group by Item Group", "Group by Brand"],
-			default: "Ungrouped"
+			options: ["", "Group by Item", "Group by Warehouse", "Group by Item Group", "Group by Brand"],
+			default: ""
 		},
 		{
 			fieldname: "group_by_2",
 			label: __("Group By Level 2"),
 			fieldtype: "Select",
-			options: ["Ungrouped", "Group by Item", "Group by Warehouse", "Group by Item Group", "Group by Brand"],
+			options: ["", "Group by Item", "Group by Warehouse", "Group by Item Group", "Group by Brand"],
 			default: "Group by Item"
 		},
 	],

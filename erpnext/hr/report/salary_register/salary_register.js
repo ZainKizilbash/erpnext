@@ -41,8 +41,8 @@ frappe.query_reports["Salary Register"] = {
 			"fieldname": "group_by_1",
 			"label": __("Group By Level 1"),
 			"fieldtype": "Select",
-			"options": ["Ungrouped", "Group by Department", "Group by Designation", "Group by Branch"],
-			"default": "Ungrouped"
+			"options": ["", "Group by Department", "Group by Designation", "Group by Branch"],
+			"default": ""
 		},
 		{
 			"fieldname": "show_date_of_joining",

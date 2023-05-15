@@ -289,7 +289,7 @@ def get_opening_balance(item_code, warehouse, from_date, from_time="00:00:00"):
 
 
 def get_grouped_data(filters, data):
-	if not filters.get("group_by") or filters.get("group_by") == "Ungrouped":
+	if not filters.get("group_by"):
 		return data
 
 	group_by = []
