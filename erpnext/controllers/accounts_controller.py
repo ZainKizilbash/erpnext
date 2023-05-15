@@ -1221,7 +1221,7 @@ class AccountsController(TransactionBase):
 			if callable(key):
 				key_value = key(item)
 			elif isinstance(key, (tuple, list)):
-				key_value = (cstr(item.get(k)) for k in key)
+				key_value = tuple(cstr(item.get(k)) for k in key)
 			else:
 				key_value = cstr(item.get(key))
 
