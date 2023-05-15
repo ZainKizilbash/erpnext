@@ -352,11 +352,11 @@ erpnext.selling.SellingController = class SellingController extends erpnext.Tran
 	}
 
 	toggle_editable_price_list_rate() {
-		var df = frappe.meta.get_docfield(this.frm.doc.doctype + " Item", "price_list_rate", this.frm.doc.name);
-		var editable_price_list_rate = cint(frappe.defaults.get_default("editable_price_list_rate"));
+		let df = frappe.meta.get_docfield(this.frm.doc.doctype + " Item", "price_list_rate", this.frm.doc.name);
+		let price_list_rate_read_only = cint(!frappe.defaults.get_default("editable_price_list_rate"));
 
-		if(df && editable_price_list_rate) {
-			df.read_only = 0;
+		if (this.frm.fields_dict.items && df) {
+			this.frm.fields_dict.items.grid.update_docfield_property("price_list_rate", "read_only", price_list_rate_read_only);
 		}
 	}
 
