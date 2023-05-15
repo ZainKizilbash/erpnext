@@ -17,6 +17,7 @@
  "hide_custom": 0,
  "icon": "money-coins-1",
  "idx": 0,
+ "is_hidden": 0,
  "label": "Accounting",
  "links": [
   {
@@ -1075,10 +1076,11 @@
    "type": "Link"
   }
  ],
- "modified": "2022-11-25 01:52:10.771511",
+ "modified": "2023-05-15 11:49:08.735630",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Accounting",
+ "number_cards": [],
  "owner": "Administrator",
  "parent_page": "",
  "public": 1,
@@ -1086,6 +1088,12 @@
  "roles": [
   {
    "role": "Accounts User"
+  },
+  {
+   "role": "Sales User"
+  },
+  {
+   "role": "Sales User (Read Only)"
   }
  ],
  "sequence_id": 1.0,
