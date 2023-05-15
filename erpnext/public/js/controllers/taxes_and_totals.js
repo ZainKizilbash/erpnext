@@ -1,6 +1,8 @@
 // Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 // License: GNU General Public License v3. See license.txt
 
+erpnext.taxes_and_totals_hooks = [];
+
 erpnext.taxes_and_totals = class TaxesAndTotals extends erpnext.payments {
 	apply_pricing_rule_on_item(item) {
 		let effective_item_rate = item.price_list_rate;
@@ -62,6 +64,10 @@ erpnext.taxes_and_totals = class TaxesAndTotals extends erpnext.payments {
 		if(this.frm.doc.doctype === "Purchase Invoice" && this.frm.doc.is_return
 			&& (this.frm.doc.grand_total > this.frm.doc.paid_amount)) {
 			this.frm.doc.paid_amount = flt(this.frm.doc.grand_total, precision("grand_total"));
+		}
+
+		for (let func of erpnext.taxes_and_totals_hooks || []) {
+			func.apply(this);
 		}
 
 		this.frm.refresh_fields();

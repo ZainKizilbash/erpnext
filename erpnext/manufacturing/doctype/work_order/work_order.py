@@ -229,7 +229,7 @@ class WorkOrder(Document):
 				and purpose=%s""", (self.name, purpose))[0][0])
 
 			completed_qty = self.qty + (allowance_percentage/100 * self.qty)
-			if qty > completed_qty:
+			if qty > flt(completed_qty, self.precision("qty")):
 				frappe.throw(_("{0} ({1}) cannot be greater than planned quantity ({2}) in Work Order {3}").format(\
 					self.meta.get_label(fieldname), qty, completed_qty, self.name), StockOverProductionError)
 
