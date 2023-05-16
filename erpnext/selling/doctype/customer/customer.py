@@ -164,7 +164,7 @@ class Customer(TransactionBase):
 		push_or_pull = None
 
 		if not self.customer_primary_contact:
-			self.customer_primary_contact = get_default_contact("Customer", self.name, is_primary=1)
+			self.customer_primary_contact = get_default_contact("Customer", self.name)
 			push_or_pull = "pull"
 
 		contact = None
