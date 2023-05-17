@@ -41,7 +41,7 @@ erpnext.vehicles.VehicleTransferLetterController = class VehicleTransferLetterCo
 				method: "erpnext.vehicles.doctype.vehicle.vehicle.warn_vehicle_reserved",
 				args: {
 					vehicle: this.frm.doc.vehicle,
-					sales_person: this.frm.doc.sales_person
+					customer: this.frm.doc.customer
 				}
 			})
 		}
