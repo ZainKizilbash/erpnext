@@ -1237,7 +1237,7 @@ def make_sales_order(customer, source_name, target_doc=None):
 		if default_price_list:
 			target.selling_price_list = default_price_list
 
-		sales_team = frappe.db.get_list("Sales Team", fields=['sales_person', 'allocated_percentage'], filters=[
+		sales_team = frappe.get_all("Sales Team", fields=['sales_person', 'allocated_percentage'], filters=[
 			["parenttype", "=", "Customer"],
 			["parent", "=", customer]
 		])
