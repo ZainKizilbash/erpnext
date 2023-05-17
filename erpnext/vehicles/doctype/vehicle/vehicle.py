@@ -505,7 +505,7 @@ def warn_vehicle_reserved(vehicle, customer=None, throw=False):
 				frappe.msgprint(_("{0} is reserved for Customer {1}").format(
 					frappe.get_desk_link("Vehicle", vehicle),
 					frappe.bold(vehicle_details.reserved_customer_name or vehicle_details.reserved_customer)),
-				title="Reserved", indicator="orange", raise_exception=throw)
+				title="Reserved", indicator="red" if throw else "orange", raise_exception=throw)
 		else:
 			frappe.msgprint(_("{0} is reserved without a Customer").format(frappe.get_desk_link("Vehicle", vehicle)),
 				title="Reserved", indicator="orange")
