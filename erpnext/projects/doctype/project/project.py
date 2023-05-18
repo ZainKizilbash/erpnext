@@ -674,6 +674,7 @@ class Project(StatusUpdater):
 			if self.meta.has_field(k) and not self.get(k) or k in force_customer_fields:
 				self.set(k, v)
 
+	@frappe.whitelist()
 	def set_applies_to_details(self):
 		if self.get("applies_to_vehicle"):
 			self.applies_to_serial_no = self.applies_to_vehicle

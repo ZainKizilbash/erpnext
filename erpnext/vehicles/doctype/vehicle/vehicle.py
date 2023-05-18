@@ -492,7 +492,7 @@ def validate_duplicate_vehicle(fieldname, value, exclude=None, throw=False):
 
 
 @frappe.whitelist()
-def warn_vehicle_reserved(vehicle, customer=None):
+def warn_vehicle_reserved(vehicle, customer=None, throw=False):
 	vehicle_details = frappe.db.get_value("Vehicle", vehicle,
 		['is_reserved', 'reserved_customer', 'reserved_customer_name'], as_dict=1)
 
@@ -505,7 +505,7 @@ def warn_vehicle_reserved(vehicle, customer=None):
 				frappe.msgprint(_("{0} is reserved for Customer {1}").format(
 					frappe.get_desk_link("Vehicle", vehicle),
 					frappe.bold(vehicle_details.reserved_customer_name or vehicle_details.reserved_customer)),
-				title="Reserved", indicator="orange")
+				title="Reserved", indicator="red" if throw else "orange", raise_exception=throw)
 		else:
 			frappe.msgprint(_("{0} is reserved without a Customer").format(frappe.get_desk_link("Vehicle", vehicle)),
 				title="Reserved", indicator="orange")

@@ -20,13 +20,31 @@ erpnext.vehicles.VehicleTransferLetterController = erpnext.vehicles.VehicleTrans
 		});
 	},
 
+	customer: function() {
+		this._super();
+		this.warn_vehicle_reserved();
+	},
+
 	vehicle: function () {
 		this._super();
+		this.warn_vehicle_reserved();
 		this.warn_vehicle_reserved_by_sales_person();
 	},
 
 	sales_person: function () {
 		this.warn_vehicle_reserved_by_sales_person();
+	},
+
+	warn_vehicle_reserved: function () {
+		if (this.frm.doc.vehicle && this.frm.doc.customer) {
+			frappe.call({
+				method: "erpnext.vehicles.doctype.vehicle.vehicle.warn_vehicle_reserved",
+				args: {
+					vehicle: this.frm.doc.vehicle,
+					customer: this.frm.doc.customer
+				}
+			})
+		}
 	},
 
 	warn_vehicle_reserved_by_sales_person: function () {
