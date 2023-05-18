@@ -926,7 +926,7 @@ erpnext.projects.ProjectController = erpnext.contacts.QuickContacts.extend({
 			return;
 		}
 
-		frappe.confirm(__('Are you sure you want to relaod Vehilce Details?'),
+		frappe.confirm(__('Are you sure you want to reload vehicle details?'),
 			function() {
 				frappe.call({
 					method: "set_applies_to_details",
