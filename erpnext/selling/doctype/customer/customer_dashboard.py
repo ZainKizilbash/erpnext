@@ -55,6 +55,10 @@ def get_data():
 				'items': ['Pricing Rule', 'Item Price']
 			},
 			{
+				'label': _('Customer Provided Items'),
+				'items': ['Item', 'Material Request']
+			},
+			{
 				'label': _('From Lead'),
 				'items': ['Lead']
 			}
