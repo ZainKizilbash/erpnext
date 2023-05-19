@@ -142,14 +142,6 @@ class update_entries_after(object):
 		self.company = frappe.db.get_value("Warehouse", self.warehouse, "company")
 		self.value_precision = get_field_precision(frappe.get_meta("Stock Ledger Entry").get_field("stock_value"),
 			currency=frappe.get_cached_value('Company',  self.company,  "default_currency"))
-		self.value_db_precision = 6 if cint(self.value_precision) <= 6 else 9
-
-		self.qty_db_precision = get_field_precision(frappe.get_meta("Stock Ledger Entry").get_field("actual_qty"))
-		self.qty_db_precision = 6 if cint(self.qty_db_precision) <= 6 else 9
-
-		self.val_rate_db_precision = get_field_precision(frappe.get_meta("Stock Ledger Entry").get_field("valuation_rate"),
-			currency=frappe.get_cached_value('Company',  self.company,  "default_currency"))
-		self.val_rate_db_precision = 6 if cint(self.qty_db_precision) <= 6 else 9
 
 		if not frappe.flags.stock_ledger_vouchers_reposted:
 			frappe.flags.stock_ledger_vouchers_reposted = []
@@ -255,7 +247,7 @@ class update_entries_after(object):
 			self.batch_data.batch_stock_value = flt(self.batch_data.batch_stock_value, self.value_precision)
 			self.batch_data.prev_batch_stock_value = self.batch_data.batch_stock_value
 
-		stock_value_difference_changed = flt(stock_value_difference, self.value_db_precision) != sle.stock_value_difference
+		stock_value_difference_changed = flt(stock_value_difference, 9) != sle.stock_value_difference
 
 		sle.qty_after_transaction = self.qty_after_transaction
 		sle.valuation_rate = self.valuation_rate
@@ -275,8 +267,7 @@ class update_entries_after(object):
 
 		# Packing Slip Qty
 		self.packing_slip_data.packed_qty_after_transaction += sle.actual_qty
-		self.packing_slip_data.packed_qty_after_transaction = flt(self.packing_slip_data.packed_qty_after_transaction,
-			self.qty_db_precision)
+		self.packing_slip_data.packed_qty_after_transaction = flt(self.packing_slip_data.packed_qty_after_transaction, 9)
 		sle.packed_qty_after_transaction = self.packing_slip_data.packed_qty_after_transaction
 
 		# validate negative stock
@@ -388,7 +379,7 @@ class update_entries_after(object):
 		actual_qty = flt(sle.actual_qty)
 		prev_qty = flt(self.batch_data.batch_qty_after_transaction if self.batch_wise_valuation else self.qty_after_transaction)
 
-		new_qty = flt(prev_qty + actual_qty, self.qty_db_precision)
+		new_qty = flt(prev_qty + actual_qty, 9)
 		prev_valuation_rate = flt(self.batch_data.batch_valuation_rate if self.batch_wise_valuation else self.valuation_rate)
 		new_valuation_rate = prev_valuation_rate
 
@@ -428,10 +419,10 @@ class update_entries_after(object):
 						currency=erpnext.get_company_currency(sle.company), batch_wise_valuation=self.batch_wise_valuation)
 
 		self.qty_after_transaction += flt(sle.actual_qty)
-		self.qty_after_transaction = flt(self.qty_after_transaction, self.qty_db_precision)
+		self.qty_after_transaction = flt(self.qty_after_transaction, 9)
 		if self.batch_wise_valuation:
 			self.batch_data.batch_qty_after_transaction += flt(sle.actual_qty)
-			self.batch_data.batch_qty_after_transaction = flt(self.batch_data.batch_qty_after_transaction, self.qty_db_precision)
+			self.batch_data.batch_qty_after_transaction = flt(self.batch_data.batch_qty_after_transaction, 9)
 			self.batch_data.batch_valuation_rate = new_valuation_rate
 			self.batch_data.batch_stock_value = flt(self.batch_data.batch_qty_after_transaction) * flt(self.batch_data.batch_valuation_rate)
 
@@ -455,12 +446,12 @@ class update_entries_after(object):
 			# last row has the same rate, just updated the qty
 			if self.stock_queue[-1][1]==incoming_rate:
 				self.stock_queue[-1][0] += actual_qty
-				self.stock_queue[-1][0] = flt(self.stock_queue[-1][0], self.qty_db_precision)
+				self.stock_queue[-1][0] = flt(self.stock_queue[-1][0], 9)
 			else:
 				if self.stock_queue[-1][0] > 0:
 					self.stock_queue.append([actual_qty, incoming_rate])
 				else:
-					qty = flt(self.stock_queue[-1][0] + actual_qty, self.qty_db_precision)
+					qty = flt(self.stock_queue[-1][0] + actual_qty, 9)
 					self.stock_queue[-1] = [qty, incoming_rate]
 		else:
 			qty_to_pop = abs(actual_qty)
@@ -488,8 +479,8 @@ class update_entries_after(object):
 					# If no entry found with outgoing rate, collapse stack
 					if index == None:
 						new_stock_value = sum((d[0]*d[1] for d in self.stock_queue)) - qty_to_pop*outgoing_rate
-						new_stock_qty = flt(sum((d[0] for d in self.stock_queue)) - qty_to_pop, self.qty_db_precision)
-						self.stock_queue = [[new_stock_qty, flt(new_stock_value/new_stock_qty, self.val_rate_db_precision) if new_stock_qty > 0 else outgoing_rate]]
+						new_stock_qty = flt(sum((d[0] for d in self.stock_queue)) - qty_to_pop, 9)
+						self.stock_queue = [[new_stock_qty, flt(new_stock_value/new_stock_qty, 9) if new_stock_qty > 0 else outgoing_rate]]
 						break
 				else:
 					index = 0
@@ -498,7 +489,7 @@ class update_entries_after(object):
 				batch = self.stock_queue[index]
 				if qty_to_pop >= batch[0]:
 					# consume current batch
-					qty_to_pop = flt(qty_to_pop - batch[0], self.qty_db_precision)
+					qty_to_pop = flt(qty_to_pop - batch[0], 9)
 					self.stock_queue.pop(index)
 					if not self.stock_queue and qty_to_pop:
 						# stock finished, qty still remains to be withdrawn
@@ -509,17 +500,17 @@ class update_entries_after(object):
 				else:
 					# qty found in current batch
 					# consume it and exit
-					batch[0] = flt(batch[0] - qty_to_pop, self.qty_db_precision)
+					batch[0] = flt(batch[0] - qty_to_pop, 9)
 					qty_to_pop = 0
 
 		stock_value = sum((flt(batch[0]) * flt(batch[1]) for batch in self.stock_queue))
-		stock_qty = flt(sum((flt(batch[0]) for batch in self.stock_queue)), self.qty_db_precision)
+		stock_qty = flt(sum((flt(batch[0]) for batch in self.stock_queue)), 9)
 
 		if stock_qty:
 			self.valuation_rate = stock_value / flt(stock_qty)
 
 		if not self.stock_queue:
-			self.stock_queue.append([0, flt(sle.incoming_rate or sle.outgoing_rate or self.valuation_rate, self.val_rate_db_precision)])
+			self.stock_queue.append([0, flt(sle.incoming_rate or sle.outgoing_rate or self.valuation_rate, 9)])
 
 		self.qty_after_transaction += flt(sle.actual_qty)
 		self.stock_value = sum((flt(batch[0]) * flt(batch[1]) for batch in self.stock_queue))
@@ -607,7 +598,7 @@ class update_entries_after(object):
 				dependent_sle_value += current_dependency_value * dependency_details.dependency_percentage / 100
 
 			dependent_sle_value = flt(dependent_sle_value, self.value_precision)
-			rate = flt(dependent_sle_value / sle.actual_qty, self.val_rate_db_precision)
+			rate = flt(dependent_sle_value / sle.actual_qty, 9)
 
 			if sle.actual_qty > 0:
 				sle.incoming_rate = rate
@@ -766,7 +757,7 @@ class update_entries_after(object):
 			frappe.local.flags.currently_saving):
 
 			msg = _("{diff} {uom} of {item}{batch}{package} needed in {warehouse} to complete this transaction.").format(
-				diff=frappe.bold(frappe.format(abs(deficiency), df={"fieldtype": "Float", "precision": self.qty_db_precision})),
+				diff=frappe.bold(frappe.format(abs(deficiency), df={"fieldtype": "Float", "precision": 9})),
 				uom=exc.stock_uom,
 				item=frappe.get_desk_link('Item', self.item_code),
 				batch=batch_msg,
@@ -774,7 +765,7 @@ class update_entries_after(object):
 				warehouse=frappe.get_desk_link('Warehouse', self.warehouse))
 		else:
 			msg = _("{diff} {uom} of {item}{batch}{package} needed in {warehouse} on {date} {time} for {voucher} to complete this transaction.").format(
-				diff=frappe.bold(frappe.format(abs(deficiency), df={"fieldtype": "Float", "precision": self.qty_db_precision})),
+				diff=frappe.bold(frappe.format(abs(deficiency), df={"fieldtype": "Float", "precision": 9})),
 				uom=exc.stock_uom,
 				item=frappe.get_desk_link('Item', self.item_code),
 				batch=batch_msg,

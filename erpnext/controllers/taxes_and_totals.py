@@ -897,9 +897,8 @@ class calculate_taxes_and_totals(object):
 						item.margin_type = None
 						item.margin_rate_or_amount = 0.0
 
-			rate_db_precision = 6 if item.precision('price_list_rate') <= 6 else 9
 			discount_amount = flt(item.price_list_rate) * flt(item.discount_percentage) / 100
-			rate_before_discount = flt(flt(item.rate) + discount_amount, rate_db_precision)
+			rate_before_discount = flt(flt(item.rate) + discount_amount, 9)
 			if rate_before_discount > flt(item.price_list_rate):
 				margin_amount = rate_before_discount - flt(item.price_list_rate)
 

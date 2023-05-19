@@ -324,10 +324,9 @@ def get_batch_no(item_code, warehouse, qty=1, throw=False, sales_order_item=None
 
 def round_down(value, decimals):
 	factor = 10 ** decimals
-	db_precision = 6 if decimals <= 6 else 9
 
-	value = math.floor(flt(value * factor, db_precision)) / factor
-	value = flt(value, db_precision)
+	value = math.floor(flt(value * factor, 9)) / factor
+	value = flt(value, 9)
 	return value
 
 

@@ -169,7 +169,6 @@ class StockBalanceReport:
 
 	def get_stock_balance_map(self):
 		self.stock_balance_map = OrderedDict()
-		precision = self.get_precision()
 
 		for sle in self.sles:
 			key = self.get_balance_key(sle)
@@ -216,9 +215,9 @@ class StockBalanceReport:
 			stock_balance.bal_qty += qty_diff
 			stock_balance.bal_val += value_diff
 
-			if flt(stock_balance.bal_qty, precision):
-				stock_balance.val_rate = stock_balance.bal_val / flt(stock_balance.bal_qty, precision)
-				stock_balance.val_rate = flt(stock_balance.val_rate, precision)
+			if flt(stock_balance.bal_qty, 9):
+				stock_balance.val_rate = stock_balance.bal_val / flt(stock_balance.bal_qty, 9)
+				stock_balance.val_rate = flt(stock_balance.val_rate, 9)
 
 		if self.purchase_order_map:
 			for key, ordered_qty in self.purchase_order_map.items():
@@ -228,7 +227,6 @@ class StockBalanceReport:
 		return self.stock_balance_map
 
 	def clean_stock_balance_map(self):
-		precision = self.get_precision()
 		to_remove = []
 
 		for key in self.stock_balance_map:
@@ -237,7 +235,7 @@ class StockBalanceReport:
 
 			is_empty_balance = True
 			for field in self.balance_value_fields:
-				val = flt(stock_balance.get(field), precision)
+				val = flt(stock_balance.get(field), 9)
 				stock_balance[field] = val
 				if field != "val_rate" and val:
 					is_empty_balance = False
@@ -395,9 +393,6 @@ class StockBalanceReport:
 
 	def is_package_included(self):
 		return is_package_included(self.filters)
-
-	def get_precision(self):
-		return 6 if cint(frappe.db.get_default("float_precision")) <= 6 else 9
 
 	def get_columns(self):
 		self.columns = [

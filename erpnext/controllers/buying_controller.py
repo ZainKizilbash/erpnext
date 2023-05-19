@@ -616,15 +616,13 @@ class BuyingController(StockController):
 				pr_qty = flt(d.qty) * flt(d.conversion_factor)
 
 				if pr_qty:
-					val_rate_db_precision = 6 if cint(self.precision("valuation_rate", d)) <= 6 else 9
-
 					sle = self.get_sl_entries(d, {
 						"actual_qty": flt(pr_qty),
 						"serial_no": cstr(d.serial_no).strip()
 					})
 					if self.is_return:
 						sle.update({
-							"outgoing_rate": flt(d.valuation_rate, val_rate_db_precision)
+							"outgoing_rate": flt(d.valuation_rate, 9)
 						})
 
 						purchase_receipt = self.return_against if self.doctype == "Purchase Receipt" else d.get('purchase_receipt')
@@ -644,7 +642,7 @@ class BuyingController(StockController):
 								"dependency_type": "Rate"
 							}]
 					else:
-						incoming_rate = flt(d.valuation_rate, val_rate_db_precision)
+						incoming_rate = flt(d.valuation_rate, 9)
 						sle.update({
 							"incoming_rate": incoming_rate
 						})
