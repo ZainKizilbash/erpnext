@@ -602,6 +602,9 @@ class VehicleBookingOrder(VehicleBookingController):
 			self.set_onload('vehicle_warehouse_name', vehicle_warehouse_name)
 
 	def set_vehicle_reservation_details(self):
+		if not self.vehicle:
+			return
+
 		reservation_fields = ['is_reserved', 'reserved_customer', 'reserved_customer_name', 'reserved_sales_person']
 		reservation_details = frappe.db.get_value("Vehicle", self.vehicle, reservation_fields, as_dict=True)
 
