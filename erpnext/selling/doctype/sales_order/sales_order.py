@@ -1453,7 +1453,7 @@ def get_supplier(doctype, txt, searchfield, start, page_len, filters):
 
 
 @frappe.whitelist()
-def make_work_orders(items, sales_order, company, project=None):
+def make_work_orders(items, sales_order, company, project=None, submit=False):
 	'''Make Work Orders against the given Sales Order for the given `items`'''
 	if isinstance(items, str):
 		items = json.loads(items)
@@ -1484,6 +1484,10 @@ def make_work_orders(items, sales_order, company, project=None):
 		work_order.insert()
 		work_order.set_work_order_operations()
 		work_order.save()
+
+		if frappe.db.get_single_value("Manufacturing Settings", "auto_submit_work_order"):
+			work_order.submit()
+
 		out.append(work_order)
 
 	return [p.name for p in out]

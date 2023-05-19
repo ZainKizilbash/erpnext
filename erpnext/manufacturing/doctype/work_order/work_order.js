@@ -672,9 +672,10 @@ erpnext.work_order = {
 				});
 			}).then(stock_entry => {
 				frappe.model.sync(stock_entry);
-				frappe.set_route('Form', stock_entry.doctype, stock_entry.name);
+				if (stock_entry.docstatus != 1) {
+					frappe.set_route('Form', stock_entry.doctype, stock_entry.name);
+				}
 			});
-
 	},
 
 	create_pick_list: function(frm, purpose='Material Transfer for Manufacture') {
