@@ -728,7 +728,7 @@ def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False):
 	stock_entry.from_bom = 1
 	stock_entry.bom_no = work_order.bom_no
 	stock_entry.use_multi_level_bom = work_order.use_multi_level_bom
-	stock_entry.fg_completed_qty = qty or (flt(work_order.qty) - flt(work_order.produced_qty))
+	stock_entry.fg_completed_qty = flt(qty) or (flt(work_order.qty) - flt(work_order.produced_qty))
 	scrap_remaining = cint(scrap_remaining)
 	stock_entry.scrap_qty = max(0, flt(work_order.qty) - flt(work_order.produced_qty) - flt(qty)) if scrap_remaining and qty else 0
 	if work_order.bom_no:
@@ -745,6 +745,8 @@ def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False):
 
 	stock_entry.set_stock_entry_type()
 	stock_entry.get_items()
+	stock_entry.run_method("set_missing_values")
+	stock_entry.run_method("calculate_rate_and_amount")
 	return stock_entry.as_dict()
 
 @frappe.whitelist()
