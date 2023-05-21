@@ -628,7 +628,7 @@
    "label": "Is Customer Provided Item"
   },
   {
-   "depends_on": "is_customer_provided_item",
+   "depends_on": "eval:doc.is_customer_provided_item || doc.customer",
    "fieldname": "customer",
    "fieldtype": "Link",
    "label": "Customer",
@@ -1367,7 +1367,7 @@
  "idx": 2,
  "image_field": "image",
  "links": [],
- "modified": "2023-05-12 15:40:07.045308",
+ "modified": "2023-05-21 18:28:29.909854",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Item",
