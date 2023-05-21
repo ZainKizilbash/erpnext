@@ -1233,6 +1233,22 @@ def get_uom_conv_factor(from_uom, to_uom):
 	return get_uom_conv_factor(from_uom, to_uom)
 
 
+def get_convertable_item_uoms(item_code):
+	from erpnext.setup.doctype.uom_conversion_factor.uom_conversion_factor import get_conversion_map
+
+	item = frappe.get_cached_doc("Item", item_code)
+	conversion_map = get_conversion_map()
+
+	convertible_uoms = []
+	for d in item.uoms:
+		convertible_uoms.append(d.uom)
+		for connected_uom in conversion_map.get(d.uom, {}):
+			convertible_uoms.append(connected_uom)
+
+	convertible_uoms = list(set(convertible_uoms))
+	return convertible_uoms
+
+
 @frappe.whitelist()
 def convert_item_uom_for(value, item_code, from_uom=None, to_uom=None, conversion_factor=None,
 		null_if_not_convertible=False, is_rate=False):

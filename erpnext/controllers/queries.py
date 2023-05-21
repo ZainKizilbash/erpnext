@@ -884,17 +884,29 @@ def get_batch_numbers(doctype, txt, searchfield, start, page_len, filters):
 @frappe.validate_and_sanitize_search_inputs
 def item_uom_query(doctype, txt, searchfield, start, page_len, filters):
 	if filters and filters.get('item_code'):
-		return frappe.db.sql("""
-			select distinct `tabUOM Conversion Detail`.uom
-			from `tabItem`
-			inner join `tabUOM Conversion Detail` on `tabUOM Conversion Detail`.parenttype = 'Item'
+		from erpnext.stock.doctype.item.item import get_convertable_item_uoms
+		convertible_uoms = get_convertable_item_uoms(filters.get('item_code'))
+		if not convertible_uoms:
+			return []
+
+		res = frappe.db.sql("""
+			select distinct `tabUOM`.name
+			from `tabUOM`
+			inner join `tabItem` on `tabItem`.name = %(item_code)s
+			left join `tabUOM Conversion Detail` on (
+				`tabUOM Conversion Detail`.parenttype = 'Item'
 				and `tabUOM Conversion Detail`.parent = `tabItem`.name
-			where `tabItem`.name = %(item_code)s and `tabUOM Conversion Detail`.uom like %(txt)s
+				and `tabUOM Conversion Detail`.uom = `tabUOM`.name
+			)
+			where `tabUOM`.name like %(txt)s
+				and `tabUOM`.name in %(convertible_uoms)s
+				and `tabUOM`.disabled = 0
 			order by
-				if(locate(%(_txt)s, `tabUOM Conversion Detail`.uom), locate(%(_txt)s, `tabUOM Conversion Detail`.uom), 99999),
-				if(`tabUOM Conversion Detail`.uom = `tabItem`.stock_uom, 0, 1),
-				`tabUOM Conversion Detail`.idx,
-				`tabUOM Conversion Detail`.uom
+				if(locate(%(_txt)s, `tabUOM`.name), locate(%(_txt)s, `tabUOM`.name), 99999),
+				if(`tabUOM`.name = `tabItem`.stock_uom, 0, 1),
+				if(`tabUOM Conversion Detail`.idx is null, 99999, `tabUOM Conversion Detail`.idx),
+				`tabUOM`.idx,
+				`tabUOM`.name
 			limit %(start)s, %(page_len)s
 		""".format(**{
 			'key': searchfield,
@@ -903,13 +915,15 @@ def item_uom_query(doctype, txt, searchfield, start, page_len, filters):
 			'_txt': txt.replace("%", ""),
 			'start': start,
 			'page_len': page_len,
-			'item_code': filters.get('item_code')
+			'item_code': filters.get('item_code'),
+			'convertible_uoms': convertible_uoms,
 		})
+		return res
 	else:
 		return frappe.db.sql("""
 			select name
 			from `tabUOM`
-			where name like %(txt)s
+			where name like %(txt)s and disabled = 0
 			order by
 				if(locate(%(_txt)s, name), locate(%(_txt)s, name), 99999),
 				idx desc,
