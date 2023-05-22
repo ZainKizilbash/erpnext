@@ -1453,7 +1453,7 @@ def get_supplier(doctype, txt, searchfield, start, page_len, filters):
 
 
 @frappe.whitelist()
-def make_work_orders(items, sales_order, company, project=None, submit=False):
+def make_work_orders(items, sales_order, company, project=None):
 	'''Make Work Orders against the given Sales Order for the given `items`'''
 	if isinstance(items, str):
 		items = json.loads(items)
