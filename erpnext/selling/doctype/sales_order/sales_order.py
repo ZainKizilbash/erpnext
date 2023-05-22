@@ -1484,6 +1484,10 @@ def make_work_orders(items, sales_order, company, project=None):
 		work_order.insert()
 		work_order.set_work_order_operations()
 		work_order.save()
+
+		if frappe.db.get_single_value("Manufacturing Settings", "auto_submit_work_order"):
+			work_order.submit()
+
 		out.append(work_order)
 
 	return [p.name for p in out]

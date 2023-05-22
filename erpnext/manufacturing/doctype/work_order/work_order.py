@@ -728,7 +728,7 @@ def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False):
 	stock_entry.from_bom = 1
 	stock_entry.bom_no = work_order.bom_no
 	stock_entry.use_multi_level_bom = work_order.use_multi_level_bom
-	stock_entry.fg_completed_qty = qty or (flt(work_order.qty) - flt(work_order.produced_qty))
+	stock_entry.fg_completed_qty = flt(qty) or (flt(work_order.qty) - flt(work_order.produced_qty))
 	scrap_remaining = cint(scrap_remaining)
 	stock_entry.scrap_qty = max(0, flt(work_order.qty) - flt(work_order.produced_qty) - flt(qty)) if scrap_remaining and qty else 0
 	if work_order.bom_no:
@@ -745,6 +745,24 @@ def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False):
 
 	stock_entry.set_stock_entry_type()
 	stock_entry.get_items()
+	stock_entry.run_method("set_missing_values")
+	stock_entry.run_method("calculate_rate_and_amount")
+
+	def submit_stock_entry():
+		stock_entry.save()
+		stock_entry.submit()
+		frappe.msgprint(_("{0} {1} submitted successfully").format(purpose, frappe.get_desk_link("Stock Entry", stock_entry.name)))
+
+	try:
+		if purpose == "Material Transfer for Manufacture":
+			if frappe.db.get_single_value("Manufacturing Settings", "auto_submit_material_transfer_entry"):
+				submit_stock_entry()
+		else:
+			if frappe.db.get_single_value("Manufacturing Settings", "auto_submit_manufacture_entry"):
+				submit_stock_entry()
+	except frappe.ValidationError:
+		pass
+
 	return stock_entry.as_dict()
 
 @frappe.whitelist()

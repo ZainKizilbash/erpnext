@@ -536,7 +536,7 @@
    "fieldname": "set_warehouse",
    "fieldtype": "Link",
    "ignore_user_permissions": 1,
-   "label": "Set Source Warehouse",
+   "label": "Set Delivery Warehouse",
    "options": "Warehouse",
    "print_hide": 1
   },
@@ -1715,7 +1715,7 @@
  "idx": 146,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-03-02 17:29:07.956881",
+ "modified": "2023-05-22 13:13:02.711267",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Delivery Note",
