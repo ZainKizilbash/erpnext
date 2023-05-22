@@ -653,7 +653,7 @@
    "fieldname": "set_warehouse",
    "fieldtype": "Link",
    "ignore_user_permissions": 1,
-   "label": "Set Source Warehouse",
+   "label": "Set Delivery Warehouse",
    "options": "Warehouse",
    "print_hide": 1
   },
@@ -2265,7 +2265,7 @@
  "idx": 181,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-05-06 15:26:35.076428",
+ "modified": "2023-05-22 13:13:18.215039",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Sales Invoice",

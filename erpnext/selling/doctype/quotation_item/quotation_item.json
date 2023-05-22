@@ -479,7 +479,7 @@
    "fieldname": "warehouse",
    "fieldtype": "Link",
    "in_standard_filter": 1,
-   "label": "Warehouse",
+   "label": "Delivery Warehouse",
    "options": "Warehouse",
    "print_hide": 1,
    "report_hide": 1
@@ -1060,7 +1060,7 @@
  "idx": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-03-02 17:57:19.280086",
+ "modified": "2023-05-22 13:13:50.500756",
  "modified_by": "Administrator",
  "module": "Selling",
  "name": "Quotation Item",
