@@ -884,8 +884,8 @@ def get_batch_numbers(doctype, txt, searchfield, start, page_len, filters):
 @frappe.validate_and_sanitize_search_inputs
 def item_uom_query(doctype, txt, searchfield, start, page_len, filters):
 	if filters and filters.get('item_code'):
-		from erpnext.stock.doctype.item.item import get_convertable_item_uoms
-		convertible_uoms = get_convertable_item_uoms(filters.get('item_code'))
+		from erpnext.stock.doctype.item.item import get_convertible_item_uoms
+		convertible_uoms = get_convertible_item_uoms(filters.get('item_code'))
 		if not convertible_uoms:
 			return []
 
