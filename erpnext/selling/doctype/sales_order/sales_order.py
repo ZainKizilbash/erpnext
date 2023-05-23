@@ -640,7 +640,9 @@ class SalesOrder(SellingController):
 
 		for table in [self.items, self.packed_items]:
 			for i in table:
-				bom = get_default_bom_item(i.item_code)
+				bom = self.run_method("get_sales_order_item_bom", i)
+				if not bom:
+					bom = get_default_bom_item(i.item_code)
 				if bom:
 					stock_qty = i.qty if i.doctype == 'Packed Item' else i.stock_qty
 					if not for_raw_material_request:
