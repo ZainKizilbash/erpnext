@@ -46,6 +46,13 @@ erpnext.stock.PackingController = class PackingController extends erpnext.stock.
 		this.calculate_totals();
 	}
 
+	stock_qty(doc, cdt, cdn) {
+		console.trace("hello world");
+		let row = frappe.get_doc(cdt, cdn);
+		let calculated_qty = flt(row.stock_qty) / (flt(row.conversion_factor) || 1);
+		frappe.model.set_value(row.doctype, row.name, "qty", calculated_qty);
+	}
+
 	uom(doc, cdt, cdn) {
 		let me = this;
 		let item = frappe.get_doc(cdt, cdn);
