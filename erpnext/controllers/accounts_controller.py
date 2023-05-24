@@ -231,6 +231,7 @@ class AccountsController(TransactionBase):
 			if self.get("group_same_items"):
 				self.group_similar_items()
 
+			self.uom = self.get_common_uom(self.get("items"))
 			self.items_by_item_group = self.group_items_by_item_group(self.items)
 			self.items_by_item_tax_and_item_group = self.group_items_by_item_tax_and_item_group()
 
@@ -1229,14 +1230,22 @@ class AccountsController(TransactionBase):
 			group_data['items'].append(item)
 
 		# calculate group totals
+		self.group_items_by_postprocess(grouped)
+		return grouped
+
+	def group_items_by_postprocess(self, grouped):
 		for key_value, group_data in grouped.items():
+			group_data.uom = self.get_common_uom(group_data["items"])
+
 			for group_field, item_field in print_total_fields_from_items:
 				group_data[group_field] = sum([flt(d.get(item_field)) for d in group_data['items']])
 				group_data["base_" + group_field] = group_data[group_field] * self.conversion_rate
 
 			self.calculate_taxes_for_group(group_data)
 
-		return grouped
+	def get_common_uom(self, items):
+		unique_group_uoms = list(set(row.get("uom") for row in items if row.get("uom")))
+		return unique_group_uoms[0] if len(unique_group_uoms) == 1 else ""
 
 	def get_item_group_print_heading(self, item):
 		from erpnext.setup.doctype.item_group.item_group import get_item_group_print_heading

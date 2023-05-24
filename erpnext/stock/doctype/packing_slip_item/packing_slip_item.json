@@ -8,6 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "item_code",
+  "item_group",
   "column_break_2",
   "item_name",
   "warehouse_section",
@@ -78,7 +79,6 @@
    "columns": 2,
    "fieldname": "batch_no",
    "fieldtype": "Link",
-   "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Batch No",
    "options": "Batch"
@@ -340,12 +340,21 @@
    "label": "Unpack Against Row",
    "no_copy": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "item_group",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Item Group",
+   "options": "Item Group",
+   "print_hide": 1,
+   "read_only": 1
   }
  ],
  "idx": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-05-23 13:43:01.007677",
+ "modified": "2023-05-24 18:38:28.268984",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Packing Slip Item",

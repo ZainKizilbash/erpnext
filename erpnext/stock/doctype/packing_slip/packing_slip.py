@@ -14,7 +14,13 @@ from erpnext.accounts.party import validate_party_frozen_disabled
 import json
 
 
-force_item_fields = ["stock_uom", "has_batch_no", "has_serial_no", "force_default_warehouse"]
+force_item_fields = ["stock_uom", "has_batch_no", "has_serial_no", "force_default_warehouse", "item_group"]
+
+print_total_fields_from_items = [
+	('total_net_weight', 'net_weight'),
+	('total_qty', 'qty'),
+	('total_stock_qty', 'stock_qty'),
+]
 
 
 class PackingSlip(StockController):
@@ -515,6 +521,8 @@ class PackingSlip(StockController):
 			self.customer_name = None
 
 	def calculate_totals(self):
+		self.total_qty = 0
+		self.total_stock_qty = 0
 		self.total_net_weight = 0
 		self.total_tare_weight = 0
 
@@ -534,6 +542,9 @@ class PackingSlip(StockController):
 					if item.stock_qty and item.meta.has_field("gross_weight_per_unit"):
 						item.gross_weight_per_unit = item.gross_weight / item.stock_qty
 
+				self.total_qty += item.qty
+				self.total_stock_qty += item.stock_qty
+
 				if not item.get("source_packing_slip"):
 					self.total_net_weight += flt(item.get("net_weight"))
 					self.total_tare_weight += flt(item.get("tare_weight"))
@@ -546,7 +557,7 @@ class PackingSlip(StockController):
 				self.total_net_weight += d.net_weight
 				self.total_tare_weight += d.tare_weight
 
-		self.round_floats_in(self, ['total_net_weight', 'total_tare_weight'])
+		self.round_floats_in(self, ['total_qty', 'total_stock_qty', 'total_net_weight', 'total_tare_weight'])
 		self.total_gross_weight = flt(self.total_net_weight + self.total_tare_weight, self.precision("total_gross_weight"))
 
 	def set_cost_percentage(self):
@@ -873,6 +884,13 @@ class PackingSlip(StockController):
 			present=_(present),
 		))
 
+	def group_items_by_postprocess(self, grouped):
+		for key_value, group_data in grouped.items():
+			group_data.uom = self.get_common_uom(group_data["items"])
+
+			for group_field, item_field in print_total_fields_from_items:
+				group_data[group_field] = sum([flt(d.get(item_field)) for d in group_data['items']])
+
 
 @frappe.whitelist()
 def get_package_type_details(package_type, args):
@@ -929,6 +947,7 @@ def get_item_details(args):
 	out.hide_item_code = get_hide_item_code(item, args)
 	out.has_batch_no = item.has_batch_no
 	out.has_serial_no = item.has_serial_no
+	out.item_group = item.item_group
 
 	# Qty and UOM
 	out.qty = flt(args.qty) or 1
