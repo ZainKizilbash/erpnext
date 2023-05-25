@@ -1126,6 +1126,7 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 
 			return frappe.run_serially([
 				() => this.frm.trigger("currency"),
+				() => erpnext.utils.set_taxes(this.frm, "posting_date"),
 				() => this.update_item_tax_map(),
 			]);
 		}
@@ -1138,6 +1139,7 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 			return frappe.run_serially([
 				() => this.get_due_date(),
 				() => this.frm.trigger("currency"),
+				() => erpnext.utils.set_taxes(this.frm, "posting_date"),
 				() => this.update_item_tax_map(),
 			]);
 		}
