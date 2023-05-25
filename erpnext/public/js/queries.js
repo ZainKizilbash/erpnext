@@ -88,7 +88,10 @@ $.extend(erpnext.queries, {
 	company_address_query: function(doc) {
 		return {
 			query: 'frappe.contacts.doctype.address.address.address_query',
-			filters: { is_your_company_address: 1, link_doctype: 'Company', link_name: doc.company || '' }
+			filters: {
+				link_doctype: 'Company',
+				link_name: doc.company || ''
+			}
 		};
 	},
 

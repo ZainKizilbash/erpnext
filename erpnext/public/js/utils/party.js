@@ -183,7 +183,7 @@ erpnext.utils.add_item = function(frm) {
 	}
 }
 
-erpnext.utils.get_address_display = function(frm, address_field, display_field, is_your_company_address) {
+erpnext.utils.get_address_display = function(frm, address_field, display_field) {
 	if (frm.updating_party_details) return;
 
 	var lead = erpnext.utils.get_lead_from_doc(frm);

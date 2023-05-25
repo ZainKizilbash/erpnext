@@ -737,7 +737,6 @@ def get_rate_and_tax_details(row, gstin):
 
 def get_company_gstin_number(company):
 	filters = [
-		["is_your_company_address", "=", 1],
 		["Dynamic Link", "link_doctype", "=", "Company"],
 		["Dynamic Link", "link_name", "=", company],
 		["Dynamic Link", "parenttype", "=", "Address"],
