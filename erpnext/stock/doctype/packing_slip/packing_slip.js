@@ -2,6 +2,7 @@ frappe.provide("erpnext.stock");
 
 erpnext.stock.PackingSlipController = class PackingSlipController extends erpnext.stock.PackingController {
 	item_table_fields = ['items', 'packaging_items']
+	calculate_total_hooks = []
 
 	setup() {
 		this.frm.custom_make_buttons = {
@@ -139,6 +140,10 @@ erpnext.stock.PackingSlipController = class PackingSlipController extends erpnex
 		frappe.model.round_floats_in(this.frm.doc, ['total_qty', 'total_stock_qty', 'total_net_weight', 'total_tare_weight']);
 		this.frm.doc.total_gross_weight = flt(this.frm.doc.total_net_weight + this.frm.doc.total_tare_weight,
 			precision("total_gross_weight"));
+
+		for (let func of this.calculate_total_hooks || []) {
+			func.apply(this);
+		}
 
 		this.frm.refresh_fields();
 	}
