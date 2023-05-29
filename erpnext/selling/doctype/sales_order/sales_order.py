@@ -4,7 +4,7 @@
 import frappe
 import json
 import frappe.utils
-from frappe.utils import cstr, flt, getdate, cint, nowdate, add_days, get_link_to_form
+from frappe.utils import cstr, flt, getdate, cint, nowdate, add_days, get_link_to_form, round_up
 from frappe import _
 from six import string_types
 from frappe.model.mapper import get_mapped_doc
@@ -646,11 +646,17 @@ class SalesOrder(SellingController):
 				if bom:
 					stock_qty = i.qty if i.doctype == 'Packed Item' else i.stock_qty
 					if not for_raw_material_request:
-						total_work_order_qty = flt(frappe.db.sql('''select sum(qty) from `tabWork Order`
-							where production_item=%s and sales_order=%s and sales_order_item = %s and docstatus<2''', (i.item_code, self.name, i.name))[0][0])
+						total_work_order_qty = flt(frappe.db.sql("""
+							select sum(qty)
+							from `tabWork Order`
+							where production_item = %s and sales_order=%s and sales_order_item = %s and docstatus < 2
+						""", (i.item_code, self.name, i.name))[0][0])
 						pending_qty = stock_qty - total_work_order_qty
 					else:
 						pending_qty = stock_qty
+
+					work_order_precison = frappe.get_precision("Work Order", "qty")
+					pending_qty = round_up(pending_qty, work_order_precison)
 
 					if pending_qty and i.item_code not in product_bundle_parents:
 						items.append(dict(

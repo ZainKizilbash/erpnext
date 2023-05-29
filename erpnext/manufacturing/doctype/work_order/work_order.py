@@ -3,7 +3,7 @@
 
 import frappe
 from frappe import _
-from frappe.utils import flt, getdate, cint, nowdate, get_link_to_form
+from frappe.utils import flt, getdate, cint, nowdate, get_link_to_form, round_up
 from erpnext.manufacturing.doctype.bom.bom import validate_bom_no, get_bom_items_as_dict
 from erpnext.stock.doctype.item.item import validate_end_of_life
 from erpnext.stock.get_item_details import get_conversion_factor
@@ -85,6 +85,7 @@ class WorkOrder(StatusUpdater):
 		self.delete_job_card()
 
 	def validate_qty(self):
+		self.qty = flt(self.qty, self.precision("qty"))
 		if self.qty <= 0:
 			frappe.throw(_("Quantity to Produce must be greater than 0."))
 
@@ -179,7 +180,7 @@ class WorkOrder(StatusUpdater):
 		""", (self.sales_order, self.production_item))[0][0]
 
 		# total qty in SO
-		so_qty = flt(flt(so_item_qty) + flt(dnpi_qty), self.precision('qty'))
+		so_qty = round_up(flt(so_item_qty) + flt(dnpi_qty), self.precision('qty'))
 
 		allowance_percentage = flt(frappe.db.get_single_value("Manufacturing Settings", "overproduction_percentage_for_sales_order"))
 
@@ -458,7 +459,7 @@ class WorkOrder(StatusUpdater):
 		elif self.docstatus == 1:
 			completed_qty = flt(self.produced_qty + self.scrap_qty, self.precision("qty"))
 
-			if completed_qty >= self.qty:
+			if completed_qty >= flt(self.qty, self.precision("qty")):
 				self.status = "Completed"
 			elif self.status == "Stopped":
 				self.status = "Stopped"

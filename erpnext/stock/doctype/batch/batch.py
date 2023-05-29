@@ -5,9 +5,8 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname, revert_series_if_last
-from frappe.utils import flt, cint, get_link_to_form, cstr
+from frappe.utils import flt, cint, get_link_to_form, cstr, round_down
 from frappe.utils.data import add_days
-import math
 import json
 
 
@@ -320,14 +319,6 @@ def get_batch_no(item_code, warehouse, qty=1, throw=False, sales_order_item=None
 		return batch_no
 
 	return batch_no
-
-
-def round_down(value, decimals):
-	factor = 10 ** decimals
-
-	value = math.floor(flt(value * factor, 9)) / factor
-	value = flt(value, 9)
-	return value
 
 
 @frappe.whitelist()
