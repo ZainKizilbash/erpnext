@@ -460,9 +460,11 @@ class WorkOrder(StatusUpdater):
 			self.status = 'Draft'
 
 		elif self.docstatus == 1:
+			underproduction_percentage = flt(frappe.db.get_single_value("Manufacturing Settings", "underproduction_percentage"))
 			completed_qty = flt(self.produced_qty + self.scrap_qty, self.precision("qty"))
+			min_qty = flt(self.qty - (self.qty * underproduction_percentage / 100), self.precision("qty"))
 
-			if completed_qty >= flt(self.qty, self.precision("qty")):
+			if completed_qty >= min_qty:
 				self.status = "Completed"
 			elif self.status == "Stopped":
 				self.status = "Stopped"

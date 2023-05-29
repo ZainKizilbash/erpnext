@@ -279,8 +279,8 @@ frappe.ui.form.on("Work Order", {
 		// produced qty
 		let title = __('<b>Produced:</b> {0} {1}', [format_number(frm.doc.produced_qty), frm.doc.stock_uom]);
 		bars.push({
-			'title': title,
-			'width': (frm.doc.produced_qty / frm.doc.qty * 100) + '%',
+			'title': strip_html(title),
+			'width': flt(frm.doc.produced_qty / frm.doc.qty * 100, 2) + '%',
 			'progress_class': 'progress-bar-success'
 		});
 		if (bars[0].width == '0%') {
@@ -297,9 +297,9 @@ frappe.ui.form.on("Work Order", {
 
 			if (pending_complete) {
 				let width = flt((pending_complete / frm.doc.qty * 100) - added_min, 2);
-				title = __('<b>In Progress:</b> {0} {1}', [format_number(pending_complete), frm.doc.stock_uom]);
+				title = __('<b>Remaining:</b> {0} {1}', [format_number(pending_complete), frm.doc.stock_uom]);
 				bars.push({
-					'title': title,
+					'title': strip_html(title),
 					'width': (width > 100 ? "99.5" : width)  + '%',
 					'progress_class': 'progress-bar-warning'
 				});
@@ -516,9 +516,9 @@ erpnext.work_order = {
 				if ((flt(doc.material_transferred_for_manufacturing) < flt(doc.qty))
 					&& frm.doc.status != 'Stopped') {
 					frm.has_start_btn = true;
-					frm.add_custom_button(__('Create Pick List'), function() {
+					frm.add_custom_button(__('Pick List'), function() {
 						erpnext.work_order.create_pick_list(frm);
-					});
+					}, __("Create"));
 					var start_btn = frm.add_custom_button(__('Start'), function() {
 						erpnext.work_order.make_se(frm, 'Material Transfer for Manufacture');
 					});
@@ -666,20 +666,24 @@ erpnext.work_order = {
 	},
 
 	make_se: function(frm, purpose) {
-		this.show_prompt_for_qty_input(frm, purpose)
-			.then(data => {
-				return frappe.xcall('erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry', {
-					'work_order_id': frm.doc.name,
-					'purpose': purpose,
-					'scrap_remaining': data.scrap_remaining,
-					'qty': data.qty
-				});
-			}).then(stock_entry => {
-				frappe.model.sync(stock_entry);
-				if (stock_entry.docstatus != 1) {
-					frappe.set_route('Form', stock_entry.doctype, stock_entry.name);
+		this.show_prompt_for_qty_input(frm, purpose).then(data => {
+			return frappe.call({
+				method: "erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry",
+				args: {
+					"work_order_id": frm.doc.name,
+					"purpose": purpose,
+					"scrap_remaining": data.scrap_remaining,
+					"qty": data.qty
+				},
+				freeze: 1,
+				callback: (r) => {
+					frappe.model.sync(r.message);
+					if (r.message.docstatus != 1) {
+						frappe.set_route('Form', r.message.doctype, r.message.name);
+					}
 				}
 			});
+		});
 	},
 
 	create_pick_list: function(frm, purpose='Material Transfer for Manufacture') {
