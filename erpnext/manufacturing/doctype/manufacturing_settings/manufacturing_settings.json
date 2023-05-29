@@ -8,7 +8,7 @@
   "section_break_6",
   "overproduction_percentage_for_sales_order",
   "overproduction_percentage_for_work_order",
-  "underproduction_percentage",
+  "under_production_allowance",
   "backflush_raw_materials_based_on",
   "material_consumption",
   "update_bom_costs_automatically",
@@ -154,15 +154,15 @@
    "label": "Auto Submit Manufacture Entry"
   },
   {
-   "fieldname": "underproduction_percentage",
+   "fieldname": "under_production_allowance",
    "fieldtype": "Percent",
-   "label": "Under Production Percentage"
+   "label": "Under Production Allowance (%)"
   }
  ],
  "icon": "icon-wrench",
  "issingle": 1,
  "links": [],
- "modified": "2023-05-29 16:38:39.301423",
+ "modified": "2023-05-29 19:58:10.829100",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Manufacturing Settings",
