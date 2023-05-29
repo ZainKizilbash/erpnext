@@ -1,7 +1,8 @@
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
-import frappe, erpnext
+import frappe
+import erpnext
 from frappe.utils import cint, cstr, flt
 from frappe import _
 from erpnext.setup.utils import get_exchange_rate
@@ -11,17 +12,14 @@ from erpnext.stock.get_item_details import get_price_list_rate
 from erpnext.stock.get_item_details import get_default_warehouse, get_default_cost_center
 from frappe.core.doctype.version.version import get_diff
 from frappe.model.utils import get_fetch_values
-
 import functools
-
 from six import string_types
-
 from operator import itemgetter
+
 
 form_grid_templates = {
 	"items": "templates/form_grid/item_grid.html"
 }
-
 
 force_fields = ["stock_uom"]
 
@@ -84,10 +82,8 @@ class BOM(WebsiteGenerator):
 		self.manage_default_bom()
 
 	def on_cancel(self):
-		frappe.db.set(self, "is_active", 0)
-		frappe.db.set(self, "is_default", 0)
-
-		# check if used in any other bom
+		self.db_set("is_active", 0)
+		self.db_set("is_default", 0)
 		self.validate_bom_links()
 		self.manage_default_bom()
 
@@ -108,9 +104,12 @@ class BOM(WebsiteGenerator):
 				self.update(get_fetch_values(self.doctype, 'item', self.item))
 
 	def get_item_det(self, item_code):
-		item = frappe.db.sql("""select name, item_name, docstatus, description, image,
-			is_sub_contracted_item, stock_uom, manufacture_uom, default_bom, last_purchase_rate, include_item_in_manufacturing
-			from `tabItem` where name=%s""", item_code, as_dict = 1)
+		item = frappe.db.sql("""
+			select name, item_name, docstatus, description, image,
+				is_sub_contracted_item, stock_uom, manufacture_uom, default_bom, last_purchase_rate,
+				include_item_in_manufacturing
+			from `tabItem` where name=%s
+		""", item_code, as_dict=1)
 
 		if not item:
 			frappe.throw(_("Item: {0} does not exist in the system").format(item_code))
@@ -690,9 +689,11 @@ class BOM(WebsiteGenerator):
 				if not d.batch_size or d.batch_size <= 0:
 					d.batch_size = 1
 
+
 def get_list_context(context):
 	context.title = _("Bill of Materials")
 	# context.introduction = _('Boms')
+
 
 def get_bom_items_as_dict(bom, company, qty=1, fetch_exploded=1, fetch_scrap_items=0, include_non_stock_items=False, fetch_qty_in_stock_uom=True):
 	item_dict = {}
@@ -772,6 +773,7 @@ def get_bom_items_as_dict(bom, company, qty=1, fetch_exploded=1, fetch_scrap_ite
 
 	return item_dict
 
+
 @frappe.whitelist()
 def get_bom_items(bom, company, qty=1, fetch_exploded=1):
 	items = get_bom_items_as_dict(bom, company, qty, fetch_exploded, include_non_stock_items=True).values()
@@ -779,27 +781,34 @@ def get_bom_items(bom, company, qty=1, fetch_exploded=1):
 	items.sort(key = functools.cmp_to_key(lambda a, b: a.item_code > b.item_code and 1 or -1))
 	return items
 
+
 def validate_bom_no(item, bom_no):
 	"""Validate BOM No of sub-contracted items"""
 	bom = frappe.get_doc("BOM", bom_no)
+
 	if not bom.is_active:
 		frappe.throw(_("BOM {0} must be active").format(bom_no))
+
 	if bom.docstatus != 1:
 		if not getattr(frappe.flags, "in_test", False):
 			frappe.throw(_("BOM {0} must be submitted").format(bom_no))
+
 	if item:
 		rm_item_exists = False
 		for d in bom.items:
-			if (d.item_code.lower() == item.lower()):
+			if d.item_code.lower() == item.lower():
 				rm_item_exists = True
+
 		for d in bom.scrap_items:
-			if (d.item_code.lower() == item.lower()):
+			if d.item_code.lower() == item.lower():
 				rm_item_exists = True
-		if bom.item.lower() == item.lower() or \
-			bom.item.lower() == cstr(frappe.db.get_value("Item", item, "variant_of")).lower():
- 				rm_item_exists = True
+
+		if bom.item.lower() == item.lower() or bom.item.lower() == cstr(frappe.db.get_value("Item", item, "variant_of")).lower():
+			rm_item_exists = True
+
 		if not rm_item_exists:
 			frappe.throw(_("BOM {0} does not belong to Item {1}").format(bom_no, item))
+
 
 @frappe.whitelist()
 def get_children(doctype, parent=None, is_root=False, **filters):
@@ -838,6 +847,7 @@ def get_children(doctype, parent=None, is_root=False, **filters):
 
 		return bom_items
 
+
 def get_boms_in_bottom_up_order(bom_no=None):
 	def _get_parent(bom_no):
 		return frappe.db.sql_list("""
@@ -865,6 +875,7 @@ def get_boms_in_bottom_up_order(bom_no=None):
 
 	return bom_list
 
+
 def add_additional_cost(stock_entry, work_order):
 	# Add non stock items cost in the additional cost
 	stock_entry.additional_costs = []
@@ -873,6 +884,7 @@ def add_additional_cost(stock_entry, work_order):
 
 	add_non_stock_items_cost(stock_entry, work_order, expenses_included_in_valuation)
 	add_operations_cost(stock_entry, work_order, expenses_included_in_valuation)
+
 
 def add_non_stock_items_cost(stock_entry, work_order, expense_account):
 	bom_no = work_order.bom_no or stock_entry.bom_no
@@ -898,6 +910,7 @@ def add_non_stock_items_cost(stock_entry, work_order, expense_account):
 			'amount': non_stock_items_cost
 		})
 
+
 def add_operations_cost(stock_entry, work_order=None, expense_account=None):
 	from erpnext.stock.doctype.stock_entry.stock_entry import get_operating_cost_per_unit, get_additional_operating_costs
 
@@ -916,6 +929,7 @@ def add_operations_cost(stock_entry, work_order=None, expense_account=None):
 			"description": d.description or _("Additional Operating Cost"),
 			"amount": flt(d.rate) * flt(stock_entry.fg_completed_qty)
 		})
+
 
 def get_additional_operating_cost_per_unit(bom_no, use_multi_level_bom=0, bom_list=None):
 	if not bom_list:
@@ -936,6 +950,7 @@ def get_additional_operating_cost_per_unit(bom_no, use_multi_level_bom=0, bom_li
 		d.rate = d.total_amount / bom_qty if bom_qty else 0
 
 	return additional_costs
+
 
 @frappe.whitelist()
 def get_bom_diff(bom1, bom2):

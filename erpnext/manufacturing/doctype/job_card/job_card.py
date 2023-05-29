@@ -98,7 +98,7 @@ class JobCard(Document):
 
 		if self.for_quantity and self.total_completed_qty != self.for_quantity:
 			total_completed_qty = frappe.bold(_("Total Completed Qty"))
-			qty_to_manufacture = frappe.bold(_("Qty to Manufacture"))
+			qty_to_manufacture = frappe.bold(_("Qty to Produce"))
 
 			frappe.throw(_("The {0} ({1}) must be equal to {2} ({3})"
 				.format(total_completed_qty, frappe.bold(self.total_completed_qty), qty_to_manufacture,frappe.bold(self.for_quantity))))
