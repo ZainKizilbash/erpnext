@@ -422,14 +422,17 @@ class WorkOrder(StatusUpdater):
 			for d in ste_qty_data:
 				ste_qty_map[d.purpose] = d
 
-		to_update = {
+		to_update = frappe._dict({
 			"produced_qty": flt(ste_qty_map.get("Manufacture", {}).get("fg_completed_qty")),
 			"scrap_qty": flt(ste_qty_map.get("Manufacture", {}).get("scrap_qty")),
 			"material_transferred_for_manufacturing": flt(ste_qty_map.get("Material Transfer for Manufacture", {}).get("fg_completed_qty")),
-		}
+		})
 
 		if self.operations and self.transfer_material_against == 'Job Card':
 			del to_update["material_transferred_for_manufacturing"]
+
+		to_update.per_produced = flt(to_update.produced_qty / self.qty * 100, 6)
+		to_update.per_material_transferred = flt(to_update.material_transferred_for_manufacturing / self.qty * 100, 6)
 
 		self.update(to_update)
 		if update:
