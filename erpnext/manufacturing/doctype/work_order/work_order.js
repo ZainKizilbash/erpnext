@@ -272,12 +272,12 @@ frappe.ui.form.on("Work Order", {
 	},
 
 	show_progress_for_items: function(frm) {
-		var bars = [];
-		var message = '';
-		var added_min = false;
+		let bars = [];
+		let message = "";
+		let added_min = false;
 
 		// produced qty
-		var title = __('{0} items produced', [frm.doc.produced_qty]);
+		let title = __('<b>Produced:</b> {0} {1}', [format_number(frm.doc.produced_qty), frm.doc.stock_uom]);
 		bars.push({
 			'title': title,
 			'width': (frm.doc.produced_qty / frm.doc.qty * 100) + '%',
@@ -287,19 +287,23 @@ frappe.ui.form.on("Work Order", {
 			bars[0].width = '0.5%';
 			added_min = 0.5;
 		}
+
 		message = title;
+
 		// pending qty
-		if(!frm.doc.skip_transfer){
-			var pending_complete = frm.doc.material_transferred_for_manufacturing - frm.doc.produced_qty;
-			if(pending_complete) {
-				var width = ((pending_complete / frm.doc.qty * 100) - added_min);
-				title = __('{0} items in progress', [pending_complete]);
+		if (!frm.doc.skip_transfer) {
+			let pending_complete = flt(frm.doc.material_transferred_for_manufacturing - frm.doc.produced_qty,
+				precision("produced_qty"));
+
+			if (pending_complete) {
+				let width = flt((pending_complete / frm.doc.qty * 100) - added_min, 2);
+				title = __('<b>In Progress:</b> {0} {1}', [format_number(pending_complete), frm.doc.stock_uom]);
 				bars.push({
 					'title': title,
 					'width': (width > 100 ? "99.5" : width)  + '%',
 					'progress_class': 'progress-bar-warning'
 				});
-				message = message + '. ' + title;
+				message = message + '<br>' + title;
 			}
 		}
 		frm.dashboard.add_progress(__('Status'), bars, message);
