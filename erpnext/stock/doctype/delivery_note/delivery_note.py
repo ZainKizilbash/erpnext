@@ -25,11 +25,11 @@ class DeliveryNote(SellingController):
 		super(DeliveryNote, self).__init__(*args, **kwargs)
 		self.status_map = [
 			["Draft", None],
-			["To Bill", "eval:self.per_completed < 100 and self.docstatus == 1"],
-			["Completed", "eval:self.per_completed == 100 and self.docstatus == 1"],
+			["To Bill", "eval:self.billing_status == 'To Bill' and self.docstatus == 1"],
+			["Completed", "eval:self.billing_status != 'To Bill' and self.docstatus == 1"],
 			["Return", "eval:self.is_return and self.docstatus == 1"],
-			["Cancelled", "eval:self.docstatus==2"],
-			["Closed", "eval:self.status=='Closed'"],
+			["Closed", "eval:self.status == 'Closed'"],
+			["Cancelled", "eval:self.docstatus == 2"],
 		]
 
 	def validate(self):
@@ -83,8 +83,8 @@ class DeliveryNote(SellingController):
 
 	def on_cancel(self):
 		super(DeliveryNote, self).on_cancel()
-
 		self.check_next_docstatus()
+		self.update_status_on_cancel()
 
 		self.update_billing_status()
 		self.update_previous_doc_status()
@@ -230,11 +230,17 @@ class DeliveryNote(SellingController):
 			self.per_billed = 100 if total_billed_qty else 0
 			self.per_completed = 100 if total_billed_qty else 0
 
+		# update billing_status
+		self.billing_status = self.get_completion_status('per_completed', 'Bill',
+			not_applicable=self.status == "Closed" or self.per_returned == 100 or self.is_return,
+			not_applicable_based_on='per_billed')
+
 		if update:
 			self.db_set({
 				'per_billed': self.per_billed,
 				'per_returned': self.per_returned,
 				'per_completed': self.per_completed,
+				'billing_status': self.billing_status,
 			}, update_modified=update_modified)
 
 	def set_installation_status(self, update=False, update_modified=True):
@@ -255,7 +261,7 @@ class DeliveryNote(SellingController):
 			self.per_installed = 100 if total_installed_qty else 0
 
 		# update installation_status
-		self.installation_status = self.get_completion_status('per_installed', 'Installed')
+		self.installation_status = self.get_completion_status('per_installed', 'Installed', not_applicable=True)
 
 		if update:
 			self.db_set({
@@ -311,6 +317,8 @@ class DeliveryNote(SellingController):
 
 	def update_status(self, status):
 		self.set_status(update=True, status=status)
+		self.set_installation_status(update=True)
+		self.set_billing_status(update=True)
 		self.update_project_billing_and_sales()
 		self.notify_update()
 		clear_doctype_notifications(self)

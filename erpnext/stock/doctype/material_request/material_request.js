@@ -154,7 +154,7 @@ frappe.ui.form.on('Material Request', {
 			get_query_filters: {
 				docstatus: 1,
 				status: ["not in", ["Closed", "On Hold"]],
-				per_delivered: ["<", 99.99],
+				delivery_status: "To Deliver",
 			}
 		});
 	},

@@ -70,7 +70,7 @@ frappe.ui.form.on("Delivery Note", {
 	},
 
 	refresh: function(frm) {
-		if (frm.doc.docstatus === 1 && frm.doc.is_return === 1 && frm.doc.per_billed !== 100) {
+		if (frm.doc.docstatus === 1 && frm.doc.is_return === 1 && frm.doc.billing_status == "To Bill") {
 			frm.add_custom_button(__('Credit Note'), function() {
 				frappe.model.open_mapped_doc({
 					method: "erpnext.stock.doctype.delivery_note.delivery_note.make_sales_invoice",
@@ -147,7 +147,7 @@ erpnext.stock.DeliveryNoteController = class DeliveryNoteController extends erpn
 		}
 		erpnext.stock.delivery_note.set_print_hide(doc, dt, dn);
 
-		if(doc.docstatus==1 && !doc.is_return && doc.status!="Closed" && flt(doc.per_completed) < 100) {
+		if(doc.docstatus == 1 && !doc.is_return && doc.status != "Closed" && flt(doc.per_completed) < 100) {
 			// show Make Invoice button only if Delivery Note is not created from Sales Invoice
 			var from_sales_invoice = false;
 			from_sales_invoice = me.frm.doc.items.some(function(item) {
@@ -266,7 +266,7 @@ erpnext.stock.DeliveryNoteController = class DeliveryNoteController extends erpn
 			get_query_filters: {
 				docstatus: 1,
 				status: ["not in", ["Closed", "On Hold"]],
-				per_delivered: ["<", 99.99],
+				delivery_status: "To Deliver",
 				company: this.frm.doc.company,
 				customer: this.frm.doc.customer || undefined,
 			}

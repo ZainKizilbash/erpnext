@@ -127,6 +127,7 @@ class PurchaseInvoice(BuyingController):
 
 	def on_cancel(self):
 		super(PurchaseInvoice, self).on_cancel()
+		self.update_status_on_cancel()
 
 		self.update_previous_doc_status()
 
@@ -141,7 +142,6 @@ class PurchaseInvoice(BuyingController):
 
 		self.make_gl_entries_on_cancel()
 		self.update_project()
-		self.db_set('status', 'Cancelled')
 
 		if not self.is_return:
 			unlink_inter_company_doc(self.doctype, self.name, self.inter_company_reference)
@@ -170,8 +170,8 @@ class PurchaseInvoice(BuyingController):
 		# Update Purchase Orders
 		for name in purchase_orders:
 			doc = frappe.get_doc("Purchase Order", name)
-			doc.set_billing_status(update=True)
 			doc.set_receipt_status(update=True)
+			doc.set_billing_status(update=True)
 
 			doc.validate_billed_qty(from_doctype=self.doctype, row_names=purchase_order_row_names_without_prec)
 			if self.update_stock:

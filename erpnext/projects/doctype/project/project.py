@@ -146,10 +146,10 @@ class Project(StatusUpdater):
 		self.customer_billable_amount = sales_data.totals.customer_grand_total
 		self.total_billed_amount = self.get_billed_amount()
 
-		sales_orders = frappe.get_all("Sales Order", fields=['per_completed', 'per_delivered', 'status', 'skip_delivery_note'], filters={
+		sales_orders = frappe.get_all("Sales Order", fields=['billing_status', 'delivery_status', 'status', 'skip_delivery_note'], filters={
 			"project": self.name, "docstatus": 1
 		})
-		delivery_notes = frappe.get_all("Delivery Note", fields=['per_completed', 'status'], filters={
+		delivery_notes = frappe.get_all("Delivery Note", fields=['billing_status', 'status'], filters={
 			"project": self.name, "docstatus": 1, "is_return": 0,
 		})
 		sales_invoices = self.get_sales_invoices()
@@ -176,7 +176,7 @@ class Project(StatusUpdater):
 		for d in sales_orders + delivery_notes:
 			if d.status != "Closed":
 				has_billables = True
-				if d.per_completed < 99.99:
+				if d.billing_status == "To Bill":
 					has_unbilled = True
 
 		if sales_invoices:
@@ -218,7 +218,7 @@ class Project(StatusUpdater):
 		for d in sales_orders:
 			if d.status != 'Closed' and not d.skip_delivery_note:
 				has_deliverables = True
-				if d.per_delivered < 99.99:
+				if d.delivery_status == "To Deliver":
 					has_undelivered = True
 
 		if has_deliverables:
@@ -2044,7 +2044,7 @@ def get_delivery_note(project_name):
 	sales_order_filters = {
 		"docstatus": 1,
 		"status": ["not in", ["Closed", "On Hold"]],
-		"per_delivered": ["<", 99.99],
+		"delivery_status": ["=", "To Deliver"],
 		"project": project.name,
 		"company": project.company,
 		"skip_delivery_note": 0,

@@ -735,6 +735,19 @@ class BuyingController(StockController):
 			self.delete_linked_asset()
 			self.update_fixed_asset(field, delete_asset=True)
 
+	def update_status_on_cancel(self):
+		to_update = {}
+		if self.meta.has_field("status"):
+			to_update["status"] = "Cancelled"
+
+		not_applicable_fields = ["billing_status", "receipt_status"]
+		for f in not_applicable_fields:
+			if self.meta.has_field(f):
+				to_update[f] = "Not Applicable"
+
+		if to_update:
+			self.db_set(to_update)
+
 	def validate_budget(self):
 		if self.docstatus == 1:
 			for data in self.get('items'):

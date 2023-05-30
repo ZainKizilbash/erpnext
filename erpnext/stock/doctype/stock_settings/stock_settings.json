@@ -1,6 +1,6 @@
 {
  "actions": [],
- "creation": "2013-06-24 16:37:54",
+ "creation": "2023-03-01 14:29:10.928420",
  "description": "Settings",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -18,6 +18,7 @@
   "sample_retention_warehouse",
   "section_break_7",
   "over_delivery_receipt_allowance",
+  "under_delivery_allowance",
   "column_break_12",
   "restrict_stock_valuation_to_role",
   "action_if_quality_inspection_is_not_submitted",
@@ -278,13 +279,19 @@
    "fieldtype": "Link",
    "label": "Default Weight UOM",
    "options": "UOM"
+  },
+  {
+   "description": "Percentage you are allowed to deliver less against the quantity ordered. If within allowance, Sales Order will be considered as Delivered.",
+   "fieldname": "under_delivery_allowance",
+   "fieldtype": "Float",
+   "label": "Under Delivery Allowance (%)"
   }
  ],
  "icon": "icon-cog",
  "idx": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-03-01 14:28:13.768901",
+ "modified": "2023-05-29 20:50:18.922162",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Stock Settings",

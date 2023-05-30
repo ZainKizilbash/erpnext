@@ -114,7 +114,7 @@ erpnext.accounts.PurchaseInvoice = class PurchaseInvoice extends erpnext.buying.
 						supplier: me.frm.doc.supplier || undefined,
 						docstatus: 1,
 						status: ["not in", ["Closed", "On Hold"]],
-						per_completed: ["<", 99.99],
+						billing_status: "To Bill",
 						company: me.frm.doc.company
 					}
 				})
@@ -150,7 +150,7 @@ erpnext.accounts.PurchaseInvoice = class PurchaseInvoice extends erpnext.buying.
 						supplier: me.frm.doc.supplier || undefined,
 						docstatus: 1,
 						status: ["not in", ["Closed", "Completed"]],
-						per_completed: ["<", 99.99],
+						billing_status: "To Bill",
 						company: me.frm.doc.company,
 						is_return: me.frm.doc.is_return
 					}

@@ -27,11 +27,11 @@ class PurchaseReceipt(BuyingController):
 		super(PurchaseReceipt, self).__init__(*args, **kwargs)
 		self.status_map = [
 			["Draft", None],
-			["To Bill", "eval:self.per_completed < 100 and self.docstatus == 1"],
-			["Completed", "eval:self.per_completed == 100 and self.docstatus == 1"],
+			["To Bill", "eval:self.billing_status == 'To Bill' and self.docstatus == 1"],
+			["Completed", "eval:self.billing_status != 'To Bill' and self.docstatus == 1"],
 			["Return", "eval:self.is_return and self.docstatus == 1"],
-			["Cancelled", "eval:self.docstatus==2"],
-			["Closed", "eval:self.status=='Closed'"],
+			["Closed", "eval:self.status == 'Closed'"],
+			["Cancelled", "eval:self.docstatus == 2"],
 		]
 
 	def validate(self):
@@ -85,6 +85,7 @@ class PurchaseReceipt(BuyingController):
 
 	def on_cancel(self):
 		super(PurchaseReceipt, self).on_cancel()
+		self.update_status_on_cancel()
 
 		# Check if Purchase Invoice has been submitted against current Purchase Order
 		submitted = frappe.db.sql("""select t1.name
@@ -179,11 +180,17 @@ class PurchaseReceipt(BuyingController):
 			self.per_billed = 100 if total_billed_qty else 0
 			self.per_completed = 100 if total_billed_qty else 0
 
+		# update billing_status
+		self.billing_status = self.get_completion_status('per_completed', 'Bill',
+			not_applicable=self.status == "Closed" or self.per_returned == 100 or self.is_return,
+			not_applicable_based_on='per_billed')
+
 		if update:
 			self.db_set({
 				'per_billed': self.per_billed,
 				'per_returned': self.per_returned,
 				'per_completed': self.per_completed,
+				'billing_status': self.billing_status,
 			}, update_modified=update_modified)
 
 	def get_billing_status_data(self):
@@ -235,7 +242,8 @@ class PurchaseReceipt(BuyingController):
 				allowance_type='billing', from_doctype=from_doctype, row_names=row_names)
 
 	def update_status(self, status):
-		self.set_status(update=True, status = status)
+		self.set_status(update=True, status=status)
+		self.set_billing_status(update=True)
 		self.notify_update()
 		clear_doctype_notifications(self)
 

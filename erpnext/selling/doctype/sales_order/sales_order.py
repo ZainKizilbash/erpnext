@@ -32,13 +32,13 @@ class SalesOrder(SellingController):
 		super(SalesOrder, self).__init__(*args, **kwargs)
 		self.status_map = [
 			["Draft", None],
-			["To Deliver and Bill", "eval:self.per_delivered < 100 and self.per_completed < 100 and self.docstatus == 1"],
-			["To Bill", "eval:(self.per_delivered == 100 or self.skip_delivery_note) and self.per_completed < 100 and self.docstatus == 1"],
-			["To Deliver", "eval:self.per_delivered < 100 and self.per_completed == 100 and self.docstatus == 1 and not self.skip_delivery_note"],
-			["Completed", "eval:(self.per_delivered == 100 or self.skip_delivery_note) and self.per_completed == 100 and self.docstatus == 1"],
+			["To Deliver and Bill", "eval:self.delivery_status == 'To Deliver' and self.billing_status == 'To Bill' and self.docstatus == 1"],
+			["To Bill", "eval:self.delivery_status != 'To Deliver' and self.billing_status == 'To Bill' and self.docstatus == 1"],
+			["To Deliver", "eval:self.delivery_status == 'To Deliver' and self.billing_status != 'To Bill' and self.docstatus == 1"],
+			["Completed", "eval:self.delivery_status != 'To Deliver' and self.billing_status != 'To Bill' and self.docstatus == 1"],
+			["Closed", "eval:self.status == 'Closed'"],
+			["On Hold", "eval:self.status == 'On Hold'"],
 			["Cancelled", "eval:self.docstatus==2"],
-			["Closed", "eval:self.status=='Closed'"],
-			["On Hold", "eval:self.status=='On Hold'"],
 		]
 
 	def validate(self):
@@ -90,6 +90,7 @@ class SalesOrder(SellingController):
 
 	def on_cancel(self):
 		super(SalesOrder, self).on_cancel()
+		self.update_status_on_cancel()
 
 		# Cannot cancel closed SO
 		if self.status == 'Closed':
@@ -98,8 +99,6 @@ class SalesOrder(SellingController):
 		self.check_nextdoc_docstatus()
 		self.update_reserved_qty()
 		self.update_previous_doc_status()
-
-		frappe.db.set(self, 'status', 'Cancelled')
 
 		self.update_blanket_order()
 
@@ -119,11 +118,11 @@ class SalesOrder(SellingController):
 
 	def set_indicator(self):
 		"""Set indicator for portal"""
-		if self.per_completed < 100 and self.per_delivered < 100:
+		if self.billing_status == "To Bill" and self.delivery_status == "To Deliver":
 			self.indicator_color = "orange"
 			self.indicator_title = _("Not Paid and Not Delivered")
 
-		elif self.per_completed == 100 and self.per_delivered < 100:
+		elif self.billing_status == "Billed" and self.delivery_status == "To Deliver":
 			self.indicator_color = "orange"
 			self.indicator_title = _("Paid and Not Delivered")
 
@@ -134,6 +133,9 @@ class SalesOrder(SellingController):
 	def update_status(self, status):
 		self.check_modified_date()
 		self.set_status(update=True, status=status)
+		self.set_delivery_status(update=True)
+		self.set_packing_status(update=True)
+		self.set_billing_status(update=True)
 		self.update_project_billing_and_sales()
 		self.update_reserved_qty()
 		self.notify_update()
@@ -179,12 +181,16 @@ class SalesOrder(SellingController):
 				}, update_modified=update_modified)
 
 		# update percentage in parent
-		self.per_delivered = self.calculate_status_percentage('delivered_qty', 'qty', data.deliverable_rows)
+		self.per_delivered, within_allowance = self.calculate_status_percentage('delivered_qty', 'qty', data.deliverable_rows,
+			under_delivery_allowance=True)
 		if self.per_delivered is None:
-			self.per_delivered = flt(self.calculate_status_percentage('delivered_qty', 'qty', self.items))
+			self.per_delivered, within_allowance = self.calculate_status_percentage('delivered_qty', 'qty', self.items,
+				under_delivery_allowance=True)
+			self.per_delivered = flt(self.per_delivered)
 
 		# update delivery_status
-		self.delivery_status = self.get_completion_status('per_delivered', 'Delivered')
+		self.delivery_status = self.get_completion_status('per_delivered', 'Deliver',
+			not_applicable=self.skip_delivery_note or self.status == "Closed", within_allowance=within_allowance)
 
 		if update:
 			self.db_set({
@@ -205,12 +211,16 @@ class SalesOrder(SellingController):
 				}, update_modified=update_modified)
 
 		# update percentage in parent
-		self.per_packed = self.calculate_status_percentage('packed_qty', 'qty', data.packable_rows)
+		self.per_packed, within_allowance = self.calculate_status_percentage('packed_qty', 'qty', data.packable_rows,
+			under_delivery_allowance=True)
 		if self.per_packed is None:
-			self.per_packed = flt(self.calculate_status_percentage('packed_qty', 'qty', self.items))
+			self.per_packed, within_allowance = self.calculate_status_percentage('packed_qty', 'qty', self.items,
+				under_delivery_allowance=True)
+			self.per_packed = flt(self.per_packed)
 
 		# update packing_status
-		self.packing_status = self.get_completion_status('per_packed', 'Packed')
+		self.packing_status = self.get_completion_status('per_packed', 'Pack',
+			not_applicable=self.skip_delivery_note or self.status == "Closed", within_allowance=within_allowance)
 
 		if update:
 			self.db_set({
@@ -236,14 +246,19 @@ class SalesOrder(SellingController):
 		# update percentage in parent
 		self.per_returned = flt(self.calculate_status_percentage('returned_qty', 'qty', self.items))
 		self.per_billed = self.calculate_status_percentage('billed_qty', 'qty', self.items)
-		self.per_completed = self.calculate_status_percentage(['billed_qty', 'returned_qty'], 'qty', self.items)
+
+		self.per_completed, within_allowance = self.calculate_status_percentage(['billed_qty', 'returned_qty'], 'qty',
+			self.items, under_delivery_allowance=True)
 		if self.per_completed is None:
 			total_billed_qty = flt(sum([flt(d.billed_qty) for d in self.items]), self.precision('total_qty'))
 			self.per_billed = 100 if total_billed_qty else 0
 			self.per_completed = 100 if total_billed_qty else 0
 
 		# update billing_status
-		self.billing_status = self.get_completion_status('per_billed', 'Billed')
+		self.billing_status = self.get_completion_status('per_completed', 'Bill',
+			not_applicable=self.status == "Closed" or self.per_returned == 100,
+			not_applicable_based_on='per_billed',
+			within_allowance=self.delivery_status == "Delivered" and within_allowance)
 
 		if update:
 			self.db_set({
@@ -748,7 +763,7 @@ def close_or_unclose_sales_orders(names, status):
 		so = frappe.get_doc("Sales Order", name)
 		if so.docstatus == 1:
 			if status == "Closed":
-				if so.status not in ("Cancelled", "Closed") and (so.per_delivered < 100 or so.per_completed < 100):
+				if so.status not in ("Cancelled", "Closed") and (so.delivery_status == "To Deliver" or so.billing_status == "To Bill"):
 					so.update_status(status)
 			else:
 				if so.status == "Closed":
@@ -756,6 +771,7 @@ def close_or_unclose_sales_orders(names, status):
 			so.update_blanket_order()
 
 	frappe.local.message_log = []
+
 
 def get_requested_item_qty(sales_order):
 	return frappe._dict(frappe.db.sql("""
@@ -1295,7 +1311,7 @@ def get_events(start, end, filters=None):
 	data = frappe.db.sql("""
 		select
 			distinct `tabSales Order`.name, `tabSales Order`.customer_name, `tabSales Order`.status,
-			`tabSales Order`.delivery_status, `tabSales Order`.billing_status,
+			`tabSales Order`.delivery_status, `tabSales Order`.billing_status, `tabSales Order`.delivery_status,
 			`tabSales Order Item`.delivery_date
 		from
 			`tabSales Order`, `tabSales Order Item`

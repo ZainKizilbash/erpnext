@@ -465,8 +465,8 @@ def _get_delivery_notes_to_be_billed(doctype="Delivery Note", txt="", searchfiel
 		where `tabDelivery Note`.docstatus = 1
 			and `tabDelivery Note`.`{key}` like {txt}
 			and `tabDelivery Note`.`status` not in ('Stopped', 'Closed')
-			and `tabDelivery Note`.per_completed < 100
-			and (`tabDelivery Note`.is_return = 0 or dr.per_completed < 100)
+			and `tabDelivery Note`.billing_status = 'To Bill'
+			and (`tabDelivery Note`.is_return = 0 or dr.billing_status = 'To Bill')
 			{claim_customer_cond} {fcond} {mcond}
 		order by `tabDelivery Note`.posting_date, `tabDelivery Note`.posting_time, `tabDelivery Note`.creation
 		{limit}
@@ -513,7 +513,7 @@ def _get_sales_orders_to_be_billed(doctype="Sales Order", txt="", searchfield="n
 		where `tabSales Order`.docstatus = 1
 			and `tabSales Order`.`{key}` like {txt}
 			and `tabSales Order`.`status` not in ('Closed', 'On Hold')
-			and `tabSales Order`.per_completed < 100
+			and `tabSales Order`.billing_status = 'To Bill'
 			{claim_customer_cond} {fcond} {mcond}
 		order by `tabSales Order`.transaction_date, `tabSales Order`.creation
 		{limit}

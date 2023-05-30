@@ -88,7 +88,7 @@ class Bin(Document):
 				and po.docstatus = 1
 				and po.is_subcontracted = 'Yes'
 				and po.status != 'Closed'
-				and po.per_received < 100
+				and po.receipt_status = 'To Receive'
 				and itemsup.reserve_warehouse = %s''', (self.item_code, self.warehouse))[0][0]
 
 		#Get Transferred Entries
@@ -107,7 +107,7 @@ class Bin(Document):
 				and po.docstatus = 1
 				and po.is_subcontracted = 'Yes'
 				and po.status != 'Closed'
-				and po.per_received < 100
+				and po.receipt_status = 'To Receive'
 		""", {'item': self.item_code})[0][0]
 
 		if reserved_qty_for_sub_contract > materials_transferred:

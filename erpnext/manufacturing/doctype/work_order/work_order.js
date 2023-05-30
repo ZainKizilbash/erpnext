@@ -647,7 +647,7 @@ erpnext.work_order = {
 			}
 		];
 
-		if (purpose === "Manufacture") {
+		if (purpose === "Manufacture" && frm.doc.__onload.scrap_remaining_by_default) {
 			fields.push({
 				fieldtype: 'Check',
 				label: __('Scrap Remaining'),
@@ -661,7 +661,7 @@ erpnext.work_order = {
 				max += (max * (frm.doc.__onload.overproduction_percentage || 0.0)) / 100;
 
 				if (data.qty > max) {
-					frappe.msgprint(__('Quantity must not be more than {0}', [max]));
+					frappe.msgprint(__('Quantity must not be more than {0}', [format_number(max)]));
 					reject();
 				}
 				data.purpose = purpose;

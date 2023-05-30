@@ -35,7 +35,7 @@ class SupplierQuotation(BuyingController):
 		self.update_rfq_supplier_status(1)
 
 	def on_cancel(self):
-		frappe.db.set(self, "status", "Cancelled")
+		self.update_status_on_cancel()
 		self.update_rfq_supplier_status(0)
 
 	def on_trash(self):
