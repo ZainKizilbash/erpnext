@@ -49,7 +49,7 @@ frappe.ui.form.on("Purchase Receipt", {
 			frm.trigger("toggle_display_account_head");
 		}
 
-		if (frm.doc.docstatus === 1 && frm.doc.is_return === 1 && frm.doc.per_completed < 100) {
+		if (frm.doc.docstatus === 1 && frm.doc.is_return === 1 && frm.doc.billing_status == "To Bill") {
 			frm.add_custom_button(__('Debit Note'), function() {
 				frappe.model.open_mapped_doc({
 					method: "erpnext.stock.doctype.purchase_receipt.purchase_receipt.make_purchase_invoice",
@@ -153,7 +153,7 @@ erpnext.stock.PurchaseReceiptController = class PurchaseReceiptController extend
 							supplier: me.frm.doc.supplier || undefined,
 							docstatus: 1,
 							status: ["not in", ["Closed", "On Hold"]],
-							per_received: ["<", 99.99],
+							receipt_status: "To Receive",
 							company: me.frm.doc.company
 						}
 					});

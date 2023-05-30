@@ -54,7 +54,7 @@ class Quotation(SellingController):
 		super(Quotation, self).on_cancel()
 
 		# update enquiry status
-		self.set_status(update=True)
+		self.update_status_on_cancel()
 		self.update_opportunity()
 		self.update_lead()
 

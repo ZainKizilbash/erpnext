@@ -228,7 +228,7 @@ erpnext.accounts.JournalEntry = class JournalEntry extends frappe.ui.form.Contro
 
 			if(in_list(["Sales Order", "Purchase Order"], jvd.reference_type)) {
 				frappe.model.validate_missing(jvd, "account");
-				out.filters.push([jvd.reference_type, "per_completed", "<", 100]);
+				out.filters.push([jvd.reference_type, "per_billed", "=", 0]);
 			}
 
 			if(jvd.reference_type == "Employee Advance") {

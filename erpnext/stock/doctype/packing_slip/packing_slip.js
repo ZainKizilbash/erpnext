@@ -247,8 +247,8 @@ erpnext.stock.PackingSlipController = class PackingSlipController extends erpnex
 			get_query_filters: {
 				docstatus: 1,
 				status: ["not in", ["Closed", "On Hold"]],
-				per_delivered: ["<", 99.99],
-				per_packed: ["<", 99.99],
+				delivery_status: "To Deliver",
+				packing_status: "To Pack",
 				company: this.frm.doc.company,
 			}
 		});

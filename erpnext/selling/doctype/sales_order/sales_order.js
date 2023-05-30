@@ -36,8 +36,11 @@ frappe.ui.form.on("Sales Order", {
 		})
 	},
 	refresh: function(frm) {
-		if(frm.doc.docstatus === 1 && frm.doc.status !== 'Closed'
-			&& flt(frm.doc.per_delivered, 6) < 100 && flt(frm.doc.per_billed, 6) < 100) {
+		if (frm.doc.docstatus === 1
+			&& frm.doc.status !== 'Closed'
+			&& frm.doc.delivery_status == "To Deliver"
+			&& frm.doc.billing_status == "To Bill"
+		) {
 			frm.add_custom_button(__('Update Items'), () => {
 				erpnext.utils.update_child_items({
 					frm: frm,
@@ -145,9 +148,9 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 					   me.update_status('Resume', 'Draft')
 				   }, __("Status"));
 
-				   if(flt(me.frm.doc.per_delivered, 6) < 100 || flt(me.frm.doc.per_completed) < 100) {
-					   // close
-					   me.frm.add_custom_button(__('Close'), () => me.close_sales_order(), __("Status"))
+				   if (me.frm.doc.delivery_status == "To Deliver" || me.frm.doc.billing_status == "To Bill") {
+						// close
+						me.frm.add_custom_button(__('Close'), () => me.close_sales_order(), __("Status"))
 				   }
 				}
 				else if(me.frm.doc.status === 'Closed') {
@@ -164,7 +167,7 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 						&& !me.frm.doc.skip_delivery_note;
 
 					if (me.frm.has_perm("submit")) {
-						if(flt(me.frm.doc.per_delivered, 6) < 100 || flt(me.frm.doc.per_completed) < 100) {
+						if(me.frm.doc.delivery_status == "To Deliver" || me.frm.doc.billing_status == "To Bill") {
 							// hold
 							me.frm.add_custom_button(__('Hold'), () => me.hold_sales_order(), __("Status"))
 							// close
@@ -173,7 +176,10 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 					}
 
 					// delivery note
-					if(flt(me.frm.doc.per_delivered, 6) < 100 && ["Sales", "Shopping Cart"].indexOf(me.frm.doc.order_type)!==-1 && allow_delivery) {
+					if (flt(me.frm.doc.per_delivered, 6) < 100
+						&& ["Sales", "Shopping Cart"].indexOf(me.frm.doc.order_type) !== -1
+						&& allow_delivery
+					) {
 						me.frm.add_custom_button(__('Delivery Note'), () => me.make_delivery_note_based_on(), __('Create'));
 						me.frm.add_custom_button(__('Work Order'), () => me.make_work_order(), __('Create'));
 
@@ -195,8 +201,9 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 					}
 
 					// material request
-					if(!me.frm.doc.order_type || ["Sales", "Shopping Cart"].indexOf(me.frm.doc.order_type)!==-1
-						&& flt(me.frm.doc.per_delivered, 6) < 100) {
+					if ((!me.frm.doc.order_type || ["Sales", "Shopping Cart"].indexOf(me.frm.doc.order_type) !== -1)
+						&& flt(me.frm.doc.per_delivered, 6) < 100
+					) {
 						me.frm.add_custom_button(__('Material Request'), () => me.make_material_request(), __('Create'));
 						me.frm.add_custom_button(__('Request for Raw Materials'), () => me.make_raw_material_request(), __('Create'));
 					}
@@ -205,7 +212,10 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 					me.frm.add_custom_button(__('Purchase Order'), () => me.make_purchase_order(), __('Create'));
 
 					// project
-					if(flt(me.frm.doc.per_delivered, 2) < 100 && ["Sales", "Shopping Cart"].indexOf(me.frm.doc.order_type)!==-1 && allow_delivery) {
+					if (me.frm.doc.delivery_status == "To Deliver"
+						&& ["Sales", "Shopping Cart"].indexOf(me.frm.doc.order_type) !== -1
+						&& allow_delivery
+					) {
 						me.frm.add_custom_button(__('Project'), () => me.make_project(), __('Create'));
 					}
 
@@ -230,7 +240,7 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 					}
 				}
 				// payment request
-				if(flt(me.frm.doc.per_completed) < 100) {
+				if(flt(me.frm.doc.per_billed) == 0) {
 					me.frm.add_custom_button(__('Payment Request'), () => me.make_payment_request(), __('Create'));
 					me.frm.add_custom_button(__('Payment'), () => me.make_payment_entry(), __('Create'));
 				}

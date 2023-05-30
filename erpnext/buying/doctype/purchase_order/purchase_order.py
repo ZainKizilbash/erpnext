@@ -28,14 +28,14 @@ class PurchaseOrder(BuyingController):
 		super(PurchaseOrder, self).__init__(*args, **kwargs)
 		self.status_map = [
 			["Draft", None],
-			["To Receive and Bill", "eval:self.per_received < 100 and self.per_completed < 100 and self.docstatus == 1"],
-			["To Bill", "eval:self.per_received >= 100 and self.per_completed < 100 and self.docstatus == 1"],
-			["To Receive", "eval:self.per_received < 100 and self.per_completed == 100 and self.docstatus == 1"],
-			["Completed", "eval:self.per_received >= 100 and self.per_completed == 100 and self.docstatus == 1"],
-			["Delivered", "eval:self.status=='Delivered'"],
+			["To Receive and Bill", "eval:self.receipt_status == 'To Receive' and self.billing_status == 'To Bill' and self.docstatus == 1"],
+			["To Bill", "eval:self.receipt_status != 'To Receive' and self.billing_status == 'To Bill' and self.docstatus == 1"],
+			["To Receive", "eval:self.receipt_status == 'To Receive' and self.billing_status != 'To Bill' and self.docstatus == 1"],
+			["Completed", "eval:self.receipt_status != 'To Receive' and self.billing_status != 'To Bill' and self.docstatus == 1"],
+			["Delivered", "eval:self.status == 'Delivered'"],
+			["On Hold", "eval:self.status == 'On Hold'"],
+			["Closed", "eval:self.status == 'Closed'"],
 			["Cancelled", "eval:self.docstatus==2"],
-			["On Hold", "eval:self.status=='On Hold'"],
-			["Closed", "eval:self.status=='Closed'"],
 		]
 
 	def validate(self):
@@ -83,6 +83,7 @@ class PurchaseOrder(BuyingController):
 
 	def on_cancel(self):
 		super(PurchaseOrder, self).on_cancel()
+		self.update_status_on_cancel()
 
 		if self.has_drop_ship_item():
 			self.update_delivered_qty_in_sales_order()
@@ -91,8 +92,6 @@ class PurchaseOrder(BuyingController):
 			self.update_reserved_qty_for_subcontract()
 
 		self.check_on_hold_or_closed_status()
-
-		self.db_set('status', 'Cancelled')
 
 		self.update_previous_doc_status()
 
@@ -141,6 +140,8 @@ class PurchaseOrder(BuyingController):
 	def update_status(self, status):
 		self.check_modified_date()
 		self.set_status(update=True, status=status)
+		self.set_receipt_status(update=True)
+		self.set_billing_status(update=True)
 		self.update_requested_qty()
 		self.update_ordered_qty()
 		if self.is_subcontracted == "Yes":
@@ -197,9 +198,14 @@ class PurchaseOrder(BuyingController):
 		if self.per_received is None:
 			self.per_received = flt(self.calculate_status_percentage('received_qty', 'qty', self.items))
 
+		# update delivery_status
+		self.receipt_status = self.get_completion_status('per_received', 'Receive',
+			not_applicable=self.status == "Closed")
+
 		if update:
 			self.db_set({
 				'per_received': self.per_received,
+				'receipt_status': self.receipt_status,
 			}, update_modified=update_modified)
 
 	def set_billing_status(self, update=False, update_modified=True):
@@ -226,11 +232,16 @@ class PurchaseOrder(BuyingController):
 			self.per_billed = 100 if total_billed_qty else 0
 			self.per_completed = 100 if total_billed_qty else 0
 
+		self.billing_status = self.get_completion_status('per_completed', 'Bill',
+			not_applicable=self.status == "Closed" or self.per_returned == 100,
+			not_applicable_based_on='per_billed')
+
 		if update:
 			self.db_set({
 				'per_billed': self.per_billed,
 				'per_returned': self.per_returned,
 				'per_completed': self.per_completed,
+				'billing_status': self.billing_status,
 			}, update_modified=update_modified)
 
 	def get_receipt_status_data(self):
@@ -495,16 +506,6 @@ class PurchaseOrder(BuyingController):
 				stock_bin = get_bin(d.rm_item_code, d.reserve_warehouse)
 				stock_bin.update_reserved_qty_for_sub_contracting()
 
-	def update_receiving_percentage(self):
-		total_qty, received_qty = 0.0, 0.0
-		for item in self.items:
-			received_qty += item.received_qty
-			total_qty += item.qty
-		if total_qty:
-			self.db_set("per_received", flt(received_qty/total_qty) * 100, update_modified=False)
-		else:
-			self.db_set("per_received", 0, update_modified=False)
-
 
 def item_last_purchase_rate(name, conversion_rate, item_code, conversion_factor= 1.0):
 	"""get last purchase rate for an item"""
@@ -531,7 +532,7 @@ def close_or_unclose_purchase_orders(names, status):
 		po = frappe.get_doc("Purchase Order", name)
 		if po.docstatus == 1:
 			if status == "Closed":
-				if po.status not in ("Cancelled", "Closed") and (po.per_received < 100 or po.per_billed < 100):
+				if po.status not in ("Cancelled", "Closed") and (po.receipt_status == 'To Receive' or po.billing_status == 'To Bill'):
 					po.update_status(status)
 			else:
 				if po.status == "Closed":
@@ -576,7 +577,6 @@ def make_purchase_receipt(source_name, target_doc=None):
 		"Purchase Order": {
 			"doctype": "Purchase Receipt",
 			"field_map": {
-				"per_billed": "per_billed",
 				"supplier_warehouse": "supplier_warehouse",
 				"remarks": "remarks"
 			},

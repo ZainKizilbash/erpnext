@@ -362,6 +362,12 @@ common_properties = [
 	[('Quotation', 'Sales Order', 'Delivery Note', 'Sales Invoice', 'Purchase Order', 'Purchase Receipt', 'Purchase Invoice', 'Project', 'Material Request', 'Appointment', 'Opportunity'),
 		{"fieldname": "applies_to_variant_of_name", "property": "label", "value": "Applies to Model Name"}],
 
+	# Applies To Item/Variant in standard filter
+	[('Quotation', 'Sales Order', 'Delivery Note', 'Sales Invoice', 'Purchase Order', 'Purchase Receipt', 'Purchase Invoice', 'Project', 'Material Request', 'Appointment', 'Opportunity'),
+		{"fieldname": "applies_to_variant_of", "property": "in_standard_filter", "value": 1}],
+	[('Quotation', 'Sales Order', 'Delivery Note', 'Sales Invoice', 'Purchase Order', 'Purchase Receipt', 'Purchase Invoice', 'Project', 'Material Request', 'Appointment', 'Opportunity'),
+		{"fieldname": "applies_to_item", "property": "in_standard_filter", "value": 1}],
+
 	# Customer (User) Label
 	[('Quotation', 'Sales Order', 'Delivery Note', 'Sales Invoice', 'Project', 'Material Request'),
 		{"fieldname": "customer", "property": "label", "value": "Customer (User)"}],

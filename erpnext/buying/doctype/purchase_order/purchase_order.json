@@ -187,8 +187,11 @@
   "status_tab",
   "status",
   "sec_received",
+  "receipt_status",
+  "column_break_y3ale",
   "per_received",
   "sec_billing",
+  "billing_status",
   "per_completed",
   "cb_6",
   "per_billed",
@@ -1428,7 +1431,6 @@
   {
    "fieldname": "applies_to_item",
    "fieldtype": "Link",
-   "in_standard_filter": 1,
    "label": "Applies to Item",
    "options": "Item"
   },
@@ -1453,7 +1455,6 @@
    "fieldname": "applies_to_variant_of",
    "fieldtype": "Link",
    "hidden": 1,
-   "in_standard_filter": 1,
    "label": "Applies to Template",
    "options": "Item",
    "read_only": 1
@@ -1609,13 +1610,39 @@
    "options": "Company:company:default_currency",
    "print_hide": 1,
    "read_only": 1
+  },
+  {
+   "default": "To Receive",
+   "fieldname": "receipt_status",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Receipt Status",
+   "no_copy": 1,
+   "options": "To Receive\nReceived\nNot Applicable",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_y3ale",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "To Bill",
+   "fieldname": "billing_status",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Billing Status",
+   "no_copy": 1,
+   "options": "To Bill\nBilled\nNot Applicable",
+   "print_hide": 1,
+   "read_only": 1
   }
  ],
  "icon": "fa fa-file-text",
  "idx": 105,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-05-22 13:14:09.087616",
+ "modified": "2023-05-30 13:16:49.443752",
  "modified_by": "Administrator",
  "module": "Buying",
  "name": "Purchase Order",

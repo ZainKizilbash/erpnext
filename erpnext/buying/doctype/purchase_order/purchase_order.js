@@ -116,7 +116,10 @@ erpnext.buying.PurchaseOrderController = class PurchaseOrderController extends e
 
 		if(doc.docstatus == 1) {
 			if(!in_list(["Closed", "Delivered"], doc.status)) {
-				if(this.frm.doc.status !== 'Closed' && flt(this.frm.doc.per_received) < 100 && flt(this.frm.doc.per_billed) < 100) {
+				if (this.frm.doc.status !== 'Closed'
+					&& this.frm.doc.receipt_status == "To Receive"
+					&& this.frm.doc.billing_status == "To Bill"
+				) {
 					this.frm.add_custom_button(__('Update Items'), () => {
 						erpnext.utils.update_child_items({
 							frm: this.frm,
@@ -127,10 +130,10 @@ erpnext.buying.PurchaseOrderController = class PurchaseOrderController extends e
 					});
 				}
 				if (this.frm.has_perm("submit")) {
-					if(flt(doc.per_completed, 6) < 100 || flt(doc.per_received, 6) < 100) {
+					if(doc.billing_status == "To Bill" || doc.receipt_status == "To Receive") {
 						if (doc.status != "On Hold") {
 							this.frm.add_custom_button(__('Hold'), () => this.hold_purchase_order(), __("Status"));
-						} else{
+						} else {
 							this.frm.add_custom_button(__('Resume'), () => this.unhold_purchase_order(), __("Status"));
 						}
 						this.frm.add_custom_button(__('Close'), () => this.close_purchase_order(), __("Status"));
@@ -157,9 +160,10 @@ erpnext.buying.PurchaseOrderController = class PurchaseOrderController extends e
 								function() { me.make_stock_entry(); }, __("Transfer"));
 						}
 					}
-					if(flt(doc.per_billed, 6) < 100)
+					if(flt(doc.per_completed, 6) < 100)
 						cur_frm.add_custom_button(__('Purchase Invoice'),
 							this.make_purchase_invoice, __('Create'));
+					}
 
 					if(!doc.auto_repeat) {
 						cur_frm.add_custom_button(__('Subscription'), function() {
@@ -181,11 +185,11 @@ erpnext.buying.PurchaseOrderController = class PurchaseOrderController extends e
 						});
 					}
 				}
-				if(flt(doc.per_billed)==0) {
+				if(flt(doc.per_billed) == 0) {
 					this.frm.add_custom_button(__('Payment Request'),
 						function() { me.make_payment_request() }, __('Create'));
 				}
-				if(flt(doc.per_billed)==0 && doc.status != "Delivered") {
+				if(flt(doc.per_billed) == 0 && doc.status != "Delivered") {
 					cur_frm.add_custom_button(__('Payment'), cur_frm.cscript.make_payment_entry, __('Create'));
 				}
 				cur_frm.page.set_inner_btn_group_as_primary(__('Create'));

@@ -64,7 +64,7 @@ class StatusUpdater(Document):
 		if self.status != previous_status and self.status not in ("Cancelled", "Draft"):
 			self.add_comment("Label", _(self.status))
 
-	def calculate_status_percentage(self, completed_field, reference_field, items=None):
+	def calculate_status_percentage(self, completed_field, reference_field, items=None, under_delivery_allowance=False):
 		if items is None:
 			items = self.get('items', [])
 
@@ -77,9 +77,14 @@ class StatusUpdater(Document):
 		if not isinstance(completed_field, list):
 			completed_field = [completed_field]
 
+		under_delivery_percentage = 0
+		if under_delivery_allowance:
+			under_delivery_percentage = flt(frappe.get_cached_value("Stock Settings", None, "under_delivery_allowance"))
+
 		# Calculate Total Qty and Total Completed Qty
 		total_reference_qty = 0
 		total_completed_qty = 0
+		within_allowance = True
 		for row in items:
 			completed_qty = 0
 			for f in completed_field:
@@ -88,6 +93,10 @@ class StatusUpdater(Document):
 			reference_qty = abs(flt(row.get(reference_field)))
 			completed_qty = min(completed_qty, reference_qty)
 
+			min_qty = flt(reference_qty - (reference_qty * under_delivery_percentage / 100), precision)
+			if completed_qty < min_qty:
+				within_allowance = False
+
 			total_reference_qty += reference_qty
 			total_completed_qty += completed_qty
 
@@ -95,22 +104,35 @@ class StatusUpdater(Document):
 		total_completed_qty = flt(total_completed_qty, precision)
 
 		if total_reference_qty:
-			return flt(total_completed_qty / total_reference_qty * 100, 6)
+			completed_percentage = flt(total_completed_qty / total_reference_qty * 100, 6)
+			if under_delivery_allowance:
+				return completed_percentage, within_allowance
+			else:
+				return completed_percentage
 		else:
-			return None
+			if under_delivery_allowance:
+				return None, False
+			else:
+				return None
 
-	def get_completion_status(self, percentage_field, keyword):
+	def get_completion_status(self, percentage_field, keyword, not_applicable=False, not_applicable_based_on=None,
+			within_allowance=False):
+		if self.docstatus == 2:
+			return "Not Applicable"
+
 		percentage = flt(self.get(percentage_field))
 		rounded_percentage = flt(percentage, self.precision(percentage_field))
 
-		if rounded_percentage <= 0:
-			status = 'Not'
-		elif rounded_percentage >= 100:
-			status = 'Fully'
-		else:
-			status = 'Partly'
+		not_applicable_percentage = flt(self.get(not_applicable_based_on or percentage_field))
+		rounded_not_applicable_percentage = flt(not_applicable_percentage, self.precision(percentage_field))
 
-		return "{0} {1}".format(status, keyword)
+		if not_applicable and rounded_not_applicable_percentage <= 0:
+			return "Not Applicable"
+		elif rounded_percentage >= 100 or within_allowance or not_applicable:
+			suffix = "d" if keyword.endswith("e") else "ed"
+			return f"{keyword}{suffix}"
+		else:
+			return f"To {keyword}"
 
 	def validate_completed_qty(self, completed_field, reference_field, items=None, allowance_type=None,
 			from_doctype=None, row_names=None):

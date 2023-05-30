@@ -70,6 +70,19 @@ class SellingController(StockController):
 		self.set_sales_person_details()
 		self.set_price_list_and_item_details(for_validate=for_validate)
 
+	def update_status_on_cancel(self):
+		to_update = {}
+		if self.meta.has_field("status"):
+			to_update["status"] = "Cancelled"
+
+		not_applicable_fields = ["billing_status", "delivery_status", "packing_status", "installation_status"]
+		for f in not_applicable_fields:
+			if self.meta.has_field(f):
+				to_update[f] = "Not Applicable"
+
+		if to_update:
+			self.db_set(to_update)
+
 	def set_missing_lead_customer_details(self):
 		from erpnext.controllers.accounts_controller import force_party_fields
 

@@ -189,6 +189,7 @@ class SalesInvoice(SellingController):
 
 	def on_cancel(self):
 		super(SalesInvoice, self).on_cancel()
+		self.update_status_on_cancel()
 
 		self.update_previous_doc_status()
 
@@ -203,7 +204,6 @@ class SalesInvoice(SellingController):
 			self.update_stock_ledger()
 
 		self.make_gl_entries_on_cancel()
-		frappe.db.set(self, 'status', 'Cancelled')
 
 		if frappe.get_cached_value('Selling Settings', None, 'sales_update_frequency') == "Each Transaction":
 			update_company_current_month_sales(self.company)
@@ -282,8 +282,8 @@ class SalesInvoice(SellingController):
 
 		for name in sales_orders:
 			doc = frappe.get_doc("Sales Order", name)
-			doc.set_billing_status(update=True)
 			doc.set_delivery_status(update=True)
+			doc.set_billing_status(update=True)
 
 			doc.validate_billed_qty(from_doctype=self.doctype, row_names=sales_order_row_names_without_dn)
 			if self.update_stock:
