@@ -817,7 +817,7 @@ def stop_unstop(work_order, status):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
 
 	pro_order = frappe.get_doc("Work Order", work_order)
-	pro_order.update_status(status)
+	pro_order.run_method("update_status", status)
 	pro_order.notify_update()
 
 	frappe.msgprint(_("Work Order has been {0}").format(frappe.bold(status)))

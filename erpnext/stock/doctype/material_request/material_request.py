@@ -312,7 +312,7 @@ def update_item(obj, target, source_parent, target_parent):
 def update_status(name, status):
 	material_request = frappe.get_doc('Material Request', name)
 	material_request.check_permission('write')
-	material_request.update_status(status)
+	material_request.run_method("update_status", status)
 
 
 @frappe.whitelist()

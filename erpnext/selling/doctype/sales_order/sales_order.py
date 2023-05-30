@@ -132,10 +132,11 @@ class SalesOrder(SellingController):
 
 	def update_status(self, status):
 		self.check_modified_date()
-		self.set_status(update=True, status=status)
+		self.set_status(status=status)
 		self.set_delivery_status(update=True)
 		self.set_packing_status(update=True)
 		self.set_billing_status(update=True)
+		self.set_status(update=True, status=status)
 		self.update_project_billing_and_sales()
 		self.update_reserved_qty()
 		self.notify_update()
@@ -750,7 +751,7 @@ def get_list_context(context=None):
 @frappe.whitelist()
 def update_status(status, name):
 	so = frappe.get_doc("Sales Order", name)
-	so.update_status(status)
+	so.run_method("update_status", status)
 
 
 @frappe.whitelist()
@@ -764,10 +765,10 @@ def close_or_unclose_sales_orders(names, status):
 		if so.docstatus == 1:
 			if status == "Closed":
 				if so.status not in ("Cancelled", "Closed") and (so.delivery_status == "To Deliver" or so.billing_status == "To Bill"):
-					so.update_status(status)
+					so.run_method("update_status", status)
 			else:
 				if so.status == "Closed":
-					so.update_status('Draft')
+					so.run_method("update_status", "Draft")
 			so.update_blanket_order()
 
 	frappe.local.message_log = []

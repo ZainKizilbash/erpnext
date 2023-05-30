@@ -316,9 +316,10 @@ class DeliveryNote(SellingController):
 			allowance_type=None, from_doctype=from_doctype, row_names=row_names)
 
 	def update_status(self, status):
-		self.set_status(update=True, status=status)
+		self.set_status(status=status)
 		self.set_installation_status(update=True)
 		self.set_billing_status(update=True)
+		self.set_status(update=True, status=status)
 		self.update_project_billing_and_sales()
 		self.notify_update()
 		clear_doctype_notifications(self)
@@ -777,4 +778,4 @@ def make_sales_return(source_name, target_doc=None):
 @frappe.whitelist()
 def update_delivery_note_status(docname, status):
 	dn = frappe.get_doc("Delivery Note", docname)
-	dn.update_status(status)
+	dn.run_method("update_status", status)

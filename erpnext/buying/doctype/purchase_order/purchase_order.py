@@ -533,10 +533,10 @@ def close_or_unclose_purchase_orders(names, status):
 		if po.docstatus == 1:
 			if status == "Closed":
 				if po.status not in ("Cancelled", "Closed") and (po.receipt_status == 'To Receive' or po.billing_status == 'To Bill'):
-					po.update_status(status)
+					po.run_method("update_status", status)
 			else:
 				if po.status == "Closed":
-					po.update_status("Draft")
+					po.run_method("update_status", "Draft")
 			po.update_blanket_order()
 
 	frappe.local.message_log = []
