@@ -5,7 +5,7 @@ frappe.ui.form.on("Work Order", {
 	setup: function(frm) {
 		frm.custom_make_buttons = {
 			'Stock Entry': 'Start',
-			'Pick List': 'Create Pick List',
+			'Pick List': 'Pick List',
 			'Job Card': 'Create Job Card'
 		};
 
@@ -291,21 +291,26 @@ frappe.ui.form.on("Work Order", {
 		message = title;
 
 		// pending qty
-		if (!frm.doc.skip_transfer) {
-			let pending_complete = flt(frm.doc.material_transferred_for_manufacturing - frm.doc.produced_qty,
+		let pending_complete;
+		if (frm.doc.skip_transfer) {
+			pending_complete = flt(frm.doc.qty - frm.doc.produced_qty,
 				precision("produced_qty"));
-
-			if (pending_complete) {
-				let width = flt((pending_complete / frm.doc.qty * 100) - added_min, 2);
-				title = __('<b>Remaining:</b> {0} {1}', [format_number(pending_complete), frm.doc.stock_uom]);
-				bars.push({
-					'title': strip_html(title),
-					'width': (width > 100 ? "99.5" : width)  + '%',
-					'progress_class': 'progress-bar-warning'
-				});
-				message = message + '<br>' + title;
-			}
+		} else {
+			pending_complete = flt(frm.doc.material_transferred_for_manufacturing - frm.doc.produced_qty,
+				precision("produced_qty"));
 		}
+
+		if (pending_complete) {
+			let width = flt((pending_complete / frm.doc.qty * 100) - added_min, 2);
+			title = __('<b>Remaining:</b> {0} {1}', [format_number(pending_complete), frm.doc.stock_uom]);
+			bars.push({
+				'title': strip_html(title),
+				'width': (width > 100 ? "99.5" : width)  + '%',
+				'progress_class': 'progress-bar-warning'
+			});
+			message = message + '<br>' + title;
+		}
+
 		frm.dashboard.add_progress(__('Status'), bars, message);
 	},
 
