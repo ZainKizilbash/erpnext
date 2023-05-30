@@ -225,7 +225,8 @@
    "label": "Sales Order",
    "no_copy": 1,
    "options": "Sales Order",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "project",
@@ -422,7 +423,8 @@
    "label": "Material Request",
    "no_copy": 1,
    "options": "Material Request",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "material_request_item",
@@ -430,7 +432,8 @@
    "hidden": 1,
    "label": "Material Request Item",
    "no_copy": 1,
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "sales_order_item",
@@ -438,7 +441,8 @@
    "hidden": 1,
    "label": "Sales Order Item",
    "no_copy": 1,
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "production_plan",
@@ -447,7 +451,8 @@
    "no_copy": 1,
    "options": "Production Plan",
    "print_hide": 1,
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "production_plan_item",
@@ -456,7 +461,8 @@
    "label": "Production Plan Item",
    "no_copy": 1,
    "print_hide": 1,
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "product_bundle_item",
@@ -607,7 +613,7 @@
  "is_calendar_and_gantt": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-05-29 16:24:06.303646",
+ "modified": "2023-05-30 17:46:34.467874",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Work Order",
