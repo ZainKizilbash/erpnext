@@ -89,6 +89,8 @@ erpnext.stock.PackingSlipController = class PackingSlipController extends erpnex
 				this.frm.page.set_inner_btn_group_as_primary(__('Create'));
 			}
 		}
+
+		erpnext.utils.setup_remove_zero_qty_rows(this.frm);
 	}
 
 	calculate_totals() {
