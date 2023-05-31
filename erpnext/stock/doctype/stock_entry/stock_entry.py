@@ -108,9 +108,9 @@ class StockEntry(StockController):
 		if self.work_order and self.purpose == "Material Consumption for Manufacture":
 			self.validate_work_order_status()
 
-		self.update_work_order()
 		self.update_stock_ledger()
 		self.make_gl_entries_on_cancel()
+		self.update_work_order()
 		self.update_cost_in_project()
 		self.update_previous_doc_status()
 		self.update_quality_inspection()
@@ -1347,9 +1347,15 @@ class StockEntry(StockController):
 		"""
 		item_dict = self.get_pro_order_required_items()
 		max_qty = flt(self.pro_doc.qty)
+
 		for item, item_details in iteritems(item_dict):
-			pending_to_issue = flt(item_details.required_qty) - flt(item_details.transferred_qty)
-			desire_to_transfer = flt(self.fg_completed_qty) * flt(item_details.required_qty) / max_qty
+			if item_details.get("no_allowance"):
+				required_qty_with_allowance = item_details.required_qty
+			else:
+				required_qty_with_allowance = self.pro_doc.get_qty_with_allowance(item_details.required_qty)
+
+			pending_to_issue = required_qty_with_allowance - flt(item_details.transferred_qty)
+			desire_to_transfer = flt(item_details.required_qty) * flt(self.fg_completed_qty) / max_qty
 
 			if desire_to_transfer <= pending_to_issue:
 				item_dict[item]["qty"] = desire_to_transfer
@@ -1359,9 +1365,13 @@ class StockEntry(StockController):
 				item_dict[item]["qty"] = 0
 
 		# delete items with 0 qty
+		to_remove = []
 		for item in item_dict.keys():
 			if not item_dict[item]["qty"]:
-				del item_dict[item]
+				to_remove.append(item)
+
+		for item in to_remove:
+			del item_dict[item]
 
 		# show some message
 		if not len(item_dict):
@@ -1372,16 +1382,19 @@ class StockEntry(StockController):
 	def get_pro_order_required_items(self):
 		item_dict = frappe._dict()
 		pro_order = frappe.get_doc("Work Order", self.work_order)
-		if not frappe.db.get_value("Warehouse", pro_order.wip_warehouse, "is_group"):
+		if not frappe.db.get_value("Warehouse", pro_order.wip_warehouse, "is_group", cache=1):
 			wip_warehouse = pro_order.wip_warehouse
 		else:
 			wip_warehouse = None
 
 		for d in pro_order.get("required_items"):
-			if (flt(d.required_qty) > flt(d.transferred_qty) and
-				(d.include_item_in_manufacturing or self.purpose != "Material Transfer for Manufacture")):
+			required_qty_with_allowance = pro_order.get_qty_with_allowance(d.required_qty)
+			if (
+				required_qty_with_allowance > flt(d.transferred_qty)
+				and (d.include_item_in_manufacturing or self.purpose != "Material Transfer for Manufacture")
+			):
 				item_row = d.as_dict()
-				if d.source_warehouse and not frappe.db.get_value("Warehouse", d.source_warehouse, "is_group"):
+				if d.source_warehouse and not frappe.db.get_value("Warehouse", d.source_warehouse, "is_group", cache=1):
 					item_row["from_warehouse"] = d.source_warehouse
 
 				item_row["to_warehouse"] = wip_warehouse

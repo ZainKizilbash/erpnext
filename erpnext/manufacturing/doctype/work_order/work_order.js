@@ -524,10 +524,15 @@ erpnext.work_order = {
 		}
 
 		// Start Button
+		let over_production_allowance = erpnext.manufacturing.get_over_production_allowance();
+		let qty_with_allowance = flt(frm.doc.qty) + flt(frm.doc.qty) * over_production_allowance / 100;
+		qty_with_allowance = flt(qty_with_allowance, precision("qty"));
+
 		const show_start_btn = (
 			!doc.skip_transfer
 			&& doc.transfer_material_against != 'Job Card'
-			&& flt(doc.material_transferred_for_manufacturing) < flt(doc.qty)
+			&& flt(doc.material_transferred_for_manufacturing) < qty_with_allowance
+			&& flt(doc.produced_qty) < flt(doc.qty)
 		);
 
 		if (show_start_btn) {
@@ -540,7 +545,13 @@ erpnext.work_order = {
 			let start_btn = frm.add_custom_button(__('Start'), function() {
 				erpnext.manufacturing.make_stock_entry(doc, 'Material Transfer for Manufacture');
 			});
-			start_btn.removeClass('btn-default').addClass('btn-primary');
+
+			if (
+				!flt(doc.material_transferred_for_manufacturing)
+				|| flt(doc.produced_qty) >= flt(doc.material_transferred_for_manufacturing)
+			) {
+				start_btn.removeClass('btn-default').addClass('btn-primary');
+			}
 		}
 
 		// Finish Button
@@ -558,7 +569,7 @@ erpnext.work_order = {
 				let finish_btn = frm.add_custom_button(__('Finish'), function() {
 					erpnext.manufacturing.make_stock_entry(doc, 'Manufacture');
 				});
-				if (doc.material_transferred_for_manufacturing >= doc.qty) {
+				if (flt(doc.material_transferred_for_manufacturing) >= flt(doc.produced_qty)) {
 					// all materials transferred for manufacturing, make this primary
 					finish_btn.removeClass('btn-default').addClass('btn-primary');
 				}

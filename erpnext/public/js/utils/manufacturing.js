@@ -18,11 +18,12 @@ $.extend(erpnext.manufacturing, {
 				freeze: 1,
 				callback: (r) => {
 					if (r.message) {
+						frappe.model.sync(r.message);
+
 						if (cur_frm && cur_frm.doc.doctype == "Work Order" && cur_frm.doc.name == doc.name) {
 							cur_frm.reload_doc();
 						}
 
-						frappe.model.sync(r.message);
 						if (r.message.docstatus != 1) {
 							frappe.set_route('Form', r.message.doctype, r.message.name);
 						}
@@ -35,14 +36,15 @@ $.extend(erpnext.manufacturing, {
 	show_prompt_for_qty_input: function(doc, purpose) {
 		return new Promise((resolve, reject) => {
 			frappe.model.with_doctype("Work Order", () => {
-				let max = erpnext.manufacturing.get_max_transferable_qty(doc, purpose);
+				let [max, max_with_allowance] = erpnext.manufacturing.get_max_transferable_qty(doc, purpose);
 
 				let fields = [
 					{
 						fieldtype: 'Float',
 						label: __('Qty for {0}', [purpose]),
 						fieldname: 'qty',
-						description: __('Max: {0}', [max]),
+						description: __('Max: {0}', [format_number(max)]),
+						reqd: 1,
 						default: max
 					}
 				];
@@ -56,62 +58,109 @@ $.extend(erpnext.manufacturing, {
 					})
 				}
 
-				fields.push({
-					fieldtype: 'Section Break',
-				});
-
-				fields.push({
-					label: __('Work Order'),
-					fieldname: 'work_order',
-					fieldtype: 'Link',
-					options: "Work Order",
-					default: doc.name,
-					read_only: 1,
-				});
-
-				fields.push({
-					label: __('Production Item'),
-					fieldname: 'production_item',
-					fieldtype: 'Link',
-					options: "Item",
-					default: doc.production_item,
-					read_only: 1,
-				});
-
-				fields.push({
-					fieldtype: 'Link',
-					label: __('Production Item Name'),
-					fieldname: 'production_item_name',
-					default: doc.item_name,
-					read_only: 1,
-				});
+				fields = fields.concat([
+					{
+						fieldtype: 'Section Break',
+					},
+					{
+						label: __('Qty to Produce'),
+						fieldname: 'qty_to_produce',
+						fieldtype: 'Float',
+						default: flt(doc.qty),
+						read_only: 1,
+					},
+					{
+						fieldtype: 'Column Break',
+					},
+					{
+						label: __('Produced Qty'),
+						fieldname: 'produced_qty',
+						fieldtype: 'Float',
+						default: flt(doc.produced_qty),
+						read_only: 1,
+					},
+					{
+						fieldtype: 'Column Break',
+					},
+					{
+						label: __('Transferred Qty'),
+						fieldname: 'transferred_qty',
+						fieldtype: 'Float',
+						default: flt(doc.material_transferred_for_manufacturing),
+						read_only: 1,
+					},
+					{
+						fieldtype: 'Section Break',
+					},
+					{
+						label: __('Work Order'),
+						fieldname: 'work_order',
+						fieldtype: 'Link',
+						options: "Work Order",
+						default: doc.name,
+						read_only: 1,
+					},
+					{
+						label: __('Production Item'),
+						fieldname: 'production_item',
+						fieldtype: 'Link',
+						options: "Item",
+						default: doc.production_item,
+						read_only: 1,
+					},
+					{
+						label: __('Production Item Name'),
+						fieldname: 'production_item_name',
+						fieldtype: 'Data',
+						default: doc.item_name,
+						read_only: 1,
+					},
+				]);
 
 				frappe.prompt(fields, data => {
-					max += (max * erpnext.manufacturing.get_over_production_allowance()) / 100;
-
-					if (data.qty > max) {
-						frappe.msgprint(__('Quantity must not be more than {0}', [format_number(max)]));
+					if (flt(data.qty) > max_with_allowance) {
+						frappe.msgprint(__('Quantity can not be more than {0}', [format_number(max_with_allowance)]));
 						reject();
 					}
 					data.purpose = purpose;
 					resolve(data);
-				}, __('Select Quantity'), __('Create'));
+				}, __(purpose), __('Submit'));
 			});
 		});
 	},
 
 	get_max_transferable_qty: (doc, purpose) => {
+		let qty_with_allowance = erpnext.manufacturing.get_qty_with_allowance(doc);
+
 		let max = 0;
+		let max_with_allowance = 0;
+
 		if (doc.skip_transfer) {
 			max = flt(doc.qty) - flt(doc.produced_qty);
+			max_with_allowance = qty_with_allowance - flt(doc.produced_qty);
 		} else {
 			if (purpose === 'Manufacture') {
 				max = flt(doc.material_transferred_for_manufacturing) - flt(doc.produced_qty);
+				max_with_allowance = max;
 			} else {
 				max = flt(doc.qty) - flt(doc.material_transferred_for_manufacturing);
+				max_with_allowance = qty_with_allowance - flt(doc.material_transferred_for_manufacturing);
 			}
 		}
-		return flt(max, precision('qty', doc));
+
+		let qty_precision = erpnext.manufacturing.get_work_order_precision();
+		return [flt(max, qty_precision), flt(max_with_allowance, qty_precision)];
+	},
+
+	get_qty_with_allowance: function (doc) {
+		let over_production_allowance = erpnext.manufacturing.get_over_production_allowance();
+		let qty_with_allowance = flt(doc.qty) + flt(doc.qty) * over_production_allowance / 100;
+		return flt(qty_with_allowance, erpnext.manufacturing.get_over_production_allowance());
+	},
+
+	get_work_order_precision: function () {
+		let qty_df = frappe.meta.get_docfield("Work Order", "qty");
+		return frappe.meta.get_field_precision(qty_df);
 	},
 
 	get_over_production_allowance: function () {

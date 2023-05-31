@@ -438,16 +438,27 @@ class WorkOrder(StatusUpdater):
 			self.db_set(to_update, update_modified=update_modified)
 
 	def validate_overproduction(self):
-		allowance_percentage = flt(frappe.db.get_single_value("Manufacturing Settings", "overproduction_percentage_for_work_order"))
-
-		max_qty = flt(self.qty + (allowance_percentage / 100 * self.qty), self.precision("qty"))
-
+		max_qty = flt(self.get_qty_with_allowance(self.qty), self.precision("qty"))
 		for fieldname in ["produced_qty", "scrap_qty", "material_transferred_for_manufacturing"]:
 			qty = flt(self.get(fieldname), self.precision("qty"))
 			if qty > max_qty:
-				frappe.throw(_("{0} ({1}) cannot be greater than planned quantity ({2}) in Work Order {3}").format(
-					self.meta.get_label(fieldname), frappe.format(qty), frappe.format(max_qty), self.name
+				frappe.throw(_("{0} {1} cannot be greater than planned quantity {2} in Work Order {3}").format(
+					self.meta.get_label(fieldname),
+					frappe.bold(self.get_formatted(fieldname)),
+					frappe.bold(frappe.format(max_qty)),
+					self.name
 				), StockOverProductionError)
+
+		produced_qty = flt(self.produced_qty, self.precision("qty"))
+		transferred_qty = flt(self.material_transferred_for_manufacturing, self.precision("qty"))
+		if not self.skip_transfer and produced_qty > transferred_qty:
+			frappe.throw(_("Produced Qty cannot more than the Material Transferred for Manufacturing {0}").format(
+				frappe.bold(self.get_formatted("material_transferred_for_manufacturing"))
+			), StockOverProductionError)
+
+	def get_qty_with_allowance(self, qty):
+		allowance_percentage = flt(frappe.get_cached_value("Manufacturing Settings", None, "overproduction_percentage_for_work_order"))
+		return flt(qty) + flt(qty) * allowance_percentage / 100
 
 	def set_status(self, status=None, update=False, update_modified=True):
 		previous_status = self.status
@@ -801,6 +812,8 @@ def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False):
 		else:
 			if frappe.db.get_single_value("Manufacturing Settings", "auto_submit_manufacture_entry"):
 				stock_entry = submit_stock_entry(stock_entry)
+	except StockOverProductionError:
+		raise
 	except frappe.ValidationError:
 		frappe.db.rollback()
 
