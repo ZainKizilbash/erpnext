@@ -502,7 +502,7 @@ frappe.ui.form.on("Work Order Additional Cost", "rate", function(frm) {
 
 erpnext.work_order = {
 	set_custom_buttons: function(frm) {
-		var doc = frm.doc;
+		let doc = frm.doc;
 		if (doc.docstatus === 1) {
 			if (doc.status != 'Stopped' && doc.status != 'Completed') {
 				frm.add_custom_button(__('Stop'), function() {
@@ -513,69 +513,73 @@ erpnext.work_order = {
 					erpnext.work_order.stop_work_order(frm, "Resumed");
 				}, __("Status"));
 			}
+		}
+		erpnext.work_order.setup_start_finish_buttons(frm);
+	},
 
-			const show_start_btn = (frm.doc.skip_transfer
-				|| frm.doc.transfer_material_against == 'Job Card') ? 0 : 1;
+	setup_start_finish_buttons: function (frm) {
+		let doc = frm.doc;
+		if (doc.docstatus != 1 || doc.status == "Stopped") {
+			return;
+		}
 
-			if (show_start_btn) {
-				if ((flt(doc.material_transferred_for_manufacturing) < flt(doc.qty))
-					&& frm.doc.status != 'Stopped') {
-					frm.has_start_btn = true;
-					frm.add_custom_button(__('Pick List'), function() {
-						erpnext.work_order.create_pick_list(frm);
-					}, __("Create"));
-					var start_btn = frm.add_custom_button(__('Start'), function() {
-						erpnext.work_order.make_se(frm, 'Material Transfer for Manufacture');
-					});
-					start_btn.addClass('btn-primary');
-				}
+		// Start Button
+		const show_start_btn = (
+			!doc.skip_transfer
+			&& doc.transfer_material_against != 'Job Card'
+			&& flt(doc.material_transferred_for_manufacturing) < flt(doc.qty)
+		);
+
+		if (show_start_btn) {
+			frm.has_start_btn = true;
+
+			frm.add_custom_button(__('Pick List'), function() {
+				erpnext.work_order.create_pick_list(frm);
+			}, __("Create"));
+
+			let start_btn = frm.add_custom_button(__('Start'), function() {
+				erpnext.manufacturing.make_stock_entry(doc, 'Material Transfer for Manufacture');
+			});
+			start_btn.removeClass('btn-default').addClass('btn-primary');
+		}
+
+		// Finish Button
+		if (doc.skip_transfer) {
+			if (flt(doc.produced_qty) < flt(doc.qty)) {
+				let finish_btn = frm.add_custom_button(__('Finish'), function () {
+					erpnext.manufacturing.make_stock_entry(doc, 'Manufacture');
+				});
+				finish_btn.removeClass('btn-default').addClass('btn-primary');
 			}
+		} else {
+			if (flt(doc.produced_qty) < flt(doc.material_transferred_for_manufacturing)) {
+				frm.has_finish_btn = true;
 
-			if(!frm.doc.skip_transfer){
-				// If "Material Consumption is check in Manufacturing Settings, allow Material Consumption
-				if ((flt(doc.produced_qty) < flt(doc.material_transferred_for_manufacturing))
-				&& frm.doc.status != 'Stopped') {
-					frm.has_finish_btn = true;
-
-					if (frm.doc.__onload && frm.doc.__onload.material_consumption == 1) {
-						// Only show "Material Consumption" when required_qty > consumed_qty
-						var counter = 0;
-						var tbl = frm.doc.required_items || [];
-						var tbl_lenght = tbl.length;
-						for (var i = 0, len = tbl_lenght; i < len; i++) {
-							if (flt(frm.doc.required_items[i].required_qty) > flt(frm.doc.required_items[i].consumed_qty)) {
-								counter += 1;
-							}
-						}
-						if (counter > 0) {
-							var consumption_btn = frm.add_custom_button(__('Material Consumption'), function() {
-								const backflush_raw_materials_based_on = frm.doc.__onload.backflush_raw_materials_based_on;
-								erpnext.work_order.make_consumption_se(frm, backflush_raw_materials_based_on);
-							});
-							consumption_btn.addClass('btn-primary');
-						}
-					}
-
-					var finish_btn = frm.add_custom_button(__('Finish'), function() {
-						erpnext.work_order.make_se(frm, 'Manufacture');
-					});
-
-					if(doc.material_transferred_for_manufacturing>=doc.qty) {
-						// all materials transferred for manufacturing, make this primary
-						finish_btn.addClass('btn-primary');
-					}
+				let finish_btn = frm.add_custom_button(__('Finish'), function() {
+					erpnext.manufacturing.make_stock_entry(doc, 'Manufacture');
+				});
+				if (doc.material_transferred_for_manufacturing >= doc.qty) {
+					// all materials transferred for manufacturing, make this primary
+					finish_btn.removeClass('btn-default').addClass('btn-primary');
 				}
-			} else {
-				if ((flt(doc.produced_qty) < flt(doc.qty)) && frm.doc.status != 'Stopped') {
-					var finish_btn = frm.add_custom_button(__('Finish'), function() {
-						erpnext.work_order.make_se(frm, 'Manufacture');
-					});
-					finish_btn.addClass('btn-primary');
+
+				// If "Material Consumption is check in Manufacturing Settings, allow Material Consumption
+				if (doc.__onload && doc.__onload.material_consumption) {
+					// Only show "Material Consumption" when required_qty > consumed_qty
+					let required_items = doc.required_items || [];
+
+					if (required_items.some(d => flt(d.required_qty) > flt(d.consumed_qty))) {
+						let consumption_btn = frm.add_custom_button(__('Material Consumption'), function() {
+							const backflush_raw_materials_based_on = doc.__onload.backflush_raw_materials_based_on;
+							erpnext.work_order.make_consumption_se(frm, backflush_raw_materials_based_on);
+						});
+						consumption_btn.addClass('btn-primary');
+					}
 				}
 			}
 		}
-
 	},
+
 	calculate_cost: function(doc) {
 		if (doc.operations){
 			var op = doc.operations;
@@ -620,79 +624,8 @@ erpnext.work_order = {
 		}
 	},
 
-	get_max_transferable_qty: (frm, purpose) => {
-		let max = 0;
-		if (frm.doc.skip_transfer) {
-			max = flt(frm.doc.qty) - flt(frm.doc.produced_qty);
-		} else {
-			if (purpose === 'Manufacture') {
-				max = flt(frm.doc.material_transferred_for_manufacturing) - flt(frm.doc.produced_qty);
-			} else {
-				max = flt(frm.doc.qty) - flt(frm.doc.material_transferred_for_manufacturing);
-			}
-		}
-		return flt(max, precision('qty'));
-	},
-
-	show_prompt_for_qty_input: function(frm, purpose) {
-		let max = this.get_max_transferable_qty(frm, purpose);
-
-		let fields = [
-			{
-				fieldtype: 'Float',
-				label: __('Qty for {0}', [purpose]),
-				fieldname: 'qty',
-				description: __('Max: {0}', [max]),
-				default: max
-			}
-		];
-
-		if (purpose === "Manufacture" && frm.doc.__onload.scrap_remaining_by_default) {
-			fields.push({
-				fieldtype: 'Check',
-				label: __('Scrap Remaining'),
-				fieldname: 'scrap_remaining',
-				default: frm.doc.__onload.scrap_remaining_by_default
-			})
-		}
-
-		return new Promise((resolve, reject) => {
-			frappe.prompt(fields, data => {
-				max += (max * (frm.doc.__onload.overproduction_percentage || 0.0)) / 100;
-
-				if (data.qty > max) {
-					frappe.msgprint(__('Quantity must not be more than {0}', [format_number(max)]));
-					reject();
-				}
-				data.purpose = purpose;
-				resolve(data);
-			}, __('Select Quantity'), __('Create'));
-		});
-	},
-
-	make_se: function(frm, purpose) {
-		this.show_prompt_for_qty_input(frm, purpose).then(data => {
-			return frappe.call({
-				method: "erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry",
-				args: {
-					"work_order_id": frm.doc.name,
-					"purpose": purpose,
-					"scrap_remaining": data.scrap_remaining,
-					"qty": data.qty
-				},
-				freeze: 1,
-				callback: (r) => {
-					frappe.model.sync(r.message);
-					if (r.message.docstatus != 1) {
-						frappe.set_route('Form', r.message.doctype, r.message.name);
-					}
-				}
-			});
-		});
-	},
-
 	create_pick_list: function(frm, purpose='Material Transfer for Manufacture') {
-		this.show_prompt_for_qty_input(frm, purpose)
+		erpnext.manufacturing.show_prompt_for_qty_input(frm.doc, purpose)
 			.then(data => {
 				return frappe.xcall('erpnext.manufacturing.doctype.work_order.work_order.create_pick_list', {
 					'source_name': frm.doc.name,

@@ -37,8 +37,6 @@ class WorkOrder(StatusUpdater):
 		ms = frappe.get_cached_doc("Manufacturing Settings", None)
 		self.set_onload("material_consumption", ms.material_consumption)
 		self.set_onload("backflush_raw_materials_based_on", ms.backflush_raw_materials_based_on)
-		self.set_onload("overproduction_percentage", ms.overproduction_percentage_for_work_order)
-		self.set_onload("scrap_remaining_by_default", ms.scrap_remaining_by_default)
 
 		self.set_available_qty()
 
