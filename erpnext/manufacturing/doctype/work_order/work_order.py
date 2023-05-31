@@ -794,7 +794,7 @@ def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False):
 			if frappe.db.get_single_value("Manufacturing Settings", "auto_submit_manufacture_entry"):
 				submit_stock_entry()
 	except frappe.ValidationError:
-		pass
+		frappe.db.rollback()
 
 	return stock_entry.as_dict()
 
