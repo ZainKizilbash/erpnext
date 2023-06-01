@@ -138,14 +138,21 @@ class ProjectSalesSummaryReport(object):
 			{"label": _("Voice of Customer"), "fieldname": "project_name", "fieldtype": "Data", "width": 150},
 			{'label': _("Customer"), 'fieldname': 'customer', 'fieldtype': 'Link', 'options': 'Customer', 'width': 100},
 			{'label': _("Customer Name"), 'fieldname': 'customer_name', 'fieldtype': 'Data', 'width': 150},
-			{'label': _("Part Amount"), 'fieldname': 'part_sales_amount', 'fieldtype': 'Currency', 'width': 110,
-				'options': 'Company:company:default_currency'},
-			{'label': _("Lubricant Amount"), 'fieldname': 'lubricant_sales_amount', 'fieldtype': 'Currency', 'width': 110,
-				'options': 'Company:company:default_currency'},
-			{'label': _("Labour Amount"), 'fieldname': 'labour_sales_amount', 'fieldtype': 'Currency', 'width': 110,
-				'options': 'Company:company:default_currency'},
-			{'label': _("Sublet Amount Amount"), 'fieldname': 'sublet_sales_amount', 'fieldtype': 'Currency', 'width': 110,
-				'options': 'Company:company:default_currency'},
+		]
+
+		if self.is_vehicle_service:
+			columns += [
+				{'label': _("Part Amount"), 'fieldname': 'part_sales_amount', 'fieldtype': 'Currency', 'width': 110,
+					'options': 'Company:company:default_currency'},
+				{'label': _("Lubricant Amount"), 'fieldname': 'lubricant_sales_amount', 'fieldtype': 'Currency', 'width': 110,
+					'options': 'Company:company:default_currency'},
+				{'label': _("Labour Amount"), 'fieldname': 'labour_sales_amount', 'fieldtype': 'Currency', 'width': 110,
+					'options': 'Company:company:default_currency'},
+				{'label': _("Sublet Amount Amount"), 'fieldname': 'sublet_sales_amount', 'fieldtype': 'Currency', 'width': 110,
+					'options': 'Company:company:default_currency'},
+			]
+
+		columns += [
 			{'label': _("Total Material Amount"), 'fieldname': 'stock_sales_amount', 'fieldtype': 'Currency', 'width': 110,
 				'options': 'Company:company:default_currency'},
 			{'label': _("Total Service Amount"), 'fieldname': 'service_sales_amount', 'fieldtype': 'Currency', 'width': 110,
