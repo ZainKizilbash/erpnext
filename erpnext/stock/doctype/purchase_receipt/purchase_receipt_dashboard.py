@@ -9,13 +9,14 @@ def get_data():
 			'Asset': 'purchase_receipt',
 			'Landed Cost Voucher': 'receipt_document',
 			'Auto Repeat': 'reference_document',
-			'Purchase Receipt': 'return_against'
+			'Purchase Receipt': 'return_against',
 		},
 		'internal_links': {
 			'Purchase Order': ['items', 'purchase_order'],
 			'Project': ['items', 'project'],
 			'Quality Inspection': ['items', 'quality_inspection'],
-			'Vehicle': ['items', 'vehicle']
+			'Vehicle': ['items', 'vehicle'],
+			'Material Request': ['items', 'material_request'],
 		},
 		'transactions': [
 			{
@@ -24,7 +25,7 @@ def get_data():
 			},
 			{
 				'label': _('Reference'),
-				'items': ['Purchase Order', 'Asset']
+				'items': ['Purchase Order', 'Material Request', 'Asset']
 			},
 			{
 				'label': _('Reference'),
