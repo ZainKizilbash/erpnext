@@ -492,7 +492,7 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 		this.setup_quality_inspection();
 
 		let scan_barcode_field = this.frm.get_field('scan_barcode');
-		if (scan_barcode_field) {
+		if (scan_barcode_field && this.frm.doc.docstatus == 0) {
 			scan_barcode_field.set_value("");
 			scan_barcode_field.set_new_description("");
 
