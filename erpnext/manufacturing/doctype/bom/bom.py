@@ -171,12 +171,12 @@ class BOM(WebsiteGenerator):
 
 		args['bom_no'] = args['bom_no'] or item and cstr(item[0]['default_bom']) or ''
 
+		args.update(item[0])
+
 		if args.get('skip_transfer_for_manufacture') is not None:
 			args['skip_transfer_for_manufacture'] = cint(args.get('skip_transfer_for_manufacture'))
 		else:
 			args['skip_transfer_for_manufacture'] = cint(item and item[0].skip_transfer_for_manufacture)
-
-		args.update(item[0])
 
 		if not args.get('uom') and args.get('manufacture_uom'):
 			args['uom'] = args.get('manufacture_uom')
