@@ -524,9 +524,7 @@ erpnext.work_order = {
 		}
 
 		// Start Button
-		let over_production_allowance = erpnext.manufacturing.get_over_production_allowance();
-		let qty_with_allowance = flt(frm.doc.qty) + flt(frm.doc.qty) * over_production_allowance / 100;
-		qty_with_allowance = flt(qty_with_allowance, precision("qty"));
+		let qty_with_allowance = erpnext.manufacturing.get_qty_with_allowance(frm.doc);
 
 		const show_start_btn = (
 			!doc.skip_transfer

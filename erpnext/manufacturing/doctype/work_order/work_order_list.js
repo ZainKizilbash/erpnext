@@ -2,7 +2,7 @@ frappe.listview_settings['Work Order'] = {
 	add_fields: [
 		"status", "docstatus",
 		"skip_transfer", "transfer_material_against",
-		"qty", "produced_qty", "material_transferred_for_manufacturing",
+		"qty", "max_qty", "produced_qty", "material_transferred_for_manufacturing",
 		"production_item", "item_name",
 	],
 	get_indicator: function(doc) {

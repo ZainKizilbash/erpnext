@@ -1356,7 +1356,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "skip_transfer_for_manufacture",
    "fieldtype": "Check",
    "label": "Skip Transfer for Manufacture"
@@ -1367,7 +1367,7 @@
  "idx": 2,
  "image_field": "image",
  "links": [],
- "modified": "2023-06-01 17:16:29.414253",
+ "modified": "2023-06-01 23:04:31.546411",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Item",

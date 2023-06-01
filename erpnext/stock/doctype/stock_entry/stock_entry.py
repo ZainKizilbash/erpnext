@@ -458,12 +458,10 @@ class StockEntry(StockController):
 	def check_if_operations_completed(self):
 		"""Check if Time Sheets are completed against before manufacturing to capture operating costs."""
 		prod_order = frappe.get_doc("Work Order", self.work_order)
-		allowance_percentage = flt(frappe.db.get_single_value("Manufacturing Settings",
-			"overproduction_percentage_for_work_order"))
 
 		for d in prod_order.get("operations"):
 			total_completed_qty = flt(self.fg_completed_qty) + flt(prod_order.produced_qty)
-			completed_qty = d.completed_qty + (allowance_percentage/100 * d.completed_qty)
+			completed_qty = prod_order.get_qty_with_allowance(d.completed_qty)
 			if total_completed_qty > flt(completed_qty):
 				job_card = frappe.db.get_value('Job Card', {'operation_id': d.name}, 'name')
 				if not job_card:
@@ -774,8 +772,8 @@ class StockEntry(StockController):
 		allowance_percentage = flt(frappe.db.get_single_value("Manufacturing Settings",
 			"overproduction_percentage_for_work_order"))
 
-		production_item, wo_qty = frappe.db.get_value("Work Order",
-			self.work_order, ["production_item", "qty"])
+		production_item, wo_qty, max_wo_qty = frappe.db.get_value("Work Order",
+			self.work_order, ["production_item", "qty", "max_qty"])
 
 		for d in self.get('items'):
 			if (self.purpose != "Send to Subcontractor" and d.bom_no
@@ -787,7 +785,11 @@ class StockEntry(StockController):
 				items_with_target_warehouse.append(d.item_code)
 
 		if self.work_order and self.purpose == "Manufacture":
-			allowed_qty = wo_qty + (allowance_percentage/100 * wo_qty)
+			if flt(max_wo_qty):
+				allowed_qty = max_wo_qty
+			else:
+				allowed_qty = wo_qty + (allowance_percentage/100 * wo_qty)
+
 			if flt(self.fg_completed_qty) > flt(allowed_qty, self.precision("fg_completed_qty")):
 				frappe.throw(_("For quantity {0} should not be greater than work order quantity {1}")
 					.format(flt(self.fg_completed_qty), wo_qty))

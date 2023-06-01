@@ -134,11 +134,12 @@ class StatusUpdater(Document):
 		else:
 			return f"To {keyword}"
 
-	def validate_completed_qty(self, completed_field, reference_field, items=None, allowance_type=None,
-			from_doctype=None, row_names=None):
+	def validate_completed_qty(self, completed_field, reference_field, items=None,
+			allowance_type=None, max_qty_field=None, from_doctype=None, row_names=None):
 		items = self.get_rows_for_qty_validation(items, row_names)
 		for row in items:
-			self.validate_completed_qty_for_row(row, completed_field, reference_field, allowance_type, from_doctype)
+			self.validate_completed_qty_for_row(row, completed_field, reference_field,
+				allowance_type, max_qty_field, from_doctype)
 
 	def get_rows_for_qty_validation(self, items=None, row_names=None):
 		if items is None:
@@ -151,7 +152,8 @@ class StatusUpdater(Document):
 
 		return rows
 
-	def validate_completed_qty_for_row(self, row, completed_field, reference_field, allowance_type=None, from_doctype=None):
+	def validate_completed_qty_for_row(self, row, completed_field, reference_field,
+			allowance_type=None, max_qty_field=None, from_doctype=None):
 		# Allow both: single and multiple completed qty fieldnames
 		if not isinstance(completed_field, list):
 			completed_field = [completed_field]
@@ -161,9 +163,12 @@ class StatusUpdater(Document):
 		for f in completed_field:
 			completed_qty += flt(row.get(f))
 
-		difference = completed_qty - reference_qty
 		if not allowance_type:
+			difference = completed_qty - reference_qty
 			excess_qty = difference
+		elif allowance_type == "max_qty_field":
+			max_qty = flt(row.get(max_qty_field))
+			excess_qty = completed_qty - max_qty
 		else:
 			excess_qty = get_excess_qty_with_allowance(row, completed_field, reference_field, allowance_type)
 
@@ -250,7 +255,12 @@ def get_allowance_for(allowance_type, item_code=None):
 		return 0
 
 	allowance = 0
-	allowance_field = "over_billing_allowance" if allowance_type == "billing" else "over_delivery_receipt_allowance"
+	if allowance_type == "billing":
+		allowance_field = "over_billing_allowance"
+	elif allowance_type == "production":
+		allowance_field = "over_production_allowance"
+	else:
+		allowance_field = "over_delivery_receipt_allowance"
 
 	if item_code:
 		allowance = flt(frappe.get_cached_value('Item', item_code, allowance_field))

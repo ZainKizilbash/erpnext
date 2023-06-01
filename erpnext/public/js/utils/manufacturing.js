@@ -69,6 +69,24 @@ $.extend(erpnext.manufacturing, {
 						default: flt(doc.qty),
 						read_only: 1,
 					},
+				]);
+
+				if (doc.max_qty) {
+					fields = fields.concat([
+						{
+							fieldtype: 'Column Break',
+						},
+						{
+							label: __('Maximum Qty'),
+							fieldname: 'max_qty',
+							fieldtype: 'Float',
+							default: flt(doc.max_qty),
+							read_only: 1,
+						},
+					]);
+				}
+
+				fields = fields.concat([
 					{
 						fieldtype: 'Column Break',
 					},
@@ -130,32 +148,38 @@ $.extend(erpnext.manufacturing, {
 	},
 
 	get_max_transferable_qty: (doc, purpose) => {
+		let max_qty_to_produce = flt(doc.max_qty) || flt(doc.qty);
 		let qty_with_allowance = erpnext.manufacturing.get_qty_with_allowance(doc);
 
-		let max = 0;
-		let max_with_allowance = 0;
+		let pending_qty = 0;
+		let pending_qty_with_allowance = 0;
 
 		if (doc.skip_transfer) {
-			max = flt(doc.qty) - flt(doc.produced_qty);
-			max_with_allowance = qty_with_allowance - flt(doc.produced_qty);
+			pending_qty = flt(doc.qty) - flt(doc.produced_qty);
+			pending_qty_with_allowance = qty_with_allowance - flt(doc.produced_qty);
 		} else {
 			if (purpose === 'Manufacture') {
-				max = flt(doc.material_transferred_for_manufacturing) - flt(doc.produced_qty);
-				max_with_allowance = max;
+				pending_qty = Math.min(flt(doc.material_transferred_for_manufacturing), flt(doc.qty)) - flt(doc.produced_qty);
+				pending_qty_with_allowance = flt(doc.material_transferred_for_manufacturing) - flt(doc.produced_qty);
 			} else {
-				max = flt(doc.qty) - flt(doc.material_transferred_for_manufacturing);
-				max_with_allowance = qty_with_allowance - flt(doc.material_transferred_for_manufacturing);
+				pending_qty = max_qty_to_produce - flt(doc.material_transferred_for_manufacturing);
+				pending_qty_with_allowance = qty_with_allowance - flt(doc.material_transferred_for_manufacturing);
 			}
 		}
 
 		let qty_precision = erpnext.manufacturing.get_work_order_precision();
-		return [flt(max, qty_precision), flt(max_with_allowance, qty_precision)];
+		return [flt(pending_qty, qty_precision), flt(pending_qty_with_allowance, qty_precision)];
 	},
 
 	get_qty_with_allowance: function (doc) {
-		let over_production_allowance = erpnext.manufacturing.get_over_production_allowance();
-		let qty_with_allowance = flt(doc.qty) + flt(doc.qty) * over_production_allowance / 100;
-		return flt(qty_with_allowance, erpnext.manufacturing.get_over_production_allowance());
+		if (flt(doc.max_qty)) {
+			return flt(doc.max_qty, erpnext.manufacturing.get_work_order_precision());
+		} else {
+			let over_production_allowance = erpnext.manufacturing.get_over_production_allowance();
+			let qty_with_allowance = flt(doc.qty) + flt(doc.qty) * over_production_allowance / 100;
+
+			return flt(qty_with_allowance, erpnext.manufacturing.get_work_order_precision());
+		}
 	},
 
 	get_work_order_precision: function () {

@@ -15,6 +15,7 @@
   "bom_no",
   "column_break1",
   "qty",
+  "max_qty",
   "stock_uom",
   "column_break_11",
   "company",
@@ -606,6 +607,15 @@
    "fieldname": "status_tab",
    "fieldtype": "Tab Break",
    "label": "Status"
+  },
+  {
+   "depends_on": "max_qty",
+   "fieldname": "max_qty",
+   "fieldtype": "Float",
+   "label": "Maximum Quantity",
+   "oldfieldname": "qty",
+   "oldfieldtype": "Currency",
+   "read_only": 1
   }
  ],
  "icon": "fa fa-cogs",
@@ -614,7 +624,7 @@
  "is_calendar_and_gantt": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-05-31 13:18:39.819913",
+ "modified": "2023-06-01 17:56:43.482719",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Work Order",

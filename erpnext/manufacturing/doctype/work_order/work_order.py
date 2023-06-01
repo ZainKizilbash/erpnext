@@ -333,8 +333,7 @@ class WorkOrder(StatusUpdater):
 		self.calculate_time()
 
 	def update_operation_status(self):
-		allowance_percentage = flt(frappe.db.get_single_value("Manufacturing Settings", "overproduction_percentage_for_work_order"))
-		max_allowed_qty_for_wo = flt(self.qty) + (allowance_percentage/100 * flt(self.qty))
+		max_allowed_qty_for_wo = self.get_qty_with_allowance(self.qty)
 
 		for d in self.get("operations"):
 			if not d.completed_qty:
@@ -457,8 +456,16 @@ class WorkOrder(StatusUpdater):
 			), StockOverProductionError)
 
 	def get_qty_with_allowance(self, qty):
-		allowance_percentage = flt(frappe.get_cached_value("Manufacturing Settings", None, "overproduction_percentage_for_work_order"))
+		allowance_percentage = self.get_over_production_allowance()
 		return flt(qty) + flt(qty) * allowance_percentage / 100
+
+	def get_over_production_allowance(self):
+		if self.max_qty and self.qty:
+			allowance_percentage = flt(self.max_qty) / flt(self.qty) * 100 - 100
+		else:
+			allowance_percentage = flt(frappe.get_cached_value("Manufacturing Settings", None, "overproduction_percentage_for_work_order"))
+
+		return allowance_percentage
 
 	def set_status(self, status=None, update=False, update_modified=True):
 		previous_status = self.status
