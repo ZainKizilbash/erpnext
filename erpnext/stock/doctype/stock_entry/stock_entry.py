@@ -1108,7 +1108,7 @@ class StockEntry(StockController):
 
 							if (
 								(self.pro_doc.from_wip_warehouse or not self.pro_doc.skip_transfer)
-								and source_row.include_item_in_manufacturing
+								and not source_row.skip_transfer_for_manufacture
 							):
 								item["from_warehouse"] = self.pro_doc.wip_warehouse
 							else:
@@ -1408,7 +1408,7 @@ class StockEntry(StockController):
 			required_qty_with_allowance = pro_order.get_qty_with_allowance(d.required_qty)
 			if flt(d.transferred_qty) >= required_qty_with_allowance:
 				continue
-			if not d.include_item_in_manufacturing and self.purpose == "Material Transfer for Manufacture":
+			if d.skip_transfer_for_manufacture and self.purpose == "Material Transfer for Manufacture":
 				continue
 
 			item_row = d.as_dict()

@@ -22,12 +22,12 @@ class ItemAlternative(Document):
 			frappe.throw(_("Alternative item must not be same as item code"))
 
 		item_meta = frappe.get_meta("Item")
-		fields = ["is_stock_item", "include_item_in_manufacturing","has_serial_no","has_batch_no"]
+		fields = ["is_stock_item", "skip_transfer_for_manufacture", "has_serial_no", "has_batch_no"]
 		item_data = frappe.db.get_values("Item", self.item_code, fields, as_dict=1)
 		alternative_item_data = frappe.db.get_values("Item", self.alternative_item_code, fields, as_dict=1)
 
 		for field in fields:
-			if  item_data[0].get(field) != alternative_item_data[0].get(field):
+			if item_data[0].get(field) != alternative_item_data[0].get(field):
 				raise_exception, alert = [1, False] if field == "is_stock_item" else [0, True]
 
 				frappe.msgprint(_("The value of {0} differs between Items {1} and {2}") \

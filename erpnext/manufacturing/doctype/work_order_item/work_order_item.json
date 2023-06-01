@@ -1,4 +1,5 @@
 {
+ "actions": [],
  "creation": "2016-04-18 07:38:26.314642",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -21,7 +22,7 @@
   "column_break_16",
   "uom",
   "allow_alternative_item",
-  "include_item_in_manufacturing",
+  "skip_transfer_for_manufacture",
   "section_break_19",
   "stock_required_qty",
   "column_break_21",
@@ -96,12 +97,6 @@
    "fieldname": "allow_alternative_item",
    "fieldtype": "Check",
    "label": "Allow Alternative Item"
-  },
-  {
-   "default": "0",
-   "fieldname": "include_item_in_manufacturing",
-   "fieldtype": "Check",
-   "label": "Include Item In Manufacturing"
   },
   {
    "fieldname": "column_break_11",
@@ -180,10 +175,17 @@
   {
    "fieldname": "column_break_23",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "skip_transfer_for_manufacture",
+   "fieldtype": "Check",
+   "label": "Skip Transfer for Manufacture"
   }
  ],
  "istable": 1,
- "modified": "2021-05-27 22:49:53.241487",
+ "links": [],
+ "modified": "2023-06-01 17:16:18.022807",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Work Order Item",
@@ -192,5 +194,6 @@
  "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

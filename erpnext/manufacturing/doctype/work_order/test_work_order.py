@@ -350,7 +350,7 @@ class TestWorkOrder(unittest.TestCase):
 		items = {'Finished Good Transfer Item': 1, '_Test FG Item': 1, '_Test FG Item 1': 0}
 		for item, allow_transfer in items.items():
 			make_item(item, {
-				'include_item_in_manufacturing': allow_transfer
+				'skip_transfer_for_manufacture': cint(not allow_transfer)
 			})
 
 		fg_item = 'Finished Good Transfer Item'

@@ -252,7 +252,7 @@ class WorkOrder(StatusUpdater):
 						'stock_uom': item.stock_uom,
 						'conversion_factor': flt(item.conversion_factor) or 1,
 						'source_warehouse': self.source_warehouse or item.source_warehouse or item.default_warehouse,
-						'include_item_in_manufacturing': item.include_item_in_manufacturing
+						'skip_transfer_for_manufacture': item.skip_transfer_for_manufacture
 					})
 
 					if not row.conversion_factor:

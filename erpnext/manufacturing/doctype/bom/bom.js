@@ -273,7 +273,7 @@ var get_bom_material_detail= function(doc, cdt, cdn, scrap_items, item_changed) 
 				"scrap_items": scrap_items,
 				'qty': d.qty,
 				"stock_qty": d.stock_qty,
-				"include_item_in_manufacturing": item_changed ? null : d.include_item_in_manufacturing,
+				"skip_transfer_for_manufacture": item_changed ? null : d.skip_transfer_for_manufacture,
 				"uom": item_changed ? null : d.uom,
 				"stock_uom": item_changed ? null : d.stock_uom,
 				"conversion_factor": item_changed ? null : d.conversion_factor

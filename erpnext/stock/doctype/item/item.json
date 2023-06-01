@@ -49,7 +49,7 @@
   "is_purchase_item",
   "is_packaging_material",
   "column_break_40",
-  "include_item_in_manufacturing",
+  "skip_transfer_for_manufacture",
   "allow_alternative_item",
   "hide_in_price_list",
   "vehicle_details_section",
@@ -296,12 +296,6 @@
    "label": "Maintain Stock",
    "oldfieldname": "is_stock_item",
    "oldfieldtype": "Select"
-  },
-  {
-   "default": "1",
-   "fieldname": "include_item_in_manufacturing",
-   "fieldtype": "Check",
-   "label": "Include Item In Manufacturing"
   },
   {
    "depends_on": "is_stock_item",
@@ -1360,6 +1354,12 @@
   {
    "fieldname": "column_break_nplrr",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "skip_transfer_for_manufacture",
+   "fieldtype": "Check",
+   "label": "Skip Transfer for Manufacture"
   }
  ],
  "has_web_view": 1,
@@ -1367,7 +1367,7 @@
  "idx": 2,
  "image_field": "image",
  "links": [],
- "modified": "2023-05-21 18:28:29.909854",
+ "modified": "2023-06-01 17:16:29.414253",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Item",
