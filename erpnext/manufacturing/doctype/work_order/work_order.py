@@ -800,12 +800,6 @@ def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False):
 		return ste_copy
 
 	try:
-		stock_entry.run_method("set_missing_values")
-		stock_entry.run_method("calculate_rate_and_amount")
-	except frappe.ValidationError:
-		return stock_entry.as_dict()
-
-	try:
 		if purpose == "Material Transfer for Manufacture":
 			if frappe.db.get_single_value("Manufacturing Settings", "auto_submit_material_transfer_entry"):
 				stock_entry = submit_stock_entry(stock_entry)
