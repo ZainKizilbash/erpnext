@@ -160,7 +160,7 @@ erpnext.buying.PurchaseOrderController = class PurchaseOrderController extends e
 								function() { me.make_stock_entry(); }, __("Transfer"));
 						}
 					}
-					if(flt(doc.per_completed, 6) < 100)
+					if(flt(doc.per_completed, 6) < 100) {
 						cur_frm.add_custom_button(__('Purchase Invoice'),
 							this.make_purchase_invoice, __('Create'));
 					}
