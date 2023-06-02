@@ -127,19 +127,21 @@ def get_reserved_qty_for_production(item_code, warehouse, work_order=None):
 
 	return flt(frappe.db.sql('''
 		SELECT
-			CASE WHEN ifnull(skip_transfer, 0) = 0 THEN
+			IF(pro.skip_transfer = 1 or item.skip_transfer_for_manufacture = 1,
+				SUM((item.required_qty - item.consumed_qty) * item.conversion_factor),
 				SUM((item.required_qty - item.transferred_qty) * item.conversion_factor)
-			ELSE
-				SUM((item.required_qty - item.consumed_qty) * item.conversion_factor)
-			END
+			)
 		FROM `tabWork Order` pro, `tabWork Order Item` item
 		WHERE
 			item.item_code = %(item_code)s
 			and item.parent = pro.name
 			and pro.docstatus = 1
 			and item.source_warehouse = %(warehouse)s
-			and pro.status not in ("Stopped", "Completed")
-			and (item.required_qty > item.transferred_qty or item.required_qty > item.consumed_qty)
+			and pro.status not in ('Stopped', 'Completed')
+			and (
+				((pro.skip_transfer = 0 and item.skip_transfer_for_manufacture = 0) and item.required_qty > item.transferred_qty)
+				or ((pro.skip_transfer = 1 or item.skip_transfer_for_manufacture = 1) and item.required_qty > item.consumed_qty)
+			)
 			{0}
 	'''.format(work_order_condition), {
 		'item_code': item_code, 'warehouse': warehouse, 'work_order': work_order
