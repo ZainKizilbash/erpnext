@@ -32,7 +32,8 @@ class ProjectSalesSummaryReport(object):
 
 		self.data = frappe.db.sql("""
 			select p.name as project, p.project_type, p.project_workshop, p.project_status, p.project_name, p.project_date,
-				p.total_sales_amount, p.stock_sales_amount, p.service_sales_amount,
+				p.total_sales_amount, p.stock_sales_amount, p.part_sales_amount, p.lubricant_sales_amount,
+				p.service_sales_amount, p.labour_sales_amount, p.sublet_sales_amount,
 				p.customer, p.customer_name, p.company,
 				p.service_advisor, p.service_manager,
 				p.applies_to_variant_of, p.applies_to_variant_of_name,
@@ -138,11 +139,26 @@ class ProjectSalesSummaryReport(object):
 			{"label": _("Voice of Customer"), "fieldname": "project_name", "fieldtype": "Data", "width": 150},
 			{'label': _("Customer"), 'fieldname': 'customer', 'fieldtype': 'Link', 'options': 'Customer', 'width': 100},
 			{'label': _("Customer Name"), 'fieldname': 'customer_name', 'fieldtype': 'Data', 'width': 150},
+		]
+
+		if self.is_vehicle_service:
+			columns += [
+				{'label': _("Part Amount"), 'fieldname': 'part_sales_amount', 'fieldtype': 'Currency', 'width': 110,
+					'options': 'Company:company:default_currency'},
+				{'label': _("Lubricant Amount"), 'fieldname': 'lubricant_sales_amount', 'fieldtype': 'Currency', 'width': 110,
+					'options': 'Company:company:default_currency'},
+				{'label': _("Labour Amount"), 'fieldname': 'labour_sales_amount', 'fieldtype': 'Currency', 'width': 110,
+					'options': 'Company:company:default_currency'},
+				{'label': _("Sublet Amount Amount"), 'fieldname': 'sublet_sales_amount', 'fieldtype': 'Currency', 'width': 110,
+					'options': 'Company:company:default_currency'},
+			]
+
+		columns += [
+			{'label': _("Total Material Amount"), 'fieldname': 'stock_sales_amount', 'fieldtype': 'Currency', 'width': 110,
+				'options': 'Company:company:default_currency'},
+			{'label': _("Total Service Amount"), 'fieldname': 'service_sales_amount', 'fieldtype': 'Currency', 'width': 110,
+				'options': 'Company:company:default_currency'},
 			{'label': _("Total Sales"), 'fieldname': 'total_sales_amount', 'fieldtype': 'Currency', 'width': 110,
-				'options': 'Company:company:default_currency'},
-			{'label': _("Material Amount"), 'fieldname': 'stock_sales_amount', 'fieldtype': 'Currency', 'width': 110,
-				'options': 'Company:company:default_currency'},
-			{'label': _("Service Amount"), 'fieldname': 'service_sales_amount', 'fieldtype': 'Currency', 'width': 110,
 				'options': 'Company:company:default_currency'},
 		]
 
