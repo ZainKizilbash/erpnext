@@ -7,7 +7,7 @@ import json
 
 
 @frappe.whitelist(allow_guest=True)
-def send_message(subject="Website Query", message="", sender="", phone_no="", mobile_no="", full_name="", organization="", opportunity_args=None, country=""):
+def send_message(subject="Website Query", message="", sender="", phone_no="", mobile_no="", full_name="", organization="", country="", opportunity_args=None):
 	from frappe.www.contact import send_message as website_send_message
 	lead = customer = None
 
@@ -26,15 +26,19 @@ def send_message(subject="Website Query", message="", sender="", phone_no="", mo
 	if not customer:
 		lead = frappe.db.get_value('Lead', {"email_id": sender})
 		if not lead:
-			new_lead = frappe.get_doc(dict(
-				doctype='Lead',
-				email_id=sender,
-				lead_name=full_name or sender.split('@')[0].title(),
-				company_name=organization,
-				phone=phone_no,
-				mobile_no=mobile_no,
-				country=country,
-			)).insert(ignore_permissions=True)
+			new_lead = frappe.new_doc("Lead")
+			new_lead.update({
+				"email_id": sender,
+				"lead_name": full_name or sender.split('@')[0].title(),
+				"company_name": organization,
+				"phone": phone_no,
+				"mobile_no": mobile_no,
+			})
+
+			if country:
+				new_lead.country = country
+
+			new_lead.insert(ignore_permissions=True, ignore_mandatory=True)
 		else:
 			old_lead = frappe.get_doc("Lead", lead)
 			old_lead_changed = False
@@ -55,15 +59,15 @@ def send_message(subject="Website Query", message="", sender="", phone_no="", mo
 				old_lead_changed = True
 
 			if old_lead_changed:
-				old_lead.save(ignore_permissions=True)
+				old_lead.save(ignore_permissions=True, ignore_mandatory=True)
 
-	opportunity = frappe.get_doc(dict(
-		doctype='Opportunity',
-		opportunity_from='Customer' if customer else 'Lead',
-		status='Open',
-		title=subject,
-		contact_email=sender
-	))
+	opportunity = frappe.new_doc("Opportunity")
+	opportunity.update({
+		"opportunity_from": 'Customer' if customer else 'Lead',
+		"status": 'Open',
+		"title": subject,
+		"contact_email": sender
+	})
 
 	opportunity_args = json.loads(opportunity_args) if opportunity_args else {}
 
@@ -78,7 +82,7 @@ def send_message(subject="Website Query", message="", sender="", phone_no="", mo
 	else:
 		opportunity.party_name = new_lead.name
 
-	opportunity.insert(ignore_permissions=True)
+	opportunity.insert(ignore_permissions=True, ignore_mandatory=True)
 
 	comm = frappe.get_doc({
 		"doctype": "Communication",
