@@ -7,7 +7,7 @@ import json
 
 
 @frappe.whitelist(allow_guest=True)
-def send_message(subject="Website Query", message="", sender="", phone_no="", country="", mobile_no="", full_name="", organization="", opportunity_args=None):
+def send_message(subject="Website Query", message="", sender="", phone_no="", mobile_no="", full_name="", organization="", opportunity_args=None, country=""):
 	from frappe.www.contact import send_message as website_send_message
 	lead = customer = None
 
