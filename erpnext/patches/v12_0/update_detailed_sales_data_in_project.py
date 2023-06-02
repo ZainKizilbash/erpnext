@@ -16,13 +16,15 @@ def execute():
 	projects = frappe.get_all("Project")
 	projects = [d.name for d in projects]
 
-	for project in projects:
+	total = len(projects)
+	for i, project in enumerate(projects):
+		print("Project {0}/{1}".format(i+1, total))
 		doc = frappe.get_doc("Project", project)
 		doc.set_sales_amount()
 
 		updated_values = {}
-
 		for fn in update_fields:
 			updated_values[fn] = doc.get(fn)
 
 		doc.db_set(updated_values, update_modified=False)
+		doc.clear_cache()
