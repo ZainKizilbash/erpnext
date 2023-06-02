@@ -6,7 +6,6 @@ if(!window.erpnext) window.erpnext = {};
 // Add / update a new Lead / Communication
 // subject, sender, description
 frappe.send_message = function(opts, btn) {
-	console.log('erpnext.send_messge')
 	return frappe.call({
 		type: "POST",
 		method: "erpnext.templates.utils.send_message",
