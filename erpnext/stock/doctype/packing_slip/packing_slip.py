@@ -700,7 +700,7 @@ class PackingSlip(StockController):
 
 				# Include Consumed Packaging Material in Valaution
 				for dep_row in self.get("packaging_items"):
-					if flt(dep_row.stock_qty):
+					if flt(dep_row.stock_qty) and d.cost_percentage:
 						sle_in.dependencies.append({
 							"dependent_voucher_type": self.doctype,
 							"dependent_voucher_no": self.name,
