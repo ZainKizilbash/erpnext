@@ -1143,17 +1143,14 @@ def make_delivery_note(source_name, target_doc=None):
 		if not mapper_item_condition(ps_item, target_doc):
 			continue
 
+		dn_item = None
 		if ps_item.get("sales_order_item"):
-			source_parent = sales_order_docs[ps_item.sales_order]
-			source_row = frappe.get_doc("Sales Order Item", ps_item.sales_order_item)
-			mapper = so_item_mapper
-		else:
-			source_parent = packing_slip
-			source_row = ps_item
-			mapper = packing_slip_item_mapper
+			so_parent = sales_order_docs[ps_item.sales_order]
+			so_item = frappe.get_doc("Sales Order Item", ps_item.sales_order_item)
+			dn_item = map_child_doc(so_item, target_doc, so_item_mapper, so_parent, target_d=dn_item)
 
-		dn_item = map_child_doc(source_row, target_doc, mapper, source_parent)
-		update_mapped_delivery_item(dn_item, packing_slip, ps_item)
+		dn_item = map_child_doc(ps_item, target_doc, packing_slip_item_mapper, packing_slip, target_d=dn_item)
+		update_mapped_delivery_item(dn_item, packing_slip)
 
 	postprocess_mapped_delivery_document(target_doc)
 	return target_doc
@@ -1183,17 +1180,15 @@ def make_sales_invoice(source_name, target_doc=None):
 		if not mapper_item_condition(ps_item, target_doc):
 			continue
 
+		sinv_item = None
 		if ps_item.get("sales_order_item"):
-			source_parent = sales_order_docs[ps_item.sales_order]
-			source_row = frappe.get_doc("Sales Order Item", ps_item.sales_order_item)
-			mapper = sales_order_mappers[ps_item.sales_order]
-		else:
-			source_parent = packing_slip
-			source_row = ps_item
-			mapper = packing_slip_item_mapper
+			so_parent = sales_order_docs[ps_item.sales_order]
+			so_item = frappe.get_doc("Sales Order Item", ps_item.sales_order_item)
+			so_item_mapper = sales_order_mappers[ps_item.sales_order]
+			sinv_item = map_child_doc(so_item, target_doc, so_item_mapper, so_parent, target_d=sinv_item)
 
-		sinv_item = map_child_doc(source_row, target_doc, mapper, source_parent)
-		update_mapped_delivery_item(sinv_item, packing_slip, ps_item)
+		sinv_item = map_child_doc(ps_item, target_doc, packing_slip_item_mapper, packing_slip, target_d=sinv_item)
+		update_mapped_delivery_item(sinv_item, packing_slip)
 
 	postprocess_mapped_delivery_document(target_doc)
 	target_doc.update_stock = 1
@@ -1228,26 +1223,27 @@ def get_packing_slip_item_mapper(target_doctype):
 			"expense_account",
 			"cost_center",
 		],
+		"field_map": {
+			"parent": "packing_slip",
+			"name": "packing_slip_item",
+
+			"sales_order": "sales_order",
+			"sales_order_item": "sales_order_item",
+
+			"qty": "qty",
+			"uom": "uom",
+			"conversion_factor": "conversion_factor",
+			"net_weight_per_unit": "net_weight_per_unit",
+
+			"batch_no": "batch_no",
+			"serial_no": "serial_no",
+		}
 	}
 
 
-def update_mapped_delivery_item(target, packing_slip, ps_item):
-	target.packing_slip = packing_slip.name
-	target.packing_slip_item = ps_item.name
-
-	target.sales_order = ps_item.sales_order
-	target.sales_order_item = ps_item.sales_order_item
-
-	target.qty = ps_item.qty
-	target.uom = ps_item.uom
-	target.conversion_factor = ps_item.conversion_factor
-
-	target.net_weight_per_unit = ps_item.net_weight_per_unit
+def update_mapped_delivery_item(target, packing_slip):
 	target.weight_uom = packing_slip.weight_uom
-
 	target.warehouse = packing_slip.warehouse
-	target.batch_no = ps_item.batch_no
-	target.serial_no = ps_item.serial_no
 
 
 def postprocess_mapped_delivery_document(target):
