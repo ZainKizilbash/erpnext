@@ -97,16 +97,24 @@ $.extend(erpnext.manufacturing, {
 						default: flt(doc.produced_qty),
 						read_only: 1,
 					},
-					{
-						fieldtype: 'Column Break',
-					},
-					{
-						label: __('Transferred Qty'),
-						fieldname: 'transferred_qty',
-						fieldtype: 'Float',
-						default: flt(doc.material_transferred_for_manufacturing),
-						read_only: 1,
-					},
+				]);
+
+				if (!doc.skip_transfer) {
+					fields = fields.concat([
+						{
+							fieldtype: 'Column Break',
+						},
+						{
+							label: __('Transferred Qty'),
+							fieldname: 'transferred_qty',
+							fieldtype: 'Float',
+							default: flt(doc.material_transferred_for_manufacturing),
+							read_only: 1,
+						},
+					]);
+				}
+
+				fields = fields.concat([
 					{
 						fieldtype: 'Section Break',
 					},
@@ -159,7 +167,8 @@ $.extend(erpnext.manufacturing, {
 			pending_qty_with_allowance = qty_with_allowance - flt(doc.produced_qty);
 		} else {
 			if (purpose === 'Manufacture') {
-				pending_qty = Math.min(flt(doc.material_transferred_for_manufacturing), flt(doc.qty)) - flt(doc.produced_qty);
+				let qty_to_produce = Math.min(flt(doc.material_transferred_for_manufacturing), flt(doc.qty))
+				pending_qty = Math.max(qty_to_produce - flt(doc.produced_qty), 0);
 				pending_qty_with_allowance = flt(doc.material_transferred_for_manufacturing) - flt(doc.produced_qty);
 			} else {
 				pending_qty = max_qty_to_produce - flt(doc.material_transferred_for_manufacturing);
