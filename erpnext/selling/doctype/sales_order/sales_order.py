@@ -1160,12 +1160,13 @@ def make_packing_slip(source_name, target_doc=None, warehouse=None):
 			},
 			"postprocess": update_item,
 			"condition": item_condition,
-		}
+		},
+		"postprocess": set_missing_values,
 	}
 
 	frappe.utils.call_hook_method("update_packing_slip_from_sales_order_mapper", mapper, "Packing Slip")
 
-	target_doc = get_mapped_doc("Sales Order", source_name, mapper, target_doc, set_missing_values)
+	target_doc = get_mapped_doc("Sales Order", source_name, mapper, target_doc)
 
 	return target_doc
 
