@@ -456,16 +456,10 @@ class WorkOrder(StatusUpdater):
 			), StockOverProductionError)
 
 	def get_qty_with_allowance(self, qty):
-		allowance_percentage = self.get_over_production_allowance()
-		return flt(qty) + flt(qty) * allowance_percentage / 100
+		return get_qty_with_allowance(qty, qty_to_produce=self.qty, max_qty=self.max_qty)
 
 	def get_over_production_allowance(self):
-		if self.max_qty and self.qty:
-			allowance_percentage = flt(self.max_qty) / flt(self.qty) * 100 - 100
-		else:
-			allowance_percentage = flt(frappe.get_cached_value("Manufacturing Settings", None, "overproduction_percentage_for_work_order"))
-
-		return allowance_percentage
+		return get_over_production_allowance(qty_to_produce=self.qty, max_qty=self.max_qty)
 
 	def set_status(self, status=None, update=False, update_modified=True):
 		previous_status = self.status
@@ -669,6 +663,20 @@ class WorkOrder(StatusUpdater):
 
 		bom.set_bom_material_details()
 		return bom
+
+
+def get_qty_with_allowance(qty, qty_to_produce, max_qty):
+	allowance_percentage = get_over_production_allowance(qty_to_produce, max_qty)
+	return flt(qty) + flt(qty) * allowance_percentage / 100
+
+
+def get_over_production_allowance(qty_to_produce, max_qty):
+	if max_qty and qty_to_produce:
+		allowance_percentage = flt(max_qty) / flt(qty_to_produce) * 100 - 100
+	else:
+		allowance_percentage = flt(frappe.get_cached_value("Manufacturing Settings", None, "overproduction_percentage_for_work_order"))
+
+	return allowance_percentage
 
 
 @frappe.whitelist()

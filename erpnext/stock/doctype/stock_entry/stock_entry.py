@@ -11,6 +11,7 @@ from erpnext.stock.get_item_details import get_bin_details, get_default_cost_cen
 	get_reserved_qty_for_so, get_hide_item_code, get_default_warehouse
 from erpnext.stock.doctype.batch.batch import get_batch_qty, auto_select_and_split_batches
 from erpnext.manufacturing.doctype.bom.bom import validate_bom_no, add_additional_cost
+from erpnext.manufacturing.doctype.work_order.work_order import get_qty_with_allowance
 from erpnext.stock.utils import get_bin
 from frappe.model.mapper import get_mapped_doc
 from erpnext.stock.doctype.serial_no.serial_no import update_serial_nos_after_submit, get_serial_nos
@@ -474,23 +475,26 @@ class StockEntry(StockController):
 					.format(d.idx, frappe.bold(d.operation), frappe.bold(total_completed_qty), work_order_link, job_card_link), OperationsNotCompleteError)
 
 	def check_duplicate_entry_for_work_order(self):
-		other_ste = [t[0] for t in frappe.db.get_values("Stock Entry",  {
+		other_ste = frappe.db.get_all("Stock Entry", {
 			"work_order": self.work_order,
 			"purpose": self.purpose,
 			"docstatus": ["!=", 2],
 			"name": ["!=", self.name]
-		}, "name")]
+		}, pluck="name")
 
 		if other_ste:
-			production_item, qty = frappe.db.get_value("Work Order",
-				self.work_order, ["production_item", "qty"])
-			args = other_ste + [production_item]
-			fg_qty_already_entered = frappe.db.sql("""select sum(transfer_qty)
+			production_item, wo_qty, wo_max_qty = frappe.db.get_value("Work Order", self.work_order,
+				["production_item", "qty", "max_qty"])
+
+			allowed_qty = get_qty_with_allowance(wo_qty, wo_qty, wo_max_qty)
+
+			fg_qty_already_entered = flt(frappe.db.sql("""
+				select sum(transfer_qty)
 				from `tabStock Entry Detail`
-				where parent in (%s)
-					and item_code = %s
-					and ifnull(s_warehouse,'')='' """ % (", ".join(["%s" * len(other_ste)]), "%s"), args)[0][0]
-			if fg_qty_already_entered and fg_qty_already_entered >= qty:
+				where parent in %(stes)s and item_code = %(item_code)s and ifnull(s_warehouse,'') = ''
+			""", {"stes": other_ste, "item_code": production_item})[0][0])
+
+			if flt(fg_qty_already_entered, self.precision("fg_completed_qty")) >= flt(allowed_qty, self.precision("fg_completed_qty")):
 				frappe.throw(_("Stock Entries already created for Work Order ")
 					+ self.work_order + ":" + ", ".join(other_ste), DuplicateEntryForWorkOrderError)
 
@@ -769,8 +773,6 @@ class StockEntry(StockController):
 		if not self.work_order: return
 
 		items_with_target_warehouse = []
-		allowance_percentage = flt(frappe.db.get_single_value("Manufacturing Settings",
-			"overproduction_percentage_for_work_order"))
 
 		production_item, wo_qty, max_wo_qty = frappe.db.get_value("Work Order",
 			self.work_order, ["production_item", "qty", "max_qty"])
@@ -785,10 +787,7 @@ class StockEntry(StockController):
 				items_with_target_warehouse.append(d.item_code)
 
 		if self.work_order and self.purpose == "Manufacture":
-			if flt(max_wo_qty):
-				allowed_qty = max_wo_qty
-			else:
-				allowed_qty = wo_qty + (allowance_percentage/100 * wo_qty)
+			allowed_qty = get_qty_with_allowance(wo_qty, wo_qty, max_wo_qty)
 
 			if flt(self.fg_completed_qty) > flt(allowed_qty, self.precision("fg_completed_qty")):
 				frappe.throw(_("For quantity {0} should not be greater than work order quantity {1}")
@@ -1364,7 +1363,7 @@ class StockEntry(StockController):
 			whichever is less
 		"""
 		item_dict = self.get_pro_order_required_items()
-		max_qty = flt(self.pro_doc.qty)
+		qty_to_produce = flt(self.pro_doc.qty)
 
 		for item, item_details in iteritems(item_dict):
 			if item_details.get("no_allowance"):
@@ -1373,7 +1372,7 @@ class StockEntry(StockController):
 				required_qty_with_allowance = self.pro_doc.get_qty_with_allowance(item_details.required_qty)
 
 			pending_to_issue = required_qty_with_allowance - flt(item_details.transferred_qty)
-			desire_to_transfer = flt(item_details.required_qty) * flt(self.fg_completed_qty) / max_qty
+			desire_to_transfer = flt(item_details.required_qty) * flt(self.fg_completed_qty) / qty_to_produce
 
 			if desire_to_transfer <= pending_to_issue:
 				item_dict[item]["qty"] = desire_to_transfer
