@@ -40,7 +40,6 @@ erpnext.crm.Opportunity = class Opportunity extends frappe.ui.form.Controller {
 
 	setup_buttons() {
 		var me = this;
-		me.frm.clear_custom_buttons();
 		me.setup_notification_buttons();
 
 		if (!me.frm.doc.__islocal) {
