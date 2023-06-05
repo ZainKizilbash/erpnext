@@ -293,8 +293,8 @@ frappe.ui.form.on("Work Order", {
 		// pending qty
 		let pending_complete;
 		if (frm.doc.skip_transfer) {
-			pending_complete = flt(frm.doc.qty - frm.doc.produced_qty,
-				precision("produced_qty"));
+			let max_qty = flt(frm.doc.max_qty) || flt(frm.doc.qty);
+			pending_complete = flt(max_qty - frm.doc.produced_qty, precision("produced_qty"));
 		} else {
 			pending_complete = flt(frm.doc.material_transferred_for_manufacturing - frm.doc.produced_qty,
 				precision("produced_qty"));
@@ -554,7 +554,9 @@ erpnext.work_order = {
 
 		// Finish Button
 		if (doc.skip_transfer) {
-			if (flt(doc.produced_qty) < flt(doc.qty)) {
+			let max_qty = flt(doc.max_qty) || flt(doc.qty);
+
+			if (flt(doc.produced_qty) < max_qty) {
 				let finish_btn = frm.add_custom_button(__('Finish'), function () {
 					erpnext.manufacturing.make_stock_entry(doc, 'Manufacture');
 				});
