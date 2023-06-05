@@ -1135,8 +1135,8 @@ class StockEntry(StockController):
 				self.load_items_from_bom()
 
 		self.set_scrap_items()
-		self.set_actual_qty()
 		self.set_missing_values()
+		self.set_actual_qty()
 		self.calculate_rate_and_amount(raise_error_if_no_rate=False)
 
 	def set_scrap_items(self):
