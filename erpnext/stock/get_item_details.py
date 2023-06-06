@@ -384,16 +384,12 @@ def get_default_warehouse(item, args, overwrite_warehouse=True):
 
 
 def get_global_default_warehouse(company):
-	global_defaults = frappe.defaults.get_defaults() or {}
-	if not global_defaults.get("default_warehouse"):
+	default_warehouse = frappe.get_cached_value("Stock Settings", None, "default_warehouse")
+	if not default_warehouse:
 		return None
 
-	warehouse_exists = frappe.db.exists("Warehouse", {
-		"name": global_defaults.default_warehouse,
-		"company": company
-	})
-	if warehouse_exists:
-		return global_defaults.default_warehouse
+	if frappe.db.get_value("Warehouse", default_warehouse, "company", cache=1) == company:
+		return default_warehouse
 
 
 def update_barcode_value(out):

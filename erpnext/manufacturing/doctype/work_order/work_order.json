@@ -124,7 +124,8 @@
    "oldfieldname": "production_item",
    "oldfieldtype": "Link",
    "options": "Item",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "depends_on": "eval:doc.production_item && doc.item_name != doc.production_item",
@@ -624,7 +625,7 @@
  "is_calendar_and_gantt": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-06-01 17:56:43.482719",
+ "modified": "2023-06-06 12:10:52.752307",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Work Order",

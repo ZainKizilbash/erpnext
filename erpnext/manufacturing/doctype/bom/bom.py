@@ -103,19 +103,6 @@ class BOM(WebsiteGenerator):
 			if self.get('item'):
 				self.update(get_fetch_values(self.doctype, 'item', self.item))
 
-	def get_item_det(self, item_code):
-		item = frappe.db.sql("""
-			select name, item_name, docstatus, description, image,
-				is_sub_contracted_item, stock_uom, manufacture_uom, default_bom, last_purchase_rate,
-				skip_transfer_for_manufacture
-			from `tabItem` where name=%s
-		""", item_code, as_dict=1)
-
-		if not item:
-			frappe.throw(_("Item: {0} does not exist in the system").format(item_code))
-
-		return item
-
 	@frappe.whitelist()
 	def get_routing(self):
 		if self.routing:
@@ -134,7 +121,7 @@ class BOM(WebsiteGenerator):
 				child.hour_rate = flt(d.hour_rate / self.conversion_rate, 2)
 
 	def validate_rm_item(self, item):
-		if (item[0]['name'] in [it.item_code for it in self.items]) and item[0]['name'] == self.item:
+		if (item.name in [it.item_code for it in self.items]) and item.name == self.item:
 			frappe.throw(_("BOM #{0}: Raw material cannot be same as main Item").format(self.name))
 
 	def set_bom_material_details(self):
@@ -146,11 +133,11 @@ class BOM(WebsiteGenerator):
 				"item_name": item.item_name,
 				"bom_no": item.bom_no,
 				"stock_qty": item.stock_qty,
-				"skip_transfer_for_manufacture": item.skip_transfer_for_manufacture,
 				"qty": item.qty,
 				"uom": item.uom,
 				"stock_uom": item.stock_uom,
-				"conversion_factor": item.conversion_factor
+				"conversion_factor": item.conversion_factor,
+				"skip_transfer_for_manufacture": item.skip_transfer_for_manufacture,
 			})
 			for key in material_details:
 				if not item.get(key) or key in force_fields:
@@ -166,38 +153,34 @@ class BOM(WebsiteGenerator):
 			import json
 			args = json.loads(args)
 
-		item = self.get_item_det(args['item_code'])
+		item = frappe.get_cached_doc("Item", args.get('item_code'))
 		self.validate_rm_item(item)
-
-		args['bom_no'] = args['bom_no'] or item and cstr(item[0]['default_bom']) or ''
-
-		args.update(item[0])
 
 		if args.get('skip_transfer_for_manufacture') is not None:
 			args['skip_transfer_for_manufacture'] = cint(args.get('skip_transfer_for_manufacture'))
 		else:
-			args['skip_transfer_for_manufacture'] = cint(item and item[0].skip_transfer_for_manufacture)
+			args['skip_transfer_for_manufacture'] = cint(item.skip_transfer_for_manufacture)
 
-		if not args.get('uom') and args.get('manufacture_uom'):
-			args['uom'] = args.get('manufacture_uom')
-			args['conversion_factor'] = get_conversion_factor(item[0].name, args['uom']).get("conversion_factor") or 1
+		if not args.get('uom') and item.get('manufacture_uom'):
+			args['uom'] = item.get('manufacture_uom')
+			args['conversion_factor'] = get_conversion_factor(item.name, args['uom']).get("conversion_factor") or 1
 			args['qty'] = flt(args.get('qty')) or 1
 			args['stock_qty'] = args['qty'] * args['conversion_factor']
 
 		rate = self.get_rm_rate(args)
 		ret_item = {
-			'item_name': item and args['item_name'] or '',
-			'description': item and args['description'] or '',
-			'image': item and args['image'] or '',
-			'stock_uom': item and args['stock_uom'] or '',
-			'uom': item and args.get('uom') or args['stock_uom'] or '',
+			'item_name': item.item_name,
+			'description': item.description,
+			'image': item.image,
+			'stock_uom': item.stock_uom,
+			'uom': args.get('uom') or item.get('stock_uom'),
 			'conversion_factor': args.get('conversion_factor') or 1,
-			'bom_no': args['bom_no'],
+			'bom_no': args.get('bom_no') or item.default_bom or '',
 			'rate': rate,
 			'qty': flt(args.get("qty")) or flt(args.get("stock_qty")) or 1,
 			'stock_qty': flt(args.get("stock_qty")) or flt(args.get("qty")) or 1,
 			'base_rate': flt(rate) * (flt(self.conversion_rate) or 1),
-			'skip_transfer_for_manufacture': args['skip_transfer_for_manufacture']
+			'skip_transfer_for_manufacture': args.get('skip_transfer_for_manufacture')
 		}
 
 		return ret_item
@@ -217,7 +200,7 @@ class BOM(WebsiteGenerator):
 			rate = self.get_valuation_rate(arg)
 		elif arg:
 			#Customer Provided parts will have zero rate
-			if not frappe.db.get_value('Item', arg["item_code"], 'is_customer_provided_item'):
+			if not frappe.get_cached_value('Item', arg["item_code"], 'is_customer_provided_item'):
 				if arg.get('bom_no') and self.set_rate_of_sub_assembly_item_based_on_bom:
 					rate = flt(self.get_bom_unitcost(arg['bom_no'])) * (arg.get("conversion_factor") or 1)
 				else:
@@ -320,8 +303,12 @@ class BOM(WebsiteGenerator):
 				(cost, cost, self.name))
 
 	def get_bom_unitcost(self, bom_no):
-		bom = frappe.db.sql("""select name, base_total_cost/quantity as unit_cost from `tabBOM`
-			where is_active = 1 and name = %s""", bom_no, as_dict=1)
+		bom = frappe.db.sql("""
+			select name, base_total_cost/quantity as unit_cost
+			from `tabBOM`
+			where is_active = 1 and name = %s
+		""", bom_no, as_dict=1)
+
 		return bom and bom[0]['unit_cost'] or 0
 
 	def get_valuation_rate(self, args):
@@ -375,14 +362,10 @@ class BOM(WebsiteGenerator):
 
 	def validate_main_item(self):
 		""" Validate main FG item"""
-		item = self.get_item_det(self.item)
-		if not item:
-			frappe.throw(_("Item {0} does not exist in the system or has expired").format(self.item))
-		else:
-			ret = frappe.db.get_value("Item", self.item, ["description", "stock_uom", "item_name"])
-			self.description = ret[0]
-			self.uom = ret[1]
-			self.item_name= ret[2]
+		item = frappe.get_cached_doc("Item", self.item)
+		self.item_name = item.item_name
+		self.description = item.description
+		self.uom = item.stock_uom
 
 		if not self.quantity:
 			frappe.throw(_("Quantity should be greater than 0"))
@@ -768,13 +751,6 @@ def get_bom_items_as_dict(bom, company, qty=1, fetch_exploded=1, fetch_scrap_ite
 		item_details.default_warehouse = get_default_warehouse(item_doc, defaults_args)
 		item_details.cost_center = get_default_cost_center(item_doc, defaults_args)
 
-	for item, item_details in item_dict.items():
-		for d in [["Account", "expense_account", "stock_adjustment_account"],
-			["Cost Center", "cost_center", "cost_center"], ["Warehouse", "default_warehouse", ""]]:
-				company_in_record = frappe.db.get_value(d[0], item_details.get(d[1]), "company")
-				if not item_details.get(d[1]) or (company_in_record and company != company_in_record):
-					item_dict[item][d[1]] = frappe.get_cached_value('Company',  company,  d[2]) if d[2] else None
-
 	return item_dict
 
 
@@ -807,7 +783,7 @@ def validate_bom_no(item, bom_no):
 			if d.item_code.lower() == item.lower():
 				rm_item_exists = True
 
-		if bom.item.lower() == item.lower() or bom.item.lower() == cstr(frappe.db.get_value("Item", item, "variant_of")).lower():
+		if bom.item.lower() == item.lower() or bom.item.lower() == cstr(frappe.get_cached_value("Item", item, "variant_of")).lower():
 			rm_item_exists = True
 
 		if not rm_item_exists:

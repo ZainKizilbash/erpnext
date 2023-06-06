@@ -1507,7 +1507,6 @@ def make_work_orders(items, sales_order, company, project=None):
 
 		frappe.utils.call_hook_method("update_work_order_from_sales_order", work_order)
 
-		work_order.insert()
 		work_order.set_work_order_operations()
 		work_order.save()
 
