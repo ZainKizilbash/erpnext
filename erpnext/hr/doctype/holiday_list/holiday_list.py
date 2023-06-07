@@ -7,13 +7,17 @@ from frappe.utils import cint, getdate, formatdate, today
 from frappe import throw, _
 from frappe.model.document import Document
 
-class OverlapError(frappe.ValidationError): pass
+
+class OverlapError(frappe.ValidationError):
+	pass
+
 
 class HolidayList(Document):
 	def validate(self):
 		self.validate_days()
 		self.total_holidays = len(self.holidays)
 
+	@frappe.whitelist()
 	def get_weekly_off_dates(self):
 		self.validate_values()
 		date_list = self.get_weekly_off_date_list(self.from_date, self.to_date)
@@ -27,7 +31,6 @@ class HolidayList(Document):
 	def validate_values(self):
 		if not self.weekly_off:
 			throw(_("Please select weekly off day"))
-
 
 	def validate_days(self):
 		if self.from_date > self.to_date:
@@ -60,6 +63,7 @@ class HolidayList(Document):
 
 	def clear_table(self):
 		self.set('holidays', [])
+
 
 @frappe.whitelist()
 def get_events(start, end, filters=None):
