@@ -675,17 +675,18 @@ class SalesOrder(SellingController):
 					pending_qty = round_up(pending_qty, work_order_precison)
 
 					if pending_qty and i.item_code not in product_bundle_parents:
-						items.append(dict(
-							name= i.name,
-							item_code= i.item_code,
-							item_name= i.item_name,
-							description= i.description,
-							bom = bom,
-							warehouse = default_rm_warehouse if for_raw_material_request else i.warehouse,
-							pending_qty = pending_qty,
-							required_qty = pending_qty if for_raw_material_request else 0,
-							sales_order_item = i.name
-						))
+						items.append({
+							'name': i.name,
+							'item_code': i.item_code,
+							'item_name': i.item_name,
+							'description': i.description,
+							'bom': bom,
+							'warehouse': default_rm_warehouse if for_raw_material_request else i.warehouse,
+							'pending_qty': pending_qty,
+							'required_qty': pending_qty if for_raw_material_request else 0,
+							'sales_order': self.name,
+							'sales_order_item': i.name
+						})
 		return items
 
 	def on_recurring(self, reference_doc, auto_repeat_doc):
@@ -1479,7 +1480,7 @@ def get_supplier(doctype, txt, searchfield, start, page_len, filters):
 
 
 @frappe.whitelist()
-def make_work_orders(items, sales_order, company, project=None):
+def make_work_orders(items, company, sales_order=None, project=None):
 	'''Make Work Orders against the given Sales Order for the given `items`'''
 	if isinstance(items, str):
 		items = json.loads(items)
@@ -1498,7 +1499,7 @@ def make_work_orders(items, sales_order, company, project=None):
 			'bom_no': i.get('bom'),
 			'qty': i['pending_qty'],
 			'company': company,
-			'sales_order': sales_order,
+			'sales_order': sales_order or i.get('sales_order'),
 			'sales_order_item': i['sales_order_item'],
 			'project': project,
 			'fg_warehouse': i['warehouse'],
