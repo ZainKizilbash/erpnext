@@ -44,10 +44,7 @@ class StockEntry(StockController):
 			item.update(get_bin_details(item.item_code, item.s_warehouse))
 
 	def validate(self):
-		self.pro_doc = frappe._dict()
-		if self.work_order:
-			self.pro_doc = frappe.get_doc('Work Order', self.work_order)
-
+		self.get_work_order()
 		self.validate_posting_time()
 		self.validate_stock_entry_type()
 		self.validate_purpose()
@@ -116,6 +113,16 @@ class StockEntry(StockController):
 		self.update_previous_doc_status()
 		self.update_quality_inspection()
 		self.unlink_auto_created_batches()
+
+	def get_work_order(self):
+		if self.get("pro_doc"):
+			return self.pro_doc
+
+		self.pro_doc = frappe._dict()
+		if self.work_order:
+			self.pro_doc = frappe.get_doc("Work Order", self.work_order)
+
+		return self.pro_doc
 
 	def update_previous_doc_status(self):
 		material_requests = set()
@@ -214,9 +221,10 @@ class StockEntry(StockController):
 			self.bom_no = data.bom_no
 
 	def validate_work_order_status(self):
-		pro_doc = frappe.get_doc("Work Order", self.work_order)
-		if pro_doc.status == 'Completed':
-			frappe.throw(_("Cannot cancel transaction for Completed Work Order."))
+		if self.work_order:
+			status = frappe.db.get_value("Work Order", self.work_order, 'status')
+			if status == 'Completed':
+				frappe.throw(_("Cannot cancel transaction for Completed Work Order."))
 
 	def validate_stock_entry_type(self):
 		ste_type_doc = frappe.get_cached_doc("Stock Entry Type", self.stock_entry_type)
@@ -458,7 +466,7 @@ class StockEntry(StockController):
 
 	def check_if_operations_completed(self):
 		"""Check if Time Sheets are completed against before manufacturing to capture operating costs."""
-		prod_order = frappe.get_doc("Work Order", self.work_order)
+		prod_order = self.get_work_order()
 
 		for d in prod_order.get("operations"):
 			total_completed_qty = flt(self.fg_completed_qty) + flt(prod_order.produced_qty)
@@ -934,10 +942,10 @@ class StockEntry(StockController):
 			job_doc.set_transferred_qty(update_status=True)
 
 		if self.work_order:
-			pro_doc = frappe.get_doc("Work Order", self.work_order)
-			_validate_work_order(pro_doc)
-			pro_doc.run_method("update_status")
-			pro_doc.notify_update()
+			self.pro_doc = frappe.get_doc("Work Order", self.work_order)
+			_validate_work_order(self.pro_doc)
+			self.pro_doc.run_method("update_status")
+			self.pro_doc.notify_update()
 
 	@frappe.whitelist()
 	def get_item_details(self, args=None, for_update=False):
@@ -1127,8 +1135,7 @@ class StockEntry(StockController):
 				self.set_serial_nos(self.work_order)
 
 			if self.purpose in ("Manufacture", "Repack"):
-				work_order = frappe.get_doc('Work Order', self.work_order) if self.work_order else frappe._dict()
-				add_additional_cost(self, work_order)
+				add_additional_cost(self, self.pro_doc)
 
 			# add finished goods item
 			if self.purpose in ("Manufacture", "Repack"):
@@ -1155,8 +1162,7 @@ class StockEntry(StockController):
 
 		if self.work_order:
 			# common validations
-			if not self.pro_doc:
-				self.pro_doc = frappe.get_doc('Work Order', self.work_order)
+			self.get_work_order()
 
 			if self.pro_doc:
 				self.bom_no = self.pro_doc.bom_no
@@ -1227,11 +1233,8 @@ class StockEntry(StockController):
 		return item_dict
 
 	def get_unconsumed_raw_materials(self):
-		wo = frappe.get_doc("Work Order", self.work_order)
-		wo_items = frappe.get_all('Work Order Item',
-			filters={'parent': self.work_order},
-			fields=["item_code", "uom", "stock_uom", "required_qty", "consumed_qty"]
-			)
+		wo = self.pro_doc
+		wo_items = self.pro_doc.required_items
 
 		for item in wo_items:
 			qty = item.required_qty
@@ -1398,7 +1401,7 @@ class StockEntry(StockController):
 
 	def get_pro_order_required_items(self):
 		item_dict = frappe._dict()
-		pro_order = frappe.get_doc("Work Order", self.work_order)
+		pro_order = self.get_work_order()
 
 		if not frappe.db.get_value("Warehouse", pro_order.wip_warehouse, "is_group", cache=1):
 			wip_warehouse = pro_order.wip_warehouse
