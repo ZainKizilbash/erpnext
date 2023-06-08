@@ -1,4 +1,5 @@
 {
+ "actions": [],
  "creation": "2013-08-02 13:45:23",
  "doctype": "DocType",
  "document_type": "Other",
@@ -9,7 +10,8 @@
   "retirement_age",
   "emp_created_by",
   "column_break_4",
-  "stop_birthday_reminders",
+  "email_birthday_notification",
+  "default_birthday_notification_template",
   "expense_approver_mandatory_in_expense_claim",
   "payroll_settings",
   "include_holidays_in_total_working_days",
@@ -54,13 +56,6 @@
   {
    "fieldname": "column_break_4",
    "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "description": "Don't send Employee Birthday Reminders",
-   "fieldname": "stop_birthday_reminders",
-   "fieldtype": "Check",
-   "label": "Stop Birthday Reminders"
   },
   {
    "default": "1",
@@ -183,12 +178,29 @@
    "fieldname": "consider_lwp_as_deduction",
    "fieldtype": "Check",
    "label": "Consider LWP as Deduction"
+  },
+  {
+   "default": "0",
+   "fieldname": "email_birthday_notification",
+   "fieldtype": "Check",
+   "label": "Email Birthday Notification"
+  },
+  {
+   "default": "0",
+   "depends_on": "email_birthday_notification",
+   "description": "Don't send Employee Birthday Reminders",
+   "fieldname": "default_birthday_notification_template",
+   "fieldtype": "Link",
+   "label": "Default Birthday Notification Template",
+   "mandatory_depends_on": "email_birthday_notification",
+   "options": "Email Template"
   }
  ],
  "icon": "fa fa-cog",
  "idx": 1,
  "issingle": 1,
- "modified": "2022-12-26 12:16:08.306059",
+ "links": [],
+ "modified": "2023-06-06 18:39:27.609404",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "HR Settings",
@@ -215,5 +227,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "ASC",
+ "states": [],
  "track_changes": 1
 }
