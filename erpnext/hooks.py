@@ -298,6 +298,7 @@ scheduler_events = {
 		"erpnext.vehicles.doctype.vehicle_booking_order.vehicle_booking_order.update_overdue_status",
 		"erpnext.accounts.doctype.fiscal_year.fiscal_year.auto_create_fiscal_year",
 		"erpnext.hr.doctype.employee.employee.send_employee_birthday_notification",
+		"erpnext.hr.doctype.employee.employee.send_employee_anniversary_notification",
 		"erpnext.projects.doctype.task.task.set_tasks_as_overdue",
 		"erpnext.assets.doctype.asset.depreciation.post_depreciation_entries",
 		"erpnext.hr.doctype.daily_work_summary_group.daily_work_summary_group.send_summary",

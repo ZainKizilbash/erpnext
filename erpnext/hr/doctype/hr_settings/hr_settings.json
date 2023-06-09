@@ -13,6 +13,9 @@
   "send_birthday_notification",
   "birthday_notification_template",
   "cc_birthday_notification_to_role",
+  "send_anniversary_notification",
+  "anniversary_notification_template",
+  "cc_anniversary_notification_to_role",
   "expense_approver_mandatory_in_expense_claim",
   "payroll_settings",
   "include_holidays_in_total_working_days",
@@ -200,13 +203,36 @@
    "fieldtype": "Link",
    "label": "CC Birthday Email to Role",
    "options": "Role"
+  },
+  {
+   "default": "0",
+   "fieldname": "send_anniversary_notification",
+   "fieldtype": "Check",
+   "label": "Send Anniversary Notification"
+  },
+  {
+   "default": "0",
+   "depends_on": "send_anniversary_notification",
+   "fieldname": "anniversary_notification_template",
+   "fieldtype": "Link",
+   "label": "Anniversary Notification Template",
+   "mandatory_depends_on": "send_anniversary_notification",
+   "options": "Email Template"
+  },
+  {
+   "default": "0",
+   "depends_on": "send_anniversary_notification",
+   "fieldname": "cc_anniversary_notification_to_role",
+   "fieldtype": "Link",
+   "label": "CC Anniversary Email to Role",
+   "options": "Role"
   }
  ],
  "icon": "fa fa-cog",
  "idx": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-06-09 16:38:34.735026",
+ "modified": "2023-06-09 17:38:52.822500",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "HR Settings",
