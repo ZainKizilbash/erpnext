@@ -409,7 +409,9 @@ def send_employee_birthday_notification():
 		frappe.throw(_("Birthday Notification Template is not set."))
 
 	birthday_template = frappe.get_cached_doc("Email Template", birthday_notification_template)
-	hr_managers_emails = set(get_info_based_on_role("HR Manager", "email", ignore_permissions=True))
+
+	role_for_cc = frappe.db.get_single_value("HR Settings", "cc_birthday_notification_to_role")
+	emails_of_role = set(get_info_based_on_role(role_for_cc, "email", ignore_permissions=True))
 
 	date_today = getdate()
 	formatted_date = format_date(date_today)
@@ -423,7 +425,7 @@ def send_employee_birthday_notification():
 
 	for idx, d in enumerate(employee_birthday_data):
 		recipient = d.get("prefered_email") or d.get("company_email") or d.get("personal_email")
-		hr_managers_emails_formatted = list(hr_managers_emails - set(recipient))
+		emails_of_role_formatted = list(emails_of_role - set(recipient))
 		birthday_template_formatted = birthday_template.get_formatted_email(d)
 
 		if recipient:
@@ -431,7 +433,7 @@ def send_employee_birthday_notification():
 
 			frappe.sendmail(
 				recipients=recipient,
-				cc=hr_managers_emails_formatted,
+				cc=emails_of_role_formatted,
 				subject=birthday_template_formatted['subject'],
 				message=birthday_template_formatted['message']
 			)

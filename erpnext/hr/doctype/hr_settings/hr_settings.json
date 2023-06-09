@@ -12,6 +12,7 @@
   "column_break_4",
   "send_birthday_notification",
   "birthday_notification_template",
+  "cc_birthday_notification_to_role",
   "expense_approver_mandatory_in_expense_claim",
   "payroll_settings",
   "include_holidays_in_total_working_days",
@@ -108,7 +109,6 @@
    "label": "Password Policy"
   },
   {
-   "collapsible": 1,
    "fieldname": "leave_settings",
    "fieldtype": "Section Break",
    "label": "Leave Settings"
@@ -142,7 +142,6 @@
    "label": "Show Leaves Of All Department Members In Calendar"
   },
   {
-   "collapsible": 1,
    "fieldname": "hiring_settings",
    "fieldtype": "Section Break",
    "label": "Hiring Settings"
@@ -193,13 +192,21 @@
    "label": "Birthday Notification Template",
    "mandatory_depends_on": "send_birthday_notification",
    "options": "Email Template"
+  },
+  {
+   "default": "0",
+   "depends_on": "send_birthday_notification",
+   "fieldname": "cc_birthday_notification_to_role",
+   "fieldtype": "Link",
+   "label": "CC Birthday Email to Role",
+   "options": "Role"
   }
  ],
  "icon": "fa fa-cog",
  "idx": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-06-09 16:32:57.084174",
+ "modified": "2023-06-09 16:38:34.735026",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "HR Settings",
