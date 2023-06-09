@@ -397,49 +397,32 @@ def get_employee_from_user(user):
 	return employee_docname
 
 
-def get_employees_who_have_birthday_today(date_today=None):
-	date_today = getdate(date_today)
-
-	employee_birthday_data = frappe.db.sql("""
-		SELECT name, employee_name, personal_email, company_email
-		FROM tabEmployee
-		WHERE day(date_of_birth) = %s
-		AND month(date_of_birth)= %s
-		AND status = 'Active'
-	""", [date_today.day, date_today.month], as_dict=1)
-
-	return employee_birthday_data
-
-
 def send_employee_birthday_notification():
 	from frappe.desk.doctype.notification_log.notification_log import make_notification_logs_for_role
 	from frappe.core.doctype.role.role import get_info_based_on_role
 
-
 	if not cint(frappe.db.get_single_value("HR Settings", "send_birthday_notification")):
 		return
 
-	birthday_template_name = frappe.db.get_single_value("HR Settings", "birthday_notification_template")
-
-	if not birthday_template_name:
+	birthday_notification_template = frappe.db.get_single_value("HR Settings", "birthday_notification_template")
+	if not birthday_notification_template:
 		frappe.throw(_("Birthday Notification Template is not set."))
 
-	birthday_template = frappe.get_cached_doc("Email Template", birthday_template_name)
+	birthday_template = frappe.get_cached_doc("Email Template", birthday_notification_template)
 	hr_managers_emails = set(get_info_based_on_role("HR Manager", "email", ignore_permissions=True))
 
 	date_today = getdate()
 	formatted_date = format_date(date_today)
 
 	employee_birthday_data = get_employees_who_have_birthday_today(date_today)
-
 	if not employee_birthday_data:
 		return
 
-	notification_subject = "Today {0} employee(s) are celebrating their birthday ({1})".format(len(employee_birthday_data), formatted_date)
+	notification_subject = "{0} employee(s) are celebrating their birthday today ({1})".format(len(employee_birthday_data), formatted_date)
 	notification_content = ''
 
 	for idx, d in enumerate(employee_birthday_data):
-		recipient = d['company_email'] or d['personal_email']
+		recipient = d.get("prefered_email") or d.get("company_email") or d.get("personal_email")
 		hr_managers_emails_formatted = list(hr_managers_emails - set(recipient))
 		birthday_template_formatted = birthday_template.get_formatted_email(d)
 
@@ -448,7 +431,7 @@ def send_employee_birthday_notification():
 
 			frappe.sendmail(
 				recipients=recipient,
-				cc = hr_managers_emails_formatted,
+				cc=hr_managers_emails_formatted,
 				subject=birthday_template_formatted['subject'],
 				message=birthday_template_formatted['message']
 			)
@@ -462,3 +445,17 @@ def send_employee_birthday_notification():
 		"email_content": notification_content
 	}
 	make_notification_logs_for_role(notification_doc, "HR Manager")
+
+
+def get_employees_who_have_birthday_today(date_today=None):
+	date_today = getdate(date_today)
+
+	employee_birthday_data = frappe.db.sql("""
+		SELECT name, employee_name, prefered_email, personal_email, company_email
+		FROM tabEmployee
+		WHERE day(date_of_birth) = %s
+		AND month(date_of_birth)= %s
+		AND status = 'Active'
+	""", [date_today.day, date_today.month], as_dict=1)
+
+	return employee_birthday_data

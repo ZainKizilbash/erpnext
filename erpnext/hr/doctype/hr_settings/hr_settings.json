@@ -188,7 +188,6 @@
   {
    "default": "0",
    "depends_on": "send_birthday_notification",
-   "description": "Don't send Employee Birthday Reminders",
    "fieldname": "birthday_notification_template",
    "fieldtype": "Link",
    "label": "Birthday Notification Template",
@@ -200,7 +199,7 @@
  "idx": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-06-08 15:19:09.929891",
+ "modified": "2023-06-09 16:32:57.084174",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "HR Settings",
