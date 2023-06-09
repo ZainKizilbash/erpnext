@@ -10,8 +10,8 @@
   "retirement_age",
   "emp_created_by",
   "column_break_4",
-  "email_birthday_notification",
-  "default_birthday_notification_template",
+  "send_birthday_notification",
+  "birthday_notification_template",
   "expense_approver_mandatory_in_expense_claim",
   "payroll_settings",
   "include_holidays_in_total_working_days",
@@ -181,18 +181,18 @@
   },
   {
    "default": "0",
-   "fieldname": "email_birthday_notification",
+   "fieldname": "send_birthday_notification",
    "fieldtype": "Check",
-   "label": "Email Birthday Notification"
+   "label": "Send Birthday Notification"
   },
   {
    "default": "0",
-   "depends_on": "email_birthday_notification",
+   "depends_on": "send_birthday_notification",
    "description": "Don't send Employee Birthday Reminders",
-   "fieldname": "default_birthday_notification_template",
+   "fieldname": "birthday_notification_template",
    "fieldtype": "Link",
-   "label": "Default Birthday Notification Template",
-   "mandatory_depends_on": "email_birthday_notification",
+   "label": "Birthday Notification Template",
+   "mandatory_depends_on": "send_birthday_notification",
    "options": "Email Template"
   }
  ],
@@ -200,7 +200,7 @@
  "idx": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-06-06 18:39:27.609404",
+ "modified": "2023-06-08 15:19:09.929891",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "HR Settings",

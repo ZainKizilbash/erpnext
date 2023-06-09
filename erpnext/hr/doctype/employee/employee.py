@@ -3,7 +3,7 @@
 
 import frappe
 
-from frappe.utils import getdate, validate_email_address, today, add_years, format_datetime, cstr, clean_whitespace, cint
+from frappe.utils import getdate, validate_email_address, today, add_years, format_date, cstr, clean_whitespace, cint
 from frappe.model.naming import set_name_by_naming_series
 from frappe import throw, _, scrub
 from frappe.permissions import add_user_permission, remove_user_permission, \
@@ -382,6 +382,7 @@ def get_children(doctype, parent=None, company=None, is_root=False, is_tree=Fals
 def on_doctype_update():
 	frappe.db.add_index("Employee", ["lft", "rgt"])
 
+
 def has_user_permission_for_employee(user_name, employee_name):
 	return frappe.db.exists({
 		'doctype': 'User Permission',
@@ -396,16 +397,7 @@ def get_employee_from_user(user):
 	return employee_docname
 
 
-def send_employee_birthday_notification():
-	from frappe.email.doctype.notification.notification import create_system_notification
-
-	if not cint(frappe.db.get_single_value("HR Settings", "email_birthday_notification")):
-		return
-
-	date_today = getdate()
-	birthday_template_name = frappe.db.get_single_value("HR Settings", "default_birthday_notification_template")
-	birthday_template = frappe.get_doc("Email Template", birthday_template_name)
-
+def get_employees_who_have_birthday_today(date_today):
 	employee_birthday_data = frappe.db.sql("""
 		SELECT name, employee_name, personal_email, company_email
 		FROM tabEmployee
@@ -414,25 +406,57 @@ def send_employee_birthday_notification():
 		AND status = 'Active'
 	""", [date_today.day, date_today.month], as_dict=1)
 
-	for d in employee_birthday_data:
+	return employee_birthday_data
+
+
+def send_employee_birthday_notification():
+	from frappe.desk.doctype.notification_log.notification_log import make_notification_logs_for_role
+	from frappe.core.doctype.role.role import get_info_based_on_role
+
+
+	if not cint(frappe.db.get_single_value("HR Settings", "send_birthday_notification")):
+		return
+
+	birthday_template_name = frappe.db.get_single_value("HR Settings", "birthday_notification_template")
+
+	if not birthday_template_name:
+		frappe.throw(_("Birthday template not found."))
+
+	birthday_template = frappe.get_doc("Email Template", birthday_template_name)
+	hr_managers_emails = set(get_info_based_on_role("HR Manager", "email", ignore_permissions=True))
+
+	date_today = getdate()
+	formatted_date = format_date(date_today)
+
+	employee_birthday_data = get_employees_who_have_birthday_today(date_today)
+
+	if not employee_birthday_data:
+		return
+
+	notification_subject = "Today {0} employee(s) are celebrating their birthday ({1})".format(len(employee_birthday_data), formatted_date)
+	notification_content = ''
+
+	for idx, d in enumerate(employee_birthday_data):
 		recipient = d['company_email'] or d['personal_email']
+		hr_managers_emails_formatted = list(hr_managers_emails - set(recipient))
+		birthday_template_formatted = birthday_template.get_formatted_email(d)
 
 		if recipient:
+			notification_content += "{0}. {1}: {2}\t-\t<span style='color: green;'>Mail Sent</span><br>".format(idx+1, d.name, d.employee_name)
+
 			frappe.sendmail(
 				recipients=recipient,
-				subject=birthday_template.subject,
-				message=frappe.render_template(birthday_template.response, d)
+				cc = hr_managers_emails_formatted,
+				subject=birthday_template_formatted['subject'],
+				message=birthday_template_formatted['message']
 			)
 
 		else:
-			try:
-				subject = _("Birthday Emlpoyee {0} has Email Missing").format(d.employee_name)
-				create_system_notification("Employee", d.name, subject, "HR Manager")
+			notification_content += "{0}. {1}: {2}\t-\t<span style='color: red;'>Email Missing</span><br>".format(idx+1, d.name, d.employee_name)
 
-			except Exception:
-				traceback = frappe.get_traceback()
-				frappe.log_error(
-					title=_("Error: create_system_notification Failed."),
-					message=traceback,
-				)
-				frappe.db.commit()
+	notification_doc = {
+		"type": "Alert",
+		"subject": notification_subject,
+		"email_content": notification_content
+	}
+	make_notification_logs_for_role(notification_doc, "HR Manager")
