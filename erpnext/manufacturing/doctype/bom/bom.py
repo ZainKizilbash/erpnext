@@ -156,6 +156,8 @@ class BOM(WebsiteGenerator):
 		item = frappe.get_cached_doc("Item", args.get('item_code'))
 		self.validate_rm_item(item)
 
+		args['bom_no'] = args.get('bom_no') or item.default_bom or ''
+
 		if args.get('skip_transfer_for_manufacture') is not None:
 			args['skip_transfer_for_manufacture'] = cint(args.get('skip_transfer_for_manufacture'))
 		else:
@@ -175,7 +177,7 @@ class BOM(WebsiteGenerator):
 			'stock_uom': item.stock_uom,
 			'uom': args.get('uom') or item.get('stock_uom'),
 			'conversion_factor': args.get('conversion_factor') or 1,
-			'bom_no': args.get('bom_no') or item.default_bom or '',
+			'bom_no': args.get('bom_no'),
 			'rate': rate,
 			'qty': flt(args.get("qty")) or flt(args.get("stock_qty")) or 1,
 			'stock_qty': flt(args.get("stock_qty")) or flt(args.get("qty")) or 1,
