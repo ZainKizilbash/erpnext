@@ -411,7 +411,11 @@ def send_employee_birthday_notification():
 	birthday_template = frappe.get_cached_doc("Email Template", birthday_notification_template)
 
 	role_for_cc = frappe.db.get_single_value("HR Settings", "cc_birthday_notification_to_role")
-	emails_of_role = set(get_info_based_on_role(role_for_cc, "email", ignore_permissions=True))
+
+	if role_for_cc:
+		emails_of_role = set(get_info_based_on_role(role_for_cc, "email", ignore_permissions=True))
+	else:
+		emails_of_role = set()
 
 	date_today = getdate()
 	formatted_date = format_date(date_today)
