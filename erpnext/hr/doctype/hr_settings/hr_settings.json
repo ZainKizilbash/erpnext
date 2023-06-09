@@ -1,4 +1,5 @@
 {
+ "actions": [],
  "creation": "2013-08-02 13:45:23",
  "doctype": "DocType",
  "document_type": "Other",
@@ -9,7 +10,9 @@
   "retirement_age",
   "emp_created_by",
   "column_break_4",
-  "stop_birthday_reminders",
+  "send_birthday_notification",
+  "birthday_notification_template",
+  "cc_birthday_notification_to_role",
   "expense_approver_mandatory_in_expense_claim",
   "payroll_settings",
   "include_holidays_in_total_working_days",
@@ -54,13 +57,6 @@
   {
    "fieldname": "column_break_4",
    "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "description": "Don't send Employee Birthday Reminders",
-   "fieldname": "stop_birthday_reminders",
-   "fieldtype": "Check",
-   "label": "Stop Birthday Reminders"
   },
   {
    "default": "1",
@@ -113,7 +109,6 @@
    "label": "Password Policy"
   },
   {
-   "collapsible": 1,
    "fieldname": "leave_settings",
    "fieldtype": "Section Break",
    "label": "Leave Settings"
@@ -147,7 +142,6 @@
    "label": "Show Leaves Of All Department Members In Calendar"
   },
   {
-   "collapsible": 1,
    "fieldname": "hiring_settings",
    "fieldtype": "Section Break",
    "label": "Hiring Settings"
@@ -183,12 +177,36 @@
    "fieldname": "consider_lwp_as_deduction",
    "fieldtype": "Check",
    "label": "Consider LWP as Deduction"
+  },
+  {
+   "default": "0",
+   "fieldname": "send_birthday_notification",
+   "fieldtype": "Check",
+   "label": "Send Birthday Notification"
+  },
+  {
+   "default": "0",
+   "depends_on": "send_birthday_notification",
+   "fieldname": "birthday_notification_template",
+   "fieldtype": "Link",
+   "label": "Birthday Notification Template",
+   "mandatory_depends_on": "send_birthday_notification",
+   "options": "Email Template"
+  },
+  {
+   "default": "0",
+   "depends_on": "send_birthday_notification",
+   "fieldname": "cc_birthday_notification_to_role",
+   "fieldtype": "Link",
+   "label": "CC Birthday Email to Role",
+   "options": "Role"
   }
  ],
  "icon": "fa fa-cog",
  "idx": 1,
  "issingle": 1,
- "modified": "2022-12-26 12:16:08.306059",
+ "links": [],
+ "modified": "2023-06-09 16:38:34.735026",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "HR Settings",
@@ -215,5 +233,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "ASC",
+ "states": [],
  "track_changes": 1
 }
