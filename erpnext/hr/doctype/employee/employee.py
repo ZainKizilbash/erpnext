@@ -397,7 +397,9 @@ def get_employee_from_user(user):
 	return employee_docname
 
 
-def get_employees_who_have_birthday_today(date_today):
+def get_employees_who_have_birthday_today(date_today=None):
+	date_today = getdate(date_today)
+
 	employee_birthday_data = frappe.db.sql("""
 		SELECT name, employee_name, personal_email, company_email
 		FROM tabEmployee
@@ -420,9 +422,9 @@ def send_employee_birthday_notification():
 	birthday_template_name = frappe.db.get_single_value("HR Settings", "birthday_notification_template")
 
 	if not birthday_template_name:
-		frappe.throw(_("Birthday template not found."))
+		frappe.throw(_("Birthday Notification Template is not set."))
 
-	birthday_template = frappe.get_doc("Email Template", birthday_template_name)
+	birthday_template = frappe.get_cached_doc("Email Template", birthday_template_name)
 	hr_managers_emails = set(get_info_based_on_role("HR Manager", "email", ignore_permissions=True))
 
 	date_today = getdate()
