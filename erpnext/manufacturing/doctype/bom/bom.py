@@ -569,7 +569,7 @@ class BOM(WebsiteGenerator):
 		self.cur_exploded_items = {}
 		for d in self.get('items'):
 			if d.bom_no:
-				self.get_child_exploded_items(d.bom_no, d.qty)
+				self.get_child_exploded_items(d.bom_no, d.stock_qty)
 			else:
 				self.add_to_cur_exploded_items(frappe._dict({
 					'item_code': d.item_code,
