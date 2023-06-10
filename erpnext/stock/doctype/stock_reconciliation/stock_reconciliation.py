@@ -302,6 +302,7 @@ class StockReconciliation(StockController):
 		for item_code, voucher_detail_no in sle_map:
 			details.append(frappe._dict({
 				"name": voucher_detail_no,
+				"item_code": item_code,
 				"expense_account": self.expense_account,
 				"cost_center": self.cost_center,
 				"is_opening": is_opening
