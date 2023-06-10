@@ -1479,7 +1479,6 @@
   {
    "fieldname": "applies_to_item",
    "fieldtype": "Link",
-   "in_standard_filter": 1,
    "label": "Applies to Item",
    "options": "Item"
   },
@@ -1727,7 +1726,7 @@
  "idx": 146,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-05-30 12:59:40.971124",
+ "modified": "2023-06-10 12:45:44.378594",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Delivery Note",
