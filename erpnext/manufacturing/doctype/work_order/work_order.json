@@ -26,12 +26,14 @@
   "more_info",
   "sales_order",
   "sales_order_item",
-  "column_break2",
   "material_request",
   "material_request_item",
-  "column_break_23",
+  "column_break2",
   "production_plan",
   "production_plan_item",
+  "column_break_23",
+  "customer",
+  "customer_name",
   "project",
   "description",
   "product_bundle_item",
@@ -395,6 +397,7 @@
   {
    "fieldname": "more_info",
    "fieldtype": "Section Break",
+   "label": "Reference",
    "options": "fa fa-file-text"
   },
   {
@@ -617,6 +620,24 @@
    "oldfieldname": "qty",
    "oldfieldtype": "Currency",
    "read_only": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Customer",
+   "no_copy": 1,
+   "options": "Customer",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.customer && doc.customer_name != doc.customer",
+   "fetch_from": "customer.customer_name",
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "label": "Customer Name",
+   "no_copy": 1,
+   "read_only": 1
   }
  ],
  "icon": "fa fa-cogs",
@@ -625,7 +646,7 @@
  "is_calendar_and_gantt": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-06-06 12:10:52.752307",
+ "modified": "2023-06-12 01:23:17.263545",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Work Order",
