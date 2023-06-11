@@ -1493,14 +1493,20 @@ def make_work_orders(items, company, sales_order=None, project=None):
 		if not i.get("pending_qty"):
 			frappe.throw(_("Please select Qty against item {0}").format(i.get("item_code")))
 
+		row_sales_order = sales_order or i.get('sales_order')
+		customer = frappe.db.get_value("Sales Order", row_sales_order, "customer", cache=1) if row_sales_order else None
+		customer_name = frappe.db.get_value("Sales Order", row_sales_order, "customer_name", cache=1) if row_sales_order else None
+
 		work_order = frappe.new_doc("Work Order")
 		work_order.update({
 			'production_item': i['item_code'],
 			'bom_no': i.get('bom'),
 			'qty': i['pending_qty'],
 			'company': company,
-			'sales_order': sales_order or i.get('sales_order'),
+			'sales_order': row_sales_order,
 			'sales_order_item': i['sales_order_item'],
+			'customer': customer,
+			'customer_name': customer_name,
 			'project': project,
 			'fg_warehouse': i['warehouse'],
 			'description': i['description']
