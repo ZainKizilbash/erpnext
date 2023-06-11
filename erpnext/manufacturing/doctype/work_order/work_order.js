@@ -3,6 +3,8 @@
 
 frappe.ui.form.on("Work Order", {
 	setup: function(frm) {
+		frm.doc.disable_item_formatter = true;
+
 		frm.custom_make_buttons = {
 			'Stock Entry': 'Start',
 			'Pick List': 'Pick List',
@@ -128,7 +130,10 @@ frappe.ui.form.on("Work Order", {
 		erpnext.toggle_naming_series();
 		erpnext.hide_company();
 		erpnext.work_order.set_custom_buttons(frm);
+
 		frm.set_intro("");
+
+		frm.doc.disable_item_formatter = true;
 
 		if (frm.doc.docstatus === 0 && !frm.doc.__islocal) {
 			frm.set_intro(__("Submit this Work Order for further processing."));
