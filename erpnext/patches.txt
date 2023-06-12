@@ -554,7 +554,7 @@ erpnext.patches.v10_0.set_discount_amount
 erpnext.patches.v10_0.recalculate_gross_margin_for_project
 erpnext.patches.v11_0.make_job_card
 erpnext.patches.v11_0.redesign_healthcare_billing_work_flow
-erpnext.patches.v10_0.delete_hub_documents # 12-08-2018 # 12-06-2023
+erpnext.patches.v10_0.delete_hub_documents # 12-08-2018
 erpnext.patches.v11_0.rename_healthcare_fields
 erpnext.patches.v11_0.add_default_dispatch_notification_template
 erpnext.patches.v11_0.add_market_segments
@@ -797,7 +797,6 @@ erpnext.patches.v14_0.set_batch_auto_created
 erpnext.patches.v14_0.set_work_order_percentage
 erpnext.patches.v14_0.update_manufacuturing_settings_global_defaults
 erpnext.patches.v14_0.rename_skip_transfer_for_manufacture_fields
-erpnext.patches.v14_0.delete_hub_docs
 erpnext.patches.v14_0.set_customer_name_in_work_orders
 
 [post_model_sync]
@@ -811,3 +810,4 @@ erpnext.patches.v12_0.update_total_panel_qty_in_project
 execute:frappe.delete_doc_if_exists("Custom Field", "Customer_date_of_birth")
 erpnext.patches.v13_0.update_start_end_date_for_old_shift_assignment
 erpnext.patches.v14_0.update_percentage_status_so_dn
+erpnext.patches.v14_0.delete_hub_docs
