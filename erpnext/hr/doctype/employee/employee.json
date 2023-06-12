@@ -223,7 +223,7 @@
    "label": "Status",
    "oldfieldname": "status",
    "oldfieldtype": "Select",
-   "options": "\nActive\nLeft",
+   "options": "\nActive\nInactive\nLeft",
    "reqd": 1,
    "search_index": 1
   },
@@ -879,16 +879,14 @@
    "fieldname": "shift_request_approver",
    "fieldtype": "Link",
    "label": "Shift Request Approver",
-   "options": "User",
-   "show_days": 1,
-   "show_seconds": 1
+   "options": "User"
   }
  ],
  "icon": "fa fa-user",
  "idx": 24,
  "image_field": "image",
  "links": [],
- "modified": "2022-12-18 19:16:11.625225",
+ "modified": "2023-06-12 15:49:18.298146",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Employee",
