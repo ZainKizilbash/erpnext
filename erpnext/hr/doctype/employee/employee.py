@@ -414,6 +414,7 @@ def send_employee_birthday_notification():
 
 	if role_for_cc:
 		emails_of_role = set(get_info_based_on_role(role_for_cc, "email", ignore_permissions=True))
+		emails_of_role = set([email for email in emails_of_role if validate_email_address(email)])
 	else:
 		emails_of_role = set()
 
@@ -484,6 +485,7 @@ def send_employee_anniversary_notification():
 
 	if role_for_cc:
 		emails_of_role = set(get_info_based_on_role(role_for_cc, "email", ignore_permissions=True))
+		emails_of_role = set([email for email in emails_of_role if validate_email_address(email)])
 	else:
 		emails_of_role = set()
 
