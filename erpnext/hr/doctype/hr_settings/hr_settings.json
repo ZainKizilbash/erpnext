@@ -25,6 +25,7 @@
   "send_birthday_notification",
   "birthday_notification_template",
   "cc_birthday_notification_to_role",
+  "column_break_12",
   "send_anniversary_notification",
   "anniversary_notification_template",
   "cc_anniversary_notification_to_role",
@@ -232,13 +233,17 @@
    "fieldname": "employee_notifications",
    "fieldtype": "Section Break",
    "label": "Employee Notifications"
+  },
+  {
+   "fieldname": "column_break_12",
+   "fieldtype": "Column Break"
   }
  ],
  "icon": "fa fa-cog",
  "idx": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-06-12 15:18:02.391633",
+ "modified": "2023-06-12 15:29:47.647097",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "HR Settings",
