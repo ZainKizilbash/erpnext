@@ -362,7 +362,7 @@ erpnext.vehicles.VehicleBookingOrder = class VehicleBookingOrder extends erpnext
 		if (me.frm.doc.transfer_status == "Not Applicable") {
 			transfer_status_color = "grey";
 		} else if (me.frm.doc.transfer_status == "To Transfer") {
-			transfer_status_color = "yellow";
+			transfer_status_color = "orange";
 		} else if (me.frm.doc.transfer_status == "Transferred") {
 			transfer_status_color = "green";
 		}
@@ -391,10 +391,6 @@ erpnext.vehicles.VehicleBookingOrder = class VehicleBookingOrder extends erpnext
 
 		var fulfilment_items = [
 			{
-				contents: __('Priority: {0}', [cint(me.frm.doc.priority) ? 'High' : 'Normal']),
-				indicator: cint(me.frm.doc.priority) ? 'red' : 'blue'
-			},
-			{
 				contents: __('Delivery Status: {0}{1}', [me.frm.doc.delivery_status,
 					overdue_warning ? __(" (Overdue)") : ""]),
 				indicator: delivery_status_color
@@ -422,34 +418,41 @@ erpnext.vehicles.VehicleBookingOrder = class VehicleBookingOrder extends erpnext
 				contents: __('PDI Status: {0}', [me.frm.doc.pdi_status]),
 				indicator: pdi_status_color
 			},
+		]);
+
+		me.add_indicator_section(__("Fulfilment"), fulfilment_items);
+
+		var reservation_items = [
+			{
+				contents: __('Priority: {0}', [cint(me.frm.doc.priority) ? 'High' : 'Normal']),
+				indicator: cint(me.frm.doc.priority) ? 'red' : 'blue'
+			},
 			{
 				contents: __('Transfer Status: {0}', [me.frm.doc.transfer_status]),
 				indicator: transfer_status_color
 			},
-		]);
+		];
 
 		if (me.frm.doc.__onload && me.frm.doc.__onload.is_reserved) {
-			fulfilment_items.push({
-				contents: __('Reserved: Yes'),
+			reservation_items.push({
+				contents: __('Reservation Customer: {0}', [me.frm.doc.__onload.reserved_customer_name || __("Not Set")]),
 				indicator: "red"
 			});
 
 			if (me.frm.doc.__onload.reserved_sales_person) {
-				fulfilment_items.push({
-					contents: __('Reserved By: {0}', [me.frm.doc.__onload.reserved_sales_person]),
+				reservation_items.push({
+					contents: __('Reserved by Sales Person: {0}', [me.frm.doc.__onload.reserved_sales_person]),
 					indicator: "red"
 				});
 			}
-
-			if (me.frm.doc.__onload.reserved_customer) {
-				fulfilment_items.push({
-					contents: __('Reserved For: {0}', [me.frm.doc.__onload.reserved_customer]),
-					indicator: "red"
-				});
-			}
+		} else {
+			reservation_items.push({
+				contents: __("Reservation Status: Not Reserved"),
+				indicator: "grey"
+			});
 		}
 
-		me.add_indicator_section(__("Fulfilment"), fulfilment_items);
+		me.add_indicator_section(__("Reservation"), reservation_items);
 
 		// Notification Status
 		var booking_confirmation_count = frappe.get_notification_count(me.frm, 'Booking Confirmation', 'SMS');
@@ -518,7 +521,7 @@ erpnext.vehicles.VehicleBookingOrder = class VehicleBookingOrder extends erpnext
 			});
 		}
 
-		me.add_indicator_section(__("Notification"), indicator_items);
+		// me.add_indicator_section(__("Notification"), indicator_items);
 	}
 
 	add_indicator_section(title, items) {
