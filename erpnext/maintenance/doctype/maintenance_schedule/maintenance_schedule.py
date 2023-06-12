@@ -69,8 +69,10 @@ class MaintenanceSchedule(TransactionBase):
 
 	def send_maintenance_schedule_reminder_notification(self, row_name):
 		msd_doctype = "Maintenance Schedule Detail"
-		row = [d for d in self.schedules if d.name == row_name][0]
-		context = {'row': row}
+		ms_row = [d for d in self.schedules if d.name == row_name]
+		ms_row = ms_row[0] if ms_row else frappe._dict()
+
+		context = {'row': ms_row}
 		enqueue_template_sms(self, "Maintenance Reminder", context=context, child_doctype=msd_doctype, child_name=row_name)
 
 	def validate_notification(self, notification_type=None, child_doctype=None, child_name=None, throw=False):
@@ -79,24 +81,26 @@ class MaintenanceSchedule(TransactionBase):
 				frappe.throw(_("Notification Type is mandatory"))
 			return False
 
-		# Must be Active
 		if notification_type in ("Maintenance Reminder"):
+			ms_row = [d for d in self.schedules if d.name == child_name]
+			ms_row = ms_row[0] if ms_row else frappe._dict()
+
+			if not ms_row.scheduled_date:
+				if throw:
+					frappe.throw(_("Scheduled Date not found"))
+				return False
+
+			if getdate(ms_row.scheduled_date) < getdate():
+				if throw:
+					frappe.throw(_("Cannot send {0} notification after Scheduled Date has passed")
+						.format(notification_type))
+				return False
+
 			if self.status != "Active":
 				if throw:
 					frappe.throw(_("Cannot send {0} notification because Maintenance Schedule status is not 'Active'")
 						.format(notification_type))
 				return False
-
-		# Maintenance Schedule scheduled Date is in the past
-		if notification_type in ("Maintenance Reminder"):
-			maintenance_schedule_row = [d for d in self.schedules if d.name == child_name][0]
-
-			if maintenance_schedule_row.scheduled_date < getdate():
-				if throw:
-					frappe.throw(_("Cannot send {0} notification after Scheduled Time has passed")
-						.format(notification_type))
-				return False
-
 		return True
 
 	def get_sms_args(self, notification_type=None, child_doctype=None, child_name=None):
@@ -319,8 +323,7 @@ def create_maintenance_opportunity(maintenance_schedule, row):
 	return target_doc
 
 
-@frappe.whitelist()
-def send_maintenance_schedule_reminder_notification():
+def send_maintenance_schedule_reminder_notifications():
 	if not cint(frappe.db.get_single_value("CRM Settings", "auto_reminder_for_maintenance_schedule")):
 		return
 
@@ -334,13 +337,14 @@ def send_maintenance_schedule_reminder_notification():
 	schedule_to_remind = frappe.db.sql("""
 		SELECT ms.name AS ms_name, msd.name AS row_name, msd.scheduled_date
 		FROM `tabMaintenance Schedule` ms
-		LEFT JOIN `tabMaintenance Schedule Detail` msd ON msd.parent = ms.name
+		INNER JOIN `tabMaintenance Schedule Detail` msd ON msd.parent = ms.name
 		LEFT JOIN `tabNotification Count` AS nc
 			ON nc.reference_doctype =  'Maintenance Schedule' AND nc.reference_name = ms.name
 			And nc.child_doctype = 'Maintenance Schedule Detail' AND nc.child_name = msd.name
-		WHERE ms.status = "Active"
+		WHERE ms.status = 'Active'
 			AND msd.scheduled_date <= %(target_date)s
-			AND nc.last_scheduled_dt is null
+			AND nc.last_scheduled_dt is NULL
+			AND nc.last_sent_dt is NULL
 		""", {
 		'target_date': target_date
 	}, as_dict=1)
