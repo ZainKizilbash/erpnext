@@ -17,12 +17,13 @@
    "label": "Booking Status Summary"
   }
  ],
- "content": "[{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Automotive / Vehicles Module</b></span>\",\"col\":12}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Booking Status Summary\",\"col\":6}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Top Vehicle Models\",\"col\":6}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Vehicle Booking Timeline\",\"col\":6}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Vehicle Delivery Timeline\",\"col\":6}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"Booking\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Pre Sales\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Stock\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Vehicle Service\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Vehicle Pre Service\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Vehicle Registration\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Vehicle Documents\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Vehicle Sales Masters\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Vehicle Service Masters\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Settings\",\"col\":3}}]",
+ "content": "[{\"id\":\"riX7CSbNat\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Automotive / Vehicles Module</b></span>\",\"col\":12}},{\"id\":\"546Lzvak4b\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Vehicle Booking Order\",\"col\":3}},{\"id\":\"dbat--tnir\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Repair Order\",\"col\":3}},{\"id\":\"ANqgLGC8Ln\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Vehicle Quotation\",\"col\":3}},{\"id\":\"ROIfJ5JdUH\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Appointment\",\"col\":3}},{\"id\":\"iZz7y3hpHS\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Vehicle Stock\",\"col\":3}},{\"id\":\"mDVA6lR0Qq\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Vehicle Tracking Sheet\",\"col\":3}},{\"id\":\"6JI7J63jXX\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Opportunity\",\"col\":3}},{\"id\":\"0XDNkEKMUa\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Appointment Sheet\",\"col\":3}},{\"id\":\"NVuLIq2HoU\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"mCJ5t8BwIx\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Booking Status Summary\",\"col\":6}},{\"id\":\"x2XOTSjBBA\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Top Vehicle Models\",\"col\":6}},{\"id\":\"mZfcY6_99d\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Vehicle Booking Timeline\",\"col\":6}},{\"id\":\"bKGNU7VqIR\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Vehicle Delivery Timeline\",\"col\":6}},{\"id\":\"EgliZkHFtN\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"A59YUxp1KJ\",\"type\":\"card\",\"data\":{\"card_name\":\"Booking\",\"col\":3}},{\"id\":\"axV6devO5G\",\"type\":\"card\",\"data\":{\"card_name\":\"Pre Sales\",\"col\":3}},{\"id\":\"mvl6xOaQkl\",\"type\":\"card\",\"data\":{\"card_name\":\"Stock\",\"col\":3}},{\"id\":\"J_HxIq5hLV\",\"type\":\"card\",\"data\":{\"card_name\":\"Vehicle Service\",\"col\":3}},{\"id\":\"9DFljhCz2G\",\"type\":\"card\",\"data\":{\"card_name\":\"Vehicle Pre Service\",\"col\":3}},{\"id\":\"3cHnBhXsas\",\"type\":\"card\",\"data\":{\"card_name\":\"Vehicle Registration\",\"col\":3}},{\"id\":\"4khyNm-xuQ\",\"type\":\"card\",\"data\":{\"card_name\":\"Vehicle Documents\",\"col\":3}},{\"id\":\"Lq3zrMyIiM\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":3}},{\"id\":\"e5KQiwWna_\",\"type\":\"card\",\"data\":{\"card_name\":\"Vehicle Sales Masters\",\"col\":3}},{\"id\":\"Z4SiZNziWM\",\"type\":\"card\",\"data\":{\"card_name\":\"Vehicle Service Masters\",\"col\":3}},{\"id\":\"FCoHVejSLu\",\"type\":\"card\",\"data\":{\"card_name\":\"Settings\",\"col\":3}}]",
  "creation": "2022-11-16 04:31:56.203759",
  "docstatus": 0,
  "doctype": "Workspace",
  "hide_custom": 0,
  "idx": 0,
+ "is_hidden": 0,
  "label": "Vehicles",
  "links": [
   {
@@ -638,10 +639,11 @@
    "type": "Link"
   }
  ],
- "modified": "2023-01-12 12:22:44.298129",
+ "modified": "2023-06-12 22:59:53.641812",
  "modified_by": "Administrator",
  "module": "Vehicles",
  "name": "Vehicles",
+ "number_cards": [],
  "owner": "Administrator",
  "parent_page": "",
  "public": 1,
@@ -671,6 +673,76 @@
   }
  ],
  "sequence_id": 12.0,
- "shortcuts": [],
+ "shortcuts": [
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "format": "{} In Workshop",
+   "label": "Repair Order",
+   "link_to": "Project",
+   "stats_filter": "{\"vehicle_status\":[\"=\",\"In Workshop\"],\"status\":[\"not in\",[\"Completed\",\"Closed\",\"Cancelled\",\"\"]]}",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "format": "{} Pending",
+   "label": "Vehicle Booking Order",
+   "link_to": "Vehicle Booking Order",
+   "stats_filter": "{\"docstatus\":[\"=\",\"1\"],\"status\":[\"not in\",[\"Completed\",\"Cancelled Booking\",\"\"]]}",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "format": "{} Open",
+   "label": "Vehicle Quotation",
+   "link_to": "Vehicle Quotation",
+   "stats_filter": "{\"docstatus\":[\"=\",\"1\"],\"status\":[\"=\",\"Open\"]}",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "format": "{} Open",
+   "label": "Opportunity",
+   "link_to": "Opportunity",
+   "stats_filter": "{\"status\":[\"not in\",[\"Lost\",\"Closed\",\"Converted\",\"\"]]}",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "format": "{} Today",
+   "label": "Appointment",
+   "link_to": "Appointment",
+   "stats_filter": "{\"scheduled_date\":[\"Timespan\",\"today\"],\"docstatus\":[\"=\",\"1\"],\"status\":[\"!=\",\"Rescheduled\"]}",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Vehicle Stock",
+   "link_to": "Vehicle Stock",
+   "stats_filter": "",
+   "type": "Report"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Vehicle Tracking Sheet",
+   "link_to": "Vehicle Tracking Sheet",
+   "stats_filter": "",
+   "type": "Report"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Appointment Sheet",
+   "link_to": "Appointment Sheet",
+   "stats_filter": "",
+   "type": "Report"
+  }
+ ],
  "title": "Vehicles"
 }
