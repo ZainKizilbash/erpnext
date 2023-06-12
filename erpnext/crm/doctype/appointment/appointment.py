@@ -489,7 +489,7 @@ class Appointment(StatusUpdater):
 		else:
 			return ""
 
-	def get_sms_args(self, notification_type=None):
+	def get_sms_args(self, notification_type=None, child_doctype=None, child_name=None):
 		return frappe._dict({
 			'receiver_list': [self.contact_mobile],
 			'party_doctype': self.appointment_for,
@@ -522,7 +522,7 @@ class Appointment(StatusUpdater):
 		if self.name in appointments_for_reminder:
 			return get_appointment_reminders_scheduled_time(reminder_date)
 
-	def validate_notification(self, notification_type=None, throw=False):
+	def validate_notification(self, notification_type=None, child_doctype=None, child_name=None, throw=False):
 		if not notification_type:
 			if throw:
 				frappe.throw(_("Notification Type is mandatory"))

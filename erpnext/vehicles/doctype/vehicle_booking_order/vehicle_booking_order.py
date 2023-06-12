@@ -600,7 +600,7 @@ class VehicleBookingOrder(VehicleBookingController):
 			self.set_onload('vehicle_warehouse', vehicle_warehouse)
 			self.set_onload('vehicle_warehouse_name', vehicle_warehouse_name)
 
-	def get_sms_args(self, notification_type=None):
+	def get_sms_args(self, notification_type=None, child_doctype=None, child_name=None):
 		return frappe._dict({
 			'receiver_list': [self.contact_mobile],
 			'party_doctype': 'Customer',
@@ -623,7 +623,7 @@ class VehicleBookingOrder(VehicleBookingController):
 
 		self.set_onload('can_notify', can_notify)
 
-	def validate_notification(self, notification_type=None, throw=False):
+	def validate_notification(self, notification_type=None, child_doctype=None, child_name=None, throw=False):
 		if not notification_type:
 			if throw:
 				frappe.throw(_("Notification Type is mandatory"))
