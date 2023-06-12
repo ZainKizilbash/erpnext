@@ -36,7 +36,7 @@ class Employee(NestedSet):
 
 	def validate(self):
 		from erpnext.controllers.status_updater import validate_status
-		validate_status(self.status, ["Active", "Temporary Leave", "Left"])
+		validate_status(self.status, ["Active", "Temporary Leave", "Left", "Inactive"])
 
 		from erpnext.accounts.party import validate_ntn_cnic_strn
 		validate_ntn_cnic_strn(self.tax_id, self.tax_cnic)
