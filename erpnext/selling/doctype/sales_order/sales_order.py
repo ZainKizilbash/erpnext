@@ -1480,7 +1480,7 @@ def get_supplier(doctype, txt, searchfield, start, page_len, filters):
 
 
 @frappe.whitelist()
-def make_work_orders(items, company, sales_order=None, project=None):
+def make_work_orders(items, company, sales_order=None, project=None, ignore_version=True, ignore_feed=True):
 	'''Make Work Orders against the given Sales Order for the given `items`'''
 	if isinstance(items, str):
 		items = json.loads(items)
@@ -1498,6 +1498,9 @@ def make_work_orders(items, company, sales_order=None, project=None):
 		customer_name = frappe.db.get_value("Sales Order", row_sales_order, "customer_name", cache=1) if row_sales_order else None
 
 		work_order = frappe.new_doc("Work Order")
+		work_order.flags.ignore_version = ignore_version
+		work_order.flags.ignore_feed = ignore_feed
+
 		work_order.update({
 			'production_item': i['item_code'],
 			'bom_no': i.get('bom'),
