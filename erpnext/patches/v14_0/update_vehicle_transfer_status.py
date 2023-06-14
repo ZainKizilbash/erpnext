@@ -2,7 +2,7 @@ import frappe
 
 
 def execute():
-	frappe.reload_doc("vehicle", "doctype", "vehicle_booking_order")
+	frappe.reload_doc("vehicles", "doctype", "vehicle_booking_order")
 	docs = frappe.get_all("Vehicle Booking Order")
 	for d in docs:
 		doc = frappe.get_doc("Vehicle Booking Order", d.name)
