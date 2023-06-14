@@ -45,7 +45,7 @@ erpnext.vehicles.VehicleTransferLetterController = class VehicleTransferLetterCo
 				}
 			})
 		}
-	},
+	}
 
 	warn_vehicle_reserved_by_sales_person() {
 		if (this.frm.doc.vehicle && this.frm.doc.sales_person) {
