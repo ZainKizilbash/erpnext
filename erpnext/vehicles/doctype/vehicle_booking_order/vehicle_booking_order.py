@@ -513,18 +513,18 @@ class VehicleBookingOrder(VehicleBookingController):
 				"transfer_lessee_name": self.transfer_lessee_name,
 			})
 
-	def set_transfer_status(self, update=False):
-		if self.vehicle_transfer_required:
-			if frappe.db.exists("Vehicle Transfer Letter", {"vehicle_booking_order": self.name, "docstatus": 1}):
-				self.transfer_status = "Transferred"
-			else:
-				self.transfer_status = "To Transfer"
+	def set_transfer_status(self, update=False, update_modified=True):
+		if frappe.db.exists("Vehicle Transfer Letter", {"vehicle_booking_order": self.name, "docstatus": 1}):
+			self.transfer_status = "Transferred"
+		elif self.vehicle_transfer_required:
+			self.transfer_status = "To Transfer"
 		else:
 			self.transfer_status = "Not Applicable"
 
 		if update:
 			self.db_set({
-				'transfer_status': self.transfer_status
+				'transfer_status': self.transfer_status,
+				'update_modified': update_modified,
 			})
 
 	def set_status(self, update=False, status=None, update_modified=True):
