@@ -524,8 +524,7 @@ class VehicleBookingOrder(VehicleBookingController):
 		if update:
 			self.db_set({
 				'transfer_status': self.transfer_status,
-				'update_modified': update_modified,
-			})
+			}, update_modified=update_modified)
 
 	def set_status(self, update=False, status=None, update_modified=True):
 		if self.is_new():
