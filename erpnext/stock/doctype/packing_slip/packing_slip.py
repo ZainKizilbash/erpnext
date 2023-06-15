@@ -1247,6 +1247,9 @@ def update_mapped_delivery_item(target, packing_slip):
 
 
 def postprocess_mapped_delivery_document(target):
+	for i, d in enumerate(target.get("items")):
+		d.idx = i + 1
+
 	target.run_method('set_missing_values')
 	target.run_method('set_po_nos')
 	target.run_method('calculate_taxes_and_totals')
