@@ -5,7 +5,7 @@
 import frappe
 from erpnext.vehicles.utils import get_booking_payments, separate_customer_and_supplier_payments, separate_advance_and_balance_payments
 from frappe import _
-from frappe.utils import cint, flt, getdate, today, combine_datetime, now_datetime
+from frappe.utils import cint, flt, getdate, today, combine_datetime, now_datetime, get_time
 from frappe.model.naming import set_name_by_naming_series
 from erpnext.vehicles.doctype.vehicle_allocation.vehicle_allocation import get_allocation_title
 from erpnext.vehicles.vehicle_booking_controller import VehicleBookingController
@@ -614,10 +614,13 @@ class VehicleBookingOrder(VehicleBookingController):
 			self.set_onload('reserved_sales_person', reservation_details.reserved_sales_person)
 
 	def get_sms_args(self, notification_type=None, child_doctype=None, child_name=None):
+		notification_customer = self.transfer_customer if self.transfer_customer else self.customer
+		notification_mobile = frappe.db.get_value("Customer", self.transfer_customer, "mobile_no") if self.transfer_customer else self.contact_mobile
+
 		return frappe._dict({
-			'receiver_list': [self.contact_mobile],
+			'receiver_list': [notification_mobile],
 			'party_doctype': 'Customer',
-			'party': self.customer
+			'party': notification_customer
 		})
 
 	def set_can_notify_onload(self):
@@ -728,6 +731,13 @@ class VehicleBookingOrder(VehicleBookingController):
 
 	def send_notification_on_cancellation(self):
 		enqueue_template_sms(self, notification_type="Booking Cancellation")
+
+	def send_customer_vehicle_anniversary_notification(self):
+		args = {
+			'customer_name': self.transfer_customer_name if self.transfer_customer else self.customer_name
+		}
+		context = {'args': args}
+		enqueue_template_sms(self, notification_type="Vehicle Anniversary", context=context, allow_if_already_sent=1)
 
 
 @frappe.whitelist()
@@ -1040,3 +1050,59 @@ def update_allocation_booked(vehicle_allocation, is_booked, is_cancelled):
 	is_cancelled = cint(is_cancelled)
 	frappe.db.set_value("Vehicle Allocation", vehicle_allocation, {"is_booked": is_booked, "is_cancelled": is_cancelled},
 		notify=True)
+
+
+@frappe.whitelist()
+def send_customer_vehicle_anniversary_notifications():
+	if not automated_reminder_enabled():
+		return
+
+	now_dt = now_datetime()
+	date_today = getdate(now_dt)
+
+	reminder_dt = get_anniversary_scheduled_time(date_today)
+	if now_dt < reminder_dt:
+		return
+
+	notification_last_send_date = frappe.db.get_default("vehicle_anniversary_notification_last_sent_date")
+	if notification_last_send_date and getdate(notification_last_send_date) == date_today:
+		return
+
+	vehicle_anniversary_data = frappe.db.sql("""
+		SELECT t1.name
+		FROM `tabVehicle Booking Order` t1
+		LEFT JOIN `tabNotification Count` t2
+			ON t2.reference_doctype = 'Vehicle Booking Order'
+			AND t2.reference_name = t1.name
+			AND t2.notification_type = 'Vehicle Anniversary'
+			AND t2.notification_medium = 'SMS'
+		WHERE day(t1.vehicle_delivered_date) = %s
+			AND month(t1.vehicle_delivered_date) = %s
+			AND year(t1.vehicle_delivered_date) < %s
+			AND DATE(t2.last_sent_dt) != %s
+	""", [date_today.day, date_today.month, date_today.year, date_today], as_dict=1)
+
+	for d in vehicle_anniversary_data:
+		doc = frappe.get_doc("Vehicle Booking Order", d.name)
+		doc.send_customer_vehicle_anniversary_notification()
+
+	if vehicle_anniversary_data:
+		frappe.db.set_default("vehicle_anniversary_notification_last_sent_date", date_today)
+
+def automated_reminder_enabled():
+	from frappe.core.doctype.sms_settings.sms_settings import is_automated_sms_enabled
+	from frappe.core.doctype.sms_template.sms_template import has_automated_sms_template
+
+	if is_automated_sms_enabled() and has_automated_sms_template("Vehicle Booking Order", "Vehicle Anniversary"):
+		return True
+	else:
+		return False
+
+def get_anniversary_scheduled_time(date_today=None):
+	vehicle_settings = frappe.get_cached_doc("Vehicles Settings", None)
+
+	reminder_date = getdate(date_today)
+	reminder_time = vehicle_settings.vehicle_anniversary_time or get_time("00:00:00")
+	reminder_dt = combine_datetime(reminder_date, reminder_time)
+
+	return reminder_dt

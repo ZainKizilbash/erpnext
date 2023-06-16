@@ -1,4 +1,5 @@
 {
+ "actions": [],
  "creation": "2020-12-06 21:16:08.840232",
  "description": "Settings for Vehicles Module",
  "doctype": "DocType",
@@ -23,6 +24,7 @@
   "notification_section",
   "payment_due_notification_time",
   "cb_15",
+  "vehicle_anniversary_time",
   "registration_section",
   "registration_customer_account",
   "registration_agent_account",
@@ -387,11 +389,17 @@
    "fieldtype": "Data",
    "label": "Default Service CR Name",
    "read_only": 1
+  },
+  {
+   "fieldname": "vehicle_anniversary_time",
+   "fieldtype": "Time",
+   "label": "Vehicle Anniversary Notification Time of Day"
   }
  ],
  "icon": "fa fa-cog",
  "issingle": 1,
- "modified": "2023-03-09 15:59:04.041198",
+ "links": [],
+ "modified": "2023-06-16 17:02:07.259852",
  "modified_by": "Administrator",
  "module": "Vehicles",
  "name": "Vehicles Settings",
@@ -414,5 +422,6 @@
  "restrict_to_domain": "Vehicles",
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }
