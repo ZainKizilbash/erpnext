@@ -614,8 +614,12 @@ class VehicleBookingOrder(VehicleBookingController):
 			self.set_onload('reserved_sales_person', reservation_details.reserved_sales_person)
 
 	def get_sms_args(self, notification_type=None, child_doctype=None, child_name=None):
-		notification_customer = self.transfer_customer if self.transfer_customer else self.customer
-		notification_mobile = frappe.db.get_value("Customer", self.transfer_customer, "mobile_no") if self.transfer_customer else self.contact_mobile
+		notification_customer = self.customer
+		notification_mobile = self.contact_mobile
+
+		if notification_type == "Vehicle Anniversary":
+			notification_customer = self.transfer_customer if self.transfer_customer else self.customer
+			notification_mobile = frappe.db.get_value("Customer", self.transfer_customer, "mobile_no") if self.transfer_customer else self.contact_mobile
 
 		return frappe._dict({
 			'receiver_list': [notification_mobile],
@@ -1054,7 +1058,7 @@ def update_allocation_booked(vehicle_allocation, is_booked, is_cancelled):
 
 @frappe.whitelist()
 def send_customer_vehicle_anniversary_notifications():
-	if not automated_reminder_enabled():
+	if not automated_vehicle_anniversary_enabled():
 		return
 
 	now_dt = now_datetime()
@@ -1089,7 +1093,7 @@ def send_customer_vehicle_anniversary_notifications():
 	if vehicle_anniversary_data:
 		frappe.db.set_default("vehicle_anniversary_notification_last_sent_date", date_today)
 
-def automated_reminder_enabled():
+def automated_vehicle_anniversary_enabled():
 	from frappe.core.doctype.sms_settings.sms_settings import is_automated_sms_enabled
 	from frappe.core.doctype.sms_template.sms_template import has_automated_sms_template
 
