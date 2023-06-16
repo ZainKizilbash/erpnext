@@ -1072,19 +1072,7 @@ def send_customer_vehicle_anniversary_notifications():
 	if notification_last_send_date and getdate(notification_last_send_date) == date_today:
 		return
 
-	vehicle_anniversary_data = frappe.db.sql("""
-		SELECT t1.name
-		FROM `tabVehicle Booking Order` t1
-		LEFT JOIN `tabNotification Count` t2
-			ON t2.reference_doctype = 'Vehicle Booking Order'
-			AND t2.reference_name = t1.name
-			AND t2.notification_type = 'Vehicle Anniversary'
-			AND t2.notification_medium = 'SMS'
-		WHERE day(t1.vehicle_delivered_date) = %s
-			AND month(t1.vehicle_delivered_date) = %s
-			AND year(t1.vehicle_delivered_date) < %s
-			AND DATE(t2.last_sent_dt) != %s
-	""", [date_today.day, date_today.month, date_today.year, date_today], as_dict=1)
+	vehicle_anniversary_data = get_vehicle_anniversary_data(date_today)
 
 	for d in vehicle_anniversary_data:
 		doc = frappe.get_doc("Vehicle Booking Order", d.name)
@@ -1110,3 +1098,24 @@ def get_anniversary_scheduled_time(date_today=None):
 	reminder_dt = combine_datetime(reminder_date, reminder_time)
 
 	return reminder_dt
+
+def get_vehicle_anniversary_data(date_today = None):
+	date_today = getdate(date_today)
+
+	vehicle_anniversary_data = frappe.db.sql("""
+		SELECT vbo.name
+		FROM `tabVehicle Booking Order` vbo
+		LEFT JOIN `tabNotification Count` nc
+			ON nc.reference_doctype = 'Vehicle Booking Order'
+			AND nc.reference_name = vbo.name
+			AND nc.notification_type = 'Vehicle Anniversary'
+			AND nc.notification_medium = 'SMS'
+		WHERE vbo.docstatus = 1
+			AND status != 'Cancelled Booking'
+			AND day(vbo.vehicle_delivered_date) = %s
+			AND month(vbo.vehicle_delivered_date) = %s
+			AND year(vbo.vehicle_delivered_date) < %s
+			AND DATE(nc.last_sent_dt) != %s
+	""", [date_today.day, date_today.month, date_today.year, date_today], as_dict=1)
+
+	return vehicle_anniversary_data
