@@ -167,14 +167,16 @@ $.extend(erpnext.manufacturing, {
 			pending_qty_with_allowance = qty_with_allowance - flt(doc.produced_qty);
 		} else {
 			if (purpose === 'Manufacture') {
-				let qty_to_produce = Math.min(flt(doc.material_transferred_for_manufacturing), flt(doc.qty))
-				pending_qty = Math.max(qty_to_produce - flt(doc.produced_qty), 0);
+				let qty_to_produce = Math.min(flt(doc.material_transferred_for_manufacturing), flt(doc.qty));
+				pending_qty = qty_to_produce - flt(doc.produced_qty);
 				pending_qty_with_allowance = flt(doc.material_transferred_for_manufacturing) - flt(doc.produced_qty);
 			} else {
 				pending_qty = max_qty_to_produce - flt(doc.material_transferred_for_manufacturing);
 				pending_qty_with_allowance = qty_with_allowance - flt(doc.material_transferred_for_manufacturing);
 			}
 		}
+
+		pending_qty = Math.max(pending_qty, 0);
 
 		let qty_precision = erpnext.manufacturing.get_work_order_precision();
 		return [flt(pending_qty, qty_precision), flt(pending_qty_with_allowance, qty_precision)];

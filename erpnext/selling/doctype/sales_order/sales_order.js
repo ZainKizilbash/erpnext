@@ -100,6 +100,7 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 	refresh(doc, dt, dn) {
 		super.refresh();
 		this.setup_buttons();
+		this.setup_progressbars();
 
 		// formatter for items table
 		this.frm.set_indicator_formatter('item_code', function(doc) {
@@ -302,6 +303,39 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 			me.add_get_applicable_items_button();
 			me.add_get_project_template_items_button();
 		}
+	}
+
+	setup_progressbars() {
+		let has_work_order_qty = this.frm.doc.items.some(d => d.work_order_qty);
+		if (this.frm.doc.docstatus == 1 && has_work_order_qty) {
+			this.show_progress_for_production();
+		}
+	}
+
+	show_progress_for_production() {
+		let total_wo_qty = frappe.utils.sum(this.frm.doc.items.map(d => d.work_order_qty));
+		let produced_qty = frappe.utils.sum(this.frm.doc.items.map(d => d.produced_qty));
+		let remaining_qty = total_wo_qty - produced_qty;
+		remaining_qty = Math.max(remaining_qty, 0);
+
+		erpnext.utils.show_progress_for_qty(this.frm, {
+			title: __('Production Status'),
+			total_qty: total_wo_qty,
+			progress_bars: [
+				{
+					title: __('<b>Produced:</b> {0}%', [
+						format_number(produced_qty / total_wo_qty * 100, null, 1),
+					]),
+					completed_qty: produced_qty,
+					progressbar_class: "progress-bar-success",
+					add_min_width: 0.5,
+				},
+				{
+					completed_qty: remaining_qty,
+					progressbar_class: "progress-bar-warning",
+				},
+			],
+		});
 	}
 
 	create_pick_list() {

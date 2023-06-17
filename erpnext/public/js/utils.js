@@ -572,6 +572,49 @@ $.extend(erpnext.utils, {
 				return frappe.run_serially(actions);
 			});
 		}
+	},
+
+	show_progress_for_qty(frm, args) {
+		let bars = [];
+		let added_min = 0;
+
+		let description = args.description || [];
+		if (typeof description == "string") {
+			description = [description];
+		}
+
+		let total_qty = flt(args.total_qty) || 0;
+
+		for (let d of args.progress_bars) {
+			let title = d.title || "";
+
+			let completed_qty = flt(d.completed_qty) || 0;
+			if (completed_qty <= 0 && !d.add_min_width) {
+				continue;
+			}
+
+			let bar_width = flt(completed_qty / total_qty * 100, 2);
+			bar_width -= added_min;
+			added_min = 0;
+
+			bar_width = Math.max(bar_width, 0)
+			if (bar_width == 0 && d.add_min_width) {
+				added_min += flt(d.add_min_width);
+				bar_width += flt(d.add_min_width);
+			}
+
+			bars.push({
+				"title": strip_html(title),
+				"width": bar_width + "%",
+				"progress_class": d.progressbar_class || "progress-bar-success",
+			});
+
+			if (title) {
+				description.push(title);
+			}
+		}
+
+		frm.dashboard.add_progress(args.title || "Progress", bars, description.join("<br>"));
 	}
 });
 

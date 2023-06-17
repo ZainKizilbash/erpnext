@@ -278,46 +278,39 @@ frappe.ui.form.on("Work Order", {
 	},
 
 	show_progress_for_production: function(frm) {
-		let bars = [];
-		let message = "";
-		let added_min = false;
-
-		// produced qty
-		let title = __('<b>Produced:</b> {0} {1}', [format_number(frm.doc.produced_qty), frm.doc.stock_uom]);
-		bars.push({
-			'title': strip_html(title),
-			'width': flt(frm.doc.produced_qty / frm.doc.qty * 100, 2) + '%',
-			'progress_class': 'progress-bar-success'
-		});
-		if (bars[0].width == '0%') {
-			bars[0].width = '0.5%';
-			added_min = 0.5;
-		}
-
-		message = title;
-
-		// pending qty
+		let produced_qty = frm.doc.produced_qty;
 		let pending_complete;
 		if (frm.doc.skip_transfer) {
-			let max_qty = flt(frm.doc.max_qty) || flt(frm.doc.qty);
-			pending_complete = flt(max_qty - frm.doc.produced_qty, precision("produced_qty"));
+			pending_complete = flt(frm.doc.qty - frm.doc.produced_qty, precision("produced_qty"));
 		} else {
 			pending_complete = flt(frm.doc.material_transferred_for_manufacturing - frm.doc.produced_qty,
 				precision("produced_qty"));
 		}
 
-		if (pending_complete) {
-			let width = flt((pending_complete / frm.doc.qty * 100) - added_min, 2);
-			title = __('<b>Remaining:</b> {0} {1}', [format_number(pending_complete), frm.doc.stock_uom]);
-			bars.push({
-				'title': strip_html(title),
-				'width': (width > 100 ? "99.5" : width)  + '%',
-				'progress_class': 'progress-bar-warning'
-			});
-			message = message + '<br>' + title;
-		}
+		pending_complete = Math.max(pending_complete, 0);
 
-		frm.dashboard.add_progress(__('Production Status'), bars, message);
+		erpnext.utils.show_progress_for_qty(frm, {
+			title: __('Production Status'),
+			total_qty: frm.doc.qty,
+			progress_bars: [
+				{
+					title: __("<b>Produced:</b> {0} / {1} {2} ({3}%)", [
+						format_number(frm.doc.produced_qty),
+						format_number(frm.doc.qty),
+						frm.doc.stock_uom,
+						format_number(produced_qty / frm.doc.qty * 100, null, 1),
+					]),
+					completed_qty: produced_qty,
+					progressbar_class: "progress-bar-success",
+					add_min_width: 0.5,
+				},
+				{
+					title: __("<b>Remaining:</b> {0} {1}", [format_number(pending_complete), frm.doc.stock_uom]),
+					completed_qty: pending_complete,
+					progressbar_class: "progress-bar-warning",
+				},
+			],
+		});
 	},
 
 	show_progress_for_packing: function (frm) {
@@ -325,38 +318,30 @@ frappe.ui.form.on("Work Order", {
 			return;
 		}
 
-		let bars = [];
-		let message = "";
-		let added_min = false;
-
-		// produced qty
-		let title = __('<b>Packed:</b> {0} {1}', [format_number(frm.doc.packed_qty), frm.doc.stock_uom]);
-		bars.push({
-			'title': strip_html(title),
-			'width': flt(frm.doc.packed_qty / frm.doc.qty * 100, 2) + '%',
-			'progress_class': 'progress-bar-success'
-		});
-		if (bars[0].width == '0%') {
-			bars[0].width = '0.5%';
-			added_min = 0.5;
-		}
-
-		message = title;
-
-		// pending qty
+		let packed_qty = frm.doc.packed_qty;
 		let pending_complete = flt(flt(frm.doc.produced_qty) - flt(frm.doc.packed_qty), precision("produced_qty"));
-		if (pending_complete) {
-			let width = flt((pending_complete / frm.doc.qty * 100) - added_min, 2);
-			title = __('<b>Remaining:</b> {0} {1}', [format_number(pending_complete), frm.doc.stock_uom]);
-			bars.push({
-				'title': strip_html(title),
-				'width': (width > 100 ? "99.5" : width)  + '%',
-				'progress_class': 'progress-bar-warning'
-			});
-			message = message + '<br>' + title;
-		}
 
-		frm.dashboard.add_progress(__('Packing Status'), bars, message);
+		erpnext.utils.show_progress_for_qty(frm, {
+			title: __('Packing Status'),
+			total_qty: frm.doc.qty,
+			progress_bars: [
+				{
+					title: __("<b>Packed:</b> {0} {1} ({2}%)", [
+						format_number(packed_qty),
+						frm.doc.stock_uom,
+						format_number(packed_qty / frm.doc.qty * 100, null, 1),
+					]),
+					completed_qty: packed_qty,
+					progressbar_class: "progress-bar-success",
+					add_min_width: 0.5,
+				},
+				{
+					title: __("<b>Remaining:</b> {0} {1}", [format_number(pending_complete), frm.doc.stock_uom]),
+					completed_qty: pending_complete,
+					progressbar_class: "progress-bar-warning",
+				},
+			],
+		});
 	},
 
 	show_progress_for_operations: function(frm) {
