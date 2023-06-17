@@ -642,7 +642,6 @@ erpnext.patches.v12_0.move_credit_limit_to_customer_credit_limit
 erpnext.patches.v12_0.add_variant_of_in_item_attribute_table
 erpnext.patches.v12_0.rename_bank_account_field_in_journal_entry_account
 erpnext.patches.v12_0.create_default_energy_point_rules
-erpnext.patches.v12_0.set_produced_qty_field_in_sales_order_for_work_order
 erpnext.patches.v12_0.set_default_shopify_app_type
 erpnext.patches.v12_0.set_cwip_and_delete_asset_settings
 erpnext.patches.v12_0.set_expense_account_in_landed_cost_voucher_taxes
@@ -813,3 +812,4 @@ erpnext.patches.v12_0.update_detailed_sales_data_in_project
 erpnext.patches.v13_0.update_start_end_date_for_old_shift_assignment
 erpnext.patches.v14_0.update_percentage_status_so_dn
 erpnext.patches.v14_0.delete_hub_docs
+erpnext.patches.v14_0.update_work_order_percentage_status

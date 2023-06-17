@@ -10,12 +10,16 @@ def get_data():
 				'items': ['Stock Entry']
 			},
 			{
+				'label': _("Operations"),
+				'items': ['Job Card']
+			},
+			{
+				'label': _("Packing"),
+				'items': ['Packing Slip']
+			},
+			{
 				'label': _('Stock'),
 				'items': ['Pick List']
 			},
-			{
-				'label': _("Operations"),
-				'items': ['Job Card']
-			}
 		]
 	}

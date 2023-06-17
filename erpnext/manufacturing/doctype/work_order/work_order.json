@@ -22,6 +22,7 @@
   "material_transferred_for_manufacturing",
   "produced_qty",
   "scrap_qty",
+  "packed_qty",
   "amended_from",
   "more_info",
   "sales_order",
@@ -65,24 +66,31 @@
   "column_break_49",
   "total_cost",
   "time",
+  "transaction_date",
+  "column_break_tzqjb",
+  "expected_delivery_date",
+  "column_break_13",
   "planned_start_date",
   "actual_start_date",
-  "column_break_13",
+  "column_break_69",
   "planned_end_date",
   "actual_end_date",
-  "column_break_69",
-  "expected_delivery_date",
   "settings_tab",
-  "allow_alternative_item",
   "use_multi_level_bom",
+  "allow_alternative_item",
+  "update_consumed_material_cost_in_project",
   "column_break_18",
   "skip_transfer",
   "from_wip_warehouse",
-  "update_consumed_material_cost_in_project",
+  "packing_slip_required",
   "status_tab",
   "per_material_transferred",
   "per_produced",
+  "per_packed",
   "column_break_jnb92",
+  "production_status",
+  "packing_status",
+  "column_break_wlilj",
   "status"
  ],
  "fields": [
@@ -92,13 +100,13 @@
    "options": "fa fa-gift"
   },
   {
-   "default": "DPWO.#####",
+   "default": "WO-",
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "hidden": 1,
    "label": "Series",
    "no_copy": 1,
-   "options": "DPWO.#####",
+   "options": "WO-",
    "print_hide": 1,
    "set_only_once": 1
   },
@@ -122,7 +130,7 @@
    "in_global_search": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Item To Produce",
+   "label": "Production Item",
    "oldfieldname": "production_item",
    "oldfieldtype": "Link",
    "options": "Item",
@@ -164,7 +172,6 @@
   },
   {
    "default": "1",
-   "description": "Plan material for sub-assemblies",
    "fieldname": "use_multi_level_bom",
    "fieldtype": "Check",
    "label": "Use Multi-Level BOM",
@@ -172,7 +179,6 @@
   },
   {
    "default": "0",
-   "description": "Check if material transfer entry is not required",
    "fieldname": "skip_transfer",
    "fieldtype": "Check",
    "label": "Skip Material Transfer to WIP Warehouse"
@@ -207,7 +213,7 @@
    "depends_on": "eval:doc.docstatus==1 && doc.skip_transfer==0",
    "fieldname": "material_transferred_for_manufacturing",
    "fieldtype": "Float",
-   "label": "Material Transferred for Manufacturing",
+   "label": "Material Transferred Qty",
    "no_copy": 1,
    "read_only": 1
   },
@@ -509,7 +515,7 @@
   },
   {
    "default": "0",
-   "depends_on": "eval:doc.docstatus==1",
+   "depends_on": "eval:doc.docstatus==1 && doc.scrap_qty",
    "fieldname": "scrap_qty",
    "fieldtype": "Float",
    "label": "Scrapped Qty",
@@ -638,6 +644,73 @@
    "label": "Customer Name",
    "no_copy": 1,
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.docstatus==1 && doc.packing_slip_required",
+   "fieldname": "packed_qty",
+   "fieldtype": "Float",
+   "label": "Packed Qty",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "packing_slip_required",
+   "fieldtype": "Check",
+   "label": "Packing Slip Required"
+  },
+  {
+   "depends_on": "packing_slip_required",
+   "fieldname": "per_packed",
+   "fieldtype": "Percent",
+   "label": "% Packed",
+   "no_copy": 1,
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "default": "To Produce",
+   "fieldname": "production_status",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Production Status",
+   "no_copy": 1,
+   "oldfieldname": "status",
+   "oldfieldtype": "Select",
+   "options": "To Produce\nProduced\nNot Applicable",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "default": "To Pack",
+   "fieldname": "packing_status",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Packing Status",
+   "no_copy": 1,
+   "oldfieldname": "status",
+   "oldfieldtype": "Select",
+   "options": "To Pack\nPacked\nNot Applicable",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "transaction_date",
+   "fieldtype": "Date",
+   "in_standard_filter": 1,
+   "label": "Work Order Date",
+   "no_copy": 1
+  },
+  {
+   "fieldname": "column_break_tzqjb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_wlilj",
+   "fieldtype": "Column Break"
   }
  ],
  "icon": "fa fa-cogs",
@@ -646,7 +719,7 @@
  "is_calendar_and_gantt": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-06-12 01:23:17.263545",
+ "modified": "2023-06-17 00:22:52.602370",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Work Order",

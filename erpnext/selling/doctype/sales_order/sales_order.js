@@ -176,14 +176,28 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 					}
 
 					// delivery note
-					if (flt(me.frm.doc.per_delivered, 6) < 100
+					let deliverable_rows = me.frm.doc.items.filter(d => d.is_stock_item || d.is_fixed_asset);
+
+					let has_undelivered = deliverable_rows.some(d => {
+						return flt(d.delivered_qty, precision("qty", d)) < flt(d.qty, precision("qty", d));
+					});
+
+					let has_unpacked = deliverable_rows.some(d => {
+						let produced_qty_order_uom = flt(d.produced_qty) / flt(d.conversion_factor);
+						return produced_qty_order_uom
+							? flt(d.packed_qty, precision("qty", d)) < flt(produced_qty_order_uom, precision("qty", d))
+							: flt(d.packed_qty, precision("qty", d)) < flt(d.qty, precision("qty", d));
+					});
+
+					if (
+						(me.frm.doc.delivery_status == "To Deliver" || has_undelivered)
 						&& ["Sales", "Shopping Cart"].indexOf(me.frm.doc.order_type) !== -1
 						&& allow_delivery
 					) {
 						me.frm.add_custom_button(__('Delivery Note'), () => me.make_delivery_note_based_on(), __('Create'));
 						me.frm.add_custom_button(__('Work Order'), () => me.make_work_order(), __('Create'));
 
-						if (flt(me.frm.doc.per_packed, 6) < 100) {
+						if (has_unpacked || me.frm.doc.packing_status == "To Pack") {
 							me.frm.add_custom_button(__('Packing Slip'), () => me.make_packing_slip(), __('Create'));
 						}
 
@@ -201,8 +215,9 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 					}
 
 					// material request
-					if ((!me.frm.doc.order_type || ["Sales", "Shopping Cart"].indexOf(me.frm.doc.order_type) !== -1)
-						&& flt(me.frm.doc.per_delivered, 6) < 100
+					if (
+						(!me.frm.doc.order_type || ["Sales", "Shopping Cart"].indexOf(me.frm.doc.order_type) !== -1)
+						&& me.frm.doc.delivery_status == "To Deliver"
 					) {
 						me.frm.add_custom_button(__('Material Request'), () => me.make_material_request(), __('Create'));
 						me.frm.add_custom_button(__('Request for Raw Materials'), () => me.make_raw_material_request(), __('Create'));
