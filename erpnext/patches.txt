@@ -812,4 +812,4 @@ erpnext.patches.v12_0.update_detailed_sales_data_in_project
 erpnext.patches.v13_0.update_start_end_date_for_old_shift_assignment
 erpnext.patches.v14_0.update_percentage_status_so_dn
 erpnext.patches.v14_0.delete_hub_docs
-erpnext.patches.v14_0.update_work_order_percentage_status
+erpnext.patches.v14_0.update_work_order_percentage_status #1

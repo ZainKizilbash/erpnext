@@ -516,9 +516,11 @@ class PackingSlip(StockController):
 	def validate_work_orders(self):
 		for d in self.get("items"):
 			if d.get("work_order"):
-				work_order_details = frappe.db.get_value("Work Order", d.work_order,
-					["name", "docstatus", "production_item", "project", "company", "sales_order", "sales_order_item"],
-					as_dict=1)
+				work_order_details = frappe.db.get_value("Work Order", d.work_order, [
+					"name", "docstatus",
+					"production_item", "project", "customer",
+					"sales_order", "sales_order_item", "company"
+				], as_dict=1)
 
 				if not work_order_details:
 					frappe.throw(_("Row #{0}: Work Order {1} does not exist").format(d.idx, d.work_order))
@@ -560,6 +562,13 @@ class PackingSlip(StockController):
 						d.idx,
 						frappe.get_desk_link("Work Order", work_order_details.name),
 						frappe.bold(work_order_details.project)
+					))
+
+				if self.customer and work_order_details.customer and self.customer != work_order_details.customer:
+					frappe.throw(_("Row #{0}: {1} Customer {2} does not match with Packing Slip").format(
+						d.idx,
+						frappe.get_desk_link("Work Order", work_order_details.name),
+						frappe.bold(work_order_details.customer)
 					))
 
 	def validate_customer(self):

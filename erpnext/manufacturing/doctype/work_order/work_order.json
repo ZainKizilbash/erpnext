@@ -65,10 +65,11 @@
   "total_operating_cost",
   "column_break_49",
   "total_cost",
-  "time",
+  "planning_section",
   "transaction_date",
   "column_break_tzqjb",
   "expected_delivery_date",
+  "last_packing_date",
   "column_break_13",
   "planned_start_date",
   "actual_start_date",
@@ -297,23 +298,17 @@
    "print_hide": 1
   },
   {
-   "fieldname": "time",
-   "fieldtype": "Section Break",
-   "label": "Time",
-   "options": "fa fa-time"
-  },
-  {
    "allow_on_submit": 1,
-   "default": "now",
    "fieldname": "planned_start_date",
-   "fieldtype": "Datetime",
+   "fieldtype": "Date",
    "label": "Planned Start Date",
-   "reqd": 1
+   "no_copy": 1
   },
   {
    "fieldname": "actual_start_date",
-   "fieldtype": "Datetime",
+   "fieldtype": "Date",
    "label": "Actual Start Date",
+   "no_copy": 1,
    "read_only": 1
   },
   {
@@ -321,15 +316,17 @@
    "fieldtype": "Column Break"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "planned_end_date",
-   "fieldtype": "Datetime",
+   "fieldtype": "Date",
    "label": "Planned End Date",
    "no_copy": 1
   },
   {
    "fieldname": "actual_end_date",
-   "fieldtype": "Datetime",
+   "fieldtype": "Date",
    "label": "Actual End Date",
+   "no_copy": 1,
    "read_only": 1
   },
   {
@@ -711,6 +708,18 @@
   {
    "fieldname": "column_break_wlilj",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "planning_section",
+   "fieldtype": "Section Break",
+   "label": "Planning"
+  },
+  {
+   "fieldname": "last_packing_date",
+   "fieldtype": "Date",
+   "label": "Last Packing Date",
+   "no_copy": 1,
+   "read_only": 1
   }
  ],
  "icon": "fa fa-cogs",
@@ -719,7 +728,7 @@
  "is_calendar_and_gantt": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-06-17 00:22:52.602370",
+ "modified": "2023-06-18 18:02:29.519018",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Work Order",

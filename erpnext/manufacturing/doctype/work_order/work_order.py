@@ -111,6 +111,15 @@ class WorkOrder(StatusUpdater):
 
 		self.check_sales_order_on_hold_or_close()
 
+		sales_order_customer = frappe.db.get_value("Sales Order", self.sales_order, "customer", cache=1)
+		if sales_order_customer and not self.customer:
+			self.customer = sales_order_customer
+
+		if self.customer and self.customer != sales_order_customer:
+			frappe.throw(_("Customer does not match with {0}").format(
+				frappe.get_desk_link("Sales Order", self.sales_order))
+			)
+
 		so = frappe.db.sql("""
 			select so.name, so_item.delivery_date, so.project
 			from `tabSales Order` so
@@ -416,7 +425,11 @@ class WorkOrder(StatusUpdater):
 		ste_qty_map = {}
 		if self.docstatus == 1:
 			ste_qty_data = frappe.db.sql("""
-				select purpose, sum(fg_completed_qty) as fg_completed_qty, sum(scrap_qty) as scrap_qty
+				select purpose,
+					sum(fg_completed_qty) as fg_completed_qty,
+					sum(scrap_qty) as scrap_qty,
+					min(posting_date) as min_posting_date,
+					max(posting_date) as max_posting_date
 				from `tabStock Entry`
 				where work_order = %s and docstatus = 1 and purpose in ('Manufacture', 'Material Transfer for Manufacture')
 				group by purpose
@@ -450,20 +463,35 @@ class WorkOrder(StatusUpdater):
 		else:
 			to_update.production_status = "Not Applicable"
 
+		if not self.operations:
+			if not self.skip_transfer:
+				to_update.actual_start_date = ste_qty_map.get("Material Transfer for Manufacture", {}).get("min_posting_date")
+			else:
+				to_update.actual_start_date = ste_qty_map.get("Manufacture", {}).get("min_posting_date")
+
+			if to_update.production_status == "Produced":
+				to_update.actual_end_date = ste_qty_map.get("Manufacture", {}).get("max_posting_date")
+			else:
+				to_update.actual_end_date = None
+
 		self.update(to_update)
 		if update:
 			self.db_set(to_update, update_modified=update_modified)
 
 	def set_packing_status(self, update=False, update_modified=True):
 		self.packed_qty = 0
+		self.last_packing_date = None
+
 		if self.docstatus == 1:
 			packing_data = frappe.db.sql("""
-				select sum(stock_qty)
-				from `tabPacking Slip Item`
-				where work_order = %s and docstatus = 1 and ifnull(source_packing_slip, '') = ''
-			""", self.name)
+				select sum(psi.stock_qty) as stock_qty, max(ps.posting_date) as max_posting_date
+				from `tabPacking Slip Item` psi
+				inner join `tabPacking Slip` ps on ps.name = psi.parent
+				where psi.work_order = %s and ps.docstatus = 1 and ifnull(psi.source_packing_slip, '') = ''
+			""", self.name, as_dict=1)
 
-			self.packed_qty = flt(packing_data[0][0]) if packing_data else 0
+			self.packed_qty = flt(packing_data[0].stock_qty) if packing_data else 0
+			self.last_packing_date = packing_data[0].max_posting_date if packing_data else None
 
 		self.per_packed = flt(self.packed_qty / self.qty * 100, 6)
 
@@ -482,6 +510,7 @@ class WorkOrder(StatusUpdater):
 				"packed_qty": self.packed_qty,
 				"packing_status": self.packing_status,
 				"per_packed": self.per_packed,
+				"last_packing_date": self.last_packing_date,
 			}, update_modified=update_modified)
 
 	def validate_overproduction(self):
@@ -1009,3 +1038,78 @@ def create_pick_list(source_name, target_doc=None, for_qty=None):
 	doc.set_item_locations()
 
 	return doc
+
+
+@frappe.whitelist()
+def make_packing_slip(work_orders, target_doc=None):
+	from erpnext.selling.doctype.sales_order.sales_order import make_packing_slip as make_packing_slip_from_so
+
+	if isinstance(work_orders, str):
+		work_orders = json.loads(work_orders)
+
+	if not work_orders:
+		frappe.throw(_("Please select Work Orders to pack"))
+
+	pack_from_sales_orders = {}
+	pack_from_work_orders = []
+
+	customers = set()
+
+	# Validate and separate sales order work orders
+	for name in work_orders:
+		wo_details = frappe.db.get_value("Work Order", name, [
+			"name", "docstatus", "fg_warehouse",
+			"customer", "sales_order", "sales_order_item",
+			"production_item", "item_name", "stock_uom",
+			"produced_qty", "packed_qty",
+		], as_dict=1)
+
+		if not wo_details or wo_details.docstatus != 1:
+			continue
+		if wo_details.packed_qty >= wo_details.produced_qty:
+			continue
+
+		if wo_details.customer:
+			customers.add(wo_details.customer)
+			if len(customers) > 1:
+				frappe.throw(_("Cannot pack Work Orders for multiple customers"))
+
+		if wo_details.sales_order and wo_details.sales_order_item:
+			pack_from_sales_orders.setdefault(wo_details.sales_order, []).append(wo_details.sales_order_item)
+		else:
+			pack_from_work_orders.append(wo_details)
+
+	# Empty packable work order list error
+	if not pack_from_sales_orders and not pack_from_work_orders:
+		frappe.throw(_("Selected Work Orders are not applicable for packing"))
+
+	# Map from Sales Orders first
+	for sales_order, sales_order_items in pack_from_sales_orders.items():
+		frappe.flags.selected_children = {"items": sales_order_items}
+		target_doc = make_packing_slip_from_so(sales_order, target_doc)
+		frappe.flags.selected_children = None
+
+	# Map from Work Orders
+	if not target_doc:
+		target_doc = frappe.new_doc("Packing Slip")
+
+	for wo_details in pack_from_work_orders:
+		if not target_doc.customer and wo_details.customer:
+			target_doc.customer = wo_details.customer
+
+		row = frappe.new_doc("Packing Slip Item")
+		row.work_order = wo_details.name
+		row.item_code = wo_details.production_item
+		row.item_name = wo_details.item_name
+		row.source_warehouse = wo_details.fg_warehouse
+		row.qty = wo_details.produced_qty - wo_details.packed_qty
+		row.uom = wo_details.stock_uom
+
+		target_doc.append("items", row)
+
+	# Post process if necessary
+	if pack_from_work_orders:
+		target_doc.run_method("set_missing_values")
+		target_doc.run_method("calculate_totals")
+
+	return target_doc
