@@ -200,5 +200,73 @@ $.extend(erpnext.manufacturing, {
 
 	get_over_production_allowance: function () {
 		return flt(frappe.defaults.get_default('overproduction_percentage_for_work_order'));
-	}
+	},
+
+	show_progress_for_production: function(doc, frm) {
+		let qty_precision = erpnext.manufacturing.get_work_order_precision();
+		let produced_qty = doc.produced_qty;
+		let pending_complete;
+		if (doc.skip_transfer) {
+			pending_complete = flt(doc.qty - doc.produced_qty, qty_precision);
+		} else {
+			pending_complete = flt(doc.material_transferred_for_manufacturing - doc.produced_qty, qty_precision);
+		}
+
+		pending_complete = Math.max(pending_complete, 0);
+
+		return erpnext.utils.show_progress_for_qty({
+			frm: frm,
+			as_html: !frm,
+			title: __('Production Status'),
+			total_qty: doc.qty,
+			progress_bars: [
+				{
+					title: __("<b>Produced:</b> {0} / {1} {2} ({3}%)", [
+						format_number(doc.produced_qty),
+						format_number(doc.qty),
+						doc.stock_uom,
+						format_number(produced_qty / doc.qty * 100, null, 1),
+					]),
+					completed_qty: produced_qty,
+					progress_class: "progress-bar-success",
+					add_min_width: 0.5,
+				},
+				{
+					title: __("<b>Remaining:</b> {0} {1}", [format_number(pending_complete), doc.stock_uom]),
+					completed_qty: pending_complete,
+					progress_class: "progress-bar-warning",
+				},
+			],
+		});
+	},
+
+	show_progress_for_packing: function (doc, frm) {
+		let qty_precision = erpnext.manufacturing.get_work_order_precision();
+		let packed_qty = doc.packed_qty;
+		let pending_complete = flt(flt(doc.produced_qty) - flt(doc.packed_qty), qty_precision);
+
+		return erpnext.utils.show_progress_for_qty({
+			frm: frm,
+			as_html: !frm,
+			title: __('Packing Status'),
+			total_qty: doc.qty,
+			progress_bars: [
+				{
+					title: __("<b>Packed:</b> {0} {1} ({2}%)", [
+						format_number(packed_qty),
+						doc.stock_uom,
+						format_number(packed_qty / doc.qty * 100, null, 1),
+					]),
+					completed_qty: packed_qty,
+					progress_class: "progress-bar-success",
+					add_min_width: 0.5,
+				},
+				{
+					title: __("<b>Remaining:</b> {0} {1}", [format_number(pending_complete), doc.stock_uom]),
+					completed_qty: pending_complete,
+					progress_class: "progress-bar-warning",
+				},
+			],
+		});
+	},
 });

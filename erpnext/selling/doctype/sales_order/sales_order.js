@@ -318,7 +318,8 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 		let remaining_qty = total_wo_qty - produced_qty;
 		remaining_qty = Math.max(remaining_qty, 0);
 
-		erpnext.utils.show_progress_for_qty(this.frm, {
+		erpnext.utils.show_progress_for_qty({
+			frm: this.frm,
 			title: __('Production Status'),
 			total_qty: total_wo_qty,
 			progress_bars: [
@@ -327,12 +328,12 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 						format_number(produced_qty / total_wo_qty * 100, null, 1),
 					]),
 					completed_qty: produced_qty,
-					progressbar_class: "progress-bar-success",
+					progress_class: "progress-bar-success",
 					add_min_width: 0.5,
 				},
 				{
 					completed_qty: remaining_qty,
-					progressbar_class: "progress-bar-warning",
+					progress_class: "progress-bar-warning",
 				},
 			],
 		});

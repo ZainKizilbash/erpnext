@@ -278,70 +278,14 @@ frappe.ui.form.on("Work Order", {
 	},
 
 	show_progress_for_production: function(frm) {
-		let produced_qty = frm.doc.produced_qty;
-		let pending_complete;
-		if (frm.doc.skip_transfer) {
-			pending_complete = flt(frm.doc.qty - frm.doc.produced_qty, precision("produced_qty"));
-		} else {
-			pending_complete = flt(frm.doc.material_transferred_for_manufacturing - frm.doc.produced_qty,
-				precision("produced_qty"));
-		}
-
-		pending_complete = Math.max(pending_complete, 0);
-
-		erpnext.utils.show_progress_for_qty(frm, {
-			title: __('Production Status'),
-			total_qty: frm.doc.qty,
-			progress_bars: [
-				{
-					title: __("<b>Produced:</b> {0} / {1} {2} ({3}%)", [
-						format_number(frm.doc.produced_qty),
-						format_number(frm.doc.qty),
-						frm.doc.stock_uom,
-						format_number(produced_qty / frm.doc.qty * 100, null, 1),
-					]),
-					completed_qty: produced_qty,
-					progressbar_class: "progress-bar-success",
-					add_min_width: 0.5,
-				},
-				{
-					title: __("<b>Remaining:</b> {0} {1}", [format_number(pending_complete), frm.doc.stock_uom]),
-					completed_qty: pending_complete,
-					progressbar_class: "progress-bar-warning",
-				},
-			],
-		});
+		erpnext.manufacturing.show_progress_for_production(frm.doc, frm);
 	},
 
 	show_progress_for_packing: function (frm) {
 		if (!frm.doc.packing_slip_required) {
 			return;
 		}
-
-		let packed_qty = frm.doc.packed_qty;
-		let pending_complete = flt(flt(frm.doc.produced_qty) - flt(frm.doc.packed_qty), precision("produced_qty"));
-
-		erpnext.utils.show_progress_for_qty(frm, {
-			title: __('Packing Status'),
-			total_qty: frm.doc.qty,
-			progress_bars: [
-				{
-					title: __("<b>Packed:</b> {0} {1} ({2}%)", [
-						format_number(packed_qty),
-						frm.doc.stock_uom,
-						format_number(packed_qty / frm.doc.qty * 100, null, 1),
-					]),
-					completed_qty: packed_qty,
-					progressbar_class: "progress-bar-success",
-					add_min_width: 0.5,
-				},
-				{
-					title: __("<b>Remaining:</b> {0} {1}", [format_number(pending_complete), frm.doc.stock_uom]),
-					completed_qty: pending_complete,
-					progressbar_class: "progress-bar-warning",
-				},
-			],
-		});
+		erpnext.manufacturing.show_progress_for_packing(frm.doc, frm);
 	},
 
 	show_progress_for_operations: function(frm) {

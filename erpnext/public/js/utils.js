@@ -574,7 +574,7 @@ $.extend(erpnext.utils, {
 		}
 	},
 
-	show_progress_for_qty(frm, args) {
+	show_progress_for_qty(args) {
 		let bars = [];
 		let added_min = 0;
 
@@ -605,8 +605,9 @@ $.extend(erpnext.utils, {
 
 			bars.push({
 				"title": strip_html(title),
+				"bar_width": bar_width,
 				"width": bar_width + "%",
-				"progress_class": d.progressbar_class || "progress-bar-success",
+				"progress_class": d.progress_class || "progress-bar-success",
 			});
 
 			if (title) {
@@ -614,7 +615,25 @@ $.extend(erpnext.utils, {
 			}
 		}
 
-		frm.dashboard.add_progress(args.title || "Progress", bars, description.join("<br>"));
+		if (args.frm) {
+			args.frm.dashboard.add_progress(args.title || "Progress", bars, description.join("<br>"));
+		} else if (args.as_html) {
+			let html_progress_bars = [];
+			for (let d of bars) {
+				html_progress_bars.push(`
+					<div class="progress-bar ${d.progress_class}" role="progressbar"
+						aria-valuenow="${d.bar_width}" aria-valuemin="0" aria-valuemax="100"
+						title="${d.title}"
+						style="width: ${d.width};">
+					</div>
+				`);
+			}
+			return `
+				<div class="progress">
+					${html_progress_bars.join("")}
+				</div>
+			`;
+		}
 	}
 });
 
