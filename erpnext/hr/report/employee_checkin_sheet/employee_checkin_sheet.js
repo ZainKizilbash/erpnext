@@ -59,6 +59,12 @@ frappe.query_reports["Employee Checkin Sheet"] = {
 			}
 		}
 
+		if (['late_entry_hours', 'early_exit_hours'].includes(column.fieldname)) {
+			if (flt(value) > 0) {
+				style['color'] = 'orange';
+			}
+		}
+
 		if (['attendance_status', 'attendance_abbr', 'working_hours'].includes(column.fieldname)) {
 			if (data['attendance']) {
 				link = "/app/attendance/" + encodeURIComponent(data['attendance']);
