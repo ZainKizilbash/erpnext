@@ -51,7 +51,8 @@ class WorkOrder(StatusUpdater):
 		self.validate_warehouses()
 
 		self.set_required_items(reset_only_qty=bool(len(self.get("required_items"))))
-		self.set_completion_status()
+		self.set_production_status()
+		self.set_packing_status()
 		self.set_required_items_status()
 
 		self.calculate_raw_material_cost()
@@ -63,7 +64,7 @@ class WorkOrder(StatusUpdater):
 		self.set_status()
 
 	def on_submit(self):
-		self.update_sales_order_work_order_qty()
+		self.update_sales_order_status()
 		self.update_material_request_ordered_qty()
 		self.update_production_plan_ordered_qty()
 		self.update_reserved_qty_for_production()
@@ -75,7 +76,7 @@ class WorkOrder(StatusUpdater):
 		self.validate_cancel()
 		self.db_set("status", "Cancelled")
 
-		self.update_sales_order_work_order_qty()
+		self.update_sales_order_status()
 		self.update_material_request_ordered_qty()
 		self.update_production_plan_ordered_qty()
 		self.update_reserved_qty_for_production()
@@ -109,6 +110,15 @@ class WorkOrder(StatusUpdater):
 			return
 
 		self.check_sales_order_on_hold_or_close()
+
+		sales_order_customer = frappe.db.get_value("Sales Order", self.sales_order, "customer", cache=1)
+		if sales_order_customer and not self.customer:
+			self.customer = sales_order_customer
+
+		if self.customer and self.customer != sales_order_customer:
+			frappe.throw(_("Customer does not match with {0}").format(
+				frappe.get_desk_link("Sales Order", self.sales_order))
+			)
 
 		so = frappe.db.sql("""
 			select so.name, so_item.delivery_date, so.project
@@ -392,14 +402,18 @@ class WorkOrder(StatusUpdater):
 				d.available_qty_at_wip_warehouse = get_latest_stock_qty(d.item_code, self.wip_warehouse)
 
 	def update_status(self, status=None):
-		self.set_completion_status(update=True)
+		self.set_status(status=status)
+
+		self.set_production_status(update=True)
+		self.set_packing_status(update=True)
 		self.set_required_items_status(update=True)
 
 		self.validate_overproduction()
+		self.validate_overpacking()
 
 		self.set_status(status=status, update=True)
 
-		self.update_sales_order_produced_qty()
+		self.update_sales_order_status()
 		self.update_production_plan_produced_qty()
 
 		self.update_planned_qty()
@@ -407,11 +421,15 @@ class WorkOrder(StatusUpdater):
 
 		return self.status
 
-	def set_completion_status(self, update=False, update_modified=True):
+	def set_production_status(self, update=False, update_modified=True):
 		ste_qty_map = {}
 		if self.docstatus == 1:
 			ste_qty_data = frappe.db.sql("""
-				select purpose, sum(fg_completed_qty) as fg_completed_qty, sum(scrap_qty) as scrap_qty
+				select purpose,
+					sum(fg_completed_qty) as fg_completed_qty,
+					sum(scrap_qty) as scrap_qty,
+					min(posting_date) as min_posting_date,
+					max(posting_date) as max_posting_date
 				from `tabStock Entry`
 				where work_order = %s and docstatus = 1 and purpose in ('Manufacture', 'Material Transfer for Manufacture')
 				group by purpose
@@ -432,27 +450,107 @@ class WorkOrder(StatusUpdater):
 		to_update.per_produced = flt(to_update.produced_qty / self.qty * 100, 6)
 		to_update.per_material_transferred = flt(to_update.material_transferred_for_manufacturing / self.qty * 100, 6)
 
+		if self.docstatus == 1:
+			completed_qty = flt(to_update.produced_qty + to_update.scrap_qty, self.precision("qty"))
+			min_qty = flt(self.get_min_qty(self.qty), self.precision("qty"))
+
+			if completed_qty and (completed_qty >= min_qty or self.status == "Stopped"):
+				to_update.production_status = "Produced"
+			elif self.status == "Stopped":
+				to_update.production_status = "Not Applicable"
+			else:
+				to_update.production_status = "To Produce"
+		else:
+			to_update.production_status = "Not Applicable"
+
+		if not self.operations:
+			if not self.skip_transfer:
+				to_update.actual_start_date = ste_qty_map.get("Material Transfer for Manufacture", {}).get("min_posting_date")
+			else:
+				to_update.actual_start_date = ste_qty_map.get("Manufacture", {}).get("min_posting_date")
+
+			if to_update.production_status == "Produced":
+				to_update.actual_end_date = ste_qty_map.get("Manufacture", {}).get("max_posting_date")
+			else:
+				to_update.actual_end_date = None
+
 		self.update(to_update)
 		if update:
 			self.db_set(to_update, update_modified=update_modified)
+
+	def set_packing_status(self, update=False, update_modified=True):
+		self.packed_qty = 0
+		self.last_packing_date = None
+
+		if self.docstatus == 1:
+			packing_data = frappe.db.sql("""
+				select sum(psi.stock_qty) as stock_qty, max(ps.posting_date) as max_posting_date
+				from `tabPacking Slip Item` psi
+				inner join `tabPacking Slip` ps on ps.name = psi.parent
+				where psi.work_order = %s and ps.docstatus = 1 and ifnull(psi.source_packing_slip, '') = ''
+			""", self.name, as_dict=1)
+
+			self.packed_qty = flt(packing_data[0].stock_qty) if packing_data else 0
+			self.last_packing_date = packing_data[0].max_posting_date if packing_data else None
+
+		self.per_packed = flt(self.packed_qty / self.qty * 100, 6)
+
+		packed_qty = flt(self.packed_qty, self.precision("qty"))
+		min_qty = flt(self.get_min_qty(self.produced_qty), self.precision("qty"))
+
+		if self.packed_qty and (packed_qty >= min_qty or self.status == "Stopped"):
+			self.packing_status = "Packed"
+		elif self.status == "Stopped" or not self.packing_slip_required or not self.produced_qty:
+			self.packing_status = "Not Applicable"
+		else:
+			self.packing_status = "To Pack"
+
+		if update:
+			self.db_set({
+				"packed_qty": self.packed_qty,
+				"packing_status": self.packing_status,
+				"per_packed": self.per_packed,
+				"last_packing_date": self.last_packing_date,
+			}, update_modified=update_modified)
 
 	def validate_overproduction(self):
 		max_qty = flt(self.get_qty_with_allowance(self.qty), self.precision("qty"))
 		for fieldname in ["produced_qty", "scrap_qty", "material_transferred_for_manufacturing"]:
 			qty = flt(self.get(fieldname), self.precision("qty"))
 			if qty > max_qty:
-				frappe.throw(_("{0} {1} cannot be greater than planned quantity {2} in Work Order {3}").format(
+				frappe.throw(_("{0} {1} cannot be greater than planned quantity {2} in {3}").format(
 					self.meta.get_label(fieldname),
 					frappe.bold(self.get_formatted(fieldname)),
 					frappe.bold(frappe.format(max_qty)),
-					self.name
+					frappe.get_desk_link("Work Order", self.name)
 				), StockOverProductionError)
 
 		produced_qty = flt(self.produced_qty, self.precision("qty"))
 		transferred_qty = flt(self.material_transferred_for_manufacturing, self.precision("qty"))
 		if not self.skip_transfer and produced_qty > transferred_qty:
-			frappe.throw(_("Produced Qty cannot more than the Material Transferred for Manufacturing {0}").format(
-				frappe.bold(self.get_formatted("material_transferred_for_manufacturing"))
+			frappe.throw(_("Produced Qty cannot more than the Material Transferred for Manufacturing {0} in {1}").format(
+				frappe.bold(self.get_formatted("material_transferred_for_manufacturing")),
+				frappe.get_desk_link("Work Order", self.name)
+			), StockOverProductionError)
+
+	def validate_overpacking(self):
+		max_qty = flt(self.get_qty_with_allowance(self.qty), self.precision("qty"))
+		for fieldname in ["packed_qty"]:
+			qty = flt(self.get(fieldname), self.precision("qty"))
+			if qty > max_qty:
+				frappe.throw(_("{0} {1} cannot be greater than planned quantity {2} in {3}").format(
+					self.meta.get_label(fieldname),
+					frappe.bold(self.get_formatted(fieldname)),
+					frappe.bold(frappe.format(max_qty)),
+					frappe.get_desk_link("Work Order", self.name)
+				))
+
+		produced_qty = flt(self.produced_qty, self.precision("qty"))
+		packed_qty = flt(self.packed_qty, self.precision("qty"))
+		if packed_qty > produced_qty:
+			frappe.throw(_("Packed Qty cannot more than the Produced Qty {0} in {1}").format(
+				frappe.bold(self.get_formatted("produced_qty")),
+				frappe.get_desk_link("Work Order", self.name)
 			), StockOverProductionError)
 
 	def get_qty_with_allowance(self, qty):
@@ -460,6 +558,11 @@ class WorkOrder(StatusUpdater):
 
 	def get_over_production_allowance(self):
 		return get_over_production_allowance(qty_to_produce=self.qty, max_qty=self.max_qty)
+
+	def get_min_qty(self, qty):
+		under_production_allowance = flt(frappe.db.get_single_value("Manufacturing Settings", "under_production_allowance"))
+		qty = flt(qty)
+		return qty - (qty * under_production_allowance / 100)
 
 	def set_status(self, status=None, update=False, update_modified=True):
 		previous_status = self.status
@@ -471,11 +574,7 @@ class WorkOrder(StatusUpdater):
 			self.status = 'Draft'
 
 		elif self.docstatus == 1:
-			under_production_allowance = flt(frappe.db.get_single_value("Manufacturing Settings", "under_production_allowance"))
-			completed_qty = flt(self.produced_qty + self.scrap_qty, self.precision("qty"))
-			min_qty = flt(self.qty - (self.qty * under_production_allowance / 100), self.precision("qty"))
-
-			if completed_qty >= min_qty:
+			if self.production_status == "Produced":
 				self.status = "Completed"
 			elif self.status == "Stopped":
 				self.status = "Stopped"
@@ -495,40 +594,11 @@ class WorkOrder(StatusUpdater):
 	def has_stock_entry(self):
 		return frappe.db.get_value("Stock Entry", {"work_order": self.name, "docstatus": 1})
 
-	def update_sales_order_work_order_qty(self):
-		if not self.sales_order and not self.sales_order_item:
-			return
-
-		total_bundle_qty = 1
-		if self.product_bundle_item:
-			total_bundle_qty = frappe.db.sql("""
-				select sum(qty)
-				from `tabProduct Bundle Item`
-				where parent = %s
-			""", (frappe.db.escape(self.product_bundle_item)))[0][0]
-
-			if not total_bundle_qty:
-				# product bundle is 0 (product bundle allows 0 qty for items)
-				total_bundle_qty = 1
-
-		cond = "product_bundle_item = %s" if self.product_bundle_item else "production_item = %s"
-
-		qty = frappe.db.sql("""
-			select sum(qty)
-			from `tabWork Order`
-			where sales_order = %s and docstatus = 1 and {0}
-		""".format(cond), (self.sales_order, (self.product_bundle_item or self.production_item)), as_list=1)
-
-		work_order_qty = flt(qty[0][0]) if qty else 0
-
-		precision = frappe.get_precision("Sales Order Item", "work_order_qty")
-		frappe.db.set_value('Sales Order Item', self.sales_order_item, 'work_order_qty',
-			flt(work_order_qty/total_bundle_qty, precision))
-
-	def update_sales_order_produced_qty(self):
-		from erpnext.selling.doctype.sales_order.sales_order import update_produced_qty_in_so_item
-		if self.sales_order and self.sales_order_item:
-			update_produced_qty_in_so_item(self.sales_order, self.sales_order_item)
+	def update_sales_order_status(self):
+		if self.get("sales_order"):
+			doc = frappe.get_doc("Sales Order", self.sales_order)
+			doc.set_production_packing_status(update=True)
+			doc.notify_update()
 
 	def update_production_plan_ordered_qty(self):
 		if self.production_plan and self.production_plan_item:
@@ -968,3 +1038,78 @@ def create_pick_list(source_name, target_doc=None, for_qty=None):
 	doc.set_item_locations()
 
 	return doc
+
+
+@frappe.whitelist()
+def make_packing_slip(work_orders, target_doc=None):
+	from erpnext.selling.doctype.sales_order.sales_order import make_packing_slip as make_packing_slip_from_so
+
+	if isinstance(work_orders, str):
+		work_orders = json.loads(work_orders)
+
+	if not work_orders:
+		frappe.throw(_("Please select Work Orders to pack"))
+
+	pack_from_sales_orders = {}
+	pack_from_work_orders = []
+
+	customers = set()
+
+	# Validate and separate sales order work orders
+	for name in work_orders:
+		wo_details = frappe.db.get_value("Work Order", name, [
+			"name", "docstatus", "fg_warehouse",
+			"customer", "sales_order", "sales_order_item",
+			"production_item", "item_name", "stock_uom",
+			"produced_qty", "packed_qty",
+		], as_dict=1)
+
+		if not wo_details or wo_details.docstatus != 1:
+			continue
+		if wo_details.packed_qty >= wo_details.produced_qty:
+			continue
+
+		if wo_details.customer:
+			customers.add(wo_details.customer)
+			if len(customers) > 1:
+				frappe.throw(_("Cannot pack Work Orders for multiple customers"))
+
+		if wo_details.sales_order and wo_details.sales_order_item:
+			pack_from_sales_orders.setdefault(wo_details.sales_order, []).append(wo_details.sales_order_item)
+		else:
+			pack_from_work_orders.append(wo_details)
+
+	# Empty packable work order list error
+	if not pack_from_sales_orders and not pack_from_work_orders:
+		frappe.throw(_("Selected Work Orders are not applicable for packing"))
+
+	# Map from Sales Orders first
+	for sales_order, sales_order_items in pack_from_sales_orders.items():
+		frappe.flags.selected_children = {"items": sales_order_items}
+		target_doc = make_packing_slip_from_so(sales_order, target_doc)
+		frappe.flags.selected_children = None
+
+	# Map from Work Orders
+	if not target_doc:
+		target_doc = frappe.new_doc("Packing Slip")
+
+	for wo_details in pack_from_work_orders:
+		if not target_doc.customer and wo_details.customer:
+			target_doc.customer = wo_details.customer
+
+		row = frappe.new_doc("Packing Slip Item")
+		row.work_order = wo_details.name
+		row.item_code = wo_details.production_item
+		row.item_name = wo_details.item_name
+		row.source_warehouse = wo_details.fg_warehouse
+		row.qty = wo_details.produced_qty - wo_details.packed_qty
+		row.uom = wo_details.stock_uom
+
+		target_doc.append("items", row)
+
+	# Post process if necessary
+	if pack_from_work_orders:
+		target_doc.run_method("set_missing_values")
+		target_doc.run_method("calculate_totals")
+
+	return target_doc

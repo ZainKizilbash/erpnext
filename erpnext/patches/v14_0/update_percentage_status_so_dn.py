@@ -13,7 +13,7 @@ def execute():
 	for name in sales_orders:
 		doc = frappe.get_doc("Sales Order", name)
 		doc.set_delivery_status()
-		doc.set_packing_status()
+		doc.set_production_packing_status()
 		doc.set_billing_status()
 
 		doc.db_set({

@@ -100,6 +100,7 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 	refresh(doc, dt, dn) {
 		super.refresh();
 		this.setup_buttons();
+		this.setup_progressbars();
 
 		// formatter for items table
 		this.frm.set_indicator_formatter('item_code', function(doc) {
@@ -176,14 +177,28 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 					}
 
 					// delivery note
-					if (flt(me.frm.doc.per_delivered, 6) < 100
+					let deliverable_rows = me.frm.doc.items.filter(d => d.is_stock_item || d.is_fixed_asset);
+
+					let has_undelivered = deliverable_rows.some(d => {
+						return flt(d.delivered_qty, precision("qty", d)) < flt(d.qty, precision("qty", d));
+					});
+
+					let has_unpacked = deliverable_rows.some(d => {
+						let produced_qty_order_uom = flt(d.produced_qty) / flt(d.conversion_factor);
+						return produced_qty_order_uom
+							? flt(d.packed_qty, precision("qty", d)) < flt(produced_qty_order_uom, precision("qty", d))
+							: flt(d.packed_qty, precision("qty", d)) < flt(d.qty, precision("qty", d));
+					});
+
+					if (
+						(me.frm.doc.delivery_status == "To Deliver" || has_undelivered)
 						&& ["Sales", "Shopping Cart"].indexOf(me.frm.doc.order_type) !== -1
 						&& allow_delivery
 					) {
 						me.frm.add_custom_button(__('Delivery Note'), () => me.make_delivery_note_based_on(), __('Create'));
 						me.frm.add_custom_button(__('Work Order'), () => me.make_work_order(), __('Create'));
 
-						if (flt(me.frm.doc.per_packed, 6) < 100) {
+						if (has_unpacked || me.frm.doc.packing_status == "To Pack") {
 							me.frm.add_custom_button(__('Packing Slip'), () => me.make_packing_slip(), __('Create'));
 						}
 
@@ -201,8 +216,9 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 					}
 
 					// material request
-					if ((!me.frm.doc.order_type || ["Sales", "Shopping Cart"].indexOf(me.frm.doc.order_type) !== -1)
-						&& flt(me.frm.doc.per_delivered, 6) < 100
+					if (
+						(!me.frm.doc.order_type || ["Sales", "Shopping Cart"].indexOf(me.frm.doc.order_type) !== -1)
+						&& me.frm.doc.delivery_status == "To Deliver"
 					) {
 						me.frm.add_custom_button(__('Material Request'), () => me.make_material_request(), __('Create'));
 						me.frm.add_custom_button(__('Request for Raw Materials'), () => me.make_raw_material_request(), __('Create'));
@@ -287,6 +303,40 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 			me.add_get_applicable_items_button();
 			me.add_get_project_template_items_button();
 		}
+	}
+
+	setup_progressbars() {
+		let has_work_order_qty = this.frm.doc.items.some(d => d.work_order_qty);
+		if (this.frm.doc.docstatus == 1 && has_work_order_qty) {
+			this.show_progress_for_production();
+		}
+	}
+
+	show_progress_for_production() {
+		let total_wo_qty = frappe.utils.sum(this.frm.doc.items.map(d => d.work_order_qty));
+		let produced_qty = frappe.utils.sum(this.frm.doc.items.map(d => d.produced_qty));
+		let remaining_qty = total_wo_qty - produced_qty;
+		remaining_qty = Math.max(remaining_qty, 0);
+
+		erpnext.utils.show_progress_for_qty({
+			frm: this.frm,
+			title: __('Production Status'),
+			total_qty: total_wo_qty,
+			progress_bars: [
+				{
+					title: __('<b>Produced:</b> {0}%', [
+						format_number(produced_qty / total_wo_qty * 100, null, 1),
+					]),
+					completed_qty: produced_qty,
+					progress_class: "progress-bar-success",
+					add_min_width: 0.5,
+				},
+				{
+					completed_qty: remaining_qty,
+					progress_class: "progress-bar-warning",
+				},
+			],
+		});
 	}
 
 	create_pick_list() {

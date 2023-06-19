@@ -44,6 +44,8 @@
   "source_packing_slip",
   "packing_slip_item",
   "unpack_against_row",
+  "column_break_vb4pg",
+  "work_order",
   "accounting_dimensions_section",
   "expense_account",
   "dimension_col_break",
@@ -350,12 +352,25 @@
    "options": "Item Group",
    "print_hide": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_vb4pg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "work_order",
+   "fieldtype": "Link",
+   "label": "Work Order",
+   "no_copy": 1,
+   "options": "Work Order",
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "idx": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-05-30 00:56:33.000160",
+ "modified": "2023-06-17 11:40:12.800766",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Packing Slip Item",

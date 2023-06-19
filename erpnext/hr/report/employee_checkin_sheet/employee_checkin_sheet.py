@@ -3,7 +3,8 @@
 
 import frappe
 from frappe import _
-from frappe.utils import getdate, cstr, add_days, get_weekday, format_time, formatdate, get_time
+from frappe.utils import getdate, cstr, add_days, get_weekday, format_time, formatdate, get_time, combine_datetime,\
+	get_datetime, flt
 from erpnext.hr.utils import get_holiday_description
 from erpnext.hr.report.monthly_attendance_sheet.monthly_attendance_sheet import get_employee_details,\
 	get_attendance_status_abbr, get_holiday_map, is_date_holiday, get_employee_holiday_list,\
@@ -121,6 +122,9 @@ def execute(filters=None):
 							elif not is_holiday and shift_ended(shift_type, attendance_date=current_date):
 								row['attendance_status'] = "Absent"
 
+						row['late_entry_hours'] = get_late_entry_hours(row, checkins)
+						row['early_exit_hours'] = get_early_exit_hours(row, checkins)
+
 						data.append(row)
 				else:
 					data.append(row_template.copy())
@@ -130,6 +134,34 @@ def execute(filters=None):
 	columns = get_columns(filters, checkin_column_count)
 
 	return columns, data
+
+
+def get_late_entry_hours(row, checkins):
+	if not checkins or not row.get("late_entry") or not row.get("shift_start") or not row.get("date"):
+		return None
+
+	shift_start_dt = combine_datetime(row.get("date"), row.get("shift_start"))
+	first_checkin_dt = get_datetime(checkins[0].time)
+
+	if first_checkin_dt < shift_start_dt:
+		return None
+
+	seconds = (first_checkin_dt - shift_start_dt).total_seconds()
+	return flt(seconds / 3600, 3)
+
+
+def get_early_exit_hours(row, checkins):
+	if not checkins or not row.get("early_exit") or not row.get("shift_end") or not row.get("date"):
+		return None
+
+	shift_end_dt = combine_datetime(row.get("date"), row.get("shift_end"))
+	last_checkin_dt = get_datetime(checkins[-1].time)
+
+	if last_checkin_dt > shift_end_dt:
+		return None
+
+	seconds = (shift_end_dt - last_checkin_dt).total_seconds()
+	return flt(seconds / 3600, 3)
 
 
 def validate_filters(filters):
@@ -216,8 +248,8 @@ def get_columns(filters, checkin_column_count):
 		{"fieldname": "attendance_status", "label": _("Status"), "fieldtype": "Data", "width": 75},
 		{"fieldname": "remarks", "label": _("Remarks"), "fieldtype": "Data", "width": 100},
 		{"fieldname": "working_hours", "label": _("Hours"), "fieldtype": "Float", "width": 60, "precision": 1},
-		{"fieldname": "late_entry", "label": _("Late Entry"), "fieldtype": "Check", "width": 80},
-		{"fieldname": "early_exit", "label": _("Early Exit"), "fieldtype": "Check", "width": 80},
+		{"fieldname": "late_entry_hours", "label": _("Late Entry"), "fieldtype": "Float", "width": 80, "precision": 1},
+		{"fieldname": "early_exit_hours", "label": _("Early Exit"), "fieldtype": "Float", "width": 80, "precision": 1},
 		{"fieldname": "attendance_marked", "label": _("Marked"), "fieldtype": "Check", "width": 65},
 		{"fieldname": "leave_application", "label": _("Leave Application"), "fieldtype": "Link", "options": "Leave Application", "width": 130},
 		{"fieldname": "attendance_request", "label": _("Attendance Request"), "fieldtype": "Link", "options": "Attendance Request", "width": 140},

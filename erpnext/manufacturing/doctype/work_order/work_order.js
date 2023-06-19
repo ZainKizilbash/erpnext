@@ -140,7 +140,8 @@ frappe.ui.form.on("Work Order", {
 		}
 
 		if (frm.doc.docstatus===1) {
-			frm.trigger('show_progress_for_items');
+			frm.trigger('show_progress_for_production');
+			frm.trigger('show_progress_for_packing');
 			frm.trigger('show_progress_for_operations');
 		}
 
@@ -276,47 +277,15 @@ frappe.ui.form.on("Work Order", {
 		});
 	},
 
-	show_progress_for_items: function(frm) {
-		let bars = [];
-		let message = "";
-		let added_min = false;
+	show_progress_for_production: function(frm) {
+		erpnext.manufacturing.show_progress_for_production(frm.doc, frm);
+	},
 
-		// produced qty
-		let title = __('<b>Produced:</b> {0} {1}', [format_number(frm.doc.produced_qty), frm.doc.stock_uom]);
-		bars.push({
-			'title': strip_html(title),
-			'width': flt(frm.doc.produced_qty / frm.doc.qty * 100, 2) + '%',
-			'progress_class': 'progress-bar-success'
-		});
-		if (bars[0].width == '0%') {
-			bars[0].width = '0.5%';
-			added_min = 0.5;
+	show_progress_for_packing: function (frm) {
+		if (!frm.doc.packing_slip_required) {
+			return;
 		}
-
-		message = title;
-
-		// pending qty
-		let pending_complete;
-		if (frm.doc.skip_transfer) {
-			let max_qty = flt(frm.doc.max_qty) || flt(frm.doc.qty);
-			pending_complete = flt(max_qty - frm.doc.produced_qty, precision("produced_qty"));
-		} else {
-			pending_complete = flt(frm.doc.material_transferred_for_manufacturing - frm.doc.produced_qty,
-				precision("produced_qty"));
-		}
-
-		if (pending_complete) {
-			let width = flt((pending_complete / frm.doc.qty * 100) - added_min, 2);
-			title = __('<b>Remaining:</b> {0} {1}', [format_number(pending_complete), frm.doc.stock_uom]);
-			bars.push({
-				'title': strip_html(title),
-				'width': (width > 100 ? "99.5" : width)  + '%',
-				'progress_class': 'progress-bar-warning'
-			});
-			message = message + '<br>' + title;
-		}
-
-		frm.dashboard.add_progress(__('Status'), bars, message);
+		erpnext.manufacturing.show_progress_for_packing(frm.doc, frm);
 	},
 
 	show_progress_for_operations: function(frm) {
@@ -353,7 +322,7 @@ frappe.ui.form.on("Work Order", {
 				message += title + '. ';
 			}
 
-			frm.dashboard.add_progress(__('Status'), bars, message);
+			frm.dashboard.add_progress(__('Operation Status'), bars, message);
 		}
 	},
 

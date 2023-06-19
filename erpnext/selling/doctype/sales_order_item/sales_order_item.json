@@ -667,6 +667,7 @@
    "width": "70px"
   },
   {
+   "depends_on": "ordered_qty",
    "fieldname": "ordered_qty",
    "fieldtype": "Float",
    "label": "Purchase Order Qty",
@@ -687,6 +688,7 @@
    "width": "100px"
   },
   {
+   "depends_on": "work_order_qty",
    "fieldname": "work_order_qty",
    "fieldtype": "Float",
    "label": "Work Order Qty",
@@ -726,10 +728,10 @@
    "report_hide": 1
   },
   {
+   "depends_on": "planned_qty",
    "description": "For Production",
    "fieldname": "planned_qty",
    "fieldtype": "Float",
-   "hidden": 1,
    "label": "Planned Qty",
    "no_copy": 1,
    "oldfieldname": "planned_qty",
@@ -741,10 +743,9 @@
    "width": "50px"
   },
   {
-   "description": "For Production",
+   "depends_on": "produced_qty",
    "fieldname": "produced_qty",
    "fieldtype": "Float",
-   "hidden": 1,
    "label": "Produced Qty",
    "oldfieldname": "produced_qty",
    "oldfieldtype": "Currency",
@@ -1359,7 +1360,7 @@
  "idx": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-05-22 13:11:58.056017",
+ "modified": "2023-06-17 15:15:56.702136",
  "modified_by": "Administrator",
  "module": "Selling",
  "name": "Sales Order Item",
