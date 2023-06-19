@@ -85,7 +85,9 @@ frappe.query_reports["Monthly Attendance Sheet"] = {
 		if (column.day) {
 			var attendance_fieldname = "attendance_day_" + column.day;
 			var status_fieldname = "status_day_" + column.day;
-			var status = data[status_fieldname]
+			var color_fieldname = "color_day_" + column.day;
+			var status = data[status_fieldname];
+			var color = data[color_fieldname];
 
 			if (data[attendance_fieldname]) {
 				link = "/app/attendance/" + encodeURIComponent(data[attendance_fieldname]);
@@ -97,17 +99,8 @@ frappe.query_reports["Monthly Attendance Sheet"] = {
 				style['font-weight'] = 'bold';
 			}
 
-			if (status == "Present") {
-				style['color'] = 'green';
-			}
-			if (status == "Absent") {
-				style['color'] = 'red';
-			}
-			if (status == "Half Day") {
-				style['color'] = 'orange';
-			}
-			if (status == "On Leave") {
-				style['color'] = 'blue';
+			if (color) {
+				style['color'] = color;
 			}
 		}
 
