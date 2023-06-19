@@ -18,6 +18,7 @@
   "auto_mark_opportunity_as_lost",
   "column_break_q3twi",
   "maintenance_reminder_days_before_schedule",
+  "maintenance_reminder_time",
   "auto_reminder_for_maintenance_schedule"
  ],
  "fields": [
@@ -99,11 +100,17 @@
    "fieldname": "auto_reminder_for_maintenance_schedule",
    "fieldtype": "Check",
    "label": "Auto Reminder for Maintenance Schedule"
+  },
+  {
+   "depends_on": "auto_reminder_for_maintenance_schedule",
+   "fieldname": "maintenance_reminder_time",
+   "fieldtype": "Time",
+   "label": "Maintenance Reminder Notification Time of Day"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2023-05-30 17:41:28.587080",
+ "modified": "2023-06-15 15:13:02.524699",
  "modified_by": "Administrator",
  "module": "CRM",
  "name": "CRM Settings",
