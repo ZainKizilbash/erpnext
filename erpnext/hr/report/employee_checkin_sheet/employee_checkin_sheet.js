@@ -30,7 +30,46 @@ frappe.query_reports["Employee Checkin Sheet"] = {
 			fieldname: "employee",
 			label: __("Employee"),
 			fieldtype: "Link",
-			options: "Employee"
+			options: "Employee",
+			on_change: () => {
+				var employee = frappe.query_report.get_filter_value('employee');
+				if (employee) {
+					frappe.db.get_value('Employee', employee, "employee_name", function(value) {
+						frappe.query_report.set_filter_value('employee_name', value["employee_name"]);
+					});
+					frappe.db.get_value('Employee', employee, "designation", function(value) {
+						frappe.query_report.set_filter_value('designation', value["designation"]);
+					});
+					frappe.db.get_value('Employee', employee, "department", function(value) {
+						frappe.query_report.set_filter_value('department', value["department"]);
+					});
+				} else {
+					frappe.query_report.set_filter_value('employee_name', "");
+					frappe.query_report.set_filter_value('designation', "");
+					frappe.query_report.set_filter_value('department', "");
+				}
+			},
+		},
+		{
+			fieldname: "employee_name",
+			label: __("Employee Name"),
+			fieldtype: "Data",
+			on_change: () => { return false },
+			"hidden": 1
+		},
+		{
+			fieldname: "designation",
+			label: __("Designation"),
+			fieldtype: "Data",
+			on_change: () => { return false },
+			"hidden": 1
+		},
+		{
+			fieldname: "department",
+			label: __("Department"),
+			fieldtype: "Data",
+			on_change: () => { return false },
+			"hidden": 1
 		}
 	],
 
