@@ -1068,8 +1068,8 @@ def send_customer_vehicle_anniversary_notifications():
 	if now_dt < reminder_dt:
 		return
 
-	notification_last_send_date = frappe.db.get_default("vehicle_anniversary_notification_last_sent_date")
-	if notification_last_send_date and getdate(notification_last_send_date) == date_today:
+	notification_last_sent_date = frappe.db.get_default("vehicle_anniversary_notification_last_sent_date")
+	if notification_last_sent_date and getdate(notification_last_sent_date) == date_today:
 		return
 
 	vehicle_anniversary_data = get_vehicle_anniversary_data(date_today)
