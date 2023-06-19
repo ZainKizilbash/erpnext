@@ -87,6 +87,9 @@ def execute(filters=None):
 				attendance_details.early_exit, attendance_details.leave_type)
 			row[day_fieldname] = attendance_status_abbr
 
+			attendance_status_color = get_attendance_status_color(attendance_status)
+			row["color_" + day_fieldname] = attendance_status_color
+
 			if attendance_status == "Present":
 				row['total_present'] += 1
 
@@ -401,6 +404,16 @@ def get_attendance_status_abbr(attendance_status, late_entry=0, early_exit=0, le
 		abbr = "{0}<".format(abbr)
 
 	return abbr
+
+
+def get_attendance_status_color(attendance_status):
+	status_map = {
+		"Present": "green",
+		"Absent": "red",
+		"Half Day": "orange",
+		"On Leave": "blue",
+	}
+	return status_map.get(attendance_status) or "black"
 
 
 def get_attendance_from_checkins(checkins, shift):
