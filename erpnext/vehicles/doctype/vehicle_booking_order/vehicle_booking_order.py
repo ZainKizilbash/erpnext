@@ -5,7 +5,7 @@
 import frappe
 from erpnext.vehicles.utils import get_booking_payments, separate_customer_and_supplier_payments, separate_advance_and_balance_payments
 from frappe import _
-from frappe.utils import cint, flt, getdate, today, combine_datetime, now_datetime, get_time
+from frappe.utils import cint, flt, getdate, today, combine_datetime, now_datetime, get_time, add_years
 from frappe.model.naming import set_name_by_naming_series
 from erpnext.vehicles.doctype.vehicle_allocation.vehicle_allocation import get_allocation_title
 from erpnext.vehicles.vehicle_booking_controller import VehicleBookingController
@@ -634,7 +634,8 @@ class VehicleBookingOrder(VehicleBookingController):
 			'Balance Payment Confirmation',
 			'Ready For Delivery',
 			'Congratulations',
-			'Booking Cancellation'
+			'Booking Cancellation',
+			'Vehicle Anniversary',
 		]
 
 		can_notify = frappe._dict()
@@ -701,6 +702,18 @@ class VehicleBookingOrder(VehicleBookingController):
 					frappe.throw(_("Cannot send Congratulations notification because Vehicle has not been delivered yet"))
 				return False
 
+		if notification_type == "Vehicle Anniversary":
+			if not self.vehicle_delivered_date:
+				if throw:
+					frappe.throw(_("Cannot send Vehicle Anniversary notification because Vehicle has not been delivered yet"))
+				return False
+
+			vehicle_anniversary_date = add_years(getdate(self.vehicle_delivered_date), 1)
+			if getdate(today()) < vehicle_anniversary_date:
+				if throw:
+					frappe.throw(_("Cannot send Vehicle Anniversary notification because 1 year has not passed since delivery"))
+				return False
+
 		return True
 
 	def send_notification_on_payment(self, payment):
@@ -736,7 +749,7 @@ class VehicleBookingOrder(VehicleBookingController):
 	def send_notification_on_cancellation(self):
 		enqueue_template_sms(self, notification_type="Booking Cancellation")
 
-	def send_customer_vehicle_anniversary_notification(self):
+	def send_vehicle_anniversary_notification(self):
 		args = {
 			'customer_name': self.transfer_customer_name if self.transfer_customer else self.customer_name
 		}
@@ -1057,29 +1070,28 @@ def update_allocation_booked(vehicle_allocation, is_booked, is_cancelled):
 
 
 @frappe.whitelist()
-def send_customer_vehicle_anniversary_notifications():
+def send_vehicle_anniversary_notifications():
 	if not automated_vehicle_anniversary_enabled():
 		return
 
 	now_dt = now_datetime()
 	date_today = getdate(now_dt)
 
-	reminder_dt = get_anniversary_scheduled_time(date_today)
+	reminder_dt = get_vehicle_anniversary_scheduled_time(date_today)
 	if now_dt < reminder_dt:
 		return
 
 	notification_last_sent_date = frappe.db.get_default("vehicle_anniversary_notification_last_sent_date")
-	if notification_last_sent_date and getdate(notification_last_sent_date) == date_today:
+	if notification_last_sent_date and getdate(notification_last_sent_date) >= date_today:
 		return
 
-	vehicle_anniversary_data = get_vehicle_anniversary_data(date_today)
+	vehicle_anniversary_data = get_bookings_for_vehicle_anniversary_notification(date_today)
 
 	for d in vehicle_anniversary_data:
 		doc = frappe.get_doc("Vehicle Booking Order", d.name)
-		doc.send_customer_vehicle_anniversary_notification()
+		doc.send_vehicle_anniversary_notification()
 
-	if vehicle_anniversary_data:
-		frappe.db.set_default("vehicle_anniversary_notification_last_sent_date", date_today)
+	frappe.db.set_default("vehicle_anniversary_notification_last_sent_date", date_today)
 
 def automated_vehicle_anniversary_enabled():
 	from frappe.core.doctype.sms_settings.sms_settings import is_automated_sms_enabled
@@ -1090,7 +1102,7 @@ def automated_vehicle_anniversary_enabled():
 	else:
 		return False
 
-def get_anniversary_scheduled_time(date_today=None):
+def get_vehicle_anniversary_scheduled_time(date_today=None):
 	vehicle_settings = frappe.get_cached_doc("Vehicles Settings", None)
 
 	reminder_date = getdate(date_today)
@@ -1099,7 +1111,7 @@ def get_anniversary_scheduled_time(date_today=None):
 
 	return reminder_dt
 
-def get_vehicle_anniversary_data(date_today = None):
+def get_bookings_for_vehicle_anniversary_notification(date_today=None):
 	date_today = getdate(date_today)
 
 	vehicle_anniversary_data = frappe.db.sql("""
@@ -1112,10 +1124,16 @@ def get_vehicle_anniversary_data(date_today = None):
 			AND nc.notification_medium = 'SMS'
 		WHERE vbo.docstatus = 1
 			AND vbo.status != 'Cancelled Booking'
-			AND day(vbo.vehicle_delivered_date) = %s
-			AND month(vbo.vehicle_delivered_date) = %s
-			AND year(vbo.vehicle_delivered_date) < %s
-			AND DATE(nc.last_sent_dt) != %s
-	""", [date_today.day, date_today.month, date_today.year, date_today], as_dict=1)
+			AND day(vbo.vehicle_delivered_date) = %(day)s
+			AND month(vbo.vehicle_delivered_date) = %(month)s
+			AND year(vbo.vehicle_delivered_date) < %(year)s
+			AND DATE(nc.last_scheduled_dt) != %(date_today)s
+			AND DATE(nc.last_sent_dt) != %(date_today)s
+	""", {
+		"day": date_today.day,
+		"month": date_today.month,
+		"year": date_today.year,
+		"date_today": date_today
+	}, as_dict=1)
 
 	return vehicle_anniversary_data
