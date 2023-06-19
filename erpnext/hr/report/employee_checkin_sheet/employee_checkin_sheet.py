@@ -5,10 +5,12 @@ import frappe
 from frappe import _
 from frappe.utils import getdate, cstr, add_days, get_weekday, format_time, formatdate, get_time, combine_datetime,\
 	get_datetime, flt
-from erpnext.hr.utils import get_holiday_description
+from erpnext.hr.utils import get_holiday_description, get_employee_leave_policy
 from erpnext.hr.report.monthly_attendance_sheet.monthly_attendance_sheet import get_employee_details,\
-	get_attendance_status_abbr, get_attendance_status_color, get_holiday_map, is_date_holiday, get_employee_holiday_list,\
-	get_attendance_from_checkins, is_in_employment_date, shift_ended
+	get_attendance_status_abbr, get_attendance_status_color,\
+	get_holiday_map, is_date_holiday, get_employee_holiday_list,\
+	get_attendance_from_checkins, is_in_employment_date, shift_ended,\
+	get_leave_type_map, get_late_deduction_leave_map
 from erpnext.hr.doctype.holiday_list.holiday_list import get_default_holiday_list
 from erpnext.hr.doctype.shift_assignment.shift_assignment import get_employee_shift
 
@@ -47,6 +49,7 @@ def execute(filters=None):
 				})
 
 				is_holiday = is_date_holiday(current_date, holiday_map, employee_details, filters.default_holiday_list)
+				row_template['is_holiday'] = is_holiday
 				if is_holiday:
 					row_template['attendance_status'] = "Holiday"
 					row_template['attendance_abbr'] = get_attendance_status_abbr(row_template['attendance_status'])
@@ -133,7 +136,11 @@ def execute(filters=None):
 
 		current_date = add_days(current_date, 1)
 
-	columns = get_columns(filters, checkin_column_count)
+	totals = None
+	if filters.get("employee"):
+		totals = calculate_totals(filters.get("employee"), data, filters)
+
+	columns = get_columns(checkin_column_count, totals)
 
 	return columns, data
 
@@ -149,7 +156,7 @@ def get_late_entry_hours(row, checkins):
 		return None
 
 	seconds = (first_checkin_dt - shift_start_dt).total_seconds()
-	return flt(seconds / 3600, 3)
+	return flt(seconds / 3600, 1)
 
 
 def get_early_exit_hours(row, checkins):
@@ -163,7 +170,99 @@ def get_early_exit_hours(row, checkins):
 		return None
 
 	seconds = (shift_end_dt - last_checkin_dt).total_seconds()
-	return flt(seconds / 3600, 3)
+	return flt(seconds / 3600, 1)
+
+
+def calculate_totals(employee, data, filters):
+	leave_type_map, leave_types = get_leave_type_map()
+	late_deduction_leave_map = get_late_deduction_leave_map(filters)
+
+	totals = frappe._dict({
+		'total_present': 0,
+		'total_absent': 0,
+		'total_leave': 0,
+		'total_half_day': 0,
+		'total_deduction': 0,
+		'total_lwp': 0,
+		'total_holiday': 0,
+
+		'total_late_entry': 0,
+		'total_early_exit': 0,
+
+		"total_working_hours": 0,
+		"total_late_entry_hours": 0,
+		"total_early_exit_hours": 0,
+	})
+
+	for d in data:
+		attendance_status = d.attendance_status
+
+		if attendance_status == "Present":
+			totals['total_present'] += 1
+
+			if d.late_entry:
+				totals['total_late_entry'] += 1
+			if d.early_exit:
+				totals['total_early_exit'] += 1
+
+		elif attendance_status == "Absent":
+			totals['total_absent'] += 1
+			totals['total_deduction'] += 1
+
+		elif attendance_status == "Half Day":
+			totals['total_half_day'] += 1
+			if not d.leave_type:
+				totals['total_deduction'] += 0.5
+
+		elif attendance_status == "On Leave":
+			leave_details = leave_type_map.get(d.leave_type, frappe._dict())
+
+			if not d.is_holiday or leave_details.include_holidays:
+				totals['total_leave'] += 1
+
+		elif attendance_status == "Holiday":
+			totals['total_holiday'] += 1
+
+		if attendance_status in ("On Leave", "Half Day") and d.leave_type:
+			leave_details = leave_type_map.get(d.leave_type, frappe._dict())
+			leave_count = 0.5 if attendance_status == "Half Day" else 1
+
+			if not d.is_holiday or leave_details.include_holidays:
+				if leave_details.is_lwp:
+					totals['total_deduction'] += leave_count
+					totals['total_lwp'] += leave_count
+
+		# total hours
+		totals['total_working_hours'] += flt(d.working_hours)
+		totals['total_late_entry_hours'] += flt(d.late_entry_hours)
+		totals['total_early_exit_hours'] += flt(d.early_exit_hours)
+
+	totals['total_late_deduction'] = 0
+
+	leave_policy = get_employee_leave_policy(employee)
+	if leave_policy:
+		totals['total_late_deduction'] = leave_policy.get_lwp_from_late_days(totals['total_late_entry'])
+		totals['total_deduction'] += totals['total_late_deduction']
+
+	# Late Deduction Leaves
+	employee_late_leaves = late_deduction_leave_map.get(employee) or {}
+	for leave_type, late_deduction_leave_count in employee_late_leaves.items():
+		leave_details = leave_type_map.get(leave_type, frappe._dict())
+
+		totals['total_late_deduction'] -= late_deduction_leave_count
+		totals['total_deduction'] -= late_deduction_leave_count
+
+		if leave_details.is_lwp:
+			totals['total_late_deduction'] += late_deduction_leave_count
+			totals['total_deduction'] += late_deduction_leave_count
+			totals['total_lwp'] += late_deduction_leave_count
+
+	totals['total_net_present'] = totals['total_present'] + totals['total_holiday']
+	totals['total_working_hours'] = flt(totals['total_working_hours'], 1)
+	totals['total_late_entry_hours'] = flt(totals['total_late_entry_hours'], 1)
+	totals['total_early_exit_hours'] = flt(totals['total_early_exit_hours'], 1)
+
+	return totals
 
 
 def validate_filters(filters):
@@ -224,9 +323,9 @@ def get_attendance_map(filters):
 	return attendance_map
 
 
-def get_columns(filters, checkin_column_count):
+def get_columns(checkin_column_count, totals):
 	columns = [
-		{"fieldname": "date", "label": _("Date"), "fieldtype": "Date", "width": 80},
+		{"fieldname": "date", "label": _("Date"), "fieldtype": "Date", "width": 80, "totals": totals},
 		{"fieldname": "day", "label": _("Day"), "fieldtype": "Data", "width": 80},
 		{"fieldname": "shift_type", "label": _("Shift"), "fieldtype": "Link", "options": "Shift Type", "width": 100},
 		{"fieldname": "employee", "label": _("Employee"), "fieldtype": "Link", "options": "Employee", "width": 80},
