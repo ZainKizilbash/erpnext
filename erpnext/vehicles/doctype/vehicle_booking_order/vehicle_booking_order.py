@@ -1111,7 +1111,7 @@ def get_vehicle_anniversary_data(date_today = None):
 			AND nc.notification_type = 'Vehicle Anniversary'
 			AND nc.notification_medium = 'SMS'
 		WHERE vbo.docstatus = 1
-			AND status != 'Cancelled Booking'
+			AND vbo.status != 'Cancelled Booking'
 			AND day(vbo.vehicle_delivered_date) = %s
 			AND month(vbo.vehicle_delivered_date) = %s
 			AND year(vbo.vehicle_delivered_date) < %s
