@@ -4,7 +4,7 @@
 import frappe
 import json
 import frappe.utils
-from frappe.utils import cstr, flt, getdate, cint, nowdate, add_days, get_link_to_form, round_up
+from frappe.utils import cstr, flt, getdate, cint, nowdate, add_days, get_link_to_form, round_up, round_down
 from frappe import _
 from six import string_types
 from frappe.model.mapper import get_mapped_doc
@@ -64,7 +64,7 @@ class SalesOrder(SellingController):
 
 		self.validate_with_previous_doc()
 		self.set_delivery_status()
-		self.set_packing_status()
+		self.set_production_packing_status()
 		self.set_billing_status()
 		self.set_purchase_status()
 		self.set_status()
@@ -134,7 +134,7 @@ class SalesOrder(SellingController):
 		self.check_modified_date()
 		self.set_status(status=status)
 		self.set_delivery_status(update=True)
-		self.set_packing_status(update=True)
+		self.set_production_packing_status(update=True)
 		self.set_billing_status(update=True)
 		self.set_status(update=True, status=status)
 		self.update_project_billing_and_sales()
@@ -199,20 +199,24 @@ class SalesOrder(SellingController):
 				'delivery_status': self.delivery_status,
 			}, update_modified=update_modified)
 
-	def set_packing_status(self, update=False, update_modified=True):
-		data = self.get_packing_status_data()
+	def set_production_packing_status(self, update=False, update_modified=True):
+		data = self.get_production_packing_status_data()
 
 		# update values in rows
 		for d in self.items:
+			d.work_order_qty = flt(data.work_order_qty_map.get(d.name))
+			d.produced_qty = flt(data.produced_qty_map.get(d.name))
 			d.packed_qty = flt(data.packed_qty_map.get(d.name))
 
 			if update:
 				d.db_set({
+					'work_order_qty': d.work_order_qty,
+					'produced_qty': d.produced_qty,
 					'packed_qty': d.packed_qty,
 				}, update_modified=update_modified)
 
 		# update percentage in parent
-		self.per_packed, within_allowance = self.calculate_status_percentage('packed_qty', 'qty', data.packable_rows,
+		self.per_packed, within_allowance = self.calculate_status_percentage('packed_qty', 'qty', data.producible_rows,
 			under_delivery_allowance=True)
 		if self.per_packed is None:
 			self.per_packed, within_allowance = self.calculate_status_percentage('packed_qty', 'qty', self.items,
@@ -221,7 +225,8 @@ class SalesOrder(SellingController):
 
 		# update packing_status
 		self.packing_status = self.get_completion_status('per_packed', 'Pack',
-			not_applicable=self.skip_delivery_note or self.status == "Closed", within_allowance=within_allowance)
+			not_applicable=self.skip_delivery_note or self.status == "Closed",
+			within_allowance=within_allowance and not data.has_unpacked_work_orders)
 
 		if update:
 			self.db_set({
@@ -368,29 +373,48 @@ class SalesOrder(SellingController):
 
 		return out
 
-	def get_packing_status_data(self):
+	def get_production_packing_status_data(self):
 		out = frappe._dict()
 
-		out.packable_rows = []
+		out.producible_rows = []
+		out.work_order_qty_map = {}
+		out.produced_qty_map = {}
 		out.packed_qty_map = {}
+		out.has_unpacked_work_orders = False
 
-		packable_row_names = []
+		producible_row_names = []
 
 		for d in self.items:
 			if d.is_stock_item and not d.delivered_by_supplier:
-				out.packable_rows.append(d)
-				packable_row_names.append(d.name)
+				out.producible_rows.append(d)
+				producible_row_names.append(d.name)
 
-		# Get Delivered Qty
 		if self.docstatus == 1:
-			if packable_row_names:
+			if producible_row_names:
+				# Work Order data
+				work_order_data = frappe.db.sql("""
+					select sales_order_item, qty, produced_qty, packing_status, packing_slip_required
+					from `tabWork Order`
+					where docstatus = 1 and sales_order_item in %s
+				""", [producible_row_names], as_dict=1)
+
+				for d in work_order_data:
+					out.work_order_qty_map.setdefault(d.sales_order_item, 0)
+					out.work_order_qty_map[d.sales_order_item] += d.qty
+
+					out.produced_qty_map.setdefault(d.sales_order_item, 0)
+					out.produced_qty_map[d.sales_order_item] += d.produced_qty
+
+					if d.packing_status == "To Pack":
+						out.has_unpacked_work_orders = True
+
 				# Delivered By Delivery Note
 				packed_by_packing_slip = frappe.db.sql("""
 					select i.sales_order_item, i.qty
 					from `tabPacking Slip Item` i
 					inner join `tabPacking Slip` p on p.name = i.parent
 					where p.docstatus = 1 and i.sales_order_item in %s and ifnull(i.source_packing_slip, '') = ''
-				""", [packable_row_names], as_dict=1)
+				""", [producible_row_names], as_dict=1)
 
 				for d in packed_by_packing_slip:
 					out.packed_qty_map.setdefault(d.sales_order_item, 0)
@@ -1104,6 +1128,8 @@ def make_packing_slip(source_name, target_doc=None, warehouse=None):
 	if not warehouse and frappe.flags.args:
 		warehouse = frappe.flags.args.warehouse
 
+	work_order_cache = {}
+
 	def item_condition(source, source_parent, target_parent):
 		if source.name in [d.sales_order_item for d in target_parent.get('items') if d.sales_order_item]:
 			return False
@@ -1128,14 +1154,38 @@ def make_packing_slip(source_name, target_doc=None, warehouse=None):
 		target.run_method("calculate_totals")
 
 	def update_item(source, target, source_parent, target_parent):
+		work_order_details = get_work_order_details(source)
+		target.work_order = work_order_details.name if work_order_details else None
+
 		undelivered_qty, unpacked_qty = get_remaining_qty(source)
 		target.qty = min(undelivered_qty, unpacked_qty)
 
 	def get_remaining_qty(source):
-		undelivered_qty = flt(source.qty) - flt(source.delivered_qty)
-		unpacked_qty = flt(source.qty) - flt(source.packed_qty)
+		work_order_details = get_work_order_details(source)
+		work_order = work_order_details.name if work_order_details else None
+
+		if work_order:
+			produced_qty = flt(work_order_details.produced_qty)
+			produced_qty_order_uom = produced_qty / source.conversion_factor
+
+			undelivered_qty = round_down(produced_qty_order_uom - flt(source.delivered_qty), source.precision("qty"))
+			unpacked_qty = round_down(produced_qty_order_uom - flt(source.packed_qty), source.precision("qty"))
+		else:
+			undelivered_qty = flt(source.qty) - flt(source.delivered_qty)
+			unpacked_qty = flt(source.qty) - flt(source.packed_qty)
 
 		return undelivered_qty, unpacked_qty
+
+	def get_work_order_details(source):
+		if source.name not in work_order_cache:
+			work_order_cache[source.name] = frappe.db.get_value("Work Order", filters={
+				"sales_order": source.parent,
+				"sales_order_item": source.name,
+				"docstatus": 1,
+				"packing_slip_required": 1,
+			}, fieldname=["name", "produced_qty"], as_dict=1)
+
+		return work_order_cache[source.name]
 
 	mapper = {
 		"Sales Order": {
@@ -1480,7 +1530,7 @@ def get_supplier(doctype, txt, searchfield, start, page_len, filters):
 
 
 @frappe.whitelist()
-def make_work_orders(items, company, sales_order=None, project=None):
+def make_work_orders(items, company, sales_order=None, project=None, ignore_version=True, ignore_feed=True):
 	'''Make Work Orders against the given Sales Order for the given `items`'''
 	if isinstance(items, str):
 		items = json.loads(items)
@@ -1498,6 +1548,9 @@ def make_work_orders(items, company, sales_order=None, project=None):
 		customer_name = frappe.db.get_value("Sales Order", row_sales_order, "customer_name", cache=1) if row_sales_order else None
 
 		work_order = frappe.new_doc("Work Order")
+		work_order.flags.ignore_version = ignore_version
+		work_order.flags.ignore_feed = ignore_feed
+
 		work_order.update({
 			'production_item': i['item_code'],
 			'bom_no': i.get('bom'),
@@ -1618,20 +1671,3 @@ def create_pick_list(source_name, target_doc=None):
 	doc.set_item_locations()
 
 	return doc
-
-
-def update_produced_qty_in_so_item(sales_order, sales_order_item):
-	# for multiple work orders against same sales order item
-	linked_wo_with_so_item = frappe.db.get_all('Work Order', ['produced_qty'], {
-		'sales_order_item': sales_order_item,
-		'sales_order': sales_order,
-		'docstatus': 1
-	})
-
-	total_produced_qty = 0
-	for wo in linked_wo_with_so_item:
-		total_produced_qty += flt(wo.get('produced_qty'))
-
-	if not total_produced_qty and frappe.flags.in_patch: return
-
-	frappe.db.set_value('Sales Order Item', sales_order_item, 'produced_qty', total_produced_qty)

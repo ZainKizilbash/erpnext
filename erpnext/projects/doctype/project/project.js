@@ -211,6 +211,10 @@ erpnext.projects.ProjectController = class ProjectController extends erpnext.con
 				if (frappe.model.can_create("Vehicle Log")) {
 					me.frm.add_custom_button(__("Update Odometer"), () => me.make_odometer_log(), __("Vehicle"));
 				}
+
+				if (frappe.model.can_write("Project")) {
+					me.frm.add_custom_button(__("Reload Vehicle Details"), () => me.reload_vehicle_details(), __("Vehicle"));
+				}
 			}
 
 			// Create Buttons
@@ -911,6 +915,28 @@ erpnext.projects.ProjectController = class ProjectController extends erpnext.con
 		});
 
 		dialog.show();
+	}
+
+	reload_vehicle_details() {
+		var me = this;
+		if (!me.frm.doc.applies_to_vehicle) {
+			return;
+		}
+
+		frappe.confirm(__('Are you sure you want to reload vehicle details?'),
+			function() {
+				frappe.call({
+					method: "set_applies_to_details",
+					doc: me.frm.doc,
+					callback: function (r) {
+						if (!r.exc) {
+							me.frm.dirty();
+							me.frm.refresh_fields();
+						}
+					}
+				});
+			}
+		);
 	}
 
 	setup_vehicle_panel_fields() {

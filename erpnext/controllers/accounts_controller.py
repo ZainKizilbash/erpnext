@@ -1083,15 +1083,15 @@ class AccountsController(TransactionBase):
 		self.total_qty = sum([d.qty for d in self.items])
 		self.total_alt_uom_qty = sum([d.alt_uom_qty for d in self.items])
 
-	def group_similar_items(self):
+	def group_similar_items(self, additional_sum_fields=None, additional_rate_fields=None):
 		group_item_data = {}
 		item_meta = frappe.get_meta(self.doctype + " Item")
 		count = 0
 
-		sum_fields = merge_items_sum_fields.copy()
+		sum_fields = merge_items_sum_fields.copy() + (additional_sum_fields or [])
 		sum_fields += ['tax_exclusive_' + f for f in sum_fields if item_meta.has_field('tax_exclusive_' + f)]
 
-		rate_fields = merge_items_rate_fields.copy()
+		rate_fields = merge_items_rate_fields.copy() + (additional_rate_fields or [])
 		rate_fields += [('tax_exclusive_' + t, 'tax_exclusive_' + s) for t, s in rate_fields
 			if item_meta.has_field('tax_exclusive_' + t) and item_meta.has_field('tax_exclusive_' + s)]
 

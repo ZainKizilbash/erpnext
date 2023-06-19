@@ -90,7 +90,7 @@ class StatusUpdater(Document):
 			for f in completed_field:
 				completed_qty += abs(flt(row.get(f)))
 
-			reference_qty = abs(flt(row.get(reference_field)))
+			reference_qty = abs(flt(row.get(reference_field), precision))
 			completed_qty = min(completed_qty, reference_qty)
 
 			min_qty = flt(reference_qty - (reference_qty * under_delivery_percentage / 100), precision)

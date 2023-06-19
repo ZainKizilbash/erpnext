@@ -74,6 +74,7 @@ class VehicleBookingOrder(VehicleBookingController):
 			set_can_change_onload(self)
 			self.set_can_notify_onload()
 			self.set_vehicle_warehouse_onload()
+			self.set_vehicle_reservation_details()
 
 	def before_print(self, print_settings=None):
 		super(VehicleBookingOrder, self).before_print(print_settings=print_settings)
@@ -512,19 +513,18 @@ class VehicleBookingOrder(VehicleBookingController):
 				"transfer_lessee_name": self.transfer_lessee_name,
 			})
 
-	def set_transfer_status(self, update=False):
-		if self.vehicle_transfer_required:
-			if frappe.db.exists("Vehicle Transfer Letter", {"vehicle_booking_order": self.name, "docstatus": 1}):
-				self.transfer_status = "Transferred"
-			else:
-				self.transfer_status = "To Transfer"
+	def set_transfer_status(self, update=False, update_modified=True):
+		if frappe.db.exists("Vehicle Transfer Letter", {"vehicle_booking_order": self.name, "docstatus": 1}):
+			self.transfer_status = "Transferred"
+		elif self.vehicle_transfer_required:
+			self.transfer_status = "To Transfer"
 		else:
 			self.transfer_status = "Not Applicable"
 
 		if update:
 			self.db_set({
-				'transfer_status': self.transfer_status
-			})
+				'transfer_status': self.transfer_status,
+			}, update_modified=update_modified)
 
 	def set_status(self, update=False, status=None, update_modified=True):
 		if self.is_new():
@@ -599,6 +599,19 @@ class VehicleBookingOrder(VehicleBookingController):
 
 			self.set_onload('vehicle_warehouse', vehicle_warehouse)
 			self.set_onload('vehicle_warehouse_name', vehicle_warehouse_name)
+
+	def set_vehicle_reservation_details(self):
+		if not self.vehicle:
+			return
+
+		reservation_fields = ['is_reserved', 'reserved_customer', 'reserved_customer_name', 'reserved_sales_person']
+		reservation_details = frappe.db.get_value("Vehicle", self.vehicle, reservation_fields, as_dict=True)
+
+		if reservation_details.is_reserved:
+			self.set_onload('is_reserved', reservation_details.is_reserved)
+			self.set_onload('reserved_customer', reservation_details.reserved_customer)
+			self.set_onload('reserved_customer_name', reservation_details.reserved_customer_name)
+			self.set_onload('reserved_sales_person', reservation_details.reserved_sales_person)
 
 	def get_sms_args(self, notification_type=None, child_doctype=None, child_name=None):
 		return frappe._dict({

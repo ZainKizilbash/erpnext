@@ -36,7 +36,7 @@ class Employee(NestedSet):
 
 	def validate(self):
 		from erpnext.controllers.status_updater import validate_status
-		validate_status(self.status, ["Active", "Temporary Leave", "Left"])
+		validate_status(self.status, ["Active", "Temporary Leave", "Left", "Inactive"])
 
 		from erpnext.accounts.party import validate_ntn_cnic_strn
 		validate_ntn_cnic_strn(self.tax_id, self.tax_cnic)
@@ -414,6 +414,7 @@ def send_employee_birthday_notification():
 
 	if role_for_cc:
 		emails_of_role = set(get_info_based_on_role(role_for_cc, "email", ignore_permissions=True))
+		emails_of_role = set([email for email in emails_of_role if validate_email_address(email)])
 	else:
 		emails_of_role = set()
 
@@ -465,3 +466,75 @@ def get_employees_who_have_birthday_today(date_today=None):
 	""", [date_today.day, date_today.month], as_dict=1)
 
 	return employee_birthday_data
+
+
+def send_employee_anniversary_notification():
+	from frappe.desk.doctype.notification_log.notification_log import make_notification_logs_for_role
+	from frappe.core.doctype.role.role import get_info_based_on_role
+
+	if not cint(frappe.db.get_single_value("HR Settings", "send_anniversary_notification")):
+		return
+
+	anniversary_notification_template = frappe.db.get_single_value("HR Settings", "anniversary_notification_template")
+	if not anniversary_notification_template:
+		frappe.throw(_("Anniversary Notification Template is not set."))
+
+	anniversary_template = frappe.get_cached_doc("Email Template", anniversary_notification_template)
+
+	role_for_cc = frappe.db.get_single_value("HR Settings", "cc_anniversary_notification_to_role")
+
+	if role_for_cc:
+		emails_of_role = set(get_info_based_on_role(role_for_cc, "email", ignore_permissions=True))
+		emails_of_role = set([email for email in emails_of_role if validate_email_address(email)])
+	else:
+		emails_of_role = set()
+
+	date_today = getdate()
+	formatted_date = format_date(date_today)
+
+	employee_anniversary_data = get_employees_who_have_anniversary_today(date_today)
+	if not employee_anniversary_data:
+		return
+
+	notification_subject = "{0} employee(s) are celebrating their Work Anniversary today ({1})".format(len(employee_anniversary_data), formatted_date)
+	notification_content = ''
+
+	for idx, d in enumerate(employee_anniversary_data):
+		recipient = d.get("prefered_email") or d.get("company_email") or d.get("personal_email")
+		emails_of_role_formatted = list(emails_of_role - set(recipient))
+		anniversary_template_formatted = anniversary_template.get_formatted_email(d)
+
+		if recipient:
+			notification_content += "{0}. {1}: {2}\t-\t<span style='color: green;'>Mail Sent</span><br>".format(idx+1, d.name, d.employee_name)
+
+			frappe.sendmail(
+				recipients=recipient,
+				cc=emails_of_role_formatted,
+				subject=anniversary_template_formatted['subject'],
+				message=anniversary_template_formatted['message']
+			)
+
+		else:
+			notification_content += "{0}. {1}: {2}\t-\t<span style='color: red;'>Email Missing</span><br>".format(idx+1, d.name, d.employee_name)
+
+	notification_doc = {
+		"type": "Alert",
+		"subject": notification_subject,
+		"email_content": notification_content
+	}
+	make_notification_logs_for_role(notification_doc, "HR Manager")
+
+
+def get_employees_who_have_anniversary_today(date_today=None):
+	date_today = getdate(date_today)
+
+	employee_anniversary_data = frappe.db.sql("""
+		SELECT name, employee_name, prefered_email, personal_email, company_email
+		FROM tabEmployee
+		WHERE day(date_of_joining) = %s
+		AND month(date_of_joining) = %s
+		AND year(date_of_joining) < %s
+		AND status = 'Active'
+	""", [date_today.day, date_today.month, date_today.year], as_dict=1)
+
+	return employee_anniversary_data

@@ -572,6 +572,68 @@ $.extend(erpnext.utils, {
 				return frappe.run_serially(actions);
 			});
 		}
+	},
+
+	show_progress_for_qty(args) {
+		let bars = [];
+		let added_min = 0;
+
+		let description = args.description || [];
+		if (typeof description == "string") {
+			description = [description];
+		}
+
+		let total_qty = flt(args.total_qty) || 0;
+
+		for (let d of args.progress_bars) {
+			let title = d.title || "";
+
+			let completed_qty = flt(d.completed_qty) || 0;
+			if (completed_qty <= 0 && !d.add_min_width) {
+				continue;
+			}
+
+			let bar_width = flt(completed_qty / total_qty * 100, 2);
+			bar_width -= added_min;
+			added_min = 0;
+
+			bar_width = Math.max(bar_width, 0)
+			if (bar_width == 0 && d.add_min_width) {
+				added_min += flt(d.add_min_width);
+				bar_width += flt(d.add_min_width);
+			}
+
+			bars.push({
+				"title": strip_html(title),
+				"bar_width": bar_width,
+				"width": bar_width + "%",
+				"progress_class": d.progress_class || "progress-bar-success",
+			});
+
+			if (title) {
+				description.push(title);
+			}
+		}
+
+		if (args.frm) {
+			args.frm.dashboard.add_progress(args.title || "Progress", bars, description.join("<br>"));
+		} else if (args.as_html) {
+			let html_progress_bars = [];
+			for (let d of bars) {
+				html_progress_bars.push(`
+					<div class="progress-bar ${d.progress_class}" role="progressbar"
+						aria-valuenow="${d.bar_width}" aria-valuemin="0" aria-valuemax="100"
+						title="${d.title}"
+						style="width: ${d.width};">
+					</div>
+				`);
+			}
+			return `
+				<div class="progress">
+					${html_progress_bars.join("")}
+				</div>
+			`;
+		}
 	}
 });
 

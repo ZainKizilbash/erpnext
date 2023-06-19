@@ -513,6 +513,64 @@ class PackingSlip(StockController):
 					frappe.bold(frappe.format(unpacked_against_row.gross_weight))
 				))
 
+	def validate_work_orders(self):
+		for d in self.get("items"):
+			if d.get("work_order"):
+				work_order_details = frappe.db.get_value("Work Order", d.work_order, [
+					"name", "docstatus",
+					"production_item", "project", "customer",
+					"sales_order", "sales_order_item", "company"
+				], as_dict=1)
+
+				if not work_order_details:
+					frappe.throw(_("Row #{0}: Work Order {1} does not exist").format(d.idx, d.work_order))
+
+				if work_order_details.docstatus != 1:
+					frappe.throw(_("Row #{0}: Work Order {1} is not submitted").format(
+						d.idx, frappe.get_desk_link("Work Order", work_order_details.name))
+					)
+
+				if d.item_code != work_order_details.production_item:
+					frappe.throw(_("Row #{0}: Item Code does not match with Work Order {1}. Item Code must be {2}").format(
+						d.idx,
+						frappe.get_desk_link("Work Order", work_order_details.name),
+						frappe.bold(work_order_details.production_item)
+					))
+
+				if cstr(d.sales_order) != cstr(work_order_details.sales_order):
+					frappe.throw(_("Row #{0}: Sales Order does not match with Work Order {1}. Sales Order must be {2}").format(
+						d.idx,
+						frappe.get_desk_link("Work Order", work_order_details.name),
+						frappe.bold(work_order_details.sales_order)
+					))
+
+				if cstr(d.sales_order_item) != cstr(work_order_details.sales_order_item):
+					frappe.throw(_("Row #{0}: Sales Order row reference does not match with Work Order {1}").format(
+						d.idx,
+						frappe.get_desk_link("Work Order", work_order_details.name),
+					))
+
+				if self.company != work_order_details.company:
+					frappe.throw(_("Row #{0}: Company does not match with Work Order {1}. Company must be {2}").format(
+						d.idx,
+						frappe.get_desk_link("Work Order", work_order_details.name),
+						frappe.bold(work_order_details.company)
+					))
+
+				if cstr(self.project) != cstr(work_order_details.project):
+					frappe.throw(_("Row #{0}: {1} Project {2} does not match with Packing Slip").format(
+						d.idx,
+						frappe.get_desk_link("Work Order", work_order_details.name),
+						frappe.bold(work_order_details.project)
+					))
+
+				if self.customer and work_order_details.customer and self.customer != work_order_details.customer:
+					frappe.throw(_("Row #{0}: {1} Customer {2} does not match with Packing Slip").format(
+						d.idx,
+						frappe.get_desk_link("Work Order", work_order_details.name),
+						frappe.bold(work_order_details.customer)
+					))
+
 	def validate_customer(self):
 		if self.get("customer"):
 			validate_party_frozen_disabled("Customer", self.customer)
@@ -596,23 +654,32 @@ class PackingSlip(StockController):
 	def update_previous_doc_status(self):
 		sales_orders = set()
 		sales_order_row_names = set()
+		work_orders = set()
 		packing_slips = set()
 
 		for d in self.items:
-			# Get non nested sales orders from items
+			# Get non nested orders from items
 			if not d.get("source_packing_slip"):
 				if d.sales_order:
 					sales_orders.add(d.sales_order)
 				if d.sales_order_item:
 					sales_order_row_names.add(d.sales_order_item)
+				if d.work_order:
+					work_orders.add(d.work_order)
 
 			# Get nested from
-			if d.source_packing_slip:
+			if d.get("source_packing_slip"):
 				packing_slips.add(d.source_packing_slip)
+
+		for name in work_orders:
+			doc = frappe.get_doc("Work Order", name)
+			doc.set_packing_status(update=True)
+			doc.validate_overpacking()
+			doc.notify_update()
 
 		for name in sales_orders:
 			doc = frappe.get_doc("Sales Order", name)
-			doc.set_packing_status(update=True)
+			doc.set_production_packing_status(update=True)
 			doc.validate_packed_qty(from_doctype=self.doctype, row_names=sales_order_row_names)
 			doc.notify_update()
 
@@ -1040,6 +1107,7 @@ def make_target_packing_slip(source_name, target_doc=None):
 			"name": "packing_slip_item",
 			"sales_order": "sales_order",
 			"sales_order_item": "sales_order_item",
+			"work_order": "work_order",
 			"batch_no": "batch_no",
 			"serial_no": "serial_no",
 		},
@@ -1247,6 +1315,9 @@ def update_mapped_delivery_item(target, packing_slip):
 
 
 def postprocess_mapped_delivery_document(target):
+	for i, d in enumerate(target.get("items")):
+		d.idx = i + 1
+
 	target.run_method('set_missing_values')
 	target.run_method('set_po_nos')
 	target.run_method('calculate_taxes_and_totals')

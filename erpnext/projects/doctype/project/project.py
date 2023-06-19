@@ -274,13 +274,21 @@ class Project(StatusUpdater):
 		sales_data = self.get_project_sales_data(get_sales_invoice=True)
 		self.total_sales_amount = sales_data.totals.net_total
 		self.stock_sales_amount = sales_data.stock_items.net_total
+		self.part_sales_amount = sales_data.part_items.net_total
+		self.lubricant_sales_amount = sales_data.lubricant_items.net_total
 		self.service_sales_amount = sales_data.service_items.net_total
+		self.labour_sales_amount = sales_data.labour_items.net_total
+		self.sublet_sales_amount = sales_data.sublet_items.net_total
 
 		if update:
 			self.db_set({
 				'total_sales_amount': self.total_sales_amount,
 				'stock_sales_amount': self.stock_sales_amount,
+				'part_sales_amount': self.part_sales_amount,
+				'lubricant_sales_amount': self.lubricant_sales_amount,
 				'service_sales_amount': self.service_sales_amount,
+				'labour_sales_amount': self.labour_sales_amount,
+				'sublet_sales_amount': self.sublet_sales_amount,
 			}, None, update_modified=update_modified)
 
 	def set_timesheet_values(self, update=False, update_modified=False):
@@ -673,6 +681,7 @@ class Project(StatusUpdater):
 			if self.meta.has_field(k) and not self.get(k) or k in force_customer_fields:
 				self.set(k, v)
 
+	@frappe.whitelist()
 	def set_applies_to_details(self):
 		if self.get("applies_to_vehicle"):
 			self.applies_to_serial_no = self.applies_to_vehicle
