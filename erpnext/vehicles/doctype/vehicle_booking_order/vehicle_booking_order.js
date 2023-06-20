@@ -592,8 +592,8 @@ erpnext.vehicles.VehicleBookingOrder = class VehicleBookingOrder extends erpnext
 			}
 
 			if (this.can_notify("Vehicle Anniversary")) {
-				var congratulations_count = frappe.get_notification_count(this.frm, 'Vehicle Anniversary', 'SMS');
-				let label = __("Vehicle Anniversary{0}", [congratulations_count ? " (Resend)" : ""]);
+				var anniversary_count = frappe.get_notification_count(this.frm, 'Vehicle Anniversary', 'SMS');
+				let label = __("Vehicle Anniversary{0}", [anniversary_count ? " (Resend)" : ""]);
 				this.frm.add_custom_button(label, () => this.send_sms('Vehicle Anniversary'),
 					__("Notify"));
 			}

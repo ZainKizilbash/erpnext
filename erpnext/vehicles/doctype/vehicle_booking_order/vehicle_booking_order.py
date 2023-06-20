@@ -1065,7 +1065,6 @@ def update_allocation_booked(vehicle_allocation, is_booked, is_cancelled):
 		notify=True)
 
 
-@frappe.whitelist()
 def send_vehicle_anniversary_notifications():
 	if not automated_vehicle_anniversary_enabled():
 		return
