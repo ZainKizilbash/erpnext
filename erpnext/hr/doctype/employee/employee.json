@@ -760,7 +760,7 @@
    "fieldname": "attendance_device_id",
    "fieldtype": "Data",
    "in_standard_filter": 1,
-   "label": "Attendance Device ID (Biometric/RF tag ID)",
+   "label": "Attendance Device User ID",
    "no_copy": 1,
    "unique": 1
   },
@@ -886,7 +886,7 @@
  "idx": 24,
  "image_field": "image",
  "links": [],
- "modified": "2023-06-12 15:49:18.298146",
+ "modified": "2023-06-21 00:28:01.131618",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Employee",

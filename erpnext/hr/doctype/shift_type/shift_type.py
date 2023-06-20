@@ -42,7 +42,8 @@ class ShiftType(Document):
 			'attendance': ('is', 'not set'),
 			'time': ('>=', self.process_attendance_after),
 			'shift_actual_end': ('<', self.last_sync_of_checkin),
-			'shift': self.name
+			'shift': self.name,
+			'employee': ('is', 'set')
 		}
 
 		logs = frappe.get_all('Employee Checkin', fields="*", filters=filters, order_by="employee, time")
@@ -81,7 +82,8 @@ class ShiftType(Document):
 			'attendance': ('is', 'not set'),
 			'time': ('>=', self.process_attendance_after),
 			'shift_actual_end': ('<', self.last_sync_of_checkin),
-			'shift': ('is', 'set')
+			'shift': ('is', 'set'),
+			'employee': ('is', 'set'),
 		}
 
 		logs = frappe.get_all('Employee Checkin', fields="name", filters=filters)

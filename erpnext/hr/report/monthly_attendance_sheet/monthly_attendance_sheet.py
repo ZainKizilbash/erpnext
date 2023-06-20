@@ -228,6 +228,7 @@ def get_employee_checkin_map(filters):
 		where date(shift_start) between %(from_date)s and %(to_date)s
 			and ifnull(attendance, '') = ''
 			and ifnull(shift, '') != ''
+			and ifnull(employee, '') != ''
 			{0}
 		order by time
 	""".format(conditions), filters, as_dict=1)

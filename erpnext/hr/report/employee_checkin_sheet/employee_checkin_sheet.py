@@ -291,7 +291,10 @@ def get_employee_checkin_map(filters):
 	employee_checkins = frappe.db.sql("""
 		select *
 		from `tabEmployee Checkin`
-		where (date(shift_start) between %(from_date)s and %(to_date)s or date(time) between %(from_date)s and %(to_date)s)
+		where ifnull(employee, '') != '' and (
+			date(shift_start) between %(from_date)s and %(to_date)s
+			or date(time) between %(from_date)s and %(to_date)s
+		)
 			{0}
 		order by time
 	""".format(employee_condition), filters, as_dict=1)

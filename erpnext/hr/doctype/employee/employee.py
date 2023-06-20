@@ -56,8 +56,7 @@ class Employee(NestedSet):
 		else:
 			existing_user_id = frappe.db.get_value("Employee", self.name, "user_id")
 			if existing_user_id:
-				remove_user_permission(
-					"Employee", self.name, existing_user_id)
+				remove_user_permission("Employee", self.name, existing_user_id)
 
 	def set_employee_name(self):
 		self.first_name = clean_whitespace(self.first_name)
@@ -78,13 +77,13 @@ class Employee(NestedSet):
 
 	def on_update(self):
 		self.update_nsm_model()
-		if self.user_id:
-			self.update_user()
-			self.update_user_permissions()
+		self.update_user()
+		self.update_user_permissions()
+		self.update_employee_checkins()
 		self.reset_employee_emails_cache()
 
 	def update_user_permissions(self):
-		if not self.create_user_permission:
+		if not self.user_id or not self.create_user_permission:
 			return
 		if not has_permission('User Permission', ptype='write', raise_exception=False):
 			return
@@ -106,6 +105,9 @@ class Employee(NestedSet):
 			add_user_permission("Company", self.company, self.user_id)
 
 	def update_user(self):
+		if not self.user_id:
+			return
+
 		# add employee role if missing
 		user = frappe.get_doc("User", self.user_id)
 		user.flags.ignore_permissions = True
@@ -145,6 +147,20 @@ class Employee(NestedSet):
 					pass
 
 		user.save()
+
+	def update_employee_checkins(self):
+		from erpnext.hr.doctype.employee_checkin.employee_checkin import update_employee_for_attendance_device_id
+
+		before_save = self.get_doc_before_save()
+		if not before_save:
+			return
+		if cstr(self.attendance_device_id) == cstr(before_save.attendance_device_id):
+			return
+
+		if before_save.attendance_device_id:
+			update_employee_for_attendance_device_id(before_save.attendance_device_id, None)
+		if self.attendance_device_id:
+			update_employee_for_attendance_device_id(self.attendance_device_id, self.name)
 
 	def validate_date(self):
 		date_of_joining = self.date_of_joining if self.date_of_joining else getdate(self.creation)
