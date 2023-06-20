@@ -4,20 +4,16 @@
 	padding-top: 1px !important;
 	padding-bottom: 1px !important;
 }
-</style>
+.attendance-summary-table {
+	padding-left: 50px;
+	padding-right: 50px;
+}
 
-{% var attendance_color_map = {
-	'Present': 'green',
-	'Holiday': 'color: black; font-weight: bold;',
-	'Half Day': 'orange',
-	'On Leave': 'blue',
-	'Absent': 'red'
-} %}
+</style>
 
 <h2 class="text-center">
 	{%= __("Cumulative Time Sheet") %}
 </h2>
-
 <h4 class="text-center">
 	{% if (filters.from_date == filters.to_date) { %}
     	{%= moment(filters.from_date).format('MMMM YYYY') %}
@@ -46,20 +42,20 @@
 <table class="table table-bordered">
 	<thead>
 		<tr>
-			<th class="text-left" width="12%" rowspan="2">{%= __("Date") %}</th>
-			<th class="text-left" width="11%" rowspan="2">{%= __("Day") %}</th>
-			<th class="text-left" colspan="2">{%= __("Shift") %}</th>
-			<th class="text-left" colspan="2">{%= __("Employee Checkin") %}</th>
-			<th class="text-right" width="7%" rowspan="2">{%= __("Hours") %}</th>
-			<th class="text-left" width="10%" rowspan="2">{%= __("Status") %}</th>
-			<th class="text-left" width="9%" rowspan="2">{%= __("Late Hours") %}</th>
-			<th class="text-left" width="8%" rowspan="2">{%= __("Early Hours") %}</th>
+			<th class="text-center" width="12%" rowspan="2">{%= __("Date") %}</th>
+			<th class="text-center" width="11%" rowspan="2">{%= __("Day") %}</th>
+			<th class="text-center" colspan="2">{%= __("Shift") %}</th>
+			<th class="text-center" colspan="2">{%= __("Employee Checkin") %}</th>
+			<th class="text-center" width="7%" rowspan="2">{%= __("Hours") %}</th>
+			<th class="text-center" width="10%" rowspan="2">{%= __("Status") %}</th>
+			<th class="text-center" width="9%" rowspan="2">{%= __("Late Hours") %}</th>
+			<th class="text-center" width="8%" rowspan="2">{%= __("Early Hours") %}</th>
 		</tr>
 		<tr>
-			<th class="text-left" width="9%">{%= __("Start") %}</th>
-			<th class="text-left" width="9%">{%= __("End") %}</th>
-			<th class="text-left" width="12%">{%= __("Time In") %}</th>
-			<th class="text-left" width="13%">{%= __("Time Out") %}</th>
+			<th class="text-center" width="9%">{%= __("Start") %}</th>
+			<th class="text-center" width="9%">{%= __("End") %}</th>
+			<th class="text-center" width="12%">{%= __("Time In") %}</th>
+			<th class="text-center" width="13%">{%= __("Time Out") %}</th>
 		</tr>
 	</thead>
 	<tbody>
@@ -67,36 +63,89 @@
 			<tr>
 				<td class="text-left">{%= frappe.datetime.str_to_user(data[i].date) %}</td>
 				<td class="text-left">{%= data[i].day %}</td>
-				<td class="text-left">{%= data[i].shift_start ? moment(data[i].shift_start, 'HH:mm:ss').format('h:mm A') : "" %}</td>
-				<td class="text-left">{%= data[i].shift_end ? moment(data[i].shift_end, 'HH:mm:ss').format('h:mm A') : "" %}</td>
-				<td class="text-left">{%= data[i].checkin_time_1 %}</td>
-				<td class="text-left">{%= data[i].checkin_time_2%}</td>
-				<td class="text-right">{%= data[i].working_hours %}</td>
-				<td class="text-left" style="color: {%= attendance_color_map[data[i].attendance_status] + ' !important' %};">
+				<td class="text-center">{%= data[i].shift_start ? moment(data[i].shift_start, 'HH:mm:ss').format('h:mm A') : "" %}</td>
+				<td class="text-center">{%= data[i].shift_end ? moment(data[i].shift_end, 'HH:mm:ss').format('h:mm A') : "" %}</td>
+				<td class="text-center">{%= data[i].checkin_time_1 %}</td>
+				<td class="text-center">{%= data[i].checkin_time_2%}</td>
+				<td class="text-center">{%= data[i].working_hours %}</td>
+				<td class="text-center" style="color: {%= [data[i].attendance_color] + ' !important' %}; font-weight: {%= data[i].attendance_status === 'Holiday' ? 'bold' : 'normal' %};">
 					{%= data[i].attendance_status ? data[i].attendance_status : '' %}
 				</td>
-				<td class="text-left">{%= data[i].late_entry %}</td>
-				<td class="text-left">{%= data[i].early_exit %}</td>
+				<td class="text-center">{%= data[i].late_entry_hours ? flt(data[i].late_entry_hours, 2) : '' %}</td>
+				<td class="text-center">{%= data[i].early_exit_hours ? flt(data[i].early_exit_hours, 2) : '' %}</td>
 			</tr>
 		{% } %}
 	</tbody>
 </table>
-<div>
-	<h2 class="text-center">{%= __("Attendance Summary") %}</h2>
-	<div>
-		<span><b>Total Working Hours:</b> {%= filters.employee_name %} </span>
-		<span><b>Total Present:</b> {%= filters.employee_name %} </span>
-	</div>
-	<div>
-		<span><b>Total Late Hours:</b> {%= filters.employee_name %} </span>
-		<span><b>Total Absent:</b> {%= filters.employee_name %} </span>
-	</div>
-	<div>
-		<span><b>Total Early Hours:</b> {%= filters.employee_name %} </span>
-		<span><b>Total Late Holidays:</b> {%= filters.employee_name %} </span>
-	</div>
-	<div>
-		<span><b>&nbsp;</b>&nbsp;</span>
-		<span><b>Net Present Day + Holidays:</b> {%= filters.employee_name %} </span>
-	</div>
+
+{% var totals = columns[0].totals %}
+{% if (totals) { %}
+
+<h2 class="text-center">Attendance Summary</h2>
+<div class="clearfix attendance-summary-table">
+	<table class="pull-left" style="width: 35%">
+		<tbody>
+			<tr>
+				<td>Total Present:</td>
+				<td class="text-right">{%= totals.total_present %}</td>
+			</tr>
+			<tr>
+				<td>Total Half Days:</td>
+				<td class="text-right">{%= totals.total_half_day %}</td>
+			</tr>
+			<tr>
+				<td>Total Holidays:</td>
+				<td class="text-right">{%= totals.total_holiday %}</td>
+			</tr>
+			<tr>
+				<td>Total Leaves:</td>
+				<td class="text-right">{%= totals.total_leave %}</td>
+			</tr>
+			<tr>
+				<td><b>Net Present Days:</b></td>
+				<td class="text-right"><b>{%= totals.total_net_present %}</b></td>
+			</tr>
+		</tbody>
+	</table>
+	<table class="pull-left" style="width: 30%;">
+		<tbody>
+			<tr>
+				<td>Total Absent:</td>
+				<td class="text-right">{%= totals.total_absent %}</td>
+			</tr>
+			<tr>
+				<td>Late Entries:</td>
+				<td class="text-right">{%= totals.total_late_entry %}</td>
+			</tr>
+			<tr>
+				<td>Early Exits:</td>
+				<td class="text-right">{%= totals.total_early_exit %}</td>
+			</tr>
+			<tr>
+				<td>Late Deduction:</td>
+				<td class="text-right">{%= totals.total_late_deduction %}</td>
+			</tr>
+			<tr>
+				<td><b>Total Deduction:</b></td>
+				<td class="text-right"><b>{%= totals.total_deduction %}</b></td>
+			</tr>
+		</tbody>
+	</table>
+	<table class="pull-right" style="width: 35%;">
+		<tbody>
+			<tr>
+				<td>Total Working Hours:</td>
+				<td class="text-right">{%= totals.total_working_hours %}</td>
+			</tr>
+			<tr>
+				<td>Total Late Entry Hours:</td>
+			<td class="text-right">{%= totals.total_late_entry_hours %}</td>
+			</tr>
+			<tr>
+				<td>Total Early Exit Hours:</td>
+				<td class="text-right">{%= totals.total_early_exit_hours %}</td>
+			</tr>
+		</tbody>
+	</table>
 </div>
+{% } %}
