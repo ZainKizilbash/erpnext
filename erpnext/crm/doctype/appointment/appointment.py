@@ -838,11 +838,17 @@ def send_appointment_reminder_notifications():
 	if now_dt < reminder_dt:
 		return
 
+	notification_last_sent_date = frappe.db.get_global("appointment_reminder_notification_last_sent_date")
+	if notification_last_sent_date and getdate(notification_last_sent_date) >= reminder_date:
+		return
+
 	appointments_to_remind = get_appointments_for_reminder_notification(reminder_date)
 
 	for name in appointments_to_remind:
 		doc = frappe.get_doc("Appointment", name)
 		doc.send_appointment_reminder_notification()
+
+	frappe.db.set_global("appointment_reminder_notification_last_sent_date", reminder_date)
 
 
 def automated_reminder_enabled():
