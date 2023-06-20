@@ -12,7 +12,7 @@
 </style>
 
 <h2 class="text-center">
-	{%= __("Cumulative Time Sheet") %}
+	{%= __("Employee Checkin Sheet") %}
 </h2>
 <h4 class="text-center">
 	{% if (filters.from_date == filters.to_date) { %}
@@ -30,9 +30,11 @@
 
 <div class="clearfix">
 	<div class="pull-left" style="width: 50%;">
-		<div><b>Employee Name:</b> {%= filters.employee_name %} </div>
-		<div><b>Designation:</b> {%= filters.designation %} </div>
-		<div><b>Department:</b> {%= filters.department %} </div>
+	{% if (filters.employee) { %}
+		<div><b>Employee Name:</b> {%= filters.employee_name %}</div>
+		<div><b>Designation:</b> {%= filters.designation %}</div>
+		<div><b>Department:</b> {%= filters.department %}</div>
+	{% } %}
 	</div>
 	<div class="pull-right text-right" style="width: 50%;">
 		<div><b>From Date:</b> {%= moment(filters.from_date).format('Do MMM, YYYY') %} </div>
@@ -44,9 +46,12 @@
 		<tr>
 			<th class="text-center" width="12%" rowspan="2">{%= __("Date") %}</th>
 			<th class="text-center" width="11%" rowspan="2">{%= __("Day") %}</th>
+			{% if (!filters.employee) { %}
+			<th class="text-center" width="11%" rowspan="2">{%= __("Employee") %}</th>
+			{% } %}
 			<th class="text-center" colspan="2">{%= __("Shift") %}</th>
 			<th class="text-center" colspan="2">{%= __("Checkins") %}</th>
-			<th class="text-center" width="7%" rowspan="2">{%= __("Hours") %}</th>
+			<th class="text-center" width="7%" rowspan="2">{%= __("Working Hours") %}</th>
 			<th class="text-center" width="10%" rowspan="2">{%= __("Status") %}</th>
 			<th class="text-center" width="9%" rowspan="2">{%= __("Late Hours") %}</th>
 			<th class="text-center" width="8%" rowspan="2">{%= __("Early Hours") %}</th>
@@ -63,6 +68,9 @@
 			<tr>
 				<td class="text-center">{%= frappe.datetime.str_to_user(data[i].date) %}</td>
 				<td class="text-left">{%= data[i].day %}</td>
+				{% if (!filters.employee) { %}
+				<td class="text-left">{%= data[i].employee_name %}</td>
+				{% } %}
 				<td class="text-center">{%= data[i].shift_start ? moment(data[i].shift_start, 'HH:mm:ss').format('h:mm A') : "" %}</td>
 				<td class="text-center">{%= data[i].shift_end ? moment(data[i].shift_end, 'HH:mm:ss').format('h:mm A') : "" %}</td>
 				<td class="text-center">{%= data[i].time_in %}</td>

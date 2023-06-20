@@ -32,16 +32,10 @@ frappe.query_reports["Employee Checkin Sheet"] = {
 			fieldtype: "Link",
 			options: "Employee",
 			on_change: () => {
-				var employee = frappe.query_report.get_filter_value('employee');
+				let employee = frappe.query_report.get_filter_value('employee');
 				if (employee) {
-					frappe.db.get_value('Employee', employee, "employee_name", function(value) {
-						frappe.query_report.set_filter_value('employee_name', value["employee_name"]);
-					});
-					frappe.db.get_value('Employee', employee, "designation", function(value) {
-						frappe.query_report.set_filter_value('designation', value["designation"]);
-					});
-					frappe.db.get_value('Employee', employee, "department", function(value) {
-						frappe.query_report.set_filter_value('department', value["department"]);
+					frappe.db.get_value('Employee', employee, ["employee_name", "designation", "department"], function(value) {
+						frappe.query_report.set_filter_value(value);
 					});
 				} else {
 					frappe.query_report.set_filter_value('employee_name', "");
