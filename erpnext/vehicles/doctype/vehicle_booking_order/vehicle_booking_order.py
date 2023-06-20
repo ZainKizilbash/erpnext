@@ -750,11 +750,7 @@ class VehicleBookingOrder(VehicleBookingController):
 		enqueue_template_sms(self, notification_type="Booking Cancellation")
 
 	def send_vehicle_anniversary_notification(self):
-		args = {
-			'customer_name': self.transfer_customer_name if self.transfer_customer else self.customer_name
-		}
-		context = {'args': args}
-		enqueue_template_sms(self, notification_type="Vehicle Anniversary", context=context, allow_if_already_sent=1)
+		enqueue_template_sms(self, notification_type="Vehicle Anniversary", allow_if_already_sent=1)
 
 
 @frappe.whitelist()
@@ -1081,7 +1077,7 @@ def send_vehicle_anniversary_notifications():
 	if now_dt < reminder_dt:
 		return
 
-	notification_last_sent_date = frappe.db.get_default("vehicle_anniversary_notification_last_sent_date")
+	notification_last_sent_date = frappe.db.get_global("vehicle_anniversary_notification_last_sent_date")
 	if notification_last_sent_date and getdate(notification_last_sent_date) >= date_today:
 		return
 
@@ -1091,7 +1087,7 @@ def send_vehicle_anniversary_notifications():
 		doc = frappe.get_doc("Vehicle Booking Order", d.name)
 		doc.send_vehicle_anniversary_notification()
 
-	frappe.db.set_default("vehicle_anniversary_notification_last_sent_date", date_today)
+	frappe.db.set_global("vehicle_anniversary_notification_last_sent_date", date_today)
 
 def automated_vehicle_anniversary_enabled():
 	from frappe.core.doctype.sms_settings.sms_settings import is_automated_sms_enabled
@@ -1127,8 +1123,8 @@ def get_bookings_for_vehicle_anniversary_notification(date_today=None):
 			AND day(vbo.vehicle_delivered_date) = %(day)s
 			AND month(vbo.vehicle_delivered_date) = %(month)s
 			AND year(vbo.vehicle_delivered_date) < %(year)s
-			AND DATE(nc.last_scheduled_dt) != %(date_today)s
-			AND DATE(nc.last_sent_dt) != %(date_today)s
+			AND (nc.last_scheduled_dt is null OR DATE(nc.last_scheduled_dt) != %(date_today)s)
+			AND (nc.last_sent_dt is null OR DATE(nc.last_sent_dt) != %(date_today)s)
 	""", {
 		"day": date_today.day,
 		"month": date_today.month,
