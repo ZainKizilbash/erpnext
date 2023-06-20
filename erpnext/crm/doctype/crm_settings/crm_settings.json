@@ -6,8 +6,8 @@
  "engine": "InnoDB",
  "field_order": [
   "campaign_naming_by",
-  "column_break_5",
   "opportunity_contact_no_mandatory",
+  "column_break_5",
   "column_break_3",
   "maintenance_opportunity_reminder_days",
   "default_opportunity_type_for_schedule",
@@ -17,9 +17,8 @@
   "opportunity_auto_lost_reason",
   "auto_mark_opportunity_as_lost",
   "column_break_q3twi",
-  "maintenance_reminder_days_before_schedule",
-  "maintenance_reminder_time",
-  "auto_reminder_for_maintenance_schedule"
+  "maintenance_reminder_days_before",
+  "maintenance_reminder_time"
  ],
  "fields": [
   {
@@ -90,27 +89,19 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "auto_reminder_for_maintenance_schedule",
-   "fieldname": "maintenance_reminder_days_before_schedule",
-   "fieldtype": "Int",
-   "label": "Maintenance Reminder Days Before Schedule"
-  },
-  {
-   "default": "0",
-   "fieldname": "auto_reminder_for_maintenance_schedule",
-   "fieldtype": "Check",
-   "label": "Auto Reminder for Maintenance Schedule"
-  },
-  {
-   "depends_on": "auto_reminder_for_maintenance_schedule",
    "fieldname": "maintenance_reminder_time",
    "fieldtype": "Time",
    "label": "Maintenance Reminder Notification Time of Day"
+  },
+  {
+   "fieldname": "maintenance_reminder_days_before",
+   "fieldtype": "Int",
+   "label": "Maintenance Reminder Days Before Schedule"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2023-06-15 15:13:02.524699",
+ "modified": "2023-06-19 18:01:31.881602",
  "modified_by": "Administrator",
  "module": "CRM",
  "name": "CRM Settings",

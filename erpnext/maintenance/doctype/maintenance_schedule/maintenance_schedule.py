@@ -330,10 +330,7 @@ def create_maintenance_opportunity(maintenance_schedule, row):
 
 
 def send_maintenance_schedule_reminder_notifications():
-	if not automated_reminder_enabled():
-		return
-
-	if not cint(frappe.db.get_single_value("CRM Settings", "auto_reminder_for_maintenance_schedule")):
+	if not automated_maintenance_reminder_enabled():
 		return
 
 	now_dt = now_datetime()
@@ -342,26 +339,25 @@ def send_maintenance_schedule_reminder_notifications():
 	if now_dt < reminder_dt:
 		return
 
-	notification_last_sent_date = frappe.db.get_default("maintenance_schedule_notification_last_sent_date")
-
+	notification_last_sent_date = frappe.db.get_global("maintenance_schedule_notification_last_sent_date")
 	if notification_last_sent_date and getdate(notification_last_sent_date) >= reminder_date:
 		return
 
-	remind_before_days = cint(frappe.db.get_single_value("CRM Settings", "maintenance_reminder_days_before_schedule"))
-
-	if remind_before_days < 1:
+	remind_days_before = cint(frappe.db.get_single_value("CRM Settings", "maintenance_reminder_days_before"))
+	if remind_days_before < 1:
 		return
 
-	target_date = add_days(getdate(), remind_before_days)
-	schedule_to_remind = get_schedules_to_remind(target_date)
+	target_date = add_days(getdate(), remind_days_before)
+	schedules_to_remind = get_maintenance_schedules_for_reminder_notification(target_date)
 
-	for d in schedule_to_remind:
+	for d in schedules_to_remind:
 		doc = frappe.get_doc("Maintenance Schedule", d.ms_name)
-		doc.send_maintenance_schedule_reminder_notification(d.msd_name)
+		doc.send_maintenance_schedule_reminder_notification(d.row_name)
 
-	frappe.db.set_default("maintenance_schedule_notification_last_sent_date", reminder_date)
+	frappe.db.set_global("maintenance_schedule_notification_last_sent_date", reminder_date)
 
-def get_schedules_to_remind(target_date):
+
+def get_maintenance_schedules_for_reminder_notification(target_date):
 	schedule_to_remind = frappe.db.sql("""
 		SELECT ms.name AS ms_name, msd.name AS row_name, msd.scheduled_date
 		FROM `tabMaintenance Schedule` ms
@@ -370,22 +366,22 @@ def get_schedules_to_remind(target_date):
 			ON nc.reference_doctype =  'Maintenance Schedule' AND nc.reference_name = ms.name
 			And nc.child_doctype = 'Maintenance Schedule Detail' AND nc.child_name = msd.name
 		WHERE ms.status = 'Active'
-			AND msd.scheduled_date <= %(target_date)s
+			AND msd.scheduled_date = %(target_date)s
 			AND nc.last_scheduled_dt is NULL
-			AND nc.last_sent_dt is NULL
-		""", {
-		'target_date': target_date
-	}, as_dict=1)
+			AND (nc.last_sent_dt is null or DATE(nc.last_sent_dt) != %(target_date)s)
+	""", {'target_date': target_date}, as_dict=1)
+
 	return schedule_to_remind
 
-def automated_reminder_enabled():
+def automated_maintenance_reminder_enabled():
 	from frappe.core.doctype.sms_settings.sms_settings import is_automated_sms_enabled
 	from frappe.core.doctype.sms_template.sms_template import has_automated_sms_template
 
-	if is_automated_sms_enabled() and has_automated_sms_template("Maintenance Schedule", "Maintenance Schedule Reminder"):
+	if is_automated_sms_enabled() and has_automated_sms_template("Maintenance Schedule", "Maintenance Reminder"):
 		return True
 	else:
 		return False
+
 
 def get_maintenance_reminders_scheduled_time(reminder_date=None):
 	crm_settings = frappe.get_cached_doc("CRM Settings", None)

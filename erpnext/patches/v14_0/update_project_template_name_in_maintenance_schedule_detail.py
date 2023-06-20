@@ -3,5 +3,8 @@ import frappe
 def execute():
 	frappe.reload_doc("maintenance", "doctype", "maintenance_schedule_detail")
 
-	frappe.db.sql("""update `tabMaintenance Schedule Detail` as msd  set msd.project_template_name = \
-		( select pt.project_template_name from `tabProject Template` as pt  where pt.name = msd.project_template)""")
+	frappe.db.sql("""
+		UPDATE `tabMaintenance Schedule Detail` AS msd
+		INNER JOIN `tabProject Template` AS pt ON pt.name = msd.project_template
+		SET msd.project_template_name = pt.project_template_name
+	""")
