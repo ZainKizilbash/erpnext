@@ -85,6 +85,11 @@ def execute(filters=None):
 							else:
 								row[checkin_time_fieldname] = format_time(checkin_details.time)
 
+							if i == 0:
+								row['time_in'] = row[checkin_time_fieldname]
+							elif i == len(checkins) - 1:
+								row['time_out'] = row[checkin_time_fieldname]
+
 						if attendance_details:
 							row['attendance'] = attendance_details.name
 							row['attendance_status'] = attendance_details.status
