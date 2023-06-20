@@ -1016,23 +1016,20 @@ def update_overdue_status():
 
 
 def send_payment_overdue_notifications():
-	from frappe.core.doctype.sms_settings.sms_settings import is_automated_sms_enabled
-	from frappe.core.doctype.sms_template.sms_template import has_automated_sms_template
-
 	if 'Vehicles' not in frappe.get_active_domains():
 		return
-	if not is_automated_sms_enabled():
-		return
-	if not has_automated_sms_template("Vehicle Booking Order", "Balance Payment Due"):
+	if not automated_payment_overdue_notification_enabled():
 		return
 
-	today_date = getdate(today())
+	now_dt = now_datetime()
+	reminder_date = getdate(now_dt)
+	reminder_dt = get_payment_overdue_reminder_scheduled_time(reminder_date)
+	if now_dt < reminder_dt:
+		return
 
-	payment_due_notification_time = frappe.get_cached_value("Vehicles Settings", None, "payment_due_notification_time")
-	if payment_due_notification_time:
-		run_after = combine_datetime(today_date, payment_due_notification_time)
-		if now_datetime() < run_after:
-			return
+	notification_last_sent_date = frappe.db.get_global("vehicle_booking_payment_overdue_notification_last_sent_date")
+	if notification_last_sent_date and getdate(notification_last_sent_date) >= reminder_date:
+		return
 
 	overdue_bookings_to_notify = frappe.db.sql_list("""
 		select vbo.name
@@ -1046,11 +1043,33 @@ def send_payment_overdue_notifications():
 			and vbo.due_date > vbo.transaction_date
 			and n.last_scheduled_dt is null
 			and n.last_sent_dt is null
-	""", today_date)
+	""", reminder_date)
 
 	for name in overdue_bookings_to_notify:
 		doc = frappe.get_doc("Vehicle Booking Order", name)
 		doc.send_notification_on_payment_due()
+
+	frappe.db.set_global("vehicle_booking_payment_overdue_notification_last_sent_date", reminder_date)
+
+
+def get_payment_overdue_reminder_scheduled_time(reminder_date=None):
+	vehicles_settings = frappe.get_cached_doc("Vehicles Settings", None)\
+
+	reminder_date = getdate(reminder_date)
+	reminder_time = vehicles_settings.payment_due_notification_time or get_time("00:00:00")
+	reminder_dt = combine_datetime(reminder_date, reminder_time)
+
+	return reminder_dt
+
+
+def automated_payment_overdue_notification_enabled():
+	from frappe.core.doctype.sms_settings.sms_settings import is_automated_sms_enabled
+	from frappe.core.doctype.sms_template.sms_template import has_automated_sms_template
+
+	if is_automated_sms_enabled() and has_automated_sms_template("Vehicle Booking Order", "Balance Payment Due"):
+		return True
+	else:
+		return False
 
 
 def update_vehicle_booked(vehicle, is_booked):
@@ -1066,12 +1085,13 @@ def update_allocation_booked(vehicle_allocation, is_booked, is_cancelled):
 
 
 def send_vehicle_anniversary_notifications():
-	if not automated_vehicle_anniversary_enabled():
+	if 'Vehicles' not in frappe.get_active_domains():
+		return
+	if not automated_vehicle_anniversary_notification_enabled():
 		return
 
 	now_dt = now_datetime()
 	date_today = getdate(now_dt)
-
 	reminder_dt = get_vehicle_anniversary_scheduled_time(date_today)
 	if now_dt < reminder_dt:
 		return
@@ -1088,7 +1108,8 @@ def send_vehicle_anniversary_notifications():
 
 	frappe.db.set_global("vehicle_anniversary_notification_last_sent_date", date_today)
 
-def automated_vehicle_anniversary_enabled():
+
+def automated_vehicle_anniversary_notification_enabled():
 	from frappe.core.doctype.sms_settings.sms_settings import is_automated_sms_enabled
 	from frappe.core.doctype.sms_template.sms_template import has_automated_sms_template
 
@@ -1096,6 +1117,7 @@ def automated_vehicle_anniversary_enabled():
 		return True
 	else:
 		return False
+
 
 def get_vehicle_anniversary_scheduled_time(date_today=None):
 	vehicle_settings = frappe.get_cached_doc("Vehicles Settings", None)
@@ -1105,6 +1127,7 @@ def get_vehicle_anniversary_scheduled_time(date_today=None):
 	reminder_dt = combine_datetime(reminder_date, reminder_time)
 
 	return reminder_dt
+
 
 def get_bookings_for_vehicle_anniversary_notification(date_today=None):
 	date_today = getdate(date_today)

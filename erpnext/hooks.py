@@ -275,8 +275,8 @@ scheduler_events = {
 	"all": [
 		"erpnext.projects.doctype.project.project.project_status_update_reminder",
 		"erpnext.healthcare.doctype.patient_appointment.patient_appointment.set_appointment_reminder",
-		"erpnext.vehicles.doctype.vehicle_booking_order.vehicle_booking_order.send_payment_overdue_notifications",
 		"erpnext.crm.doctype.appointment.appointment.send_appointment_reminder_notifications",
+		"erpnext.vehicles.doctype.vehicle_booking_order.vehicle_booking_order.send_payment_overdue_notifications",
 		"erpnext.vehicles.doctype.vehicle_booking_order.vehicle_booking_order.send_vehicle_anniversary_notifications",
 	],
 	"hourly": [
