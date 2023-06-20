@@ -85,6 +85,11 @@ def execute(filters=None):
 							else:
 								row[checkin_time_fieldname] = format_time(checkin_details.time)
 
+							if i == 0:
+								row['time_in'] = row[checkin_time_fieldname]
+							elif i == len(checkins) - 1:
+								row['time_out'] = row[checkin_time_fieldname]
+
 						if attendance_details:
 							row['attendance'] = attendance_details.name
 							row['attendance_status'] = attendance_details.status
@@ -257,7 +262,7 @@ def calculate_totals(employee, data, filters):
 			totals['total_deduction'] += late_deduction_leave_count
 			totals['total_lwp'] += late_deduction_leave_count
 
-	totals['total_net_present'] = totals['total_present'] + totals['total_holiday']
+	totals['total_net_present'] = totals['total_present'] + totals['total_holiday'] + totals['total_half_day'] * 0.5
 	totals['total_working_hours'] = flt(totals['total_working_hours'], 1)
 	totals['total_late_entry_hours'] = flt(totals['total_late_entry_hours'], 1)
 	totals['total_early_exit_hours'] = flt(totals['total_early_exit_hours'], 1)
