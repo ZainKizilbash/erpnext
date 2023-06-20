@@ -74,8 +74,7 @@ class WorkOrder(StatusUpdater):
 
 	def on_cancel(self):
 		self.validate_cancel()
-		self.db_set("status", "Cancelled")
-
+		self.update_status_on_cancel()
 		self.update_sales_order_status()
 		self.update_material_request_ordered_qty()
 		self.update_production_plan_ordered_qty()
@@ -495,15 +494,18 @@ class WorkOrder(StatusUpdater):
 
 		self.per_packed = flt(self.packed_qty / self.qty * 100, 6)
 
-		packed_qty = flt(self.packed_qty, self.precision("qty"))
-		min_qty = flt(self.get_min_qty(self.produced_qty), self.precision("qty"))
+		if self.docstatus == 1:
+			packed_qty = flt(self.packed_qty, self.precision("qty"))
+			min_qty = flt(self.get_min_qty(self.produced_qty), self.precision("qty"))
 
-		if self.packed_qty and (packed_qty >= min_qty or self.status == "Stopped"):
-			self.packing_status = "Packed"
-		elif self.status == "Stopped" or not self.packing_slip_required or not self.produced_qty:
-			self.packing_status = "Not Applicable"
+			if self.packed_qty and (packed_qty >= min_qty or self.status == "Stopped"):
+				self.packing_status = "Packed"
+			elif self.status == "Stopped" or not self.packing_slip_required or not self.produced_qty:
+				self.packing_status = "Not Applicable"
+			else:
+				self.packing_status = "To Pack"
 		else:
-			self.packing_status = "To Pack"
+			self.packing_status = "Not Applicable"
 
 		if update:
 			self.db_set({
@@ -675,6 +677,13 @@ class WorkOrder(StatusUpdater):
 			frappe.throw(_("Cannot cancel because submitted Stock Entry {0} exists").format(
 				frappe.utils.get_link_to_form('Stock Entry', stock_entry[0][0]))
 			)
+
+	def update_status_on_cancel(self):
+		self.db_set({
+			"status": "Cancelled",
+			"production_status": "Not Applicable",
+			"packing_status": "Not Applicable",
+		})
 
 	def get_holidays(self, workstation):
 		holiday_list = frappe.db.get_value("Workstation", workstation, "holiday_list")

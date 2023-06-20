@@ -491,7 +491,13 @@ erpnext.vehicles.VehicleBookingOrder = class VehicleBookingOrder extends erpnext
 		var booking_cancellation_status = booking_cancellation_count ? __("{0} SMS", [booking_cancellation_count])
 			: __("Not Sent");
 
-		var indicator_items = [
+		var vehicle_anniversary_count = frappe.get_notification_count(me.frm, 'Vehicle Anniversary', 'SMS');
+		var vehicle_anniversary_color = vehicle_anniversary_count ? "green"
+			: this.can_notify('Vehicle Anniversary') ? "yellow" : "light-gray";
+		var vehicle_anniversary_status = vehicle_anniversary_count ? __("{0} SMS", [vehicle_anniversary_count])
+			: __("Not Sent");
+
+		var notification_items = [
 			{
 				contents: __('Booking Confirmation: {0}', [booking_confirmation_status]),
 				indicator: booking_confirmation_color
@@ -515,13 +521,20 @@ erpnext.vehicles.VehicleBookingOrder = class VehicleBookingOrder extends erpnext
 		];
 
 		if (this.frm.doc.status == "Cancelled Booking") {
-			indicator_items.push({
+			notification_items.push({
 				contents: __('Booking Cancellation: {0}', [booking_cancellation_status]),
 				indicator: booking_cancellation_color
 			});
 		}
 
-		// me.add_indicator_section(__("Notification"), indicator_items);
+		if (this.frm.doc.delivery_status == "Delivered") {
+			notification_items.push({
+				contents: __('Vehicle Anniversary: {0}', [vehicle_anniversary_status]),
+				indicator: vehicle_anniversary_color
+			});
+		}
+
+		// me.add_indicator_section(__("Notification"), notification_items);
 	}
 
 	add_indicator_section(title, items) {
@@ -578,17 +591,31 @@ erpnext.vehicles.VehicleBookingOrder = class VehicleBookingOrder extends erpnext
 					__("Notify"));
 			}
 
+			if (this.can_notify("Vehicle Anniversary")) {
+				var anniversary_count = frappe.get_notification_count(this.frm, 'Vehicle Anniversary', 'SMS');
+				let label = __("Vehicle Anniversary{0}", [anniversary_count ? " (Resend)" : ""]);
+				this.frm.add_custom_button(label, () => this.send_sms('Vehicle Anniversary'),
+					__("Notify"));
+			}
+
 			this.frm.add_custom_button(__("Custom Message"), () => this.send_sms('Custom Message'),
 				__("Notify"));
 		}
 	}
 
 	send_sms(notification_type) {
+		let customer = this.frm.doc.customer;
+		let mobile_no = this.frm.doc.contact_mobile;
+		if (notification_type == "Vehicle Anniversary" && this.frm.doc.transfer_customer) {
+			customer = this.frm.doc.transfer_customer;
+			mobile_no = null;
+		}
+
 		new frappe.SMSManager(this.frm.doc, {
 			notification_type: notification_type,
-			mobile_no: this.frm.doc.contact_mobile,
+			mobile_no: mobile_no,
 			party_doctype: 'Customer',
-			party: this.frm.doc.customer
+			party: customer,
 		});
 	}
 

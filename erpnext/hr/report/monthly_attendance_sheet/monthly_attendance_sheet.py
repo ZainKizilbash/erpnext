@@ -43,16 +43,16 @@ def execute(filters=None):
 			'designation': employee_details.designation,
 			'from_date': filters.from_date,
 			'to_date': filters.to_date,
-		})
 
-		row['total_present'] = 0
-		row['total_absent'] = 0
-		row['total_leave'] = 0
-		row['total_half_day'] = 0
-		row['total_late_entry'] = 0
-		row['total_early_exit'] = 0
-		row['total_lwp'] = 0
-		row['total_deduction'] = 0
+			'total_present': 0,
+			'total_absent': 0,
+			'total_leave': 0,
+			'total_half_day': 0,
+			'total_late_entry': 0,
+			'total_early_exit': 0,
+			'total_lwp': 0,
+			'total_deduction': 0,
+		})
 
 		for day in range(1, filters["total_days_in_month"] + 1):
 			attendance_date = datetime.date(year=filters.year, month=filters.month, day=day)
@@ -87,6 +87,9 @@ def execute(filters=None):
 				attendance_details.early_exit, attendance_details.leave_type)
 			row[day_fieldname] = attendance_status_abbr
 
+			attendance_status_color = get_attendance_status_color(attendance_status)
+			row["color_" + day_fieldname] = attendance_status_color
+
 			if attendance_status == "Present":
 				row['total_present'] += 1
 
@@ -94,9 +97,11 @@ def execute(filters=None):
 					row['total_late_entry'] += 1
 				if attendance_details.early_exit:
 					row['total_early_exit'] += 1
+
 			elif attendance_status == "Absent":
 				row['total_absent'] += 1
 				row['total_deduction'] += 1
+
 			elif attendance_status == "Half Day":
 				row['total_half_day'] += 1
 				if not attendance_details.leave_type:
@@ -403,6 +408,16 @@ def get_attendance_status_abbr(attendance_status, late_entry=0, early_exit=0, le
 	return abbr
 
 
+def get_attendance_status_color(attendance_status):
+	status_map = {
+		"Present": "green",
+		"Absent": "red",
+		"Half Day": "orange",
+		"On Leave": "blue",
+	}
+	return status_map.get(attendance_status) or "black"
+
+
 def get_attendance_from_checkins(checkins, shift):
 	shift_doc = frappe.get_cached_doc("Shift Type", shift)
 
@@ -429,13 +444,17 @@ def shift_ended(shift, checkins=None, attendance_date=None):
 
 
 def get_late_deduction_leave_map(filters):
+	employee_condition = ""
+	if filters.get("employee"):
+		employee_condition = " and employee = %(employee)s"
+
 	leave_data = frappe.db.sql("""
 		select employee, leave_type, -1 * sum(leaves) as leaves
 		from `tabLeave Ledger Entry`
 		where docstatus = 1 and is_late_deduction = 1
-			and from_date <= %(to_date)s and %(from_date)s <= to_date
+			and from_date <= %(to_date)s and %(from_date)s <= to_date {0}
 		group by employee, leave_type
-	""", filters, as_dict=1)
+	""".format(employee_condition), filters, as_dict=1)
 
 	leave_map = {}
 	for d in leave_data:

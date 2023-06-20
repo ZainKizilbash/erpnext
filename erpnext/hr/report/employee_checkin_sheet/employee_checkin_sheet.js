@@ -40,22 +40,20 @@ frappe.query_reports["Employee Checkin Sheet"] = {
 
 		if (['attendance_status', 'attendance_abbr'].includes(column.fieldname)) {
 			var status = data['attendance_status'];
+			var color = data['attendance_color'];
 
 			if (status == "Holiday") {
 				style['font-weight'] = 'bold';
 			}
 
-			if (status == "Present") {
-				style['color'] = 'green';
+			if (color) {
+				style['color'] = color;
 			}
-			if (status == "Absent") {
-				style['color'] = 'red';
-			}
-			if (status == "Half Day") {
+		}
+
+		if (['late_entry_hours', 'early_exit_hours'].includes(column.fieldname)) {
+			if (flt(value) > 0) {
 				style['color'] = 'orange';
-			}
-			if (status == "On Leave") {
-				style['color'] = 'blue';
 			}
 		}
 
