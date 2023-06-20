@@ -5,7 +5,7 @@ import frappe
 from frappe import _
 from erpnext.utilities.transaction_base import TransactionBase
 from dateutil.relativedelta import relativedelta
-from frappe.utils import add_days, getdate,get_time, now_datetime,combine_datetime, cstr, today, cint
+from frappe.utils import add_days, getdate, get_time, now_datetime, combine_datetime, cstr, cint
 from frappe.contacts.doctype.contact.contact import get_default_contact
 from erpnext.accounts.party import get_contact_details
 from frappe.core.doctype.sms_settings.sms_settings import enqueue_template_sms
@@ -357,7 +357,7 @@ def send_maintenance_schedule_reminder_notifications():
 	frappe.db.set_global("maintenance_schedule_notification_last_sent_date", reminder_date)
 
 
-def get_maintenance_schedules_for_reminder_notification(target_date):
+def get_maintenance_schedules_for_reminder_notification(target_date,reminder_date):
 	schedule_to_remind = frappe.db.sql("""
 		SELECT ms.name AS ms_name, msd.name AS row_name, msd.scheduled_date
 		FROM `tabMaintenance Schedule` ms
@@ -368,8 +368,12 @@ def get_maintenance_schedules_for_reminder_notification(target_date):
 		WHERE ms.status = 'Active'
 			AND msd.scheduled_date = %(target_date)s
 			AND nc.last_scheduled_dt is NULL
+			AND %(now_date)s <= msd.scheduled_date
 			AND (nc.last_sent_dt is null or DATE(nc.last_sent_dt) != %(target_date)s)
-	""", {'target_date': target_date}, as_dict=1)
+	""", {
+			'target_date': target_date,
+			'now_date': reminder_date,
+	   }, as_dict=1)
 
 	return schedule_to_remind
 
