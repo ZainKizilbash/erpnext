@@ -257,7 +257,7 @@ def calculate_totals(employee, data, filters):
 			totals['total_deduction'] += late_deduction_leave_count
 			totals['total_lwp'] += late_deduction_leave_count
 
-	totals['total_net_present'] = totals['total_present'] + totals['total_holiday']
+	totals['total_net_present'] = totals['total_present'] + totals['total_holiday'] + totals['total_half_day'] * 0.5
 	totals['total_working_hours'] = flt(totals['total_working_hours'], 1)
 	totals['total_late_entry_hours'] = flt(totals['total_late_entry_hours'], 1)
 	totals['total_early_exit_hours'] = flt(totals['total_early_exit_hours'], 1)
