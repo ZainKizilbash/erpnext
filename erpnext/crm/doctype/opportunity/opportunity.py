@@ -139,6 +139,9 @@ class Opportunity(TransactionBase):
 				self.set(k, v)
 
 	def set_sales_person_details(self):
+		self.sales_person_mobile_no = None
+		self.sales_person_email = None
+
 		if not self.sales_person:
 			return
 
@@ -147,13 +150,13 @@ class Opportunity(TransactionBase):
 		if not employee_id:
 			return
 
-		employee = frappe.db.get_value("Employee", employee_id, ['cell_number', 'personal_email'], as_dict=1)
+		employee = frappe.db.get_value("Employee", employee_id, ['cell_number', 'company_email', 'personal_email'], as_dict=1)
 
 		if not employee:
 			return
 
-		self.sales_person_contact_no = employee.cell_number
-		self.sales_person_email = employee.personal_email
+		self.sales_person_mobile_no = employee.cell_number
+		self.sales_person_email = employee.company_email or employee.personal_email
 
 	def validate_financer(self):
 		if self.get('financer'):

@@ -50,7 +50,7 @@
   "customer_address",
   "address_display",
   "column_break_29",
-  "sales_person_contact_no",
+  "sales_person_mobile_no",
   "sales_person_email",
   "sec_applies_to",
   "applies_to_variant_of",
@@ -535,7 +535,7 @@
    "read_only": 1
   },
   {
-   "fieldname": "sales_person_contact_no",
+   "fieldname": "sales_person_mobile_no",
    "fieldtype": "Data",
    "label": "Sales Person Contact Number",
    "no_copy": 1,
@@ -557,7 +557,7 @@
  "idx": 195,
  "is_calendar_and_gantt": 1,
  "links": [],
- "modified": "2023-06-21 15:09:22.010066",
+ "modified": "2023-06-21 18:16:38.768077",
  "modified_by": "Administrator",
  "module": "CRM",
  "name": "Opportunity",

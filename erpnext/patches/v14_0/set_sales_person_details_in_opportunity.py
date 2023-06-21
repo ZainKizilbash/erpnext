@@ -10,5 +10,9 @@ def execute():
         INNER JOIN `tabEmployee` AS emp 
             ON emp.name = sp.employee
         SET opp.sales_person_contact_no = emp.cell_number, 
-            opp.sales_person_email = emp.personal_email
+            opp.sales_person_email = CASE
+                WHEN emp.company_email IS NOT NULL AND emp.company_email != ''
+                THEN emp.company_email
+                ELSE emp.personal_email
+            END
     """)
