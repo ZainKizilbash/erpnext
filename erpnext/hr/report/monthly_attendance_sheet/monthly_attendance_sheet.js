@@ -40,13 +40,13 @@ frappe.query_reports["Monthly Attendance Sheet"] = {
 				var year_filter = frappe.query_report.get_filter('year');
 				year_filter.df.options = r.message;
 
-				var previous_month = frappe.datetime.str_to_obj(frappe.datetime.add_months(frappe.datetime.get_today(), -1));
-				year_filter.df.default = previous_month.getFullYear();
+				var today = frappe.datetime.str_to_obj(frappe.datetime.get_today());
+				year_filter.df.default = today.getFullYear();
 
 				year_filter.refresh();
 				year_filter.set_input(year_filter.df.default);
 
-				frappe.query_report.set_filter_value('month', moment(previous_month).format("MMM"));
+				frappe.query_report.set_filter_value('month', moment(today).format("MMM"));
 			}
 		});
 	},
