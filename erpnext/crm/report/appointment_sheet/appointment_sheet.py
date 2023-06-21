@@ -69,7 +69,7 @@ class AppointmentSheetReport(object):
 	def get_reminder_data(self):
 		if automated_reminder_enabled():
 			now_dt = now_datetime()
-			scheduled_dates = set([d.scheduled_date for d in self.data if d.scheduled_dt > now_dt])
+			scheduled_dates = set([d.scheduled_date for d in self.data if d.scheduled_dt > now_dt and not d.last_sent_dt])
 
 			for current_date in scheduled_dates:
 				reminder_date = get_reminder_date_from_appointment_date(current_date)
