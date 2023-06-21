@@ -517,6 +517,8 @@ def send_employee_anniversary_notification():
 
 	for idx, d in enumerate(employee_anniversary_data):
 		recipient = d.get("prefered_email") or d.get("company_email") or d.get("personal_email")
+		number_of_years = date_today.year - d.year_of_joining
+		d['number_of_years'] = number_of_years
 		emails_of_role_formatted = list(emails_of_role - set(recipient))
 		anniversary_template_formatted = anniversary_template.get_formatted_email(d)
 
@@ -545,7 +547,7 @@ def get_employees_who_have_anniversary_today(date_today=None):
 	date_today = getdate(date_today)
 
 	employee_anniversary_data = frappe.db.sql("""
-		SELECT name, employee_name, prefered_email, personal_email, company_email
+		SELECT name, employee_name, prefered_email, personal_email, company_email, year(date_of_joining) as year_of_joining
 		FROM tabEmployee
 		WHERE day(date_of_joining) = %s
 		AND month(date_of_joining) = %s
