@@ -81,7 +81,7 @@ class VehicleServiceReceipt(VehicleTransactionController):
 					frappe.throw(_("Fuel Level is mandatory in {0} to make Vehicle Service Receipt")
 						.format(frappe.get_desk_link("Project", self.project)))
 
-		if cint(frappe.db.get_single_value("Vehicles Settings", "first_odometer_reading_required_for_service_receipt")):
+		if cint(frappe.db.get_single_value("Vehicles Settings", "odometer_reading_required_for_service_receipt")):
 			if not project.vehicle_first_odometer:
 				frappe.throw(_("First Odometer Reading is mandatory in {0} to make Vehicle Service Receipt")
 					.format(frappe.get_desk_link("Project", self.project)))

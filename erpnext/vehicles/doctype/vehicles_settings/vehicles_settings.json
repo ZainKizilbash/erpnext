@@ -41,7 +41,7 @@
   "pdi_project_type",
   "license_plate_required_for_service_receipt",
   "fuel_level_required_for_service_receipt",
-  "first_odometer_reading_required_for_service_receipt",
+  "odometer_reading_required_for_service_receipt",
   "column_break_28",
   "pdi_vehicle_workshop",
   "column_break_29",
@@ -412,15 +412,15 @@
   },
   {
    "default": "0",
-   "fieldname": "first_odometer_reading_required_for_service_receipt",
+   "fieldname": "odometer_reading_required_for_service_receipt",
    "fieldtype": "Check",
-   "label": "First Odometer Reading Mandatory For Vehicle Service Receipt"
+   "label": "Odometer Reading Mandatory For Vehicle Service Receipt"
   }
  ],
  "icon": "fa fa-cog",
  "issingle": 1,
  "links": [],
- "modified": "2023-06-20 19:06:08.251745",
+ "modified": "2023-06-21 12:46:34.144330",
  "modified_by": "Administrator",
  "module": "Vehicles",
  "name": "Vehicles Settings",
