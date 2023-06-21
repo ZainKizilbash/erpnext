@@ -109,6 +109,7 @@ class Opportunity(TransactionBase):
 		self.set_customer_details()
 		self.set_item_details()
 		self.set_applies_to_details()
+		self.set_sales_person_details()
 
 	def set_customer_details(self):
 		customer_details = get_customer_details(self.as_dict())
@@ -136,6 +137,23 @@ class Opportunity(TransactionBase):
 		for k, v in applies_to_details.items():
 			if self.meta.has_field(k) and not self.get(k) or k in force_applies_to_fields:
 				self.set(k, v)
+
+	def set_sales_person_details(self):
+		if not self.sales_person:
+			return
+
+		employee_id = frappe.db.get_value("Sales Person", self.sales_person, ['employee'])
+
+		if not employee_id:
+			return
+
+		employee = frappe.db.get_value("Employee", employee_id, ['cell_number', 'personal_email'], as_dict=1)
+
+		if not employee:
+			return
+
+		self.sales_person_contact_no = employee.cell_number
+		self.sales_person_email = employee.personal_email
 
 	def validate_financer(self):
 		if self.get('financer'):
