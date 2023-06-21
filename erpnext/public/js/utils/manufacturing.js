@@ -1,19 +1,22 @@
 frappe.provide("erpnext.manufacturing");
 
+erpnext.manufacturing.work_order_qty_prompt_hooks = [];
+
 $.extend(erpnext.manufacturing, {
 	make_stock_entry: function(doc, purpose) {
 		if (doc.docstatus != 1) {
 			return;
 		}
 
-		return erpnext.manufacturing.show_prompt_for_qty_input(doc, purpose).then(data => {
+		return erpnext.manufacturing.show_prompt_for_qty_input(doc, purpose).then(r => {
 			return frappe.call({
 				method: "erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry",
 				args: {
 					"work_order_id": doc.name,
 					"purpose": purpose,
-					"scrap_remaining": data.scrap_remaining,
-					"qty": data.qty
+					"scrap_remaining": r.data.scrap_remaining,
+					"qty": r.data.qty,
+					"args": r.args,
 				},
 				freeze: 1,
 				callback: (r) => {
@@ -143,13 +146,29 @@ $.extend(erpnext.manufacturing, {
 					},
 				]);
 
+				for (let hook of erpnext.manufacturing.work_order_qty_prompt_hooks || []) {
+					hook(doc, purpose, fields);
+				}
+
 				frappe.prompt(fields, data => {
 					if (flt(data.qty) > max_with_allowance) {
 						frappe.msgprint(__('Quantity can not be more than {0}', [format_number(max_with_allowance)]));
 						reject();
 					}
+
+					let send_to_stock_entry_fieldnames = fields.filter(f => f.send_to_stock_entry).map(f => f.fieldname);
+					let stock_entry_args = {};
+					for (let fieldname of send_to_stock_entry_fieldnames) {
+						if (data[fieldname]) {
+							stock_entry_args[fieldname] = data[fieldname];
+						}
+					}
+
 					data.purpose = purpose;
-					resolve(data);
+					resolve({
+						data: data,
+						args: stock_entry_args,
+					});
 				}, __(purpose), __('Submit'));
 			});
 		});

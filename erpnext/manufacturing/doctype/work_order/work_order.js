@@ -611,10 +611,10 @@ erpnext.work_order = {
 
 	create_pick_list: function(frm, purpose='Material Transfer for Manufacture') {
 		erpnext.manufacturing.show_prompt_for_qty_input(frm.doc, purpose)
-			.then(data => {
+			.then(r => {
 				return frappe.xcall('erpnext.manufacturing.doctype.work_order.work_order.create_pick_list', {
 					'source_name': frm.doc.name,
-					'for_qty': data.qty
+					'for_qty': r.data.qty
 				});
 			}).then(pick_list => {
 				frappe.model.sync(pick_list);

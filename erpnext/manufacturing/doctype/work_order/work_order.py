@@ -851,7 +851,13 @@ def set_work_order_ops(name):
 
 
 @frappe.whitelist()
-def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False):
+def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False, args=None):
+	if args and isinstance(args, str):
+		args = json.loads(args)
+
+	if not args:
+		args = {}
+
 	work_order = frappe.get_doc("Work Order", work_order_id)
 	if not frappe.db.get_value("Warehouse", work_order.wip_warehouse, "is_group") and not work_order.skip_transfer:
 		wip_warehouse = work_order.wip_warehouse
@@ -859,6 +865,11 @@ def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False):
 		wip_warehouse = None
 
 	stock_entry = frappe.new_doc("Stock Entry")
+
+	for fieldname, value in args.items():
+		if value and stock_entry.meta.has_field(fieldname):
+			stock_entry.set(fieldname, value)
+
 	stock_entry.pro_doc = work_order
 
 	stock_entry.purpose = purpose
