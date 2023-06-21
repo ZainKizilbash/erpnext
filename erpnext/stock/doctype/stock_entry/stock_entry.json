@@ -16,7 +16,6 @@
   "from_bom",
   "customer_provided",
   "inspection_required",
-  "work_order",
   "purchase_order",
   "delivery_note_no",
   "sales_invoice_no",
@@ -34,14 +33,14 @@
   "project",
   "more_info_cb_1",
   "cost_center",
-  "sb1",
-  "bom_no",
+  "production_section",
+  "work_order",
   "column_break_26",
-  "fg_completed_qty",
-  "column_break_28",
-  "scrap_qty",
-  "cb1",
+  "bom_no",
   "use_multi_level_bom",
+  "column_break_qp2v9",
+  "fg_completed_qty",
+  "scrap_qty",
   "get_items",
   "contact_section",
   "customer",
@@ -55,14 +54,10 @@
   "section_break_12",
   "from_warehouse",
   "source_warehouse_type",
-  "source_warehouse_address",
-  "source_address_display",
   "auto_select_batches",
   "cb0",
   "to_warehouse",
   "target_warehouse_type",
-  "target_warehouse_address",
-  "target_address_display",
   "sb0",
   "scan_barcode",
   "items",
@@ -76,6 +71,12 @@
   "additional_costs_section",
   "additional_costs",
   "total_additional_costs",
+  "warehouse_address_section",
+  "source_warehouse_address",
+  "source_address_display",
+  "column_break_7nzxf",
+  "target_warehouse_address",
+  "target_address_display",
   "accounting_dimensions_section",
   "dimension_col_break",
   "is_opening",
@@ -260,11 +261,6 @@
    "print_hide": 1
   },
   {
-   "depends_on": "eval: doc.from_bom && (doc.purpose!==\"Sales Return\" && doc.purpose!==\"Purchase Return\")",
-   "fieldname": "sb1",
-   "fieldtype": "Section Break"
-  },
-  {
    "depends_on": "from_bom",
    "fieldname": "bom_no",
    "fieldtype": "Link",
@@ -273,22 +269,16 @@
   },
   {
    "depends_on": "from_bom",
-   "description": "As per Stock UOM",
    "fieldname": "fg_completed_qty",
    "fieldtype": "Float",
-   "label": "For Quantity",
+   "label": "Production Qty",
    "oldfieldname": "fg_completed_qty",
    "oldfieldtype": "Currency",
    "print_hide": 1
   },
   {
-   "fieldname": "cb1",
-   "fieldtype": "Column Break"
-  },
-  {
    "default": "1",
    "depends_on": "from_bom",
-   "description": "Including items for sub assemblies",
    "fieldname": "use_multi_level_bom",
    "fieldtype": "Check",
    "label": "Use Multi-Level BOM",
@@ -668,7 +658,7 @@
    "read_only": 1
   },
   {
-   "depends_on": "from_bom",
+   "depends_on": "eval:doc.from_bom && cint(frappe.defaults.get_default('scrap_remaining_by_default'))",
    "fieldname": "scrap_qty",
    "fieldtype": "Float",
    "label": "Scrap Qty"
@@ -686,10 +676,6 @@
    "fieldname": "auto_select_batches",
    "fieldtype": "Button",
    "label": "Auto Select Batches (FIFO)"
-  },
-  {
-   "fieldname": "column_break_28",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "column_break_61",
@@ -711,13 +697,32 @@
    "fieldtype": "Section Break",
    "label": "Status",
    "oldfieldtype": "Section Break"
+  },
+  {
+   "fieldname": "production_section",
+   "fieldtype": "Section Break",
+   "label": "Production"
+  },
+  {
+   "fieldname": "column_break_qp2v9",
+   "fieldtype": "Column Break"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "warehouse_address_section",
+   "fieldtype": "Section Break",
+   "label": "Warehouse Address"
+  },
+  {
+   "fieldname": "column_break_7nzxf",
+   "fieldtype": "Column Break"
   }
  ],
  "icon": "fa fa-file-text",
  "idx": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-06-06 12:13:09.156510",
+ "modified": "2023-06-21 22:59:17.538377",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Stock Entry",
