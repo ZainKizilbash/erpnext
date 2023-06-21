@@ -322,27 +322,19 @@ frappe.query_reports["Vehicle Maintenance Schedule"] = {
 				style['color'] = "purple";
 			} else if (value == "Converted") {
 				style['color'] = "green";
+			}	}
+		if (column.fieldname == 'reminder') {
+			if (data.last_sent_dt) {
+				style['color'] = 'green';}
+				else if (data.scheduled_reminder_dt) {
+					style['color'] = 'blue';
+				}
 			}
 
 			if (data.appointment) {
 				link = frappe.utils.get_form_link("Appointment", data.appointment);
 			}
-		}
 
-		return default_formatter(value, row, column, data, {css: style, link_href: link, link_target: "_blank"});
-	},
-
-	formatter: function(value, row, column, data, default_formatter) {
-		var style = {};
-		var link;
-
-		if (column.fieldname == 'reminder') {
-			if (data.last_sent_dt) {
-				style['color'] = 'green';
-			} else if (data.scheduled_reminder_dt) {
-				style['color'] = 'blue';
-			}
-		}
 
 		return default_formatter(value, row, column, data, {css: style, link_href: link, link_target: "_blank"});
 	},
