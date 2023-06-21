@@ -2153,6 +2153,7 @@ def get_vehicle_service_receipt(project):
 	target = frappe.new_doc("Vehicle Service Receipt")
 	set_vehicle_transaction_values(doc, target)
 	target.run_method("set_missing_values")
+	target.validate_project_mandatory_values()
 	return target
 
 
