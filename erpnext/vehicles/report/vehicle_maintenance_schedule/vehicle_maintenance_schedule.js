@@ -332,6 +332,21 @@ frappe.query_reports["Vehicle Maintenance Schedule"] = {
 		return default_formatter(value, row, column, data, {css: style, link_href: link, link_target: "_blank"});
 	},
 
+	formatter: function(value, row, column, data, default_formatter) {
+		var style = {};
+		var link;
+
+		if (column.fieldname == 'reminder') {
+			if (data.last_sent_dt) {
+				style['color'] = 'green';
+			} else if (data.scheduled_reminder_dt) {
+				style['color'] = 'blue';
+			}
+		}
+
+		return default_formatter(value, row, column, data, {css: style, link_href: link, link_target: "_blank"});
+	},
+
 	onload: function () {
 		frappe.model.with_doctype("Lost Reason Detail");
 	}

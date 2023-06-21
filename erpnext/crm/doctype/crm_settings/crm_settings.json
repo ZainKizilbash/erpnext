@@ -9,16 +9,16 @@
   "opportunity_contact_no_mandatory",
   "column_break_5",
   "column_break_3",
+  "maintenance_reminder_days_before",
+  "maintenance_reminder_time",
+  "column_break_q3twi",
   "maintenance_opportunity_reminder_days",
   "default_opportunity_type_for_schedule",
   "auto_create_opportunity_from_schedule",
   "column_break_2",
   "mark_opportunity_lost_after_days",
   "opportunity_auto_lost_reason",
-  "auto_mark_opportunity_as_lost",
-  "column_break_q3twi",
-  "maintenance_reminder_days_before",
-  "maintenance_reminder_time"
+  "auto_mark_opportunity_as_lost"
  ],
  "fields": [
   {
@@ -101,7 +101,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2023-06-19 18:01:31.881602",
+ "modified": "2023-06-21 13:36:30.154732",
  "modified_by": "Administrator",
  "module": "CRM",
  "name": "CRM Settings",
