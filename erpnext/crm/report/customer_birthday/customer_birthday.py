@@ -64,14 +64,20 @@ def get_data(filters):
 
 	return data
 
+
 def get_notification_data(data):
 	if automated_customer_birthday_enabled():
+		date_today = getdate()
+		birthday_scheduled_dt = get_customer_birthday_scheduled_time(date_today)
 		datetime_format = "d/MM/y, hh:mm a"
+
 		for d in data:
+			d.birthday_scheduled_dt = birthday_scheduled_dt
 			if d.last_sent_dt:
 				d.notification = "Last Sent: {0}".format(format_datetime(d.last_sent_dt, datetime_format))
-			elif d.last_scheduled_dt:
-				d.notification = "Scheduled: {0}".format(format_datetime(d.last_scheduled_dt, datetime_format))
+			elif d.birthday_scheduled_dt:
+				d.notification = "Scheduled: {0}".format(format_datetime(d.birthday_scheduled_dt, datetime_format))
+
 
 def get_columns():
 	return [

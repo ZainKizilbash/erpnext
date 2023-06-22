@@ -27,10 +27,10 @@ frappe.query_reports["Customer Birthday"] = {
 		if (column.fieldname == 'notification') {
 			if (data.last_sent_dt) {
 				style['color'] = 'green';}
-				else if (data.last_scheduled_dt) {
-					style['color'] = 'blue';
-				}
+			else if (data.birthday_scheduled_dt) {
+				style['color'] = 'blue';
 			}
+		}
 	return default_formatter(value, row, column, data, {css: style, link_href: link, link_target: "_blank"});
 	},
 };

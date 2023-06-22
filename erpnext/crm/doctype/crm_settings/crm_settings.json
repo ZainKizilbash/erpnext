@@ -20,7 +20,7 @@
   "opportunity_auto_lost_reason",
   "auto_mark_opportunity_as_lost",
   "column_break_6",
-  "customer_birthday_time"
+  "customer_birthday_notification_time"
  ],
  "fields": [
   {
@@ -105,14 +105,14 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "customer_birthday_time",
+   "fieldname": "customer_birthday_notification_time",
    "fieldtype": "Time",
    "label": "Customer Birthday Notification Time of Day"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2023-06-22 12:45:00.045377",
+ "modified": "2023-06-22 16:11:34.345722",
  "modified_by": "Administrator",
  "module": "CRM",
  "name": "CRM Settings",

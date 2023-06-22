@@ -5,7 +5,7 @@ import frappe
 from frappe.model.naming import set_name_by_naming_series
 from frappe import _, msgprint, throw
 import frappe.defaults
-from frappe.utils import flt, cint, cstr, today, clean_whitespace, getdate, now_datetime, get_time, combine_datetime
+from frappe.utils import flt, cint, cstr, today, clean_whitespace, getdate, now_datetime, get_time, combine_datetime, add_years
 from frappe.desk.reportview import build_match_conditions, get_filters_cond
 from erpnext.utilities.transaction_base import TransactionBase
 from erpnext.accounts.party import validate_party_accounts, get_dashboard_info, get_address_display
@@ -372,22 +372,22 @@ class Customer(TransactionBase):
 			'party': notification_customer
 		})
 
-	def set_can_notify_onload(self):
-		notification_types = [
-			'Customer Birthday',
-		]
-
-		can_notify = frappe._dict()
-		for notification_type in notification_types:
-			can_notify[notification_type] = self.validate_notification(notification_type, throw=False)
-
-		self.set_onload('can_notify', can_notify)
-
 	def validate_notification(self, notification_type=None, child_doctype=None, child_name=None, throw=False):
 		if not notification_type:
 			if throw:
 				frappe.throw(_("Notification Type is mandatory"))
 			return False
+
+		if notification_type == "Customer Birthday":
+			if not self.date_of_birth:
+				if throw:
+					frappe.throw(_("Cannot send Birthday Anniversary notification because Customer date of birth is not found."))
+				return False
+
+			if not self.mobile_no:
+				if throw:
+					frappe.throw(_("Cannot send Birthday Anniversary notification because Customer mobile number is not found."))
+				return False
 
 		return True
 
@@ -708,7 +708,7 @@ def get_customer_birthday_scheduled_time(date_today=None):
 	crm_settings = frappe.get_cached_doc("CRM Settings", None)
 
 	reminder_date = getdate(date_today)
-	reminder_time = crm_settings.customer_birthday_time or get_time("00:00:00")
+	reminder_time = crm_settings.customer_birthday_notification_time or get_time("00:00:00")
 	reminder_dt = combine_datetime(reminder_date, reminder_time)
 
 	return reminder_dt
