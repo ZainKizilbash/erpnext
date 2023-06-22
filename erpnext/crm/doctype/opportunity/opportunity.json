@@ -46,9 +46,12 @@
   "contact_mobile",
   "contact_phone",
   "contact_email",
-  "column_break_29",
+  "column_break_4",
   "customer_address",
   "address_display",
+  "column_break_29",
+  "sales_person_mobile_no",
+  "sales_person_email",
   "sec_applies_to",
   "applies_to_variant_of",
   "applies_to_variant_of_name",
@@ -530,13 +533,31 @@
    "in_list_view": 1,
    "label": "Next Follow Up Date",
    "read_only": 1
+  },
+  {
+   "fieldname": "sales_person_mobile_no",
+   "fieldtype": "Data",
+   "label": "Sales Person Contact Number",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "sales_person_email",
+   "fieldtype": "Data",
+   "label": "Sales Person Email",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
   }
  ],
  "icon": "fa fa-info-sign",
  "idx": 195,
  "is_calendar_and_gantt": 1,
  "links": [],
- "modified": "2023-05-30 13:08:20.229345",
+ "modified": "2023-06-21 18:16:38.768077",
  "modified_by": "Administrator",
  "module": "CRM",
  "name": "Opportunity",
