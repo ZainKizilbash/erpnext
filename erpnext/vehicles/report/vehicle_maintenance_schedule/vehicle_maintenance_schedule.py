@@ -72,7 +72,7 @@ class VehicleMaintenanceSchedule:
 	def get_reminder_data(self):
 		if automated_maintenance_reminder_enabled():
 			today_date = getdate()
-			scheduled_dates = set([d.due_date for d in self.data if d.due_date and d.due_date >= today_date and not d.last_sent_dt])
+			scheduled_dates = set([d.due_date for d in self.data if d.due_date and get_reminder_date_from_schedule_date(d.due_date) >= today_date and not d.last_sent_dt])
 
 			for current_date in scheduled_dates:
 				reminder_date = get_reminder_date_from_schedule_date(current_date)
