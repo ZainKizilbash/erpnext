@@ -18,7 +18,9 @@
   "column_break_2",
   "mark_opportunity_lost_after_days",
   "opportunity_auto_lost_reason",
-  "auto_mark_opportunity_as_lost"
+  "auto_mark_opportunity_as_lost",
+  "column_break_6",
+  "customer_birthday_time"
  ],
  "fields": [
   {
@@ -97,11 +99,20 @@
    "fieldname": "maintenance_reminder_days_before",
    "fieldtype": "Int",
    "label": "Maintenance Reminder Days Before Schedule"
+  },
+  {
+   "fieldname": "column_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "customer_birthday_time",
+   "fieldtype": "Time",
+   "label": "Customer Birthday Notification Time of Day"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2023-06-21 13:36:30.154732",
+ "modified": "2023-06-22 12:45:00.045377",
  "modified_by": "Administrator",
  "module": "CRM",
  "name": "CRM Settings",

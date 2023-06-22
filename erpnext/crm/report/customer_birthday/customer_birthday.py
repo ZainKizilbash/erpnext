@@ -4,7 +4,8 @@
 from __future__ import unicode_literals
 import frappe
 from frappe import _
-from frappe.utils import today, getdate
+from frappe.utils import today, getdate, format_datetime
+from erpnext.selling.doctype.customer.customer import automated_customer_birthday_enabled, get_customer_birthday_scheduled_time
 
 
 def execute(filters=None):
@@ -20,6 +21,8 @@ def execute(filters=None):
 
 	columns = get_columns()
 	data = get_data(filters)
+
+	get_notification_data(data)
 
 	return columns, data
 
@@ -44,9 +47,14 @@ def get_data(filters):
 
 	data = frappe.db.sql("""
 		SELECT
-			name as customer, customer_type, customer_name, customer_group, territory, date_of_birth,
-			mobile_no, mobile_no_2, phone_no
-		FROM `tabCustomer`
+			c.name as customer, c.customer_type, c.customer_name, c.customer_group, c.territory, c.date_of_birth,
+			c.mobile_no, c.mobile_no_2, c.phone_no, nc.last_sent_dt, nc.last_scheduled_dt
+		FROM `tabCustomer` c
+		LEFT JOIN `tabNotification Count` nc
+			ON nc.reference_doctype = 'Customer'
+			AND nc.reference_name = c.name
+			AND nc.notification_type = 'Customer Birthday'
+			AND nc.notification_medium = 'SMS'
 		WHERE {0}
 		ORDER BY MONTH(date_of_birth), DAY(date_of_birth)
 	""".format(or_conditions), filters, as_dict=1)
@@ -56,6 +64,14 @@ def get_data(filters):
 
 	return data
 
+def get_notification_data(data):
+	if automated_customer_birthday_enabled():
+		datetime_format = "d/MM/y, hh:mm a"
+		for d in data:
+			if d.last_sent_dt:
+				d.notification = "Last Sent: {0}".format(format_datetime(d.last_sent_dt, datetime_format))
+			elif d.last_scheduled_dt:
+				d.notification = "Scheduled: {0}".format(format_datetime(d.last_scheduled_dt, datetime_format))
 
 def get_columns():
 	return [
@@ -101,5 +117,11 @@ def get_columns():
 			"label": _("Contact No"),
 			"fieldtype": "Data",
 			"width": "100"
+		},
+		{
+			"fieldname": "notification",
+			"label": _("Notification"),
+			"fieldtype": "Data",
+			"width": "200"
 		},
 	]

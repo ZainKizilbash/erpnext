@@ -5,7 +5,7 @@ import frappe
 from frappe.model.naming import set_name_by_naming_series
 from frappe import _, msgprint, throw
 import frappe.defaults
-from frappe.utils import flt, cint, cstr, today, clean_whitespace
+from frappe.utils import flt, cint, cstr, today, clean_whitespace, getdate, now_datetime, get_time, combine_datetime
 from frappe.desk.reportview import build_match_conditions, get_filters_cond
 from erpnext.utilities.transaction_base import TransactionBase
 from erpnext.accounts.party import validate_party_accounts, get_dashboard_info, get_address_display
@@ -15,6 +15,7 @@ from frappe.contacts.doctype.address.address import get_default_address
 from erpnext.vehicles.doctype.vehicle_log.vehicle_log import get_customer_vehicle_selector_data
 from frappe.model.rename_doc import update_linked_doctypes
 from frappe.model.mapper import get_mapped_doc
+from frappe.core.doctype.sms_settings.sms_settings import enqueue_template_sms
 
 primary_address_fields = [
 	{'customer_field': 'address_line1', 'address_field': 'address_line1'},
@@ -361,6 +362,38 @@ class Customer(TransactionBase):
 		else:
 			frappe.msgprint(_("Multiple Loyalty Program found for the Customer. Please select manually."))
 
+	def get_sms_args(self, notification_type=None, child_doctype=None, child_name=None):
+		notification_customer = self.name
+		notification_mobile =  self.mobile_no
+
+		return frappe._dict({
+			'receiver_list': [notification_mobile],
+			'party_doctype': 'Customer',
+			'party': notification_customer
+		})
+
+	def set_can_notify_onload(self):
+		notification_types = [
+			'Customer Birthday',
+		]
+
+		can_notify = frappe._dict()
+		for notification_type in notification_types:
+			can_notify[notification_type] = self.validate_notification(notification_type, throw=False)
+
+		self.set_onload('can_notify', can_notify)
+
+	def validate_notification(self, notification_type=None, child_doctype=None, child_name=None, throw=False):
+		if not notification_type:
+			if throw:
+				frappe.throw(_("Notification Type is mandatory"))
+			return False
+
+		return True
+
+	def send_customer_birthday_notification(self):
+		enqueue_template_sms(self, notification_type="Customer Birthday", allow_if_already_sent=1)
+
 @frappe.whitelist()
 def make_quotation(source_name, target_doc=None):
 
@@ -635,3 +668,72 @@ def get_primary_contact_details(contact_name):
 def get_timeline_data(*args, **kwargs):
 	from erpnext.accounts.party import get_timeline_data
 	return get_timeline_data(*args, **kwargs)
+
+
+def send_customer_birthday_notifications():
+	if not automated_customer_birthday_enabled():
+		return
+
+	now_dt = now_datetime()
+	date_today = getdate(now_dt)
+
+	reminder_dt = get_customer_birthday_scheduled_time(date_today)
+	if now_dt < reminder_dt:
+		return
+
+	notification_last_sent_date = frappe.db.get_global("customer_birthday_notification_last_sent_date")
+	if notification_last_sent_date and getdate(notification_last_sent_date) >= date_today:
+		return
+
+	customer_birthday_data = get_customers_who_have_birthday_today(date_today)
+
+	for d in customer_birthday_data:
+		doc = frappe.get_doc("Customer", d.name)
+		doc.send_customer_birthday_notification()
+
+	frappe.db.set_global("customer_birthday_notification_last_sent_date", date_today)
+
+
+def automated_customer_birthday_enabled():
+	from frappe.core.doctype.sms_settings.sms_settings import is_automated_sms_enabled
+	from frappe.core.doctype.sms_template.sms_template import has_automated_sms_template
+
+	if is_automated_sms_enabled() and has_automated_sms_template("Customer", "Customer Birthday"):
+		return True
+	else:
+		return False
+
+
+def get_customer_birthday_scheduled_time(date_today=None):
+	crm_settings = frappe.get_cached_doc("CRM Settings", None)
+
+	reminder_date = getdate(date_today)
+	reminder_time = crm_settings.customer_birthday_time or get_time("00:00:00")
+	reminder_dt = combine_datetime(reminder_date, reminder_time)
+
+	return reminder_dt
+
+
+def get_customers_who_have_birthday_today(date_today=None):
+	date_today = getdate(date_today)
+
+	customer_birthday_data = frappe.db.sql("""
+		SELECT c.name, c.customer_name, c.mobile_no
+		FROM `tabCustomer` c
+		LEFT JOIN `tabNotification Count` nc
+			ON nc.reference_doctype = 'Customer'
+			AND nc.reference_name = c.name
+			AND nc.notification_type = 'Customer Birthday'
+			AND nc.notification_medium = 'SMS'
+		WHERE day(c.date_of_birth) = %(day)s
+			AND month(c.date_of_birth)= %(month)s
+			AND (nc.last_scheduled_dt is null OR DATE(nc.last_scheduled_dt) != %(date_today)s)
+			AND (nc.last_sent_dt is null OR DATE(nc.last_sent_dt) != %(date_today)s)
+	""", {
+		"day": date_today.day,
+		"month": date_today.month,
+		"date_today": date_today
+	}, as_dict=1)
+
+
+	return customer_birthday_data

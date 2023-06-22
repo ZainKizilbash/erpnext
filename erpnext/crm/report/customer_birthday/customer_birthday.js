@@ -18,5 +18,19 @@ frappe.query_reports["Customer Birthday"] = {
 			default: frappe.datetime.get_today(),
 			reqd: 1
 		},
-	]
+	],
+
+	formatter: function(value, row, column, data, default_formatter) {
+		let style = {};
+		let link;
+
+		if (column.fieldname == 'notification') {
+			if (data.last_sent_dt) {
+				style['color'] = 'green';}
+				else if (data.last_scheduled_dt) {
+					style['color'] = 'blue';
+				}
+			}
+	return default_formatter(value, row, column, data, {css: style, link_href: link, link_target: "_blank"});
+	},
 };
