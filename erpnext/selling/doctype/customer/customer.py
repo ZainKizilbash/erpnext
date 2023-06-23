@@ -363,13 +363,8 @@ class Customer(TransactionBase):
 			frappe.msgprint(_("Multiple Loyalty Program found for the Customer. Please select manually."))
 
 	def get_sms_args(self, notification_type=None, child_doctype=None, child_name=None):
-		notification_customer = self.name
-		notification_mobile =  self.mobile_no
-
 		return frappe._dict({
-			'receiver_list': [notification_mobile],
-			'party_doctype': 'Customer',
-			'party': notification_customer
+			'receiver_list': [self.mobile_no],
 		})
 
 	def validate_notification(self, notification_type=None, child_doctype=None, child_name=None, throw=False):
@@ -381,12 +376,7 @@ class Customer(TransactionBase):
 		if notification_type == "Customer Birthday":
 			if not self.date_of_birth:
 				if throw:
-					frappe.throw(_("Cannot send Birthday Anniversary notification because Customer date of birth is not found."))
-				return False
-
-			if not self.mobile_no:
-				if throw:
-					frappe.throw(_("Cannot send Birthday Anniversary notification because Customer mobile number is not found."))
+					frappe.throw(_("Cannot send Customer Birthday notification because Customer Date of Birth is not set"))
 				return False
 
 		return True
