@@ -31,6 +31,6 @@ frappe.query_reports["Customer Birthday"] = {
 				style['color'] = 'blue';
 			}
 		}
-	return default_formatter(value, row, column, data, {css: style, link_href: link, link_target: "_blank"});
+		return default_formatter(value, row, column, data, {css: style, link_href: link, link_target: "_blank"});
 	},
 };
