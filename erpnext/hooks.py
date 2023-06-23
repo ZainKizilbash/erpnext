@@ -279,6 +279,7 @@ scheduler_events = {
 		"erpnext.vehicles.doctype.vehicle_booking_order.vehicle_booking_order.send_payment_overdue_notifications",
 		"erpnext.vehicles.doctype.vehicle_booking_order.vehicle_booking_order.send_vehicle_anniversary_notifications",
 		"erpnext.maintenance.doctype.maintenance_schedule.maintenance_schedule.send_maintenance_schedule_reminder_notifications",
+		"erpnext.selling.doctype.customer.customer.send_customer_birthday_notifications",
 	],
 	"hourly": [
 		'erpnext.hr.doctype.daily_work_summary_group.daily_work_summary_group.trigger_emails',
