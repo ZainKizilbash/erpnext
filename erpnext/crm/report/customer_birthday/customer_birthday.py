@@ -6,6 +6,7 @@ import frappe
 from frappe import _
 from frappe.utils import today, getdate, format_datetime, add_years
 from erpnext.selling.doctype.customer.customer import automated_customer_birthday_enabled, get_customer_birthday_scheduled_time
+import datetime
 
 
 def execute(filters=None):
@@ -67,14 +68,16 @@ def get_data(filters):
 
 def get_notification_data(data):
 	if automated_customer_birthday_enabled():
+		datetime_format = "d/MM/y, hh:mm a"
+		today_date = getdate()
+
 		for d in data:
-			if d.date_of_birth < getdate():
-				d.date_of_birth = add_years(getdate(d.date_of_birth), 1)
+			d.notification_date = datetime.date(today_date.year, d.date_of_birth.month, d.date_of_birth.day)
+			if d.notification_date < getdate():
+				d.notification_date = add_years(d.notification_date, 1)
 
-			birthday_scheduled_dt = get_customer_birthday_scheduled_time(d.date_of_birth)
+			birthday_scheduled_dt = get_customer_birthday_scheduled_time(d.notification_date)
 			d.birthday_scheduled_dt = birthday_scheduled_dt
-
-			datetime_format = "d/MM/y, hh:mm a"
 
 			if d.last_sent_dt:
 				d.notification = "Last Sent: {0}".format(format_datetime(d.last_sent_dt, datetime_format))
