@@ -677,16 +677,15 @@ def send_customer_birthday_notifications():
 	now_dt = now_datetime()
 	date_today = getdate(now_dt)
 
-	reminder_dt = get_customer_birthday_scheduled_time(date_today)
-	if now_dt < reminder_dt:
+	notification_dt = get_customer_birthday_scheduled_time(date_today)
+	if now_dt < notification_dt:
 		return
 
 	notification_last_sent_date = frappe.db.get_global("customer_birthday_notification_last_sent_date")
 	if notification_last_sent_date and getdate(notification_last_sent_date) >= date_today:
 		return
 
-	customer_birthday_data = get_customers_who_have_birthday_today(date_today)
-
+	customer_birthday_data = get_customers_for_birthday_notifications(date_today)
 	for d in customer_birthday_data:
 		doc = frappe.get_doc("Customer", d.name)
 		doc.send_customer_birthday_notification()
@@ -704,18 +703,18 @@ def automated_customer_birthday_enabled():
 		return False
 
 
-def get_customer_birthday_scheduled_time(date_today=None):
+def get_customer_birthday_scheduled_time(notification_date=None):
 	crm_settings = frappe.get_cached_doc("CRM Settings", None)
 
-	reminder_date = getdate(date_today)
-	reminder_time = crm_settings.customer_birthday_notification_time or get_time("00:00:00")
-	reminder_dt = combine_datetime(reminder_date, reminder_time)
+	notification_date = getdate(notification_date)
+	notification_time = crm_settings.customer_birthday_notification_time or get_time("00:00:00")
+	notification_dt = combine_datetime(notification_date, notification_time)
 
-	return reminder_dt
+	return notification_dt
 
 
-def get_customers_who_have_birthday_today(date_today=None):
-	date_today = getdate(date_today)
+def get_customers_for_birthday_notifications(notification_date=None):
+	notification_date = getdate(notification_date)
 
 	customer_birthday_data = frappe.db.sql("""
 		SELECT c.name, c.customer_name, c.mobile_no
@@ -730,10 +729,9 @@ def get_customers_who_have_birthday_today(date_today=None):
 			AND (nc.last_scheduled_dt is null OR DATE(nc.last_scheduled_dt) != %(date_today)s)
 			AND (nc.last_sent_dt is null OR DATE(nc.last_sent_dt) != %(date_today)s)
 	""", {
-		"day": date_today.day,
-		"month": date_today.month,
-		"date_today": date_today
+		"day": notification_date.day,
+		"month": notification_date.month,
+		"date_today": notification_date
 	}, as_dict=1)
-
 
 	return customer_birthday_data
