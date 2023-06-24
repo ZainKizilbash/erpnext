@@ -48,22 +48,22 @@ frappe.query_reports["Employee Checkin Sheet"] = {
 			fieldname: "employee_name",
 			label: __("Employee Name"),
 			fieldtype: "Data",
+			read_only: 1,
 			on_change: () => { return false },
-			"hidden": 1
 		},
 		{
 			fieldname: "designation",
 			label: __("Designation"),
 			fieldtype: "Data",
+			read_only: 1,
 			on_change: () => { return false },
-			"hidden": 1
 		},
 		{
 			fieldname: "department",
 			label: __("Department"),
 			fieldtype: "Data",
+			read_only: 1,
 			on_change: () => { return false },
-			"hidden": 1
 		}
 	],
 
@@ -84,6 +84,12 @@ frappe.query_reports["Employee Checkin Sheet"] = {
 			}
 		}
 
+		if (['working_hours'].includes(column.fieldname)) {
+			if (flt(value) > 0) {
+				style['color'] = 'blue';
+			}
+		}
+
 		if (['late_entry_hours', 'early_exit_hours'].includes(column.fieldname)) {
 			if (flt(value) > 0) {
 				style['color'] = 'orange';
@@ -94,7 +100,7 @@ frappe.query_reports["Employee Checkin Sheet"] = {
 			if (data['attendance']) {
 				link = "/app/attendance/" + encodeURIComponent(data['attendance']);
 			} else if (status != "Holiday") {
-				style['opacity'] = '0.6';
+				style['opacity'] = '0.8';
 			}
 		}
 

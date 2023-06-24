@@ -30,6 +30,11 @@ frappe.query_reports["Monthly Attendance Sheet"] = {
 			"label": __("Employee"),
 			"fieldtype": "Link",
 			"options": "Employee"
+		},
+		{
+			"fieldname":"show_designation",
+			"label": __("Show Designation"),
+			"fieldtype": "Check",
 		}
 	],
 
@@ -92,7 +97,7 @@ frappe.query_reports["Monthly Attendance Sheet"] = {
 			if (data[attendance_fieldname]) {
 				link = "/app/attendance/" + encodeURIComponent(data[attendance_fieldname]);
 			} else if (status != "Holiday" && !data.is_day_row) {
-				style['opacity'] = '0.6';
+				style['opacity'] = '0.8';
 			}
 
 			if (status == "Holiday") {
@@ -102,6 +107,12 @@ frappe.query_reports["Monthly Attendance Sheet"] = {
 			if (color) {
 				style['color'] = color;
 			}
+
+			style['font-size'] = '8pt';
+			style['line-height'] = '1.6';
+			style['text-align'] = 'center';
+			style['letter-spacing'] = "-0.3px";
+			style['transform'] = "scale(1, 1.2)";
 		}
 
 		return default_formatter(value, row, column, data, {css: style, link_href: link, link_target: "_blank"});

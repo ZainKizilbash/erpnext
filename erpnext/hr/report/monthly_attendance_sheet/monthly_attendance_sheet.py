@@ -168,28 +168,35 @@ def execute(filters=None):
 
 
 def get_columns(filters, leave_types):
+	filters.show_employee_name = frappe.db.get_single_value("HR Settings", "emp_created_by") != "Full Name"
+
 	columns = [
-		{"fieldname": "employee", "label": _("Employee"), "fieldtype": "Link", "options": "Employee", "width": 80},
-		{"fieldname": "employee_name", "label": _("Employee Name"), "fieldtype": "Data", "width": 140},
-		{"fieldname": "designation", "label": _("Designation"), "fieldtype": "Link", "options": "Designation", "width": 100},
+		{"fieldname": "employee", "label": _("Employee"), "fieldtype": "Link", "options": "Employee",
+			"width": 80 if filters.show_employee_name else 150}
 	]
 
+	if filters.show_employee_name:
+		columns.append({"fieldname": "employee_name", "label": _("Employee Name"), "fieldtype": "Data", "width": 140})
+
+	if filters.show_designation:
+		columns.append({"fieldname": "designation", "label": _("Designation"), "fieldtype": "Link", "options": "Designation", "width": 110})
+
 	for day in range(1, filters["total_days_in_month"] + 1):
-		columns.append({"fieldname": "day_{0}".format(day), "label": cstr(day), "fieldtype": "Data", "width": 40,
+		columns.append({"fieldname": "day_{0}".format(day), "label": cstr(day), "fieldtype": "Data", "width": 37,
 			"day": cint(day)})
 
 	columns += [
-		{"fieldname": "total_present", "label": _("Present"), "fieldtype": "Float", "width": 70, "precision": 1},
-		{"fieldname": "total_absent", "label": _("Absent"), "fieldtype": "Float", "width": 70, "precision": 1},
-		{"fieldname": "total_half_day", "label": _("Half Day"), "fieldtype": "Float", "width": 75, "precision": 1},
-		{"fieldname": "total_leave", "label": _("On Leave"), "fieldtype": "Float", "width": 75, "precision": 1},
-		{"fieldname": "total_late_entry", "label": _("Late Entry"), "fieldtype": "Float", "width": 80, "precision": 1},
-		{"fieldname": "total_early_exit", "label": _("Early Exit"), "fieldtype": "Float", "width": 75, "precision": 1},
+		{"fieldname": "total_present", "label": _("Present"), "fieldtype": "Float", "width": 50, "precision": 1},
+		{"fieldname": "total_absent", "label": _("Absent"), "fieldtype": "Float", "width": 50, "precision": 1},
+		{"fieldname": "total_half_day", "label": _("Half Day"), "fieldtype": "Float", "width": 50, "precision": 1},
+		{"fieldname": "total_leave", "label": _("Leave"), "fieldtype": "Float", "width": 50, "precision": 1},
+		{"fieldname": "total_late_entry", "label": _("Late"), "fieldtype": "Float", "width": 50, "precision": 1},
+		{"fieldname": "total_early_exit", "label": _("Early"), "fieldtype": "Float", "width": 50, "precision": 1},
 	]
 
-	columns.append({"fieldname": "total_late_deduction", "label": _("Late Deduction"), "fieldtype": "Float", "width": 110, "precision": 1})
+	columns.append({"fieldname": "total_late_deduction", "label": _("Late Deduction"), "fieldtype": "Float", "width": 90, "precision": 1})
 
-	columns.append({"fieldname": "total_deduction", "label": _("Total Deduction"), "fieldtype": "Float", "width": 112, "precision": 1})
+	columns.append({"fieldname": "total_deduction", "label": _("Total Deduction"), "fieldtype": "Float", "width": 100, "precision": 1})
 
 	for leave_type in leave_types:
 		if leave_type.has_entry:

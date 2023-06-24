@@ -116,6 +116,9 @@ def execute(filters=None):
 							row['shift_start'] = get_time(shift_type_doc.start_time)
 							row['shift_end'] = get_time(shift_type_doc.end_time)
 
+						row['shift_start_fmt'] = format_time(row['shift_start'], "hh:mm a") if row['shift_start'] else None
+						row['shift_end_fmt'] = format_time(row['shift_end'], "hh:mm a") if row['shift_end'] else None
+
 						if not attendance_details and shift_type:
 							if checkins:
 								attendance_status, working_hours, late_entry, early_exit = get_attendance_from_checkins(checkins,
@@ -145,7 +148,7 @@ def execute(filters=None):
 	if filters.get("employee"):
 		totals = calculate_totals(filters.get("employee"), data, filters)
 
-	columns = get_columns(checkin_column_count, totals)
+	columns = get_columns(filters, checkin_column_count, totals)
 
 	return columns, data
 
@@ -331,16 +334,25 @@ def get_attendance_map(filters):
 	return attendance_map
 
 
-def get_columns(checkin_column_count, totals):
+def get_columns(filters, checkin_column_count, totals):
+	filters.show_employee_name = frappe.db.get_single_value("HR Settings", "emp_created_by") != "Full Name"
+
 	columns = [
 		{"fieldname": "date", "label": _("Date"), "fieldtype": "Date", "width": 80, "totals": totals},
 		{"fieldname": "day", "label": _("Day"), "fieldtype": "Data", "width": 80},
-		{"fieldname": "shift_type", "label": _("Shift"), "fieldtype": "Link", "options": "Shift Type", "width": 100},
-		{"fieldname": "employee", "label": _("Employee"), "fieldtype": "Link", "options": "Employee", "width": 80},
-		{"fieldname": "employee_name", "label": _("Employee Name"), "fieldtype": "Data", "width": 140},
-		{"fieldname": "designation", "label": _("Designation"), "fieldtype": "Link", "options": "Designation", "width": 120},
-		{"fieldname": "shift_start", "label": _("Shift Start"), "fieldtype": "Time", "width": 85},
-		{"fieldname": "shift_end", "label": _("Shift End"), "fieldtype": "Time", "width": 85},
+		{"fieldname": "shift_type", "label": _("Shift Name"), "fieldtype": "Link", "options": "Shift Type", "width": 100},
+	]
+
+	if not filters.employee:
+		columns.append({"fieldname": "employee", "label": _("Employee"), "fieldtype": "Link", "options": "Employee",
+			"width": 80 if filters.show_employee_name else 150})
+
+		if filters.show_employee_name:
+			columns.append({"fieldname": "employee_name", "label": _("Employee Name"), "fieldtype": "Data", "width": 140})
+
+	columns += [
+		{"fieldname": "shift_start_fmt", "label": _("Shift Start"), "fieldtype": "Data", "width": 73},
+		{"fieldname": "shift_end_fmt", "label": _("Shift End"), "fieldtype": "Data", "width": 73},
 	]
 
 	for i in range(checkin_column_count):
@@ -356,12 +368,12 @@ def get_columns(checkin_column_count, totals):
 	columns += [
 		{"fieldname": "attendance_status", "label": _("Status"), "fieldtype": "Data", "width": 75},
 		{"fieldname": "remarks", "label": _("Remarks"), "fieldtype": "Data", "width": 100},
-		{"fieldname": "working_hours", "label": _("Hours"), "fieldtype": "Float", "width": 60, "precision": 1},
-		{"fieldname": "late_entry_hours", "label": _("Late Entry"), "fieldtype": "Float", "width": 80, "precision": 1},
-		{"fieldname": "early_exit_hours", "label": _("Early Exit"), "fieldtype": "Float", "width": 80, "precision": 1},
-		{"fieldname": "attendance_marked", "label": _("Marked"), "fieldtype": "Check", "width": 65},
+		{"fieldname": "working_hours", "label": _("W. Hours"), "fieldtype": "Float", "width": 65, "precision": 1},
+		{"fieldname": "late_entry_hours", "label": _("Late Hours"), "fieldtype": "Float", "width": 75, "precision": 1},
+		{"fieldname": "early_exit_hours", "label": _("Early Exit Hours"), "fieldtype": "Float", "width": 77, "precision": 1},
 		{"fieldname": "leave_application", "label": _("Leave Application"), "fieldtype": "Link", "options": "Leave Application", "width": 130},
 		{"fieldname": "attendance_request", "label": _("Attendance Request"), "fieldtype": "Link", "options": "Attendance Request", "width": 140},
+		{"fieldname": "attendance_marked", "label": _("Confirmed"), "fieldtype": "Check", "width": 75},
 	]
 
 	return columns
