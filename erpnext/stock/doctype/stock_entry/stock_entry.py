@@ -265,8 +265,6 @@ class StockEntry(StockController):
 
 	def set_transfer_qty(self):
 		for item in self.get("items"):
-			if not flt(item.qty):
-				frappe.throw(_("Row {0}: Qty is mandatory").format(item.idx))
 			if not flt(item.conversion_factor):
 				frappe.throw(_("Row {0}: UOM Conversion Factor is mandatory").format(item.idx))
 			item.transfer_qty = flt(flt(item.qty) * flt(item.conversion_factor),
@@ -338,6 +336,10 @@ class StockEntry(StockController):
 				item.set(f, item_details.get(f))
 
 	def validate_qty(self):
+		for d in self.get("items"):
+			if not flt(d.qty):
+				frappe.throw(_("Row {0}: Qty is mandatory").format(d.idx))
+
 		manufacture_purpose = ["Manufacture", "Material Consumption for Manufacture"]
 
 		if self.purpose in manufacture_purpose and self.work_order:
