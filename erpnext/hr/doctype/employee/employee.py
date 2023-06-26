@@ -41,6 +41,8 @@ class Employee(NestedSet):
 		from erpnext.accounts.party import validate_ntn_cnic_strn
 		validate_ntn_cnic_strn(self.tax_id, self.tax_cnic)
 
+		self.previous_attendance_device_id = cstr(self.db_get("attendance_device_id")) if not self.is_new() else ""
+
 		self.employee = self.name
 		self.set_employee_name()
 		self.validate_date()
@@ -48,6 +50,7 @@ class Employee(NestedSet):
 		self.validate_status()
 		self.validate_reports_to()
 		self.validate_preferred_email()
+
 		if self.job_applicant:
 			self.validate_onboarding_process()
 
@@ -151,14 +154,13 @@ class Employee(NestedSet):
 	def update_employee_checkins(self):
 		from erpnext.hr.doctype.employee_checkin.employee_checkin import update_employee_for_attendance_device_id
 
-		before_save = self.get_doc_before_save()
-		if not before_save:
+		if self.get("previous_attendance_device_id") is None:
 			return
-		if cstr(self.attendance_device_id) == cstr(before_save.attendance_device_id):
+		if cstr(self.attendance_device_id) == cstr(self.previous_attendance_device_id):
 			return
 
-		if before_save.attendance_device_id:
-			update_employee_for_attendance_device_id(before_save.attendance_device_id, None)
+		if self.previous_attendance_device_id:
+			update_employee_for_attendance_device_id(self.previous_attendance_device_id, None)
 		if self.attendance_device_id:
 			update_employee_for_attendance_device_id(self.attendance_device_id, self.name)
 
