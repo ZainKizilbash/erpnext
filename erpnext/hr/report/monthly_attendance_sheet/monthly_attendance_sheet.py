@@ -182,7 +182,7 @@ def get_columns(filters, leave_types):
 		columns.append({"fieldname": "designation", "label": _("Designation"), "fieldtype": "Link", "options": "Designation", "width": 110})
 
 	for day in range(1, filters["total_days_in_month"] + 1):
-		columns.append({"fieldname": "day_{0}".format(day), "label": cstr(day), "fieldtype": "Data", "width": 37,
+		columns.append({"fieldname": "day_{0}".format(day), "label": cstr(day), "fieldtype": "Data", "width": 38,
 			"day": cint(day)})
 
 	columns += [
