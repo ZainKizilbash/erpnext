@@ -26,7 +26,7 @@ class PayrollEntry(Document):
 
 		self.set_onload('has_bank_entries', self.payroll_entry_has_bank_entries())
 
-	def before_print(self):
+	def before_print(self, print_settings=None):
 		bank_details = self.get_bank_details()
 		self.bank_details = bank_details
 
