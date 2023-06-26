@@ -52,6 +52,8 @@ def execute(filters=None):
 			'total_early_exit': 0,
 			'total_lwp': 0,
 			'total_deduction': 0,
+
+			'disable_party_name_formatter': 1,
 		})
 
 		for day in range(1, filters["total_days_in_month"] + 1):
@@ -172,7 +174,7 @@ def get_columns(filters, leave_types):
 
 	columns = [
 		{"fieldname": "employee", "label": _("Employee"), "fieldtype": "Link", "options": "Employee",
-			"width": 80 if filters.show_employee_name else 150}
+			"width": 75 if filters.show_employee_name else 150}
 	]
 
 	if filters.show_employee_name:
