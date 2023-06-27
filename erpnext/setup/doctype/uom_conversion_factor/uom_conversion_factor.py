@@ -198,4 +198,4 @@ def get_uom_conv_factor(from_uom, to_uom):
 		if conversion_factor:
 			conversion_factor = 1/conversion_factor
 
-	return conversion_factor
+	return flt(conversion_factor, 9)
