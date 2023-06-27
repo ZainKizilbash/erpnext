@@ -416,60 +416,26 @@ def get_employee_from_user(user):
 
 
 def send_employee_birthday_notification():
-	from frappe.desk.doctype.notification_log.notification_log import make_notification_logs_for_role
-	from frappe.core.doctype.role.role import get_info_based_on_role
-
 	if not cint(frappe.db.get_single_value("HR Settings", "send_birthday_notification")):
 		return
 
-	birthday_notification_template = frappe.db.get_single_value("HR Settings", "birthday_notification_template")
-	if not birthday_notification_template:
-		frappe.throw(_("Birthday Notification Template is not set."))
-
-	birthday_template = frappe.get_cached_doc("Email Template", birthday_notification_template)
-
-	role_for_cc = frappe.db.get_single_value("HR Settings", "cc_birthday_notification_to_role")
-
-	if role_for_cc:
-		emails_of_role = set(get_info_based_on_role(role_for_cc, "email", ignore_permissions=True))
-		emails_of_role = set([email for email in emails_of_role if validate_email_address(email)])
-	else:
-		emails_of_role = set()
-
 	date_today = getdate()
-	formatted_date = format_date(date_today)
+
+	email_template_name = frappe.db.get_single_value("HR Settings", "birthday_notification_template")
+	if not email_template_name:
+		frappe.throw(_("Birthday Notification Template is not set."))
 
 	employee_birthday_data = get_employees_who_have_birthday_today(date_today)
 	if not employee_birthday_data:
 		return
 
-	notification_subject = "{0} employee(s) are celebrating their birthday today ({1})".format(len(employee_birthday_data), formatted_date)
-	notification_content = ''
+	role_for_cc = frappe.db.get_single_value("HR Settings", "cc_birthday_notification_to_role")
 
-	for idx, d in enumerate(employee_birthday_data):
-		recipient = d.get("prefered_email") or d.get("company_email") or d.get("personal_email")
-		emails_of_role_formatted = list(emails_of_role - set(recipient))
-		birthday_template_formatted = birthday_template.get_formatted_email(d)
+	notification_subject = "{0} employee(s) are celebrating their birthday today ({1})".format(
+		len(employee_birthday_data), format_date(date_today)
+	)
 
-		if recipient:
-			notification_content += "{0}. {1}: {2}\t-\t<span style='color: green;'>Mail Sent</span><br>".format(idx+1, d.name, d.employee_name)
-
-			frappe.sendmail(
-				recipients=recipient,
-				cc=emails_of_role_formatted,
-				subject=birthday_template_formatted['subject'],
-				message=birthday_template_formatted['message']
-			)
-
-		else:
-			notification_content += "{0}. {1}: {2}\t-\t<span style='color: red;'>Email Missing</span><br>".format(idx+1, d.name, d.employee_name)
-
-	notification_doc = {
-		"type": "Alert",
-		"subject": notification_subject,
-		"email_content": notification_content
-	}
-	make_notification_logs_for_role(notification_doc, "HR Manager")
+	send_employee_notification(employee_birthday_data, email_template_name, role_for_cc, notification_subject, date_today)
 
 
 def get_employees_who_have_birthday_today(date_today=None):
@@ -487,62 +453,29 @@ def get_employees_who_have_birthday_today(date_today=None):
 
 
 def send_employee_anniversary_notification():
-	from frappe.desk.doctype.notification_log.notification_log import make_notification_logs_for_role
-	from frappe.core.doctype.role.role import get_info_based_on_role
-
 	if not cint(frappe.db.get_single_value("HR Settings", "send_anniversary_notification")):
 		return
 
-	anniversary_notification_template = frappe.db.get_single_value("HR Settings", "anniversary_notification_template")
-	if not anniversary_notification_template:
-		frappe.throw(_("Anniversary Notification Template is not set."))
-
-	anniversary_template = frappe.get_cached_doc("Email Template", anniversary_notification_template)
-
-	role_for_cc = frappe.db.get_single_value("HR Settings", "cc_anniversary_notification_to_role")
-
-	if role_for_cc:
-		emails_of_role = set(get_info_based_on_role(role_for_cc, "email", ignore_permissions=True))
-		emails_of_role = set([email for email in emails_of_role if validate_email_address(email)])
-	else:
-		emails_of_role = set()
-
 	date_today = getdate()
-	formatted_date = format_date(date_today)
+
+	email_template_name = frappe.db.get_single_value("HR Settings", "anniversary_notification_template")
+	if not email_template_name:
+		frappe.throw(_("Anniversary Notification Template is not set."))
 
 	employee_anniversary_data = get_employees_who_have_anniversary_today(date_today)
 	if not employee_anniversary_data:
 		return
 
-	notification_subject = "{0} employee(s) are celebrating their Work Anniversary today ({1})".format(len(employee_anniversary_data), formatted_date)
-	notification_content = ''
+	for d in employee_anniversary_data:
+		d['number_of_years'] = date_today.year - d.year_of_joining
 
-	for idx, d in enumerate(employee_anniversary_data):
-		recipient = d.get("prefered_email") or d.get("company_email") or d.get("personal_email")
-		number_of_years = date_today.year - d.year_of_joining
-		d['number_of_years'] = number_of_years
-		emails_of_role_formatted = list(emails_of_role - set(recipient))
-		anniversary_template_formatted = anniversary_template.get_formatted_email(d)
+	role_for_cc = frappe.db.get_single_value("HR Settings", "cc_anniversary_notification_to_role")
 
-		if recipient:
-			notification_content += "{0}. {1}: {2}\t-\t<span style='color: green;'>Mail Sent</span><br>".format(idx+1, d.name, d.employee_name)
+	notification_subject = "{0} employee(s) are celebrating their Work Anniversary today ({1})".format(
+		len(employee_anniversary_data), format_date(date_today)
+	)
 
-			frappe.sendmail(
-				recipients=recipient,
-				cc=emails_of_role_formatted,
-				subject=anniversary_template_formatted['subject'],
-				message=anniversary_template_formatted['message']
-			)
-
-		else:
-			notification_content += "{0}. {1}: {2}\t-\t<span style='color: red;'>Email Missing</span><br>".format(idx+1, d.name, d.employee_name)
-
-	notification_doc = {
-		"type": "Alert",
-		"subject": notification_subject,
-		"email_content": notification_content
-	}
-	make_notification_logs_for_role(notification_doc, "HR Manager")
+	send_employee_notification(employee_anniversary_data, email_template_name, role_for_cc, notification_subject, date_today)
 
 
 def get_employees_who_have_anniversary_today(date_today=None):
@@ -558,3 +491,50 @@ def get_employees_who_have_anniversary_today(date_today=None):
 	""", [date_today.day, date_today.month, date_today.year], as_dict=1)
 
 	return employee_anniversary_data
+
+
+def send_employee_notification(employee_data, email_template_name, role_for_cc, notification_subject, date_today):
+	from frappe.desk.doctype.notification_log.notification_log import make_notification_logs_for_role
+	from frappe.core.doctype.role.role import get_info_based_on_role
+
+	if not employee_data or not email_template_name:
+		return
+
+	date_today = getdate(date_today)
+	email_template = frappe.get_cached_doc("Email Template", email_template_name)
+
+	emails_for_cc = set()
+	if role_for_cc:
+		emails_for_cc = get_info_based_on_role(role_for_cc, "email", ignore_permissions=True)
+		emails_for_cc = set([email for email in emails_for_cc if validate_email_address(email)])
+
+	notification_content = []
+
+	for i, d in enumerate(employee_data):
+		recipient = d.get("prefered_email") or d.get("company_email") or d.get("personal_email")
+		if recipient:
+			d['number_of_years'] = date_today.year - d.year_of_joining
+			formatted_template = email_template.get_formatted_email(d)
+
+			frappe.sendmail(
+				recipients=recipient,
+				cc=list(emails_for_cc - set([recipient])),
+				subject=formatted_template['subject'],
+				message=formatted_template['message']
+			)
+
+			notification_content.append("{0}. {1}: {2} - <span style='color: green;'>Mail Sent</span>".format(
+				i + 1, d.name, d.employee_name
+			))
+		else:
+			notification_content.append("{0}. {1}: {2} - <span style='color: red;'>Email Missing</span>".format(
+				i + 1, d.name, d.employee_name
+			))
+
+	if notification_subject:
+		notification_doc = {
+			"type": "Alert",
+			"subject": notification_subject,
+			"email_content": "\n".join(notification_content),
+		}
+		make_notification_logs_for_role(notification_doc, "HR Manager")
