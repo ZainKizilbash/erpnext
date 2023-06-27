@@ -104,7 +104,7 @@ class StatusUpdater(Document):
 		total_completed_qty = flt(total_completed_qty, precision)
 
 		if total_reference_qty:
-			completed_percentage = flt(total_completed_qty / total_reference_qty * 100, 6)
+			completed_percentage = flt(total_completed_qty / total_reference_qty * 100, 3)
 			if under_delivery_allowance:
 				return completed_percentage, within_allowance
 			else:
