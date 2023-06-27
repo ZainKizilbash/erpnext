@@ -117,8 +117,8 @@ def execute(filters=None):
 							row['shift_start'] = get_time(shift_type_doc.start_time)
 							row['shift_end'] = get_time(shift_type_doc.end_time)
 
-						row['shift_start_fmt'] = format_time(row['shift_start'], "hh:mm a") if row['shift_start'] else None
-						row['shift_end_fmt'] = format_time(row['shift_end'], "hh:mm a") if row['shift_end'] else None
+						row['shift_start_fmt'] = format_time(row['shift_start'], "hh:mm a") if row.get('shift_start') else None
+						row['shift_end_fmt'] = format_time(row['shift_end'], "hh:mm a") if row.get('shift_end') else None
 
 						if not attendance_details and shift_type:
 							if checkins:
