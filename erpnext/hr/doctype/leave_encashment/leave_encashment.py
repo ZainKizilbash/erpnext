@@ -29,11 +29,11 @@ class LeaveEncashment(Document):
 		}
 
 	def validate(self):
-		set_employee_name(self)
-		self.get_leave_details_for_encashment()
-
 		if not self.encashment_date:
 			self.encashment_date = getdate(nowdate())
+
+		set_employee_name(self)
+		self.get_leave_details_for_encashment()
 
 	def before_submit(self):
 		if self.encashment_amount <= 0:

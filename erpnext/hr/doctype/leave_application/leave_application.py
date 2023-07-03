@@ -327,9 +327,13 @@ class LeaveApplication(Document):
 		if self.late_deduction:
 			return
 
-		attendance = frappe.db.sql("""select name from `tabAttendance` where employee = %s and (attendance_date between %s and %s)
-					and (status = 'Present' or ifnull(attendance_request, '') != '') and docstatus = 1""",
-			(self.employee, self.from_date, self.to_date))
+		attendance = frappe.db.sql("""
+			select name from `tabAttendance`
+			where employee = %s and (attendance_date between %s and %s)
+				and (status = 'Present' or ifnull(attendance_request, '') != '')
+				and docstatus = 1
+		""", (self.employee, self.from_date, self.to_date))
+
 		if attendance:
 			frappe.throw(_("Attendance for employee {0} is already marked for this day").format(
 				self.employee_name or self.employee), AttendanceAlreadyMarkedError)
