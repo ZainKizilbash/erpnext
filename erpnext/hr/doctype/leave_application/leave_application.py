@@ -693,7 +693,7 @@ def skip_expiry_leaves(leave_entry, date):
 	''' Checks whether the expired leaves coincide with the to_date of leave balance check.
 		This allows backdated leave entry creation for non carry forwarded allocation '''
 	end_date = frappe.db.get_value("Leave Allocation", {'name': leave_entry.transaction_name}, ['to_date'])
-	return True if end_date == date and not leave_entry.is_carry_forward else False
+	return True if getdate(end_date) == getdate(date) and not leave_entry.is_carry_forward else False
 
 def get_leave_entries(employee, leave_type, from_date, to_date):
 	''' Returns leave entries between from_date and to_date. '''
