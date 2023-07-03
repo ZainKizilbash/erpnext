@@ -174,7 +174,7 @@ def get_columns(filters, leave_types):
 
 	columns = [
 		{"fieldname": "employee", "label": _("Employee"), "fieldtype": "Link", "options": "Employee",
-			"width": 75 if filters.show_employee_name else 150}
+			"width": 75 if filters.show_employee_name else 150, "total_days_in_month": filters["total_days_in_month"]}
 	]
 
 	if filters.show_employee_name:

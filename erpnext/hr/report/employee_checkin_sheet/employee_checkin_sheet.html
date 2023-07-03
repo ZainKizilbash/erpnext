@@ -64,7 +64,7 @@
 		</tr>
 	</thead>
 	<tbody>
-		{% for(var i=0, l=data.length; i<l; i++) { %}
+		{% for(var i = 0, l = data.length; i++) { %}
 			<tr>
 				<td class="text-center">{%= frappe.datetime.str_to_user(data[i].date) %}</td>
 				<td class="text-left">{%= data[i].day %}</td>
@@ -76,7 +76,7 @@
 				<td class="text-center">{%= data[i].time_in %}</td>
 				<td class="text-center">{%= data[i].time_out %}</td>
 				<td class="text-center">{%= data[i].working_hours %}</td>
-				<td class="text-center" style="color: {%= [data[i].attendance_color] + ' !important' %}; font-weight: {%= data[i].attendance_status === 'Holiday' ? 'bold' : 'normal' %};">
+				<td class="text-center">
 					{%= data[i].attendance_status ? data[i].attendance_status : '' %}
 				</td>
 				<td class="text-center">{%= data[i].late_entry_hours ? flt(data[i].late_entry_hours, 2) : '' %}</td>
