@@ -9,16 +9,9 @@
 	{%= __("Monthly Attendance Sheet") %}
 </h2>
 <h4 class="text-center">
-	{% if (filters.from_date == filters.to_date) { %}
-		{%= moment(filters.from_date).format('MMMM YYYY') %}
-	{% } else { %}
-		{%= moment(filters.from_date).format('MMMM YYYY') %}
-		{% if (moment(filters.from_date).format('MMMM') != moment(filters.to_date).format('MMMM')) { %}
-			{%= " - " %}
-			{%= moment(filters.to_date).format('MMMM YYYY') %}
-		{% } else { %}
-			{%= " " %}
-		{% } %}
+	{%= moment(filters.from_date).format('MMMM YYYY') %}
+	{% if (moment(filters.from_date).format('MMMM') != moment(filters.to_date).format('MMMM')) { %}
+		- {%= moment(filters.to_date).format('MMMM YYYY') %}
 	{% } %}
 </h4>
 <table class="table table-bordered" style="width: 100%;">
