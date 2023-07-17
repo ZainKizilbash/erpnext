@@ -13,16 +13,17 @@ frappe.query_reports["Monthly Attendance Sheet"] = {
 			"reqd": 1
 		},
 		{
-			"fieldname":"year",
-			"label": __("Year"),
-			"fieldtype": "Select",
+			"fieldname": "from_date",
+			"label": __("From Date"),
+			"fieldtype": "Date",
+			"default": frappe.datetime.month_start(),
 			"reqd": 1
 		},
 		{
-			"fieldname":"month",
-			"label": __("Month"),
-			"fieldtype": "Select",
-			"options": "Jan\nFeb\nMar\nApr\nMay\nJun\nJul\nAug\nSep\nOct\nNov\nDec",
+			"fieldname": "to_date",
+			"label": __("To Date"),
+			"fieldtype": "Date",
+			"default": frappe.datetime.month_end(),
 			"reqd": 1
 		},
 		{
@@ -37,24 +38,6 @@ frappe.query_reports["Monthly Attendance Sheet"] = {
 			"fieldtype": "Check",
 		}
 	],
-
-	onload: function() {
-		return  frappe.call({
-			method: "erpnext.hr.report.monthly_attendance_sheet.monthly_attendance_sheet.get_attendance_years",
-			callback: function(r) {
-				var year_filter = frappe.query_report.get_filter('year');
-				year_filter.df.options = r.message;
-
-				var today = frappe.datetime.str_to_obj(frappe.datetime.get_today());
-				year_filter.df.default = today.getFullYear();
-
-				year_filter.refresh();
-				year_filter.set_input(year_filter.df.default);
-
-				frappe.query_report.set_filter_value('month', moment(today).format("MMM"));
-			}
-		});
-	},
 
 	formatter: function(value, row, column, data, default_formatter) {
 		var style = {};
@@ -87,10 +70,10 @@ frappe.query_reports["Monthly Attendance Sheet"] = {
 			style['color'] = 'orange';
 		}
 
-		if (column.day) {
-			var attendance_fieldname = "attendance_day_" + column.day;
-			var status_fieldname = "status_day_" + column.day;
-			var color_fieldname = "color_day_" + column.day;
+		if (column.date) {
+			var attendance_fieldname = "attendance_date_" + column.date;
+			var status_fieldname = "status_date_" + column.date;
+			var color_fieldname = "color_date_" + column.date;
 			var status = data[status_fieldname];
 			var color = data[color_fieldname];
 
