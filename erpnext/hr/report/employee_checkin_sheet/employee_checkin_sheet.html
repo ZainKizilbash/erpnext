@@ -16,7 +16,7 @@
 </h2>
 <h4 class="text-center">
 	{%= moment(filters.from_date).format('MMMM YYYY') %}
-	{% if (moment(filters.from_date).format('MMMM') != moment(filters.to_date).format('MMMM')) { %}
+	{% if (moment(filters.from_date).format('MMMM YYYY') != moment(filters.to_date).format('MMMM YYYY')) { %}
 		- {%= moment(filters.to_date).format('MMMM YYYY') %}
 	{% } %}
 </h4>
