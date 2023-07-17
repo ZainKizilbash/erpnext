@@ -36,9 +36,9 @@
 			{% let current_date = columns[0].from_date %}
 
 			{% while (current_date <= columns[0].to_date) { %}
-				{% let attendance_key = 'date_' + current_date %}
-				{% let attendance_status = data[i][attendance_key] %}
-				<td class="text-center"{% if (attendance_status === 'H') { %} style="font-weight: bold;"{% } %}>
+				{% let attendance_status_key = 'status_date_' + current_date %}
+				{% let attendance_status = data[i][attendance_status_key] %}
+				<td class="text-center"{% if (attendance_status === 'Holiday') { %} style="font-weight: bold;"{% } %}>
 					{%= attendance_status %}
 				</td>
 				{% current_date = frappe.datetime.add_days(current_date, 1) %}
