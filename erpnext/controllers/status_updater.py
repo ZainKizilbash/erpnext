@@ -159,15 +159,15 @@ class StatusUpdater(Document):
 			completed_field = [completed_field]
 
 		reference_qty = flt(row.get(reference_field), row.precision(reference_field))
-		completed_qty = 0
-		for f in completed_field:
-			completed_qty += flt(row.get(f))
+
+		completed_qty = sum([flt(row.get(f)) for f in completed_field])
+		completed_qty = flt(completed_qty, row.precision(reference_field))
 
 		if not allowance_type:
 			difference = completed_qty - reference_qty
 			excess_qty = difference
 		elif allowance_type == "max_qty_field":
-			max_qty = flt(row.get(max_qty_field), row.precision(max_qty_field))
+			max_qty = flt(row.get(max_qty_field), row.precision(reference_field))
 			excess_qty = completed_qty - max_qty
 		else:
 			excess_qty = get_excess_qty_with_allowance(row, completed_field, reference_field, allowance_type)
