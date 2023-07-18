@@ -42,12 +42,12 @@ class CustomerFeedback(Document):
 	def update_communication(self):
 		previous_values = self.get('previous_values') or {}
 		if self.get("contact_remarks") and cstr(previous_values.get('contact_remarks')) != cstr(self.contact_remarks):
-			self.create_communication("contact_remarks")
+			self.create_communication("contact_remarks", set_timeline_links=False)
 
 		if self.get("customer_feedback") and cstr(previous_values.get('customer_feedback')) != cstr(self.customer_feedback):
-			self.create_communication("customer_feedback")
+			self.create_communication("customer_feedback", set_timeline_links=True)
 
-	def create_communication(self, for_field):
+	def create_communication(self, for_field, set_timeline_links):
 		subject = _("Customer Feedback") + (_(" Remarks") if for_field == "contact_remarks" else "")
 
 		if self.reference_doctype and self.reference_name:
@@ -64,29 +64,30 @@ class CustomerFeedback(Document):
 			"sender": frappe.session.user
 		})
 
-		if self.reference_doctype and self.reference_name:
-			communication_doc.append("timeline_links", {
-				"link_doctype": self.reference_doctype,
-				"link_name": self.reference_name
-			})
+		if set_timeline_links:
+			if self.reference_doctype and self.reference_name:
+				communication_doc.append("timeline_links", {
+					"link_doctype": self.reference_doctype,
+					"link_name": self.reference_name
+				})
 
-		if self.customer:
-			communication_doc.append("timeline_links", {
-				"link_doctype": "Customer",
-				"link_name": self.customer,
-			})
+			if self.customer:
+				communication_doc.append("timeline_links", {
+					"link_doctype": "Customer",
+					"link_name": self.customer,
+				})
 
-		if self.applies_to_serial_no:
-			communication_doc.append("timeline_links", {
-				"link_doctype": "Serial No",
-				"link_name": self.applies_to_serial_no,
-			})
+			if self.applies_to_serial_no:
+				communication_doc.append("timeline_links", {
+					"link_doctype": "Serial No",
+					"link_name": self.applies_to_serial_no,
+				})
 
-		if 'Vehicles' in frappe.get_active_domains() and self.applies_to_vehicle:
-			communication_doc.append("timeline_links", {
-				"link_doctype": "Vehicle",
-				"link_name": self.applies_to_vehicle,
-			})
+			if 'Vehicles' in frappe.get_active_domains() and self.applies_to_vehicle:
+				communication_doc.append("timeline_links", {
+					"link_doctype": "Vehicle",
+					"link_name": self.applies_to_vehicle,
+				})
 
 		communication_doc.insert(ignore_permissions=True)
 
