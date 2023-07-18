@@ -8,14 +8,20 @@
 <h2 class="text-center">
 	{%= __("Monthly Attendance Sheet") %}
 </h2>
+<h4 class="text-center">
+	{%= moment(filters.from_date).format('MMMM YYYY') %}
+	{% if (moment(filters.from_date).format('MMMM YYYY') != moment(filters.to_date).format('MMMM YYYY')) { %}
+		- {%= moment(filters.to_date).format('MMMM YYYY') %}
+	{% } %}
+</h4>
 <table class="table table-bordered" style="width: 100%;">
 	<thead>
 		<tr>
 			<th style="width: 3%;" class="text-center">S.No</th>
 			<th style="width: 20%;" class="text-left">Employee</th>
 
-			{% for(let column of columns) { %}
-				{% if (column.day) { %}
+			{% for (const [i, column] of columns.entries()) { %}
+				{% if (column.date) { %}
 					<th class="text-center">{%= column.label %}</th>
 				{% } %}
 			{% } %}
@@ -26,15 +32,18 @@
 		<tr>
 			<td class="text-center">{%= i+1 %}</td>
 			<td class="text-left">{%= data[i].employee_name %}</td>
-			{% for(let column of columns) { %}
-				{% for(let day = 1; day <= column.total_days_in_month; day++) { %}
-					{% let dayKey = 'day_' + day %}
-					{% let dayValue = data[i][dayKey] %}
-					<td class="text-center"{% if (dayValue === 'H') { %} style="font-weight: bold;"{% } %}>
-						{%= dayValue %}
-					</td>
-				{% } %}
+
+			{% let current_date = columns[0].from_date %}
+
+			{% while (current_date <= columns[0].to_date) { %}
+				{% let attendance_status_key = 'status_date_' + current_date %}
+				{% let attendance_status = data[i][attendance_status_key] %}
+				<td class="text-center"{% if (attendance_status === 'Holiday') { %} style="font-weight: bold;"{% } %}>
+					{%= attendance_status %}
+				</td>
+				{% current_date = frappe.datetime.add_days(current_date, 1) %}
 			{% } %}
+
 		</tr>
 		{% } %}
 	</tbody>

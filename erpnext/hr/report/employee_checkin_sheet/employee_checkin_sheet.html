@@ -15,16 +15,9 @@
 	{%= __("Employee Checkin Sheet") %}
 </h2>
 <h4 class="text-center">
-	{% if (filters.from_date == filters.to_date) { %}
-    	{%= moment(filters.from_date).format('MMMM YYYY') %}
-	{% } else { %}
-   		{%= moment(filters.from_date).format('MMMM YYYY') %}
-		{% if (moment(filters.from_date).format('MMMM') != moment(filters.to_date).format('MMMM')) { %}
-			{%= __(" - ") %}
-			{%= moment(filters.to_date).format('MMMM YYYY') %}
-		{% } else { %}
-			{%= __(" ") %}
-		{% } %}
+	{%= moment(filters.from_date).format('MMMM YYYY') %}
+	{% if (moment(filters.from_date).format('MMMM YYYY') != moment(filters.to_date).format('MMMM YYYY')) { %}
+		- {%= moment(filters.to_date).format('MMMM YYYY') %}
 	{% } %}
 </h4>
 

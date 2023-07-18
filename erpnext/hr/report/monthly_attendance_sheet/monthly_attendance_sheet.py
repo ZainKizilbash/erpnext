@@ -2,14 +2,11 @@
 # License: GNU General Public License v3. See license.txt
 
 import frappe
-from frappe import msgprint, _, scrub
-from frappe.utils import cstr, cint, getdate, get_last_day, add_months, today, formatdate
+from frappe import _, scrub
+from frappe.utils import cstr, cint, getdate, add_days, formatdate
 from erpnext.hr.doctype.holiday_list.holiday_list import get_default_holiday_list
 from erpnext.hr.utils import get_employee_leave_policy
 from erpnext.hr.doctype.shift_assignment.shift_assignment import get_employee_shift
-from calendar import monthrange
-import datetime
-from collections import OrderedDict
 
 
 def execute(filters=None):
@@ -56,13 +53,13 @@ def execute(filters=None):
 			'disable_party_name_formatter': 1,
 		})
 
-		for day in range(1, filters["total_days_in_month"] + 1):
-			attendance_date = datetime.date(year=filters.year, month=filters.month, day=day)
-			is_holiday = is_date_holiday(attendance_date, holiday_map, employee_details, filters.default_holiday_list)
+		current_date = filters.from_date
+		while current_date <= filters.to_date:
+			is_holiday = is_date_holiday(current_date, holiday_map, employee_details, filters.default_holiday_list)
 
-			attendance_details = attendance_map.get(employee, {}).get(day, frappe._dict())
+			attendance_details = attendance_map.get(employee, {}).get(current_date, frappe._dict())
 			if not attendance_details:
-				checkin_shifts = checkin_map.get(employee, {}).get(day, {})
+				checkin_shifts = checkin_map.get(employee, {}).get(current_date, {})
 				first_shift = list(checkin_shifts.keys())[0] if checkin_shifts else None
 				checkins = checkin_shifts[first_shift] if first_shift else []
 
@@ -72,25 +69,25 @@ def execute(filters=None):
 					attendance_details.status = attendance_status
 					attendance_details.late_entry = late_entry
 					attendance_details.early_exit = early_exit
-				elif not is_holiday and is_in_employment_date(attendance_date, employee_details):
-					absent_shift = get_employee_shift(employee, attendance_date, True)
-					if absent_shift and shift_ended(absent_shift.shift_type.name, attendance_date=attendance_date):
+				elif not is_holiday and is_in_employment_date(current_date, employee_details):
+					absent_shift = get_employee_shift(employee, current_date, True)
+					if absent_shift and shift_ended(absent_shift.shift_type.name, attendance_date=current_date):
 						attendance_details.status = "Absent"
 
 			attendance_status = attendance_details.get('status')
 			if not attendance_status and is_holiday:
 				attendance_status = "Holiday"
 
-			day_fieldname = "day_{0}".format(day)
-			row["status_" + day_fieldname] = attendance_status
-			row["attendance_" + day_fieldname] = attendance_details.name
+			date_fieldname = "date_{0}".format(current_date)
+			row["status_" + date_fieldname] = attendance_status
+			row["attendance_" + date_fieldname] = attendance_details.name
 
 			attendance_status_abbr = get_attendance_status_abbr(attendance_status, attendance_details.late_entry,
 				attendance_details.early_exit, attendance_details.leave_type)
-			row[day_fieldname] = attendance_status_abbr
+			row[date_fieldname] = attendance_status_abbr
 
 			attendance_status_color = get_attendance_status_color(attendance_status)
-			row["color_" + day_fieldname] = attendance_status_color
+			row["color_" + date_fieldname] = attendance_status_color
 
 			if attendance_status == "Present":
 				row['total_present'] += 1
@@ -128,6 +125,8 @@ def execute(filters=None):
 						row['total_deduction'] += leave_count
 						row['total_lwp'] += leave_count
 
+			current_date = add_days(current_date, 1)
+
 		row['total_late_deduction'] = 0
 
 		leave_policy = get_employee_leave_policy(employee)
@@ -156,12 +155,13 @@ def execute(filters=None):
 
 	if data:
 		days_row = frappe._dict({})
-		for day in range(1, filters["total_days_in_month"] + 1):
-			attendance_date = datetime.date(year=filters.year, month=filters.month, day=day)
-			day_fieldname = "day_{0}".format(day)
-			day_of_the_week = formatdate(attendance_date, "EE")
-			days_row[day_fieldname] = day_of_the_week
+		current_date = filters.from_date
+		while current_date <= filters.to_date:
+			date_fieldname = "date_{0}".format(current_date)
+			day_of_the_week = formatdate(current_date, "EE")
+			days_row[date_fieldname] = day_of_the_week
 			days_row.is_day_row = 1
+			current_date = add_days(current_date, 1)
 
 		data.insert(0, days_row)
 
@@ -174,7 +174,7 @@ def get_columns(filters, leave_types):
 
 	columns = [
 		{"fieldname": "employee", "label": _("Employee"), "fieldtype": "Link", "options": "Employee",
-			"width": 75 if filters.show_employee_name else 150, "total_days_in_month": filters["total_days_in_month"]}
+			"width": 75 if filters.show_employee_name else 150,"from_date": filters.from_date, "to_date": filters.to_date}
 	]
 
 	if filters.show_employee_name:
@@ -183,9 +183,14 @@ def get_columns(filters, leave_types):
 	if filters.show_designation:
 		columns.append({"fieldname": "designation", "label": _("Designation"), "fieldtype": "Link", "options": "Designation", "width": 110})
 
-	for day in range(1, filters["total_days_in_month"] + 1):
-		columns.append({"fieldname": "day_{0}".format(day), "label": cstr(day), "fieldtype": "Data", "width": 38,
-			"day": cint(day)})
+
+	current_date = filters.from_date
+	column_label = 1
+	while current_date <= filters.to_date:
+		columns.append({"fieldname": "date_{0}".format(current_date), "label": cstr(column_label), "fieldtype": "Data", "width": 38,
+			"date": current_date})
+		column_label += 1
+		current_date = add_days(current_date, 1)
 
 	columns += [
 		{"fieldname": "total_present", "label": _("Present"), "fieldtype": "Float", "width": 50, "precision": 1},
@@ -213,8 +218,7 @@ def get_attendance_map(filters):
 	conditions = get_conditions(filters)
 
 	attendance_list = frappe.db.sql("""
-		select name, employee, day(attendance_date) as day_of_month, attendance_date,
-			status, late_entry, early_exit, leave_type
+		select name, employee, attendance_date, status, late_entry, early_exit, leave_type
 		from tabAttendance
 		where docstatus = 1 and attendance_date between %(from_date)s and %(to_date)s {0}
 		order by employee, attendance_date
@@ -222,8 +226,8 @@ def get_attendance_map(filters):
 
 	attendance_map = {}
 	for d in attendance_list:
-		attendance_map.setdefault(d.employee, frappe._dict()).setdefault(d.day_of_month, frappe._dict())
-		attendance_map[d.employee][d.day_of_month] = d
+		date = getdate(d.attendance_date)
+		attendance_map.setdefault(d.employee, frappe._dict())[date] = d
 
 	return attendance_map
 
@@ -232,7 +236,7 @@ def get_employee_checkin_map(filters):
 	conditions = get_conditions(filters)
 
 	employee_checkins = frappe.db.sql("""
-		select *, day(shift_start) as day_of_month
+		select *, date(shift_start) as shift_date
 		from `tabEmployee Checkin`
 		where date(shift_start) between %(from_date)s and %(to_date)s
 			and ifnull(attendance, '') = ''
@@ -244,28 +248,22 @@ def get_employee_checkin_map(filters):
 
 	employee_checkin_map = {}
 	for d in employee_checkins:
-		employee_checkin_map.setdefault(d.employee, {})\
-			.setdefault(d.day_of_month, OrderedDict())\
-			.setdefault(cstr(d.shift), [])\
-			.append(d)
+		date = getdate(d.shift_date)
+		employee_data = employee_checkin_map.setdefault(d.employee, frappe._dict())
+		employee_data.setdefault(date, frappe._dict()).setdefault(cstr(d.shift), []).append(d)
 
 	return employee_checkin_map
 
 
 def validate_filters(filters):
-	if not (filters.get("month") and filters.get("year")):
-		msgprint(_("Please select month and year"), raise_exception=1)
+	filters.from_date = getdate(filters.from_date)
+	filters.to_date = getdate(filters.to_date)
+
+	if filters.from_date > filters.to_date:
+		frappe.throw(_("From Date must be before To Date"))
 
 	if not filters.company:
 		frappe.throw(_("Please select Company"))
-
-	filters["year"] = cint(filters["year"])
-	filters["month"] = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]\
-		.index(filters.month) + 1
-
-	filters["total_days_in_month"] = monthrange(filters.year, filters.month)[1]
-	filters["from_date"] = datetime.date(year=filters.year, month=filters.month, day=1)
-	filters["to_date"] = get_last_day(filters["from_date"])
 
 	filters["default_holiday_list"] = get_default_holiday_list(filters.company)
 
@@ -371,26 +369,6 @@ def get_holiday_map_from_holiday_lists(holiday_lists, from_date=None, to_date=No
 			holiday_map.setdefault(holiday_list, holidays)
 
 	return holiday_map
-
-
-@frappe.whitelist()
-def get_attendance_years():
-	year_list = frappe.db.sql_list("""
-		select distinct YEAR(attendance_date)
-		from tabAttendance
-		where docstatus = 1
-	""")
-
-	if not year_list:
-		year_list = []
-
-	year_list.append(getdate().year)
-	year_list.append(getdate(add_months(today(), -1)).year)
-
-	year_list = list(set(year_list))
-	year_list = sorted(year_list, reverse=True)
-
-	return "\n".join(str(year) for year in year_list)
 
 
 def get_attendance_status_abbr(attendance_status, late_entry=0, early_exit=0, leave_type=None):
