@@ -174,7 +174,7 @@ def get_columns(filters, leave_types):
 
 	columns = [
 		{"fieldname": "employee", "label": _("Employee"), "fieldtype": "Link", "options": "Employee",
-			"width": 75 if filters.show_employee_name else 150,"from_date": filters.from_date, "to_date": filters.to_date}
+			"width": 75 if filters.show_employee_name else 150, "from_date": filters.from_date, "to_date": filters.to_date}
 	]
 
 	if filters.show_employee_name:
@@ -182,7 +182,6 @@ def get_columns(filters, leave_types):
 
 	if filters.show_designation:
 		columns.append({"fieldname": "designation", "label": _("Designation"), "fieldtype": "Link", "options": "Designation", "width": 110})
-
 
 	current_date = filters.from_date
 	while current_date <= filters.to_date:
