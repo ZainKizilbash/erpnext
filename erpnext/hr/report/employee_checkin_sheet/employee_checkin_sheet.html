@@ -8,7 +8,6 @@
 	padding-left: 50px;
 	padding-right: 50px;
 }
-
 </style>
 
 <h2 class="text-center">
@@ -24,7 +23,7 @@
 <div class="clearfix">
 	<div class="pull-left" style="width: 50%;">
 	{% if (filters.employee) { %}
-		<div><b>Employee Name:</b> {%= filters.employee_name %}</div>
+		<div><b>Employee:</b> {%= filters.employee_name %}</div>
 		<div><b>Designation:</b> {%= filters.designation %}</div>
 		<div><b>Department:</b> {%= filters.department %}</div>
 	{% } %}
@@ -57,7 +56,7 @@
 		</tr>
 	</thead>
 	<tbody>
-		{% for(var i = 0, l = data.length; i++) { %}
+		{% for(var i = 0, l = data.length; i < l; i++) { %}
 			<tr>
 				<td class="text-center">{%= frappe.datetime.str_to_user(data[i].date) %}</td>
 				<td class="text-left">{%= data[i].day %}</td>
@@ -81,30 +80,29 @@
 
 {% var totals = columns[0].totals %}
 {% if (totals) { %}
-
 <h2 class="text-center">Attendance Summary</h2>
 <div class="clearfix attendance-summary-table">
 	<table class="pull-left" style="width: 35%">
 		<tbody>
 			<tr>
 				<td>Total Present:</td>
-				<td class="text-right">{%= totals.total_present %}</td>
+				<td>{%= totals.total_present %}</td>
 			</tr>
 			<tr>
 				<td>Total Half Days:</td>
-				<td class="text-right">{%= totals.total_half_day %}</td>
+				<td>{%= totals.total_half_day %}</td>
 			</tr>
 			<tr>
 				<td>Total Holidays:</td>
-				<td class="text-right">{%= totals.total_holiday %}</td>
+				<td>{%= totals.total_holiday %}</td>
 			</tr>
 			<tr>
 				<td>Total Leaves:</td>
-				<td class="text-right">{%= totals.total_leave %}</td>
+				<td>{%= totals.total_leave %}</td>
 			</tr>
 			<tr>
 				<td><b>Net Present Days:</b></td>
-				<td class="text-right"><b>{%= totals.total_net_present %}</b></td>
+				<td><b>{%= totals.total_net_present %}</b></td>
 			</tr>
 		</tbody>
 	</table>
@@ -112,23 +110,23 @@
 		<tbody>
 			<tr>
 				<td>Total Absent:</td>
-				<td class="text-right">{%= totals.total_absent %}</td>
+				<td>{%= totals.total_absent %}</td>
 			</tr>
 			<tr>
 				<td>Late Entries:</td>
-				<td class="text-right">{%= totals.total_late_entry %}</td>
+				<td>{%= totals.total_late_entry %}</td>
 			</tr>
 			<tr>
 				<td>Early Exits:</td>
-				<td class="text-right">{%= totals.total_early_exit %}</td>
+				<td>{%= totals.total_early_exit %}</td>
 			</tr>
 			<tr>
 				<td>Late Deduction:</td>
-				<td class="text-right">{%= totals.total_late_deduction %}</td>
+				<td>{%= totals.total_late_deduction %}</td>
 			</tr>
 			<tr>
 				<td><b>Total Deduction:</b></td>
-				<td class="text-right"><b>{%= totals.total_deduction %}</b></td>
+				<td><b>{%= totals.total_deduction %}</b></td>
 			</tr>
 		</tbody>
 	</table>
@@ -136,15 +134,15 @@
 		<tbody>
 			<tr>
 				<td>Total Working Hours:</td>
-				<td class="text-right">{%= totals.total_working_hours %}</td>
+				<td>{%= totals.total_working_hours %}</td>
 			</tr>
 			<tr>
 				<td>Total Late Entry Hours:</td>
-			<td class="text-right">{%= totals.total_late_entry_hours %}</td>
+				<td>{%= totals.total_late_entry_hours %}</td>
 			</tr>
 			<tr>
 				<td>Total Early Exit Hours:</td>
-				<td class="text-right">{%= totals.total_early_exit_hours %}</td>
+				<td>{%= totals.total_early_exit_hours %}</td>
 			</tr>
 		</tbody>
 	</table>
