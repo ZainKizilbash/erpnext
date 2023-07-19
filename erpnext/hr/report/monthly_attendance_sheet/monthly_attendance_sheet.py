@@ -185,11 +185,15 @@ def get_columns(filters, leave_types):
 
 
 	current_date = filters.from_date
-	column_label = 1
 	while current_date <= filters.to_date:
-		columns.append({"fieldname": "date_{0}".format(current_date), "label": cstr(column_label), "fieldtype": "Data", "width": 38,
-			"date": current_date})
-		column_label += 1
+		columns.append({
+			"fieldname": "date_{0}".format(current_date),
+			"label": current_date.day,
+			"fieldtype": "Data",
+			"width": 38,
+			"date": current_date,
+			"day_of_the_week": formatdate(current_date, "EE")
+		})
 		current_date = add_days(current_date, 1)
 
 	columns += [

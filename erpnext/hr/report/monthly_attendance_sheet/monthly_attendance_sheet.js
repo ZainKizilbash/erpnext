@@ -93,9 +93,7 @@ frappe.query_reports["Monthly Attendance Sheet"] = {
 
 			style['font-size'] = '8pt';
 			style['line-height'] = '1.6';
-			style['text-align'] = 'center';
 			style['letter-spacing'] = "-0.3px";
-			style['transform'] = "scale(1, 1.2)";
 		}
 
 		return default_formatter(value, row, column, data, {css: style, link_href: link, link_target: "_blank"});
