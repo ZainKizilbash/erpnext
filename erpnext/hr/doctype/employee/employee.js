@@ -35,7 +35,7 @@ erpnext.hr.EmployeeController = class EmployeeController extends frappe.ui.form.
 			}, __("View"));
 
 			me.frm.add_custom_button(__('Attendance Sheet'), function () {
-				frappe.set_route('query-report', 'Monthly Attendance Sheet', {
+				frappe.set_route('query-report', 'Employee Attendance Sheet', {
 					employee: me.frm.doc.name,
 				});
 			}, __("View"));

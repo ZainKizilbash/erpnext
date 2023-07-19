@@ -184,9 +184,9 @@
    "dependencies": "",
    "hidden": 0,
    "is_query_report": 1,
-   "label": "Monthly Attendance Sheet",
+   "label": "Employee Attendance Sheet",
    "link_count": 0,
-   "link_to": "Monthly Attendance Sheet",
+   "link_to": "Employee Attendance Sheet",
    "link_type": "Report",
    "onboard": 1,
    "type": "Link"
@@ -1054,7 +1054,7 @@
    "type": "Link"
   }
  ],
- "modified": "2022-12-18 15:27:31.583125",
+ "modified": "2022-12-18 15:27:31.583126",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "HR",

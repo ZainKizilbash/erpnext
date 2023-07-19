@@ -2,7 +2,7 @@
 // License: GNU General Public License v3. See license.txt
 
 
-frappe.query_reports["Monthly Attendance Sheet"] = {
+frappe.query_reports["Employee Attendance Sheet"] = {
 	"filters": [
 		{
 			"fieldname":"company",

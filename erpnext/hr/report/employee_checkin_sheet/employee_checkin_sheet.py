@@ -6,7 +6,7 @@ from frappe import _
 from frappe.utils import getdate, cstr, add_days, get_weekday, format_time, formatdate, get_time, combine_datetime,\
 	get_datetime, flt
 from erpnext.hr.utils import get_holiday_description, get_employee_leave_policy
-from erpnext.hr.report.monthly_attendance_sheet.monthly_attendance_sheet import get_employee_details,\
+from erpnext.hr.report.employee_attendance_sheet.employee_attendance_sheet import get_employee_details,\
 	get_attendance_status_abbr, get_attendance_status_color,\
 	get_holiday_map, is_date_holiday, get_employee_holiday_list,\
 	get_attendance_from_checkins, is_in_employment_date, shift_ended,\

@@ -10,11 +10,11 @@
  "modified": "2021-04-21 14:49:02.388180",
  "modified_by": "Administrator",
  "module": "HR",
- "name": "Monthly Attendance Sheet",
+ "name": "Employee Attendance Sheet",
  "owner": "Administrator",
  "prepared_report": 0,
  "ref_doctype": "Attendance",
- "report_name": "Monthly Attendance Sheet",
+ "report_name": "Employee Attendance Sheet",
  "report_type": "Script Report",
  "roles": [
   {
