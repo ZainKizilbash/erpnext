@@ -8,6 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "item",
+  "order_line_no",
   "naming_series",
   "production_item",
   "item_name",
@@ -720,6 +721,14 @@
    "label": "Last Packing Date",
    "no_copy": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "order_line_no",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "label": "Order Line #",
+   "no_copy": 1,
+   "read_only": 1
   }
  ],
  "icon": "fa fa-cogs",
@@ -728,7 +737,7 @@
  "is_calendar_and_gantt": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-06-20 00:52:32.827950",
+ "modified": "2023-07-20 19:28:58.846108",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Work Order",
