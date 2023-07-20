@@ -285,11 +285,11 @@ class PurchaseInvoice(BuyingController):
 
 					if pr_item:
 						# if rate is different
-						if abs(item.base_net_rate - pr_item.base_net_rate) > 0.1/10**self.precision("base_net_rate", "items"):
+						if abs(item.base_net_rate - pr_item.base_net_rate) >= 1.0/10**self.precision("base_net_rate", "items"):
 							does_revalue = True
 
 						# if item tax amount is different
-						if abs(item.item_tax_amount - pr_item.item_tax_amount) > 0.1/10**self.precision("item_tax_amount", "items"):
+						if abs(item.item_tax_amount - pr_item.item_tax_amount) >= 1.0/10**self.precision("item_tax_amount", "items"):
 							does_revalue = True
 
 		self.revalue_purchase_receipt = cint(does_revalue)

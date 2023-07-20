@@ -461,7 +461,7 @@ class Item(WebsiteGenerator):
 			predefined_conv_factor = get_uom_conv_factor(d.from_uom, d.to_uom)
 			if predefined_conv_factor:
 				input_conv_factor = flt(d.to_qty) / flt(d.from_qty)
-				if abs(predefined_conv_factor - input_conv_factor) > 0.1/10**self.precision("conversion_factor", "uoms"):
+				if abs(predefined_conv_factor - input_conv_factor) >= 1.0/10**self.precision("conversion_factor", "uoms"):
 					frappe.msgprint("Row {0}: Setting conversion quantities for {1} -> {2} from Global UOM Conversion Factor"
 						.format(d.idx, frappe.bold(d.from_uom), frappe.bold(d.to_uom)), alert=True)
 					if abs(predefined_conv_factor) >= 1:
@@ -490,6 +490,7 @@ class Item(WebsiteGenerator):
 
 			conv = graph.get_conversion_factor(from_uom, self.stock_uom,
 				validate_not_convertible=True, validate_multiple_conversion=True, raise_exception=True)
+			conv = flt(conv, self.precision("conversion_factor", "uoms"))
 			if not conv:
 				frappe.throw(_("Conversion factor for UOM {0} is 0").format(from_uom))
 
@@ -873,7 +874,7 @@ class Item(WebsiteGenerator):
 		if self.uoms:
 			for d in self.uoms:
 				value = get_uom_conv_factor(d.uom, self.stock_uom)
-				if value and abs(value - d.conversion_factor) > 0.1/10**self.precision("conversion_factor", "uoms"):
+				if value and abs(value - d.conversion_factor) >= 1.0/10**self.precision("conversion_factor", "uoms"):
 					frappe.msgprint("Setting conversion factor for UOM {0} from UOM Conversion Factor Master as {1}"
 						.format(d.uom, value), alert=True)
 					d.conversion_factor = value
