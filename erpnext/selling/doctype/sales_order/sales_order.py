@@ -1552,6 +1552,7 @@ def make_work_orders(items, company, sales_order=None, project=None, ignore_vers
 		work_order.flags.ignore_feed = ignore_feed
 
 		work_order.update({
+			'order_line_no': frappe.db.get_value("Sales Order Item", i['sales_order_item'], 'idx'),
 			'production_item': i['item_code'],
 			'bom_no': i.get('bom'),
 			'qty': i['pending_qty'],
