@@ -7,7 +7,7 @@ def execute():
 
 	frappe.db.sql("""
 		UPDATE `tabWork Order` wo
-	    INNER JOIN `tabSales Order Item` soi
-	       ON soi.name = wo.sales_order_item
-	    SET wo.order_line_no = soi.idx
+		INNER JOIN `tabSales Order Item` soi
+		ON soi.name = wo.sales_order_item
+		SET wo.order_line_no = soi.idx
 	""")
