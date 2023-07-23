@@ -1249,13 +1249,7 @@ class AccountsController(TransactionBase):
 
 	def get_item_group_print_heading(self, item):
 		from erpnext.setup.doctype.item_group.item_group import get_item_group_print_heading
-
-		if item.get('item_group_print_heading'):
-			return item.get('item_group_print_heading')
-
-		item_group_print_heading = get_item_group_print_heading(item.item_group)
-		item.set('item_group_print_heading', item_group_print_heading)
-		return item_group_print_heading
+		return get_item_group_print_heading(item.item_group)
 
 	def calculate_taxes_for_group(self, group_data, taxes_as_dict=False):
 		tax_copy_fields = ['name', 'idx', 'account_head', 'description', 'charge_type', 'row_id']
