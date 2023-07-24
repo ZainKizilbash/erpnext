@@ -446,6 +446,13 @@ class Project(StatusUpdater):
 		if not self.ready_to_close:
 			frappe.throw(_("{0} is not ready to close").format(frappe.get_desk_link(self.doctype, self.name)))
 
+	def validate_insurance_details(self):
+		if not self.get('insurance_company'):
+			return
+
+		if not self.get('insurance_loss_no'):
+			frappe.throw(_("Insurance Loss # is missing"))
+
 	def reopen_status(self, update=True):
 		self.ready_to_close = 0
 		self.ready_to_close_dt = None
@@ -1729,6 +1736,7 @@ def set_project_ready_to_close(project):
 	project.check_permission('write')
 
 	project.set_ready_to_close(update=True)
+	project.validate_insurance_details()
 	project.set_status(update=True)
 	project.update_vehicle_booking_order_pdi_status()
 	project.notify_update()
