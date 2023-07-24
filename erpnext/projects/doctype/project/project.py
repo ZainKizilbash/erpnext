@@ -450,7 +450,7 @@ class Project(StatusUpdater):
 		if not self.get('insurance_company'):
 			return
 
-		if not self.get('insurance_loss_no'):
+		if not self.get('insurance_loss_no') and self.ready_to_close == 1:
 			frappe.throw(_("Insurance Loss # is missing"))
 
 	def reopen_status(self, update=True):
