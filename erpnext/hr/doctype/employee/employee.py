@@ -513,7 +513,9 @@ def send_employee_notification(employee_data, email_template_name, role_for_cc, 
 	for i, d in enumerate(employee_data):
 		recipient = d.get("prefered_email") or d.get("company_email") or d.get("personal_email")
 		if recipient:
-			d['number_of_years'] = date_today.year - d.year_of_joining
+			if d.year_of_joining:
+				d['number_of_years'] = date_today.year - d.year_of_joining
+
 			formatted_template = email_template.get_formatted_email(d)
 
 			frappe.sendmail(
