@@ -442,7 +442,7 @@ def get_employees_who_have_birthday_today(date_today=None):
 	date_today = getdate(date_today)
 
 	employee_birthday_data = frappe.db.sql("""
-		SELECT name, employee_name, prefered_email, personal_email, company_email
+		SELECT name, employee_name, prefered_email, personal_email, company_email, year(date_of_birth) as year_of_birth
 		FROM tabEmployee
 		WHERE day(date_of_birth) = %s
 		AND month(date_of_birth)= %s
@@ -515,6 +515,9 @@ def send_employee_notification(employee_data, email_template_name, role_for_cc, 
 		if recipient:
 			if d.year_of_joining:
 				d['number_of_years'] = date_today.year - d.year_of_joining
+
+			if d.year_of_birth:
+				d['age'] = date_today.year - d.year_of_birth
 
 			formatted_template = email_template.get_formatted_email(d)
 
