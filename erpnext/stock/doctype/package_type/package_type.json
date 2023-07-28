@@ -10,6 +10,7 @@
  "field_order": [
   "package_type_name",
   "package_uom",
+  "column_break_vo7vy",
   "default_packaging_material_section",
   "packaging_items",
   "tare_weight_section",
@@ -130,6 +131,10 @@
    "fieldtype": "Table",
    "label": "Packaging Material",
    "options": "Package Type Packaging Material"
+  },
+  {
+   "fieldname": "column_break_vo7vy",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -140,7 +145,7 @@
    "link_fieldname": "package_type"
   }
  ],
- "modified": "2023-01-12 01:04:37.138698",
+ "modified": "2023-07-28 15:31:08.709979",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Package Type",
