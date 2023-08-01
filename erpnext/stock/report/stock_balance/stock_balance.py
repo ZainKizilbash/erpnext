@@ -20,7 +20,7 @@ class StockBalanceReport:
 		self.filters.from_date = getdate(self.filters.from_date or today())
 		self.filters.to_date = getdate(self.filters.to_date or today())
 
-		self.show_amounts = has_valuation_read_permission()
+		self.show_amounts = has_valuation_read_permission() and self.filters.show_amounts
 		self.show_item_name = frappe.defaults.get_global_default('item_naming_by') != "Item Name"
 
 		if self.filters.from_date > self.filters.to_date:
@@ -212,6 +212,11 @@ class StockBalanceReport:
 					stock_balance.reconcile_qty += qty_diff
 					stock_balance.reconcile_val += value_diff
 
+				elif sle.voucher_type == "Stock Entry":
+					if qty_diff < 0:
+						stock_balance.consumed_qty -= qty_diff
+						stock_balance.consumed_val -= value_diff
+
 			stock_balance.bal_qty += qty_diff
 			stock_balance.bal_val += value_diff
 
@@ -304,6 +309,7 @@ class StockBalanceReport:
 					"sales_return_qty": stock_balance.sales_return_qty * alt_uom_size,
 					"bal_qty": stock_balance.bal_qty * alt_uom_size,
 					"reconcile_qty": stock_balance.reconcile_qty * alt_uom_size,
+					"consumed_qty": stock_balance.consumed_qty * alt_uom_size,
 					"reorder_level": item_reorder_level * alt_uom_size,
 					"reorder_qty": item_reorder_qty * alt_uom_size,
 					"ordered_qty": stock_balance.ordered_qty * alt_uom_size,
@@ -357,6 +363,7 @@ class StockBalanceReport:
 		"sales_qty", "sales_val",
 		"sales_return_qty", "sales_return_val",
 		"reconcile_qty", "reconcile_val",
+		"consumed_qty", "consumed_val",
 		"bal_qty", "bal_val",
 		"ordered_qty", "projected_qty",
 		"val_rate"
@@ -450,6 +457,10 @@ class StockBalanceReport:
 				"width": 120, "convertible": "qty", "is_return": True},
 			{"label": _("Sales Return Value"), "fieldname": "sales_return_val", "fieldtype": "Currency",
 				"width": 130, "is_value": True, "is_return": True},
+			{"label": _("Consumed Qty"), "fieldname": "consumed_qty", "fieldtype": "Float",
+				"width": 100, "convertible": "qty"},
+			{"label": _("Consumed Value"), "fieldname": "consumed_val", "fieldtype": "Currency",
+				"width": 110, "is_value": True},
 			{"label": _("Reconciled Qty"), "fieldname": "reconcile_qty", "fieldtype": "Float",
 				"width": 100, "convertible": "qty"},
 			{"label": _("Reconciled Value"), "fieldname": "reconcile_val", "fieldtype": "Currency",

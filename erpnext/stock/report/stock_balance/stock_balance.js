@@ -146,6 +146,12 @@ frappe.query_reports["Stock Balance"] = {
 			label: __("Show Stock Ageing Data"),
 			fieldtype: "Check"
 		},
+		{
+			fieldname: "show_amounts",
+			label: __("Show Amounts"),
+			fieldtype: "Check",
+			hidden: cint(!erpnext.utils.has_valuation_read_permission()),
+		},
 	],
 
 	formatter: function (value, row, column, data, default_formatter) {
