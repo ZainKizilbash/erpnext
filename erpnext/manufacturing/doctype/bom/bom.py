@@ -254,6 +254,9 @@ class BOM(WebsiteGenerator):
 		existing_bom_cost = self.total_cost
 
 		for d in self.get("items"):
+			if not d.get("item_code"):
+				continue
+
 			d.conversion_factor = get_conversion_factor(d.item_code, d.uom).get("conversion_factor") or 1
 			d.stock_qty = flt(d.conversion_factor) * flt(d.qty)
 			d.update(get_fetch_values(d.doctype, 'item_code', d.item_code))
@@ -484,7 +487,7 @@ class BOM(WebsiteGenerator):
 		self.calculate_sm_cost()
 		self.total_cost = self.total_operating_cost + self.raw_material_cost - self.scrap_material_cost
 		self.base_total_cost = self.base_total_operating_cost + self.base_raw_material_cost - self.base_scrap_material_cost
-		self.total_raw_material_qty = sum([d.qty for d in self.items])
+		self.total_raw_material_qty = sum([flt(d.qty) for d in self.items])
 		self.total_raw_material_qty = flt(self.total_raw_material_qty, self.precision("total_raw_material_qty"))
 
 	def calculate_op_cost(self):
@@ -568,6 +571,9 @@ class BOM(WebsiteGenerator):
 		""" Get all raw materials including items from child bom"""
 		self.cur_exploded_items = {}
 		for d in self.get('items'):
+			if not d.get("item_code"):
+				continue
+
 			if d.bom_no:
 				self.get_child_exploded_items(d.bom_no, d.stock_qty)
 			else:
