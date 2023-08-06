@@ -26,6 +26,7 @@ from erpnext.vehicles.vehicle_checklist import get_default_vehicle_checklist_ite
 from erpnext.vehicles.doctype.vehicle_log.vehicle_log import get_customer_vehicle_selector_data
 from frappe.model.meta import get_field_precision
 import json
+from frappe.model.mapper import get_mapped_doc
 
 
 force_applies_to_fields = ("vehicle_chassis_no", "vehicle_engine_no", "vehicle_license_plate", "vehicle_unregistered",
@@ -1006,7 +1007,12 @@ class Project(StatusUpdater):
 				['name', 'posting_date', 'posting_time'],
 				order_by="posting_date, posting_time, creation")
 			vehicle_gate_passes = frappe.db.get_all("Vehicle Gate Pass",
-				{"project": self.name, "vehicle": self.applies_to_vehicle, "docstatus": 1},
+				{
+					"project": self.name,
+					"vehicle": self.applies_to_vehicle,
+					"docstatus": 1,
+					"purpose": "Service - Vehicle Delivery"
+				},
 				['name', 'posting_date', 'posting_time'],
 				order_by="posting_date, posting_time, creation")
 
@@ -1497,9 +1503,9 @@ def get_project_list(doctype, txt, filters, limit_start, limit_page_length=20, o
 			order by project.modified desc
 			limit {0}, {1}
 		'''.format(limit_start, limit_page_length),
-						 {'user': frappe.session.user},
-						 as_dict=True,
-						 update={'doctype': 'Project'})
+						{'user': frappe.session.user},
+						as_dict=True,
+						update={'doctype': 'Project'})
 
 
 def get_list_context(context=None):
@@ -1534,11 +1540,11 @@ def get_users_for_project(doctype, txt, searchfield, start, page_len, filters):
 		'fcond': get_filters_cond(doctype, filters, conditions),
 		'mcond': get_match_cond(doctype)
 	}), {
-							 'txt': "%%%s%%" % txt,
-							 '_txt': txt.replace("%", ""),
-							 'start': start,
-							 'page_len': page_len
-						 })
+							'txt': "%%%s%%" % txt,
+							'_txt': txt.replace("%", ""),
+							'start': start,
+							'page_len': page_len
+						})
 
 
 def hourly_reminder():
@@ -2166,22 +2172,25 @@ def get_vehicle_service_receipt(project):
 
 
 @frappe.whitelist()
-def get_vehicle_gate_pass(project, sales_invoice=None):
-	doc = frappe.get_doc("Project", project)
-	check_if_doc_exists("Vehicle Gate Pass", doc.name, {'docstatus': 0})
-	doc.validate_ready_to_close()
+def get_vehicle_gate_pass(project, purpose, sales_invoice=None):
+	doc_exists_filter = {'purpose': purpose}
+	if purpose == "Service - Test Drive":
+		doc_exists_filter.update({'docstatus': 0})
 
+	check_if_doc_exists("Vehicle Gate Pass", project, doc_exists_filter)
+
+	doc = frappe.get_doc("Project", project)
 	target = frappe.new_doc("Vehicle Gate Pass")
+	target.purpose = purpose
 	set_vehicle_transaction_values(doc, target)
 
-	if sales_invoice:
+	if purpose == "Service - Vehicle Delivery":
+		doc.validate_ready_to_close()
+		sales_invoice = sales_invoice or doc.get_invoice_for_vehicle_gate_pass()
 		target.sales_invoice = sales_invoice
-	else:
-		sales_invoice = doc.get_invoice_for_vehicle_gate_pass()
-		if sales_invoice:
-			target.sales_invoice = sales_invoice
 
 	target.run_method("set_missing_values")
+
 	return target
 
 
@@ -2193,6 +2202,11 @@ def set_vehicle_transaction_values(source, target):
 	target.project = source.name
 	target.item_code = source.applies_to_item
 	target.vehicle = source.applies_to_vehicle
+	target.contact_person = source.contact_person
+
+	if target.doctype == "Vehicle Gate Pass":
+		target.project_workshop = source.project_workshop
+
 
 
 def check_if_doc_exists(doctype, project, filters=None):

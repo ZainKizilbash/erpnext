@@ -14,6 +14,7 @@ erpnext.crm.Opportunity = class Opportunity extends frappe.ui.form.Controller {
 			'Appointment': 'Appointment',
 			'Vehicle Quotation': 'Vehicle Quotation',
 			'Vehicle Booking Order': 'Vehicle Booking Order',
+			'Vehicle Gate Pass': 'Test Drive Gate Pass',
 			'Supplier Quotation': 'Supplier Quotation',
 		};
 
@@ -86,6 +87,9 @@ erpnext.crm.Opportunity = class Opportunity extends frappe.ui.form.Controller {
 						__('Create'));
 
 					me.frm.add_custom_button(__("Vehicle Quotation"), () => me.make_vehicle_quotation(),
+						__('Create'));
+
+					me.frm.add_custom_button(__("Test Drive Gate Pass"), () => me.make_opportunity_gate_pass(),
 						__('Create'));
 				}
 
@@ -451,6 +455,21 @@ erpnext.crm.Opportunity = class Opportunity extends frappe.ui.form.Controller {
 		frappe.model.open_mapped_doc({
 			method: "erpnext.crm.doctype.opportunity.opportunity.make_vehicle_quotation",
 			frm: this.frm
+		});
+	}
+
+	make_opportunity_gate_pass() {
+		return frappe.call ({
+			method: "erpnext.crm.doctype.opportunity.opportunity.make_opportunity_gate_pass",
+			args :{
+				"opportunity": this.frm.doc.name,
+			},
+			callback: function (r){
+				if (!r.exc) {
+					var doclist = frappe.model.sync(r.message);
+					frappe.set_route("Form", doclist[0].doctype, doclist[0].name);
+				}
+			}
 		});
 	}
 

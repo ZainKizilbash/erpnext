@@ -10,6 +10,7 @@ from erpnext.vehicles.doctype.vehicle.vehicle import warn_vehicle_reserved
 from erpnext.accounts.party import validate_party_frozen_disabled, get_address_display
 from frappe.contacts.doctype.address.address import get_default_address
 from frappe.contacts.doctype.contact.contact import get_default_contact
+from erpnext.vehicles.doctype.vehicle_booking_order.vehicle_booking_order import get_vehicle_booking_delivery
 from erpnext.vehicles.doctype.vehicle_log.vehicle_log import make_vehicle_log, get_vehicle_odometer
 from erpnext.maintenance.doctype.maintenance_schedule.maintenance_schedule import remove_schedule_for_reference_document
 import json
@@ -527,7 +528,7 @@ class VehicleTransactionController(StockController):
 			project.validate_project_status_for_transaction(self)
 
 			# mark ready to close if not already marked
-			if self.doctype == "Vehicle Gate Pass" and self.docstatus == 1:
+			if self.doctype == "Vehicle Gate Pass" and self.docstatus == 1 and self.purpose == "Service - Vehicle Delivery":
 				project.validate_ready_to_close()
 
 				if not project.ready_to_close:
@@ -626,6 +627,29 @@ def get_customer_details(args):
 	args = frappe._dict(args)
 	out = frappe._dict()
 
+	contact_and_address_fields = ['contact_person', 'customer_address', 'contact_phone', 'contact_mobile', 'contact_email']
+
+	booking_details = frappe._dict()
+	if args.vehicle_booking_order:
+		fields = ['customer', 'territory'] + contact_and_address_fields
+		booking_details = frappe.db.get_value("Vehicle Booking Order", args.vehicle_booking_order, fields, as_dict=1)
+		args.customer = booking_details.customer
+
+	project_details = frappe._dict()
+	if args.project:
+		fields = ['customer'] + contact_and_address_fields
+		project_details = frappe.db.get_value("Project", args.project, fields, as_dict=1)
+		args.customer = project_details.customer
+
+	opportunity_details = frappe._dict()
+	if args.opportunity:
+		fields = ['party_name', 'opportunity_from'] + contact_and_address_fields
+		opportunity_details = frappe.db.get_value("Opportunity", args.opportunity, fields, as_dict=1)
+		if opportunity_details.opportunity_from == "Lead":
+			args.lead = opportunity_details.party_name
+		else:
+			args.customer = opportunity_details.party_name
+
 	customer = frappe._dict()
 	if args.customer:
 		customer = frappe.get_cached_doc("Customer", args.customer)
@@ -633,6 +657,10 @@ def get_customer_details(args):
 	financer = frappe._dict()
 	if args.financer:
 		financer = frappe.get_cached_doc("Customer", args.financer)
+
+	lead = frappe._dict()
+	if args.lead:
+		lead = frappe.get_cached_doc("Lead", args.lead)
 
 	vehicle_owner = frappe._dict()
 	if args.vehicle_owner:
@@ -642,11 +670,6 @@ def get_customer_details(args):
 	if args.registration_customer:
 		registration_customer = frappe.get_cached_doc("Customer", args.registration_customer)
 
-	booking_details = frappe._dict()
-	if args.vehicle_booking_order:
-		booking_details = frappe.db.get_value("Vehicle Booking Order", args.vehicle_booking_order,
-			['customer', 'territory', 'contact_person', 'customer_address'], as_dict=1)
-
 	# Customer Name
 	out.customer_name = customer.customer_name
 	out.financer_name = financer.customer_name
@@ -654,7 +677,7 @@ def get_customer_details(args):
 	out.vehicle_owner_name = vehicle_owner.customer_name
 	out.registration_customer_name = registration_customer.customer_name
 
-	customer_details = registration_customer or customer
+	customer_details = registration_customer or customer or lead
 
 	if financer:
 		hpa_customer_fieldname = "registration_customer_name" if registration_customer else "customer_name"
@@ -679,10 +702,27 @@ def get_customer_details(args):
 	out.contact_person = args.contact_person
 	if not out.contact_person and booking_details.customer == customer_details.name:
 		out.contact_person = booking_details.contact_person
+	
+	if not out.contact_person and project_details.customer == customer_details.name:
+		out.contact_person = project_details.contact_person
+
+	if not out.contact_person and opportunity_details.opportunity_from == customer_details.doctype \
+			and opportunity_details.party_name == customer_details.name:
+		out.contact_person = opportunity_details.contact_person
+
 	if not out.contact_person and customer_details.name:
-		out.contact_person = get_default_contact("Customer", customer_details.name)
+		out.contact_person = get_default_contact(customer_details.doctype, customer_details.name)
 
 	out.update(get_contact_details(out.contact_person))
+
+	for contact_source in [booking_details, project_details, opportunity_details]:
+		if contact_source and contact_source.get('contact_person') and cstr(out.contact_person) == cstr(contact_source.get('contact_person')):
+			if contact_source.contact_mobile:
+				out.contact_mobile = contact_source.contact_mobile
+			if contact_source.contact_phone:
+				out.contact_phone = contact_source.contact_phone
+			if contact_source.contact_email:
+				out.contact_email = contact_source.contact_email
 
 	out.receiver_contact = args.receiver_contact
 	out.update(get_contact_details(out.receiver_contact, prefix='receiver_'))
@@ -724,6 +764,11 @@ def get_vehicle_booking_order_details(args):
 		is_leased = booking_details.financer and booking_details.finance_type == "Leased"
 		is_financed = booking_details.financer and booking_details.finance_type == "Financed"
 
+		# vehicle delivery
+		if args.get_vehicle_delivery:
+			out.vehicle_delivery = get_vehicle_booking_delivery(args.vehicle_booking_order)
+			out.vehicle_delivery = out.vehicle_delivery.name
+		
 		# Set Customer, Financer, Address and Contact
 		if args.doctype == "Vehicle Transfer Letter":
 			registration_details = get_vehicle_registration_order_details(args, get_customer=True)
@@ -875,6 +920,9 @@ def get_project_details(args):
 def get_vehicle_details(args, get_vehicle_booking_order=True, warn_reserved=True):
 	if isinstance(args, string_types):
 		args = json.loads(args)
+
+	get_vehicle_booking_order = cint(get_vehicle_booking_order)
+	warn_reserved = cint(warn_reserved)
 
 	args = frappe._dict(args)
 	out = frappe._dict()

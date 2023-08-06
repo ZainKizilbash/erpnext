@@ -51,7 +51,7 @@ erpnext.projects.ProjectController = class ProjectController extends erpnext.con
 		me.frm.set_query('secondary_contact_person', erpnext.queries.contact_query);
 		me.frm.set_query('customer_address', erpnext.queries.address_query);
 
-		if(me.frm.fields_dict.insurance_company) {
+		if (me.frm.fields_dict.insurance_company) {
 			me.frm.set_query("insurance_company", function(doc) {
 				return {
 					query: "erpnext.controllers.queries.customer_query",
@@ -205,7 +205,14 @@ erpnext.projects.ProjectController = class ProjectController extends erpnext.con
 				}
 
 				if (frappe.model.can_create("Vehicle Gate Pass") && me.frm.doc.vehicle_status == "In Workshop") {
-					me.frm.add_custom_button(__("Create Gate Pass"), () => me.make_vehicle_gate_pass(), __("Vehicle"));
+					if (cint(me.frm.doc.ready_to_close)) {
+						me.frm.add_custom_button(__("Create Vehicle Delivery Gate Pass"), () => me.make_vehicle_gate_pass("Service - Vehicle Delivery")
+							, __("Vehicle"));
+					}
+
+					me.frm.add_custom_button(__("Create Test Drive Gate Pass"), () => me.make_vehicle_gate_pass("Service - Test Drive")
+						, __("Vehicle"));
+
 				}
 
 				if (frappe.model.can_create("Vehicle Log")) {
@@ -863,12 +870,14 @@ erpnext.projects.ProjectController = class ProjectController extends erpnext.con
 		});
 	}
 
-	make_vehicle_gate_pass() {
+	make_vehicle_gate_pass(purpose) {
 		this.frm.check_if_unsaved();
 		return frappe.call({
 			method: "erpnext.projects.doctype.project.project.get_vehicle_gate_pass",
 			args: {
-				"project": this.frm.doc.name
+				"project": this.frm.doc.name,
+				"purpose": purpose,
+				"sales_invoice": this.frm.doc.sales_invoice,
 			},
 			callback: function (r) {
 				if (!r.exc) {

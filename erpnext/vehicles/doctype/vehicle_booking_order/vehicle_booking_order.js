@@ -133,6 +133,12 @@ erpnext.vehicles.VehicleBookingOrder = class VehicleBookingOrder extends erpnext
 						this.frm.add_custom_button(__('Deliver Vehicle'), () => this.make_next_document('Vehicle Delivery'));
 					}
 				}
+				else if (this.frm.doc.delivery_status === "Delivered") {
+					if (this.frm.doc.__onload && !this.frm.doc.__onload.vehicle_gate_pass) {
+						this.frm.add_custom_button(__("Vehicle Delivery Gate Pass"), () => this.make_next_document('Vehicle Gate Pass'),
+							__('Create'));
+					}
+				}
 
 				// Invoice Delivery/Receipt buttons
 				if (this.frm.doc.invoice_status === "Not Received") {
@@ -601,6 +607,21 @@ erpnext.vehicles.VehicleBookingOrder = class VehicleBookingOrder extends erpnext
 			this.frm.add_custom_button(__("Custom Message"), () => this.send_sms('Custom Message'),
 				__("Notify"));
 		}
+	}
+
+	make_vehicle_delivery_gate_pass() {
+		return frappe.call ({
+			method: "erpnext.vehicles.doctype.vehicle_booking_order.vehicle_booking_order.make_vehicle_delivery_gate_pass",
+			args :{
+				"vehicle_booking_order": this.frm.doc.name,
+			},
+			callback: function (r){
+				if (!r.exc) {
+					var doclist = frappe.model.sync(r.message);
+					frappe.set_route("Form", doclist[0].doctype, doclist[0].name);
+				}
+			}
+		});
 	}
 
 	send_sms(notification_type) {
