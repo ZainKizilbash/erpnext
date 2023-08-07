@@ -249,7 +249,7 @@ class VehicleGatePass(VehicleTransactionController):
 
 			if not vehicle_details:
 				frappe.throw(_("Vehicle {0} does not exist").format(self.vehicle))
-			if not vehicle_details.purchase_date or vehicle_details.delivery_date:
+			if not vehicle_details.purchase_document_no or vehicle_details.delivery_document_no:
 				frappe.throw(_("Vehicle is not in stock"))
 
 		if self.purpose == "Sales - Vehicle Delivery":
