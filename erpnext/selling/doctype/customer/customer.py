@@ -621,19 +621,19 @@ def make_address(args, is_primary_address=1):
 
 	return address
 
+
 @frappe.whitelist()
 @frappe.validate_and_sanitize_search_inputs
 def get_customer_primary_contact(doctype, txt, searchfield, start, page_len, filters):
-	customer = filters.get('customer')
-	return frappe.db.sql("""
-		select `tabContact`.name from `tabContact`, `tabDynamic Link`
-			where `tabContact`.name = `tabDynamic Link`.parent and `tabDynamic Link`.link_name = %(customer)s
-			and `tabDynamic Link`.link_doctype = 'Customer'
-			and `tabContact`.name like %(txt)s
-		""", {
-			'customer': customer,
-			'txt': '%%%s%%' % txt
-		})
+	from frappe.contacts.doctype.contact.contact import contact_query
+
+	if not filters:
+		filters = {}
+
+	filters["link_doctype"] = "Customer"
+	filters["link_name"] = filters.pop("customer", None)
+
+	return contact_query(doctype, txt, searchfield, start, page_len, filters)
 
 
 @frappe.whitelist()
