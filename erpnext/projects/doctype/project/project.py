@@ -2177,10 +2177,13 @@ def get_vehicle_gate_pass(project, purpose, sales_invoice=None):
 	if purpose not in ("Service - Vehicle Delivery", "Service - Test Drive"):
 		frappe.throw(_("Invalid Purpose {0}").format(purpose))
 
-	check_if_doc_exists("Vehicle Gate Pass", project, {
-		"purpose": purpose,
-		"docstatus": 0,
-	})
+	filters = {"purpose": purpose}
+	if purpose == "Service - Test Drive":
+		filters["docstatus"] = 0
+	elif purpose == "Service - Vehicle Delivery":
+		filters["docstatus"] = ["<", 2]
+
+	check_if_doc_exists("Vehicle Gate Pass", project, filters)
 
 	doc = frappe.get_doc("Project", project)
 	target = frappe.new_doc("Vehicle Gate Pass")
