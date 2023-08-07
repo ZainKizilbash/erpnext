@@ -192,7 +192,7 @@ erpnext.vehicles.VehicleTransactionController = class VehicleTransactionControll
 	}
 
 	get_customer_details() {
-		var me = this;
+		let me = this;
 
 		return frappe.call({
 			method: "erpnext.vehicles.vehicle_transaction_controller.get_customer_details",
@@ -336,12 +336,14 @@ erpnext.vehicles.VehicleTransactionController = class VehicleTransactionControll
 	}
 
 	get_contact_details(contact, prefix) {
-		var me = this;
+		let me = this;
 		return frappe.call({
 			method: "erpnext.vehicles.vehicle_transaction_controller.get_contact_details",
 			args: {
 				contact: contact,
-				prefix: prefix
+				prefix: prefix,
+				project: prefix ? null : me.frm.doc.project,
+				lead: prefix ? null : me.frm.doc.lead,
 			},
 			callback: function (r) {
 				if (r.message && !r.exc) {

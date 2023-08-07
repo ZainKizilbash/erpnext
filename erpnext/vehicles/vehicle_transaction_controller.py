@@ -10,7 +10,6 @@ from erpnext.vehicles.doctype.vehicle.vehicle import warn_vehicle_reserved
 from erpnext.accounts.party import validate_party_frozen_disabled, get_address_display
 from frappe.contacts.doctype.address.address import get_default_address
 from frappe.contacts.doctype.contact.contact import get_default_contact
-from erpnext.vehicles.doctype.vehicle_booking_order.vehicle_booking_order import get_vehicle_booking_delivery
 from erpnext.vehicles.doctype.vehicle_log.vehicle_log import make_vehicle_log, get_vehicle_odometer
 from erpnext.maintenance.doctype.maintenance_schedule.maintenance_schedule import remove_schedule_for_reference_document
 import json
@@ -59,7 +58,7 @@ class VehicleTransactionController(StockController):
 			self.set_missing_values()
 
 	def set_missing_values(self, doc=None, for_validate=False):
-		self.set_project_details(doc, for_validate)
+		self.set_project_details(doc, for_validate=for_validate)
 		self.set_vehicle_booking_order_details(doc, for_validate=for_validate)
 		self.set_vehicle_details(doc, for_validate=for_validate)
 		self.set_item_details(doc, for_validate=for_validate)
@@ -627,28 +626,8 @@ def get_customer_details(args):
 	args = frappe._dict(args)
 	out = frappe._dict()
 
-	contact_and_address_fields = ['contact_person', 'customer_address', 'contact_phone', 'contact_mobile', 'contact_email']
-
-	booking_details = frappe._dict()
-	if args.vehicle_booking_order:
-		fields = ['customer', 'territory'] + contact_and_address_fields
-		booking_details = frappe.db.get_value("Vehicle Booking Order", args.vehicle_booking_order, fields, as_dict=1)
-		args.customer = booking_details.customer
-
-	project_details = frappe._dict()
-	if args.project:
-		fields = ['customer'] + contact_and_address_fields
-		project_details = frappe.db.get_value("Project", args.project, fields, as_dict=1)
-		args.customer = project_details.customer
-
-	opportunity_details = frappe._dict()
-	if args.opportunity:
-		fields = ['party_name', 'opportunity_from'] + contact_and_address_fields
-		opportunity_details = frappe.db.get_value("Opportunity", args.opportunity, fields, as_dict=1)
-		if opportunity_details.opportunity_from == "Lead":
-			args.lead = opportunity_details.party_name
-		else:
-			args.customer = opportunity_details.party_name
+	# Get Data
+	contact_and_address_fields = ['contact_person', 'customer_address']
 
 	customer = frappe._dict()
 	if args.customer:
@@ -670,8 +649,27 @@ def get_customer_details(args):
 	if args.registration_customer:
 		registration_customer = frappe.get_cached_doc("Customer", args.registration_customer)
 
-	# Customer Name
-	out.customer_name = customer.customer_name
+	booking_details = frappe._dict()
+	if args.vehicle_booking_order:
+		fields = ['customer', 'territory'] + contact_and_address_fields
+		booking_details = frappe.db.get_value("Vehicle Booking Order", args.vehicle_booking_order, fields, as_dict=1)
+
+	project_details = frappe._dict()
+	if args.project:
+		fields = ['customer'] + contact_and_address_fields
+		project_details = frappe.db.get_value("Project", args.project, fields, as_dict=1)
+
+	opportunity_details = frappe._dict()
+	if args.opportunity:
+		fields = ['party_name', 'opportunity_from'] + contact_and_address_fields
+		opportunity_details = frappe.db.get_value("Opportunity", args.opportunity, fields, as_dict=1)
+
+	# Set Customer Name
+	if not customer and lead:
+		out.customer_name = lead.company_name or lead.lead_name
+	else:
+		out.customer_name = customer.customer_name
+
 	out.financer_name = financer.customer_name
 	out.lessee_name = customer.customer_name if financer else None
 	out.vehicle_owner_name = vehicle_owner.customer_name
@@ -684,46 +682,44 @@ def get_customer_details(args):
 		out[hpa_customer_fieldname] = "{0} HPA {1}".format(customer_details.customer_name, financer.customer_name)
 
 	# Tax IDs
-	out.tax_id = customer_details.tax_id
-	out.tax_cnic = customer_details.tax_cnic
-	out.tax_strn = customer_details.tax_strn
-	out.tax_status = customer_details.tax_status
+	out.tax_id = customer_details.get("tax_id")
+	out.tax_cnic = customer_details.get("tax_cnic")
+	out.tax_strn = customer_details.get("tax_strn")
+	out.tax_status = customer_details.get("tax_status")
 
-	# Customer Address
+	# Customer Address from reference document
 	out.customer_address = args.customer_address
 	if not out.customer_address and booking_details.customer == customer_details.name:
 		out.customer_address = booking_details.customer_address
+	if not out.customer_address and project_details.customer == customer_details.name:
+		out.customer_address = project_details.customer_address
+	if not out.customer_address and opportunity_details.opportunity_from == customer_details.doctype \
+			and opportunity_details.party_name == customer_details.name:
+		out.customer_address = opportunity_details.customer_address
+
+	# Default Customer Address
 	if not out.customer_address and customer_details.name:
 		out.customer_address = get_default_address("Customer", customer_details.name)
 
-	out.address_display = get_address_display(out.customer_address)
+	out.address_display = get_address_display(out.customer_address, lead=args.lead)
 
-	# Contact
+	# Contact from reference document
 	out.contact_person = args.contact_person
 	if not out.contact_person and booking_details.customer == customer_details.name:
 		out.contact_person = booking_details.contact_person
-	
 	if not out.contact_person and project_details.customer == customer_details.name:
 		out.contact_person = project_details.contact_person
-
 	if not out.contact_person and opportunity_details.opportunity_from == customer_details.doctype \
 			and opportunity_details.party_name == customer_details.name:
 		out.contact_person = opportunity_details.contact_person
 
+	# Default Contact
 	if not out.contact_person and customer_details.name:
 		out.contact_person = get_default_contact(customer_details.doctype, customer_details.name)
 
-	out.update(get_contact_details(out.contact_person))
+	out.update(get_contact_details(out.contact_person, project=args.project, lead=args.lead))
 
-	for contact_source in [booking_details, project_details, opportunity_details]:
-		if contact_source and contact_source.get('contact_person') and cstr(out.contact_person) == cstr(contact_source.get('contact_person')):
-			if contact_source.contact_mobile:
-				out.contact_mobile = contact_source.contact_mobile
-			if contact_source.contact_phone:
-				out.contact_phone = contact_source.contact_phone
-			if contact_source.contact_email:
-				out.contact_email = contact_source.contact_email
-
+	# Receiver Contact
 	out.receiver_contact = args.receiver_contact
 	out.update(get_contact_details(out.receiver_contact, prefix='receiver_'))
 
@@ -764,11 +760,11 @@ def get_vehicle_booking_order_details(args):
 		is_leased = booking_details.financer and booking_details.finance_type == "Leased"
 		is_financed = booking_details.financer and booking_details.finance_type == "Financed"
 
-		# vehicle delivery
-		if args.get_vehicle_delivery:
-			out.vehicle_delivery = get_vehicle_booking_delivery(args.vehicle_booking_order)
-			out.vehicle_delivery = out.vehicle_delivery.name
-		
+		if args.doctype == "Vehicle Gate Pass":
+			from erpnext.vehicles.doctype.vehicle_booking_order.vehicle_booking_order import get_vehicle_booking_delivery
+			vehicle_delivery = get_vehicle_booking_delivery(args.vehicle_booking_order)
+			out.vehicle_delivery = vehicle_delivery.name if vehicle_delivery else None
+
 		# Set Customer, Financer, Address and Contact
 		if args.doctype == "Vehicle Transfer Letter":
 			registration_details = get_vehicle_registration_order_details(args, get_customer=True)
@@ -811,6 +807,14 @@ def get_vehicle_booking_order_details(args):
 				out.customer = booking_details.financer if booking_details.financer else booking_details.customer
 				out.customer_address = booking_details.customer_address
 				out.contact_person = booking_details.financer_contact_person if booking_details.financer else booking_details.contact_person
+
+		elif args.doctype == "Vehicle Gate Pass" and out.vehicle_delivery:
+			vehicle_delivery_details = frappe.db.get_value("Vehicle Delivery", out.vehicle_delivery,
+				["customer", "contact_person", "customer_address"], as_dict=1)
+			if vehicle_delivery_details:
+				out.customer = vehicle_delivery_details.customer
+				out.contact_person = vehicle_delivery_details.contact_person
+				out.customer_address = vehicle_delivery_details.customer_address
 
 		else:
 			if booking_details.transfer_customer:
@@ -856,6 +860,14 @@ def get_vehicle_booking_order_details(args):
 			filters={"parenttype": "Vehicle Booking Order", "parent": args.vehicle_booking_order})
 		out.sales_team = vbo_sales_team
 
+	# Sales Person link field
+	if booking_details and args.doctype and frappe.get_meta(args.doctype).has_field('sales_person'):
+		out.sales_person = frappe.db.get_value("Sales Team",
+			{"parenttype": "Vehicle Booking Order", "parent": args.vehicle_booking_order},
+			"sales_person",
+			order_by="idx",
+		)
+
 	return out
 
 
@@ -866,50 +878,48 @@ def get_project_details(args):
 
 	args = frappe._dict(args)
 
-	project_details = frappe._dict()
+	project = frappe._dict()
 	if args.project:
-		project_details = frappe.db.get_value("Project", args.project,
-			[
-				'customer', 'customer_name', 'contact_person', 'customer_address',
-				'contact_mobile', 'contact_mobile_2', 'contact_phone', 'contact_email', 'address_display',
-				'applies_to_vehicle', 'applies_to_item', 'project_workshop',
-				'fuel_level', 'keys', 'vehicle_first_odometer', 'vehicle_last_odometer',
-				'service_advisor', 'service_manager',
-			], as_dict=1)
+		project = frappe.get_doc("Project", args.project)
 
 	out = frappe._dict()
 
-	if project_details:
-		if project_details.customer:
-			out.customer = project_details.customer
-			out.customer_address = project_details.customer_address
-			out.contact_person = project_details.contact_person
+	if project:
+		if project.customer:
+			out.customer = project.customer
+			out.customer_address = project.customer_address
+			out.contact_person = project.contact_person
 
-		out.project_contact_mobile = project_details.contact_mobile
-		out.project_contact_mobile_2 = project_details.contact_mobile_2
-		out.project_contact_phone = project_details.contact_phone
-		out.project_contact_email = project_details.contact_email
-		out.project_address_display = project_details.address_display
+		out.project_contact_mobile = project.contact_mobile
+		out.project_contact_mobile_2 = project.contact_mobile_2
+		out.project_contact_phone = project.contact_phone
+		out.project_contact_email = project.contact_email
+		out.project_address_display = project.address_display
 
-		if project_details.applies_to_vehicle:
-			out.vehicle = project_details.applies_to_vehicle
-			out.item_code = project_details.applies_to_item
-		elif project_details.applies_to_item:
+		if project.applies_to_vehicle:
+			out.vehicle = project.applies_to_vehicle
+			out.item_code = project.applies_to_item
+		elif project.applies_to_item:
 			out.vehicle = None
-			out.item_code = project_details.applies_to_item
+			out.item_code = project.applies_to_item
 
-		out.project_workshop = project_details.project_workshop
-		out.service_advisor = project_details.service_advisor
-		out.service_manager = project_details.service_manager
-		out.fuel_level = project_details.fuel_level
-		out['keys'] = project_details.get('keys')
-		out.vehicle_odometer = project_details.vehicle_last_odometer or project_details.vehicle_first_odometer or 0
+		out.project_workshop = project.project_workshop
+		out.service_advisor = project.service_advisor
+		out.service_manager = project.service_manager
+		out.fuel_level = project.fuel_level
+		out['keys'] = project.get('keys')
+		out.vehicle_odometer = project.vehicle_last_odometer or project.vehicle_first_odometer or 0
 
-	if project_details and args.doctype and frappe.get_meta(args.doctype).has_field('vehicle_checklist'):
-		vehicle_checklist = frappe.get_all("Vehicle Checklist Item",
-			fields=['checklist_item', 'checklist_item_checked', 'is_custom_checklist_item'],
-			filters={"parenttype": "Project", "parent": args.project},
-			order_by="idx")
+	if project and args.doctype == "Vehicle Gate Pass":
+		out.sales_invoice = project.get_invoice_for_vehicle_gate_pass()
+
+	if project and args.doctype and frappe.get_meta(args.doctype).has_field('vehicle_checklist'):
+		vehicle_checklist = [{
+			"checklist_item": d.checklist_item,
+			"checklist_item_checked": d.checklist_item_checked,
+			"is_custom_checklist_item": d.is_custom_checklist_item,
+		} for d in project.vehicle_checklist]
+
 		if vehicle_checklist:
 			out.vehicle_checklist = vehicle_checklist
 
@@ -1023,14 +1033,13 @@ def get_vehicle_booking_order_from_vehicle(vehicle, filters=None, fieldname="nam
 
 
 @frappe.whitelist()
-def get_contact_details(contact=None, prefix=None):
-	from frappe.contacts.doctype.contact.contact import get_contact_details
+def get_contact_details(contact=None, prefix=None, project=None, lead=None):
+	from erpnext.accounts.party import get_contact_details
 
 	out = frappe._dict()
-
 	prefix = cstr(prefix)
 
-	contact_details = get_contact_details(contact) if contact else frappe._dict()
+	contact_details = get_contact_details(contact, project=project, lead=lead)
 	out[prefix + 'contact_display'] = contact_details.get('contact_display')
 	out[prefix + 'contact_mobile'] = contact_details.get('contact_mobile')
 	out[prefix + 'contact_phone'] = contact_details.get('contact_phone')

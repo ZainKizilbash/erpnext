@@ -82,7 +82,10 @@ erpnext.crm.Opportunity = class Opportunity extends frappe.ui.form.Controller {
 						__('Create'));
 				}
 
-				if (frappe.boot.active_domains.includes("Vehicles") && (!me.frm.doc.conversion_document || me.frm.doc.conversion_document == "Order")) {
+				if (
+					frappe.boot.active_domains.includes("Vehicles")
+					&& (!me.frm.doc.conversion_document || me.frm.doc.conversion_document == "Order")
+				) {
 					me.frm.add_custom_button(__("Vehicle Booking Order"), () => me.make_vehicle_booking_order(),
 						__('Create'));
 

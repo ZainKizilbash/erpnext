@@ -11,7 +11,7 @@ erpnext.vehicles.VehicleGatePass = class VehicleGatePass extends erpnext.vehicle
 	setup_queries() {
 		super.setup_queries();
 
-		var me = this;
+		let me = this;
 
 		me.frm.set_query("project", function() {
 			var filters = {};
@@ -35,8 +35,9 @@ erpnext.vehicles.VehicleGatePass = class VehicleGatePass extends erpnext.vehicle
 		me.frm.set_query("vehicle_delivery", function() {
 			return {
 				filters: {
-					item_code : me.frm.doc.item_code,
-					docstatus: ['=', 1]
+					vehicle_booking_order: me.frm.doc.vehicle_booking_order,
+					docstatus: ['=', 1],
+					is_return: 0,
 				}
 			};
 		});
@@ -49,28 +50,38 @@ erpnext.vehicles.VehicleGatePass = class VehicleGatePass extends erpnext.vehicle
 				}
 			 };
 		});
+
+		me.frm.set_query("opportunity", function() {
+			return {
+				filters: {
+					conversion_document: "Order",
+				}
+			};
+		});
 	}
 
 	get_customer_details() {
-		var me = this;
+		let me = this;
 
 		let args = {
 			doctype: me.frm.doc.doctype,
 			company: me.frm.doc.company,
-			vehicle_owner: me.frm.doc.vehicle_owner,
+			customer: me.frm.doc.customer,
 			posting_date: me.frm.doc.posting_date
 		}
 
-		if (me.frm.doc.purpose == "Service - Vehicle Delivery" || me.frm.doc.purpose == "Service - Test Drive" ) {
+		if (["Service - Vehicle Delivery", "Service - Test Drive"].includes(me.frm.doc.purpose)) {
 			args.project = me.frm.doc.project;
 		}
 
 		if (me.frm.doc.purpose == "Sales - Vehicle Delivery") {
 			args.vehicle_booking_order = me.frm.doc.vehicle_booking_order;
+			args.vehicle_delivery = me.frm.doc.vehicle_delivery;
 		}
 
 		if (me.frm.doc.purpose == "Sales - Test Drive") {
 			args.opportunity = me.frm.doc.opportunity;
+			args.lead = me.frm.doc.lead;
 		}
 
 		return frappe.call({
@@ -80,73 +91,73 @@ erpnext.vehicles.VehicleGatePass = class VehicleGatePass extends erpnext.vehicle
 			},
 			callback: function (r) {
 				if (r.message && !r.exc) {
-					me.frm.set_value(r.message);
+					return me.frm.set_value(r.message);
 				}
 			}
 		});
-	}
-
-
-	opportunity() {
-		this.frm.set_value("customer", null);
-		this.frm.set_value("lead", null);
-		frappe.call({
-			method: "erpnext.vehicles.doctype.vehicle_gate_pass.vehicle_gate_pass.get_opportunity_details",
-			args: {
-				"opportunity": this.frm.doc.opportunity,
-			},
-			callback: function (r) {
-				if (r.message && !r.exc) {
-					me.frm.set_value(r.message);
-				}
-			}
-		})
 	}
 
 	lead() {
-		frappe.call({
-			method: "erpnext.crm.doctype.lead.lead.get_lead_details",
-			args: {
-				"lead": this.frm.doc.lead,
-			},
-			callback: function (r) {
-				if (r.message && !r.exc) {
-					me.frm.set_value(r.message);
-				}
-			}
-		})
+		if (this.frm.doc.purpose != "Sales - Test Drive") {
+			this.frm.doc.lead = null;
+			return;
+		}
+		return this.get_customer_details();
 	}
 
-	vehicle_booking_order(doc) {
-		if (doc.purpose != "Sales - Vehicle Delivery") {
-			this.frm.set_value("vehicle_booking_order", this.frm.doc.vehicle_booking_order = null);
+	opportunity() {
+		let me = this;
+
+		if (me.frm.doc.purpose != "Sales - Test Drive") {
+			me.frm.doc.opportunity = null;
 			return;
 		}
 
-		var me = this;
-
-		return frappe.call({
-			method: "erpnext.vehicles.vehicle_transaction_controller.get_vehicle_booking_order_details",
-			args: {
+		if (me.frm.doc.opportunity) {
+			return frappe.call({
+				method: "erpnext.vehicles.doctype.vehicle_gate_pass.vehicle_gate_pass.get_opportunity_details",
 				args: {
-					doctype: me.frm.doc.doctype,
-					company: me.frm.doc.company,
-					customer: me.frm.doc.customer,
-					supplier: me.frm.doc.supplier,
-					vehicle_booking_order: doc.vehicle_booking_order,
-					project: doc.project,
-					vehicle: doc.vehicle,
-					get_vehicle_delivery: true,
-					posting_date: me.frm.doc.posting_date || me.frm.doc.transaction_date,
-					issued_for: me.frm.doc.issued_for,
+					"opportunity": me.frm.doc.opportunity,
+				},
+				callback: function (r) {
+					if (r.message && !r.exc) {
+						return me.frm.set_value(r.message);
+					}
 				}
-			},
-			callback: function (r) {
-				if (r.message && !r.exc) {
-					me.frm.set_value(r.message);
+			});
+		}
+	}
+
+	vehicle_delivery() {
+		let me = this;
+
+		if (me.frm.doc.purpose != "Sales - Vehicle Delivery") {
+			me.frm.doc.vehicle_delivery = null;
+			return;
+		}
+
+		if (me.frm.doc.vehicle_delivery) {
+			return frappe.call({
+				method: "erpnext.vehicles.doctype.vehicle_gate_pass.vehicle_gate_pass.get_vehicle_delivery_details",
+				args: {
+					"vehicle_delivery": me.frm.doc.vehicle_delivery,
+				},
+				callback: function (r) {
+					if (r.message && !r.exc) {
+						return me.frm.set_value(r.message);
+					}
 				}
-			}
-		});
+			});
+		}
+	}
+
+	vehicle_booking_order() {
+		if (this.frm.doc.purpose != "Sales - Vehicle Delivery") {
+			this.frm.doc.vehicle_booking_order = null;
+			return;
+		}
+
+		return super.vehicle_booking_order();
 	}
 };
 

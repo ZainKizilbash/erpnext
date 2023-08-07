@@ -6,7 +6,7 @@ import erpnext
 from frappe import _
 from email_reply_parser import EmailReplyParser
 from frappe.utils import flt, cint, get_url, cstr, nowtime, get_time, today, get_datetime, add_days, ceil, getdate,\
-	clean_whitespace, combine_datetime
+	clean_whitespace
 from erpnext.controllers.queries import get_filters_cond
 from frappe.desk.reportview import get_match_cond
 from erpnext.hr.doctype.daily_work_summary.daily_work_summary import get_users_email
@@ -26,7 +26,6 @@ from erpnext.vehicles.vehicle_checklist import get_default_vehicle_checklist_ite
 from erpnext.vehicles.doctype.vehicle_log.vehicle_log import get_customer_vehicle_selector_data
 from frappe.model.meta import get_field_precision
 import json
-from frappe.model.mapper import get_mapped_doc
 
 
 force_applies_to_fields = ("vehicle_chassis_no", "vehicle_engine_no", "vehicle_license_plate", "vehicle_unregistered",
@@ -1002,19 +1001,18 @@ class Project(StatusUpdater):
 		vehicle_gate_passes = None
 
 		if self.get('applies_to_vehicle'):
-			vehicle_service_receipts = frappe.db.get_all("Vehicle Service Receipt",
-				{"project": self.name, "vehicle": self.applies_to_vehicle, "docstatus": 1},
-				['name', 'posting_date', 'posting_time'],
-				order_by="posting_date, posting_time, creation")
-			vehicle_gate_passes = frappe.db.get_all("Vehicle Gate Pass",
-				{
-					"project": self.name,
-					"vehicle": self.applies_to_vehicle,
-					"docstatus": 1,
-					"purpose": "Service - Vehicle Delivery"
-				},
-				['name', 'posting_date', 'posting_time'],
-				order_by="posting_date, posting_time, creation")
+			vehicle_service_receipts = frappe.db.get_all("Vehicle Service Receipt", {
+				"project": self.name,
+				"vehicle": self.applies_to_vehicle,
+				"docstatus": 1
+			}, ['name', 'posting_date', 'posting_time'], order_by="posting_date, posting_time, creation")
+
+			vehicle_gate_passes = frappe.db.get_all("Vehicle Gate Pass", {
+				"project": self.name,
+				"vehicle": self.applies_to_vehicle,
+				"docstatus": 1,
+				"purpose": "Service - Vehicle Delivery"
+			}, ['name', 'posting_date', 'posting_time'], order_by="posting_date, posting_time, creation")
 
 		vehicle_service_receipt = frappe._dict()
 		vehicle_gate_pass = frappe._dict()
@@ -1494,18 +1492,19 @@ def get_timeline_data(doctype, name):
 
 
 def get_project_list(doctype, txt, filters, limit_start, limit_page_length=20, order_by="modified"):
-	return frappe.db.sql('''select distinct project.*
+	return frappe.db.sql("""
+		select distinct project.*
 		from tabProject project, `tabProject User` project_user
 		where
-			(project_user.user = %(user)s
-			and project_user.parent = project.name)
+			(project_user.user = %(user)s and project_user.parent = project.name)
 			or project.owner = %(user)s
-			order by project.modified desc
-			limit {0}, {1}
-		'''.format(limit_start, limit_page_length),
-						{'user': frappe.session.user},
-						as_dict=True,
-						update={'doctype': 'Project'})
+		order by project.modified desc
+		limit {0}, {1}
+	""".format(limit_start, limit_page_length),
+		{'user': frappe.session.user},
+		as_dict=True,
+		update={'doctype': 'Project'}
+	)
 
 
 def get_list_context(context=None):
@@ -1523,7 +1522,8 @@ def get_list_context(context=None):
 @frappe.validate_and_sanitize_search_inputs
 def get_users_for_project(doctype, txt, searchfield, start, page_len, filters):
 	conditions = []
-	return frappe.db.sql("""select name, concat_ws(' ', first_name, middle_name, last_name)
+	return frappe.db.sql("""
+		select name, concat_ws(' ', first_name, middle_name, last_name)
 		from `tabUser`
 		where enabled=1
 			and name not in ("Guest", "Administrator")
@@ -1535,16 +1535,17 @@ def get_users_for_project(doctype, txt, searchfield, start, page_len, filters):
 			if(locate(%(_txt)s, full_name), locate(%(_txt)s, full_name), 99999),
 			idx desc,
 			name, full_name
-		limit %(start)s, %(page_len)s""".format(**{
+		limit %(start)s, %(page_len)s
+	""".format(**{
 		'key': searchfield,
 		'fcond': get_filters_cond(doctype, filters, conditions),
 		'mcond': get_match_cond(doctype)
 	}), {
-							'txt': "%%%s%%" % txt,
-							'_txt': txt.replace("%", ""),
-							'start': start,
-							'page_len': page_len
-						})
+		'txt': "%%%s%%" % txt,
+		'_txt': txt.replace("%", ""),
+		'start': start,
+		'page_len': page_len
+	})
 
 
 def hourly_reminder():
@@ -2173,11 +2174,13 @@ def get_vehicle_service_receipt(project):
 
 @frappe.whitelist()
 def get_vehicle_gate_pass(project, purpose, sales_invoice=None):
-	doc_exists_filter = {'purpose': purpose}
-	if purpose == "Service - Test Drive":
-		doc_exists_filter.update({'docstatus': 0})
+	if purpose not in ("Service - Vehicle Delivery", "Service - Test Drive"):
+		frappe.throw(_("Invalid Purpose {0}").format(purpose))
 
-	check_if_doc_exists("Vehicle Gate Pass", project, doc_exists_filter)
+	check_if_doc_exists("Vehicle Gate Pass", project, {
+		"purpose": purpose,
+		"docstatus": 0,
+	})
 
 	doc = frappe.get_doc("Project", project)
 	target = frappe.new_doc("Vehicle Gate Pass")
@@ -2186,7 +2189,6 @@ def get_vehicle_gate_pass(project, purpose, sales_invoice=None):
 
 	if purpose == "Service - Vehicle Delivery":
 		doc.validate_ready_to_close()
-		sales_invoice = sales_invoice or doc.get_invoice_for_vehicle_gate_pass()
 		target.sales_invoice = sales_invoice
 
 	target.run_method("set_missing_values")
@@ -2202,11 +2204,22 @@ def set_vehicle_transaction_values(source, target):
 	target.project = source.name
 	target.item_code = source.applies_to_item
 	target.vehicle = source.applies_to_vehicle
-	target.contact_person = source.contact_person
 
-	if target.doctype == "Vehicle Gate Pass":
+	if target.meta.has_field("customer"):
+		target.customer = source.customer
+
+	if target.meta.has_field("contact_person"):
+		target.contact_person = source.contact_person
+		target.contact_mobile = source.contact_mobile
+		target.contact_mobile_2 = source.contact_mobile
+		target.contact_phone = source.contact_phone
+		target.contact_email = source.contact_email
+
+	if target.meta.has_field("project_workshop"):
 		target.project_workshop = source.project_workshop
 
+	if target.meta.has_field("service_advisor"):
+		target.service_advisor = source.service_advisor
 
 
 def check_if_doc_exists(doctype, project, filters=None):

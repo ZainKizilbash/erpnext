@@ -131,7 +131,7 @@ erpnext.projects.ProjectController = class ProjectController extends erpnext.con
 			'Sales Invoice': 'Sales Invoice',
 			'Delivery Note': 'Delivery Note',
 			'Vehicle Service Receipt': 'Receive Vehicle',
-			'Vehicle Gate Pass': 'Create Gate Pass',
+			'Vehicle Gate Pass': 'Create Delivery Gate Pass',
 			'Vehicle Log': 'Update Odometer',
 		};
 
@@ -206,13 +206,12 @@ erpnext.projects.ProjectController = class ProjectController extends erpnext.con
 
 				if (frappe.model.can_create("Vehicle Gate Pass") && me.frm.doc.vehicle_status == "In Workshop") {
 					if (cint(me.frm.doc.ready_to_close)) {
-						me.frm.add_custom_button(__("Create Vehicle Delivery Gate Pass"), () => me.make_vehicle_gate_pass("Service - Vehicle Delivery")
-							, __("Vehicle"));
+						me.frm.add_custom_button(__("Create Delivery Gate Pass"),
+							() => me.make_vehicle_gate_pass("Service - Vehicle Delivery"), __("Vehicle"));
 					}
 
-					me.frm.add_custom_button(__("Create Test Drive Gate Pass"), () => me.make_vehicle_gate_pass("Service - Test Drive")
-						, __("Vehicle"));
-
+					me.frm.add_custom_button(__("Create Test Drive Gate Pass"),
+						() => me.make_vehicle_gate_pass("Service - Test Drive"), __("Tasks"));
 				}
 
 				if (frappe.model.can_create("Vehicle Log")) {
@@ -877,7 +876,6 @@ erpnext.projects.ProjectController = class ProjectController extends erpnext.con
 			args: {
 				"project": this.frm.doc.name,
 				"purpose": purpose,
-				"sales_invoice": this.frm.doc.sales_invoice,
 			},
 			callback: function (r) {
 				if (!r.exc) {

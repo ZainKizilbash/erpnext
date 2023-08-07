@@ -17,7 +17,6 @@ from erpnext.utilities.transaction_base import TransactionBase
 from erpnext.accounts.party import get_contact_details, get_address_display, get_party_account_currency
 from erpnext.crm.doctype.lead.lead import get_customer_from_lead, add_sales_person_from_source
 from erpnext.maintenance.doctype.maintenance_schedule.maintenance_schedule import get_maintenance_schedule_opportunity
-from erpnext.projects.doctype.project.project import set_vehicle_transaction_values, check_if_doc_exists
 from six import string_types
 import json
 
@@ -577,6 +576,7 @@ def make_vehicle_booking_order(source_name, target_doc=None):
 
 	return target_doc
 
+
 @frappe.whitelist()
 def make_opportunity_gate_pass(opportunity):
 	doc = frappe.get_doc("Opportunity", opportunity)
@@ -585,9 +585,6 @@ def make_opportunity_gate_pass(opportunity):
 
 	target.opportunity = doc.name
 	target.vehicle = doc.applies_to_vehicle
-	target.sales_person = doc.sales_person
-	target.contact_mobile = doc.contact_mobile
-
 
 	if doc.opportunity_from == "Lead":
 		target.lead = doc.party_name

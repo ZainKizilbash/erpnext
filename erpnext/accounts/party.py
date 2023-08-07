@@ -206,7 +206,8 @@ def get_contact_details(contact, project=None, lead=None, get_contact_no_list=Fa
 	from erpnext.crm.doctype.lead.lead import _get_lead_contact_details
 
 	if project and isinstance(project, string_types):
-		project = frappe.db.get_value("Project", project, ['contact_person', 'contact_mobile', 'contact_phone'], as_dict=1)
+		project = frappe.db.get_value("Project", project,
+			['contact_person', 'contact_mobile', 'contact_phone', 'contact_email'], as_dict=1)
 	if lead and isinstance(lead, string_types):
 		lead = frappe.get_doc("Lead", lead)
 
@@ -222,6 +223,7 @@ def get_contact_details(contact, project=None, lead=None, get_contact_no_list=Fa
 	if project and cstr(contact) == cstr(project.get('contact_person')):
 		out.contact_mobile = project.contact_mobile
 		out.contact_phone = project.contact_phone
+		out.contact_email = project.contact_email
 
 	return out
 

@@ -15,10 +15,12 @@ class VehicleGatePass(VehicleTransactionController):
 			self.get("item_name") or self.get("item_code"))
 
 	def validate(self):
-		super(VehicleGatePass, self).validate()
 		self.validate_purpose_based_mandatory_fields()
+		super(VehicleGatePass, self).validate()
 		self.validate_duplicate_gate_pass()
-		self.validate_vehicle()
+		self.validate_vehicle_delivery()
+		self.validate_opportunity()
+		self.validate_vehicle_received()
 		self.validate_sales_invoice()
 		self.validate_project_ready_to_close()
 		self.set_title()
@@ -34,33 +36,71 @@ class VehicleGatePass(VehicleTransactionController):
 	def on_cancel(self):
 		self.update_project_vehicle_status()
 		self.cancel_vehicle_log()
-		self.remove_vehicle_maintenance_schedule(self.project)
+		self.remove_vehicle_maintenance_schedule()
 
 	def set_title(self):
 		self.title = self.get('customer_name') or self.get('customer')
 
+	def set_missing_values(self, doc=None, for_validate=False):
+		self.set_vehicle_delivery_details()
+		self.set_opportunity_details()
+		super().set_missing_values(self, for_validate)
+
+	def set_opportunity_details(self):
+		if not self.get("opportunity"):
+			return
+
+		opportunity_details = get_opportunity_details(self.opportunity)
+		for k, v in opportunity_details.items():
+			if self.meta.has_field(k) and (not self.get(k)):
+				self.set(k, v)
+
+	def set_vehicle_delivery_details(self):
+		if not self.get("vehicle_delivery"):
+			return
+
+		vehicle_delivery_details = get_vehicle_delivery_details(self.vehicle_delivery)
+		for k, v in vehicle_delivery_details.items():
+			if self.meta.has_field(k) and (not self.get(k)):
+				self.set(k, v)
+
 	def validate_purpose_based_mandatory_fields(self):
-		if self.purpose != "Service - Vehicle Delivery" and self.purpose != "Service - Test Drive":
+		# Service fields cleanup
+		if self.purpose not in ("Service - Vehicle Delivery", "Service - Test Drive"):
 			self.project = None
 			self.project_workshop = None
 			self.service_advisor = None
+
+		if self.purpose != "Service - Vehicle Delivery":
 			self.sales_invoice = None
 
 		if self.purpose != "Service - Test Drive":
 			self.technician = None
 
+		# Sales fields cleanup
+		if self.purpose not in ("Sales - Test Drive", "Sales - Vehicle Delivery"):
+			self.sales_person = None
+
 		if self.purpose != "Sales - Vehicle Delivery":
 			self.vehicle_booking_order = None
 			self.vehicle_delivery = None
 
-		if self.purpose != "Sales - Test Drive" and self.purpose != "Sales - Vehicle Delivery":
-			self.sales_person = None
+		if self.purpose != "Sales - Test Drive":
+			self.lead = None
 			self.opportunity = None
+
+		if self.purpose == "Sales - Test Drive" and self.lead:
+			self.customer = None
+
+		# Validate Mandatory
+		if not self.get("customer") and self.purpose != "Sales - Test Drive":
+			frappe.throw(_("Customer is mandatory"))
+		if not self.get("customer") and not self.get("lead"):
+			frappe.throw(_("Customer or Lead is mandatory").format(self.purpose))
 
 		if self.purpose in ["Service - Vehicle Delivery", "Service - Test Drive"]:
 			if not self.get("project"):
 				frappe.throw(_("Repair Order is mandatory for Purpose {0}.").format(self.purpose))
-
 			if not self.get("project_workshop"):
 				frappe.throw(_("Project Workshop is mandatory for Purpose {0}.").format(self.purpose))
 
@@ -68,14 +108,15 @@ class VehicleGatePass(VehicleTransactionController):
 			if not self.vehicle_delivery:
 				frappe.throw(_("Vehicle Delivery is mandatory for Purpose {0}.").format(self.purpose))
 
-		if self.purpose != "Sales - Test Drive":
-			if not self.get("customer"):
-				frappe.throw(_("Customer Details are mandatory for Purpose {0}.").format(self.purpose))
-
-
 	def validate_duplicate_gate_pass(self):
 		if self.purpose in ("Service - Vehicle Delivery", "Sales - Vehicle Delivery"):
-			filters = {"purpose": self.purpose, "vehicle": self.vehicle, "docstatus": 1, "name": ['!=', self.name]}
+			filters = {
+				"purpose": self.purpose,
+				"vehicle": self.vehicle,
+				"docstatus": 1,
+				"name": ['!=', self.name]
+			}
+
 			if self.purpose == "Service - Vehicle Delivery":
 				filters["project"] = self.project
 			elif self.purpose == "Sales - Vehicle Delivery":
@@ -87,14 +128,76 @@ class VehicleGatePass(VehicleTransactionController):
 					self.purpose,
 					frappe.get_desk_link("Vehicle Gate Pass", existing_gate_pass))
 				)
-		if self.get('sales_invoice'):
-			invoice_gate_pass = frappe.db.get_value("Vehicle Gate Pass",
-				filters={"sales_invoice": self.sales_invoice, "vehicle": self.vehicle, "docstatus": 1, "name": ['!=', self.name]})
 
-			if invoice_gate_pass:
+		if self.get('sales_invoice'):
+			existing_gate_pass = frappe.db.get_value("Vehicle Gate Pass", filters={
+				"sales_invoice": self.sales_invoice,
+				"vehicle": self.vehicle,
+				"docstatus": 1,
+				"name": ['!=', self.name]
+			})
+
+			if existing_gate_pass:
 				frappe.throw(_("Vehicle Gate Pass for {0} already exists in {1}")
 					.format(frappe.get_desk_link("Sales Invoice", self.sales_invoice),
-					frappe.get_desk_link("Vehicle Gate Pass", invoice_gate_pass)))
+					frappe.get_desk_link("Vehicle Gate Pass", existing_gate_pass)))
+
+	def validate_vehicle_delivery(self):
+		if self.get("vehicle_delivery"):
+			vehicle_delivery = frappe.db.get_value("Vehicle Delivery", self.vehicle_delivery, [
+				'docstatus', 'customer', 'item_code', 'vehicle', 'is_return',
+			], as_dict=1)
+
+			if not vehicle_delivery:
+				frappe.throw(_("Vehicle Delivery {0} does not exist").format(self.vehicle_delivery))
+
+			if vehicle_delivery.docstatus != 1:
+				frappe.throw(_("{0} is not submitted").format(
+					frappe.get_desk_link("Vehicle Delivery", self.vehicle_delivery))
+				)
+
+			if vehicle_delivery.is_return:
+				frappe.throw(_("Cannot create a Vehicle Gate Pass against a Delivery Return"))
+
+			if self.customer != vehicle_delivery.customer:
+				frappe.throw(_("Customer does not match in {0}")
+					.format(frappe.get_desk_link("Vehicle Delivery", self.vehicle_delivery)))
+
+			if self.item_code != vehicle_delivery.item_code:
+				frappe.throw(_("Variant Item Code does not match in {0}")
+					.format(frappe.get_desk_link("Vehicle Delivery", self.vehicle_delivery)))
+
+			if self.vehicle != vehicle_delivery.vehicle:
+				frappe.throw(_("Vehicle does not match in {0}")
+					.format(frappe.get_desk_link("Vehicle Delivery", self.vehicle_delivery)))
+
+	def validate_opportunity(self):
+		if self.get("opportunity"):
+			opportunity = frappe.db.get_value("Opportunity", self.opportunity, [
+				'opportunity_from', 'party_name', 'applies_to_item', 'applies_to_vehicle',
+			], as_dict=1)
+
+			if not opportunity:
+				frappe.throw(_("Opportunity {0} does not exist").format(self.opportunity))
+
+			if opportunity.opportunity_from == "Customer":
+				if self.customer != opportunity.party_name:
+					frappe.throw(_("Customer does not match in {0}").format(
+						frappe.get_desk_link("Opportunity", self.opportunity))
+					)
+			else:
+				if self.lead != opportunity.party_name:
+					frappe.throw(_("Lead does not match in {0}").format(
+						frappe.get_desk_link("Opportunity", self.opportunity))
+					)
+
+			if opportunity.applies_to_item and self.item_code != opportunity.applies_to_item:
+				frappe.throw(_("Variant Item Code does not match in {0}")
+					.format(frappe.get_desk_link("Opportunity", self.opportunity)))
+
+			if opportunity.applies_to_vehicle and self.vehicle != opportunity.applies_to_vehicle:
+				frappe.throw(_("Vehicle does not match in {0}")
+					.format(frappe.get_desk_link("Opportunity", self.opportunity)))
 
 	def validate_sales_invoice(self):
 		if self.get('sales_invoice'):
@@ -115,35 +218,43 @@ class VehicleGatePass(VehicleTransactionController):
 					frappe.throw(_("Sales Invoice {0} is cancelled").format(sales_invoice.name))
 
 	def validate_project_ready_to_close(self):
-			if self.purpose != "Service - Vehicle Delivery":
-				return
+		if self.purpose != "Service - Vehicle Delivery":
+			return
 
-			if not frappe.db.get_value('Project', self.project, 'ready_to_close'):
-				frappe.throw(_("Repair Order is not Ready to Close"))
+		if not frappe.db.get_value('Project', self.project, 'ready_to_close'):
+			frappe.throw(_("{0} is not Ready to Close").format(frappe.get_desk_link("Project", self.project)))
 
-	def validate_vehicle(self):
-		if self.purpose == "Sales - Test Drive":
-			if frappe.db.get_value("Vehicle", self.vehicle, "status") != "Active":
-				frappe.throw(_("Vehicle Status Not Active"))
-
-		elif self.purpose == "Sales - Vehicle Delivery":
-			if frappe.db.get_value("Vehicle Booking Order", self.vehicle_booking_order, "delivery_status") != "Delivered":
-				frappe.throw(_("Vehicle Not deliver yet."))
-
-		else:
+	def validate_vehicle_received(self):
+		if self.purpose == "Service - Vehicle Delivery":
 			vehicle_service_receipt = frappe.db.get_value("Vehicle Service Receipt",
 				fieldname=['name', 'timestamp(posting_date, posting_time) as posting_dt'],
-				filters={"project": self.project, "vehicle": self.vehicle, "project_workshop": self.project_workshop, "docstatus": 1},
+				filters={"project": self.project, "vehicle": self.vehicle, "project_workshop": self.project_workshop,
+					"docstatus": 1},
 				order_by='posting_date, posting_time, creation', as_dict=1)
 
 			if vehicle_service_receipt:
 				self_posting_dt = combine_datetime(self.posting_date, self.posting_time)
 				if self_posting_dt < get_datetime(vehicle_service_receipt.posting_dt):
-					frappe.throw(_("Vehicle Gate Pass Delivery Date/Time cannot be before Received Date/Time {0}")
-						.format(frappe.bold(frappe.format(vehicle_service_receipt.posting_dt))))
+					frappe.throw(_("Vehicle Gate Pass Delivery Date/Time cannot be before Received Date/Time {0}").format(
+						frappe.bold(frappe.format(vehicle_service_receipt.posting_dt)))
+					)
 			else:
-				frappe.throw(_("Vehicle has not been received in Project Workshop {0} for {1} yet")
-					.format(self.project_workshop, frappe.get_desk_link("Project", self.project)))
+				frappe.throw(_("Vehicle has not been received in Project Workshop {0} for {1} yet").format(
+					self.project_workshop, frappe.get_desk_link("Project", self.project))
+				)
+
+		if self.purpose == "Sales - Test Drive":
+			vehicle_details = frappe.db.get_value("Vehicle", self.vehicle,
+				["purchase_document_no", "delivery_document_no"], as_dict=1)
+
+			if not vehicle_details:
+				frappe.throw(_("Vehicle {0} does not exist").format(self.vehicle))
+			if not vehicle_details.purchase_date or vehicle_details.delivery_date:
+				frappe.throw(_("Vehicle is not in stock"))
+
+		if self.purpose == "Sales - Vehicle Delivery":
+			if not frappe.db.get_value("Vehicle", self.vehicle, "delivery_document_no"):
+				frappe.throw(_("Vehicle has not been delivered yet"))
 
 	def add_vehicle_maintenance_schedule(self):
 		if self.get("project"):
@@ -170,21 +281,38 @@ class VehicleGatePass(VehicleTransactionController):
 		if self.get("project"):
 			return super().remove_vehicle_maintenance_schedule("Project", self.project)
 
+
 @frappe.whitelist()
 def get_opportunity_details(opportunity):
+	if not opportunity:
+		frappe.throw(_("Opportunity not provided"))
+
 	doc = frappe.get_doc("Opportunity", opportunity)
 
 	out = frappe._dict()
 	if doc.opportunity_from == "Lead":
 		out.lead = doc.party_name
+		out.customer = None
 	else:
 		out.customer = doc.party_name
+		out.lead = None
 
-	for d in doc.items:
-		is_vehicle = frappe.get_cached_value("Item", d.item_code, "is_vehicle")
-		if is_vehicle:
-			out.item_code = d.item_code
-			out.item_name = d.item_name
-			break
+	out.item_code = doc.applies_to_item
+	out.item_name = doc.applies_to_item_name
+	out.vehicle = doc.get("applies_to_vehicle")
+	out.sales_person = doc.sales_person
 
 	return out
+
+
+@frappe.whitelist()
+def get_vehicle_delivery_details(vehicle_delivery):
+	if not vehicle_delivery:
+		frappe.throw(_("Vehicle Delivery not provided"))
+
+	vehicle_delivery_details = frappe.db.get_value("Vehicle Delivery", vehicle_delivery, [
+		"vehicle_booking_order", "vehicle", "item_code", "item_name",
+		"customer", "contact_person", "customer_address",
+	], as_dict=1)
+
+	return vehicle_delivery_details or {}
