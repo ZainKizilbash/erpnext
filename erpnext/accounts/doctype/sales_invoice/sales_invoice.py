@@ -67,9 +67,6 @@ class SalesInvoice(SellingController):
 		self.set_income_account_for_fixed_assets()
 		validate_inter_company_party(self.doctype, self.customer, self.company, self.inter_company_reference)
 
-		if cint(self.is_pos):
-			self.validate_pos()
-
 		if cint(self.update_stock):
 			self.validate_dropship_item()
 			self.validate_item_code()
@@ -846,13 +843,6 @@ class SalesInvoice(SellingController):
 					frappe.throw(_("Row #{0}: Delivery Note is mandatory for Item {1}").format(d.idx, d.item_code))
 				if dn_required == 'Either Delivery Note or Sales Order' and not d.get('delivery_note') and not d.get('sales_order'):
 					frappe.throw(_("Row #{0}: Delivery Note or Sales Order is mandatory for Item {1}").format(d.idx, d.item_code))
-
-	def validate_pos(self):
-		if self.is_return:
-			grand_total = flt(self.rounded_total) or flt(self.grand_total)
-			if flt(self.paid_amount) + flt(self.write_off_amount) - grand_total > \
-				1.0/(10.0**(self.precision("grand_total") + 1.0)):
-					frappe.throw(_("Paid Amount + Write Off Amount can not be greater than Grand Total"))
 
 	def validate_item_code(self):
 		for d in self.get('items'):

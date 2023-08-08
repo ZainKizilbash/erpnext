@@ -785,7 +785,9 @@ class calculate_taxes_and_totals(object):
 		if self.doc.doctype == "Sales Invoice":
 			self.calculate_paid_amount()
 
-		if self.doc.is_return and self.doc.return_against and not self.doc.get('is_pos'): return
+		if self.doc.is_return and self.doc.return_against and not self.doc.get('is_pos'):
+			self.outstanding_amount = 0
+			return
 
 		if self.should_round_transaction_currency():
 			self.doc.round_floats_in(self.doc, ["grand_total", "total_advance", "write_off_amount"])
@@ -806,8 +808,11 @@ class calculate_taxes_and_totals(object):
 			paid_amount = self.doc.paid_amount \
 				if self.doc.party_account_currency == self.doc.currency else self.doc.base_paid_amount
 
-			self.doc.outstanding_amount = flt(total_amount_to_pay - flt(paid_amount) + flt(change_amount),
-				self.doc.precision("outstanding_amount"))
+			if self.doc.is_return and self.doc.return_against:
+				self.outstanding_amount = 0
+			else:
+				self.doc.outstanding_amount = flt(total_amount_to_pay - flt(paid_amount) + flt(change_amount),
+					self.doc.precision("outstanding_amount"))
 
 			if self.doc.doctype == 'Sales Invoice' and self.doc.get('is_pos') and self.doc.get('is_return'):
 				self.update_paid_amount_for_return(total_amount_to_pay)
