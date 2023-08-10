@@ -708,7 +708,7 @@ class update_entries_after(object):
 		"""get Stock Ledger Entries after a particular datetime, for reposting"""
 		return get_stock_ledger_entries(self.previous_sle or frappe._dict({
 				"item_code": self.args.get("item_code"), "warehouse": self.args.get("warehouse")
-			}), ">=", "asc", for_update=True)
+			}), ">=", "asc", include_unprocessed=True, for_update=True)
 
 	def get_previous_batch_sle(self, sle):
 		self.batch_data = self.previous_batch_sle_dict.get(sle.batch_no)
@@ -824,6 +824,7 @@ def get_previous_sle(args, for_update=False):
 def get_stock_ledger_entries(previous_sle, operator=None,
 		order="desc", limit=None, for_update=False,
 		batch_sle=False, packing_slip_sle=False, check_serial_no=False,
+		include_unprocessed=False,
 		debug=False):
 	"""get stock ledger entries filtered by specific posting datetime conditions"""
 	from erpnext.stock.doctype.serial_no.serial_no import get_serial_nos
@@ -860,6 +861,9 @@ def get_stock_ledger_entries(previous_sle, operator=None,
 
 	if operator in (">", ">=", "<=") and previous_sle.get("name"):
 		conditions += " and name!=%(name)s"
+
+	if not include_unprocessed:
+		conditions += " and is_processed = 1"
 
 	if previous_sle.get('conditions'):
 		conditions += " and " + previous_sle.get('conditions')
@@ -935,6 +939,7 @@ def get_valuation_rate(item_code, warehouse, voucher_type, voucher_no, batch_no=
 			where item_code = %s
 			and warehouse = %s
 			and valuation_rate {0} 0
+			and is_processed = 1
 			AND NOT (voucher_no = %s AND voucher_type = %s)
 			order by posting_date desc, posting_time desc, creation desc limit 1
 		""".format('>' if batch_no and batch_wise_valuation else '>='), (item_code, warehouse, voucher_no, voucher_type))
@@ -946,6 +951,7 @@ def get_valuation_rate(item_code, warehouse, voucher_type, voucher_no, batch_no=
 			where
 				item_code = %s
 				AND valuation_rate > 0
+				AND is_processed = 1
 				AND NOT(voucher_no = %s AND voucher_type = %s)
 			order by posting_date desc, posting_time desc, creation desc limit 1""", (item_code, voucher_no, voucher_type))
 
@@ -993,6 +999,7 @@ def get_batch_valuation_rate(item_code, warehouse, voucher_type, voucher_no, bat
 			AND warehouse = %s
 			AND batch_no = %s
 			AND batch_valuation_rate >= 0
+			AND is_processed = 1
 			AND NOT (voucher_no = %s AND voucher_type = %s)
 		order by posting_date desc, posting_time desc, creation desc limit 1
 	""", (item_code, warehouse, batch_no, voucher_no, voucher_type))
@@ -1005,6 +1012,7 @@ def get_batch_valuation_rate(item_code, warehouse, voucher_type, voucher_no, bat
 				item_code = %s
 				AND batch_no = %s
 				AND batch_valuation_rate > 0
+				AND is_processed = 1
 				AND NOT (voucher_no = %s AND voucher_type = %s)
 			order by posting_date desc, posting_time desc, creation desc limit 1
 		""", (item_code, batch_no, voucher_no, voucher_type))
