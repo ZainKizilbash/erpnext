@@ -852,19 +852,17 @@ def set_work_order_ops(name):
 
 @frappe.whitelist()
 def finish_multiple_work_orders(work_orders, args=None):
-	make_stock_entry_against_multiple_work_orders.catch(work_orders=work_orders, args=args)
+	if work_orders and isinstance(work_orders, str):
+		work_orders = json.loads(work_orders)
+
+	if not work_orders:
+		frappe.throw(_("Work Orders not selected"))
+
+	frappe.enqueue(make_stock_entry_against_multiple_work_orders, work_orders=work_orders, args=args)
 
 
 @frappe.catch_realtime_msgprint()
 def make_stock_entry_against_multiple_work_orders(work_orders, args=None):
-	if work_orders and isinstance(work_orders, str):
-		work_orders = json.loads(work_orders)
-	if args and isinstance(args, str):
-		args = json.loads(args)
-
-	if not work_orders:
-		work_orders = []
-
 	for i, d in enumerate(work_orders):
 		work_order = d.get('work_order')
 		qty = flt(d.get('finished_qty'))
@@ -875,18 +873,7 @@ def make_stock_entry_against_multiple_work_orders(work_orders, args=None):
 			description=_("Submitting {0}/{1}").format(i+1, len(work_orders))
 		)
 
-		try:
-			make_stock_entry(work_order, "Manufacture", qty, args=args, auto_submit=True)
-		except frappe.ValidationError:
-			if frappe.message_log:
-				frappe.publish_realtime("msgprint", frappe.message_log[-1], user=frappe.session.user)
-			else:
-				frappe.publish_realtime("msgprint", {
-					"message": _("An error occurred while submitting manufacture entries"),
-					"title": _("Error"),
-					"indicator": "red",
-				}, user=frappe.session.user)
-			raise
+		make_stock_entry(work_order, "Manufacture", qty, args=args, auto_submit=True)
 
 
 @frappe.whitelist()

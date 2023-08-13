@@ -1,7 +1,7 @@
 frappe.provide("erpnext.manufacturing");
 
 erpnext.manufacturing.work_order_qty_prompt_hooks = [];
-erpnext.manufacturing.finish_work_orders_qty_prompt_hooks = [];
+erpnext.manufacturing.multiple_work_orders_qty_prompt_hooks = [];
 
 $.extend(erpnext.manufacturing, {
 	make_stock_entry: function(doc, purpose) {
@@ -176,7 +176,7 @@ $.extend(erpnext.manufacturing, {
 	},
 
 	finish_multiple_work_orders: function(work_orders) {
-		this.show_prompt_for_multiple_work_order_qty(work_orders).then(r => {
+		this.show_qty_prompt_for_multiple_work_orders(work_orders).then(r => {
 			return frappe.call({
 				method: "erpnext.manufacturing.doctype.work_order.work_order.finish_multiple_work_orders",
 				args: {
@@ -188,7 +188,7 @@ $.extend(erpnext.manufacturing, {
 		});
 	},
 
-	show_prompt_for_multiple_work_order_qty: function(work_orders) {
+	show_qty_prompt_for_multiple_work_orders: function(work_orders) {
 		let settings = frappe.listview_settings['Work Order'];
 
 		for (let d of work_orders) {
@@ -254,7 +254,7 @@ $.extend(erpnext.manufacturing, {
 				]
 			}];
 
-			for (let hook of erpnext.manufacturing.finish_work_orders_qty_prompt_hooks || []) {
+			for (let hook of erpnext.manufacturing.multiple_work_orders_qty_prompt_hooks || []) {
 				hook(doc, fields);
 			}
 
