@@ -1,6 +1,7 @@
 frappe.provide("erpnext.manufacturing");
 
 erpnext.manufacturing.work_order_qty_prompt_hooks = [];
+erpnext.manufacturing.multiple_work_orders_qty_prompt_hooks = [];
 
 $.extend(erpnext.manufacturing, {
 	make_stock_entry: function(doc, purpose) {
@@ -171,6 +172,128 @@ $.extend(erpnext.manufacturing, {
 					});
 				}, __(purpose), __('Submit'));
 			});
+		});
+	},
+
+	finish_multiple_work_orders: function(work_orders) {
+		this.show_qty_prompt_for_multiple_work_orders(work_orders).then(r => {
+			return frappe.call({
+				method: "erpnext.manufacturing.doctype.work_order.work_order.finish_multiple_work_orders",
+				args: {
+					work_orders: r.work_orders,
+					args: r.args,
+				},
+				freeze: 1
+			});
+		});
+	},
+
+	show_qty_prompt_for_multiple_work_orders: function(work_orders) {
+		let settings = frappe.listview_settings['Work Order'];
+
+		for (let d of work_orders) {
+			if (!settings.can_finish_work_order(d)) {
+				frappe.throw(__(`Work Order ${d.name} not ready to Finish`));
+			}
+
+			[d.max, d.max_with_allowance] = erpnext.manufacturing.get_max_transferable_qty(d, "Manufacture");
+			[d.work_order, d.finished_qty] = [d.name, d.max];
+		}
+
+		return new Promise((resolve, reject) => {
+			let doc = {
+				work_orders: work_orders
+			};
+
+			let fields = [{
+				label: __("Work Orders"),
+				fieldname: "work_orders",
+				fieldtype: "Table",
+				cannot_add_rows: true,
+				in_place_edit: true,
+				data: doc.work_orders,
+				fields: [
+					{
+						label: __('Work Order'),
+						fieldname: "work_order",
+						fieldtype: "Link",
+						options: "Work Order",
+						read_only: 1,
+						in_list_view: 1,
+						reqd: 1,
+					},
+					{
+						label: __('Production Item Code'),
+						fieldname: "production_item",
+						fieldtype: "Link",
+						options: "Item",
+						read_only: 1,
+						in_list_view: 0,
+					},
+					{
+						label: __('Production Item'),
+						fieldname: "item_name",
+						fieldtype: "Data",
+						read_only: 1,
+						in_list_view: 1,
+					},
+					{
+						label: __('Order Qty'),
+						fieldname: "qty",
+						fieldtype: "Float",
+						read_only: 1,
+						in_list_view: 1,
+					},
+					{
+						label: __('Finished Qty'),
+						fieldname: "finished_qty",
+						fieldtype: "Float",
+						in_list_view: 1,
+						reqd: 1,
+					},
+				]
+			}];
+
+			for (let hook of erpnext.manufacturing.multiple_work_orders_qty_prompt_hooks || []) {
+				hook(doc, fields);
+			}
+
+			let dialog = new frappe.ui.Dialog({
+				title: __("Enter Finished Qty"),
+				doc: doc,
+				fields: fields,
+				size: "extra-large",
+				static: true,
+				no_submit_on_enter: true,
+				primary_action: function() {
+					let data = dialog.get_values();
+
+					doc.work_orders.forEach(d => {
+						if (flt(d.finished_qty) > d.max_with_allowance) {
+							frappe.msgprint(__('Finished Qty {0} can not be more than {1} for Work Order {2}',
+								[format_number(d.finished_qty), format_number(d.max_with_allowance), d.work_order]));
+							reject();
+						}
+					});
+
+					let send_to_stock_entry_fieldnames = fields.filter(f => f.send_to_stock_entry).map(f => f.fieldname);
+					let stock_entry_args = {};
+					for (let fieldname of send_to_stock_entry_fieldnames) {
+						if (data[fieldname]) {
+							stock_entry_args[fieldname] = data[fieldname];
+						}
+					}
+
+					resolve({
+						work_orders: data.work_orders,
+						args: stock_entry_args
+					});
+					dialog.hide();
+				},
+				primary_action_label: __('Submit'),
+			});
+
+			dialog.show();
 		});
 	},
 

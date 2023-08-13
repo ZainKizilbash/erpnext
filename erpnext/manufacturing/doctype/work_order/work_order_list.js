@@ -7,6 +7,7 @@ frappe.listview_settings['Work Order'] = {
 		"packing_slip_required", "packed_qty", "packing_status",
 		"order_line_no",
 	],
+
 	get_indicator: function(doc) {
 		if (doc.status==="Submitted") {
 			return [__("Not Started"), "orange", "status,=,Submitted"];
@@ -21,22 +22,30 @@ frappe.listview_settings['Work Order'] = {
 			}[doc.status], "status,=," + doc.status];
 		}
 	},
+
+	onload: function(listview) {
+		listview.page.add_action_item(__("Finish Multiple"), function() {
+			let work_orders = listview.get_checked_items();
+			erpnext.manufacturing.finish_multiple_work_orders(work_orders);
+		});
+	},
+
 	button: {
 		show(doc) {
 			let settings = frappe.listview_settings['Work Order'];
-			return settings.show_start_button(doc) || settings.show_finish_button(doc);
+			return settings.can_start_work_order(doc) || settings.can_finish_work_order(doc);
 		},
 		get_label(doc) {
 			let settings = frappe.listview_settings['Work Order'];
-			if (settings.show_finish_button(doc)) {
+			if (settings.can_finish_work_order(doc)) {
 				return __('Finish');
-			} else if (settings.show_start_button(doc)) {
+			} else if (settings.can_start_work_order(doc)) {
 				return __('Start');
 			}
 		},
 		get_class(doc) {
 			let settings = frappe.listview_settings['Work Order'];
-			if (settings.show_finish_button(doc)) {
+			if (settings.can_finish_work_order(doc)) {
 				return "btn-primary";
 			} else {
 				return "btn-default";
@@ -48,9 +57,9 @@ frappe.listview_settings['Work Order'] = {
 		action(doc) {
 			let settings = frappe.listview_settings['Work Order'];
 			let method;
-			if (settings.show_finish_button(doc)) {
+			if (settings.can_finish_work_order(doc)) {
 				method = () => erpnext.manufacturing.make_stock_entry(doc, "Manufacture");
-			} else if (settings.show_start_button(doc)) {
+			} else if (settings.can_start_work_order(doc)) {
 				method = () => erpnext.manufacturing.make_stock_entry(doc, 'Material Transfer for Manufacture');
 			}
 
@@ -64,7 +73,7 @@ frappe.listview_settings['Work Order'] = {
 		}
 	},
 
-	show_start_button: function (doc) {
+	can_start_work_order: function (doc) {
 		if (doc.docstatus != 1 || ["Completed", "Stopped"].includes(doc.status)) {
 			return false;
 		}
@@ -76,7 +85,7 @@ frappe.listview_settings['Work Order'] = {
 		);
 	},
 
-	show_finish_button: function (doc) {
+	can_finish_work_order: function (doc) {
 		if (doc.docstatus != 1 || ["Completed", "Stopped"].includes(doc.status)) {
 			return false;
 		}
