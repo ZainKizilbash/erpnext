@@ -16,7 +16,7 @@ class VehicleGatePass(VehicleTransactionController):
 
 	def validate(self):
 		self.validate_purpose_based_mandatory_fields()
-		self.validate_puspose_based_permissions()
+		self.validate_purpose_based_permissions()
 		super(VehicleGatePass, self).validate()
 		self.validate_duplicate_gate_pass()
 		self.validate_vehicle_delivery()
@@ -109,7 +109,7 @@ class VehicleGatePass(VehicleTransactionController):
 			if not self.vehicle_delivery:
 				frappe.throw(_("Vehicle Delivery is mandatory for Purpose {0}.").format(self.purpose))
 
-	def validate_puspose_based_permissions(self):
+	def validate_purpose_based_permissions(self):
 		purpose_permission_field_map = {
 			"Sales - Test Drive": "restrict_sales_test_drive_gate_pass_to_role",
 			"Sales - Vehicle Delivery": "restrict_sales_delivery_gate_pass_to_role",
