@@ -189,11 +189,13 @@ $.extend(erpnext.manufacturing, {
 	},
 
 	show_qty_prompt_for_multiple_work_orders: function(work_orders) {
-		for (let d of work_orders) {
+		work_orders = frappe.utils.deep_clone(work_orders);
+		for (let [i, d] of work_orders.entries()) {
 			if (!erpnext.manufacturing.can_finish_work_order(d)) {
 				frappe.throw(__("Work Order {0} cannot be finished", ["<b>" + d.name + "</b>"]));
 			}
 
+			d.idx = i + 1;
 			[d.max, d.max_with_allowance] = erpnext.manufacturing.get_max_transferable_qty(d, "Manufacture");
 			[d.work_order, d.finished_qty] = [d.name, d.max];
 		}
