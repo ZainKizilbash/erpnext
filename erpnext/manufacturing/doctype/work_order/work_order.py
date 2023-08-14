@@ -858,7 +858,13 @@ def finish_multiple_work_orders(work_orders, args=None):
 	if not work_orders:
 		frappe.throw(_("Work Orders not selected"))
 
-	frappe.enqueue(make_stock_entry_against_multiple_work_orders, work_orders=work_orders, args=args)
+	_finish_multiple_work_orders.enqueue(work_orders=work_orders, args=args)
+	frappe.msgprint(_("Processing Work Orders in background..."), alert=True)
+
+
+@frappe.task(timeout=600)
+def _finish_multiple_work_orders(work_orders, args=None):
+	make_stock_entry_against_multiple_work_orders.catch(work_orders, args=args)
 
 
 @frappe.catch_realtime_msgprint()
