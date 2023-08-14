@@ -869,17 +869,26 @@ def _finish_multiple_work_orders(work_orders, args=None):
 
 @frappe.catch_realtime_msgprint()
 def make_stock_entry_against_multiple_work_orders(work_orders, args=None):
+	if not work_orders:
+		return
+
+	frappe.publish_progress(
+		0.5,
+		title=_("Submitting Manufacture Entries..."),
+		description=_("Submitting {0}/{1}").format(1, len(work_orders))
+	)
+
 	for i, d in enumerate(work_orders):
 		work_order = d.get('work_order')
 		qty = flt(d.get('finished_qty'))
 
+		make_stock_entry(work_order, "Manufacture", qty, args=args, auto_submit=True)
+
 		frappe.publish_progress(
 			(i + 1) * 100 / len(work_orders),
 			title=_("Submitting Manufacture Entries..."),
-			description=_("Submitting {0}/{1}").format(i+1, len(work_orders))
+			description=_("Submitting {0}/{1}").format(min(i + 2, len(work_orders)), len(work_orders))
 		)
-
-		make_stock_entry(work_order, "Manufacture", qty, args=args, auto_submit=True)
 
 
 @frappe.whitelist()
