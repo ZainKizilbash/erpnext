@@ -32,20 +32,17 @@ frappe.listview_settings['Work Order'] = {
 
 	button: {
 		show(doc) {
-			let settings = frappe.listview_settings['Work Order'];
-			return settings.can_start_work_order(doc) || settings.can_finish_work_order(doc);
+			return erpnext.manufacturing.can_start_work_order(doc) || erpnext.manufacturing.can_finish_work_order(doc);
 		},
 		get_label(doc) {
-			let settings = frappe.listview_settings['Work Order'];
-			if (settings.can_finish_work_order(doc)) {
+			if (erpnext.manufacturing.can_finish_work_order(doc)) {
 				return __('Finish');
-			} else if (settings.can_start_work_order(doc)) {
+			} else if (erpnext.manufacturing.can_start_work_order(doc)) {
 				return __('Start');
 			}
 		},
 		get_class(doc) {
-			let settings = frappe.listview_settings['Work Order'];
-			if (settings.can_finish_work_order(doc)) {
+			if (erpnext.manufacturing.can_finish_work_order(doc)) {
 				return "btn-primary";
 			} else {
 				return "btn-default";
@@ -55,11 +52,10 @@ frappe.listview_settings['Work Order'] = {
 			return this.get_label(doc);
 		},
 		action(doc) {
-			let settings = frappe.listview_settings['Work Order'];
 			let method;
-			if (settings.can_finish_work_order(doc)) {
+			if (erpnext.manufacturing.can_finish_work_order(doc)) {
 				method = () => erpnext.manufacturing.make_stock_entry(doc, "Manufacture");
-			} else if (settings.can_start_work_order(doc)) {
+			} else if (erpnext.manufacturing.can_start_work_order(doc)) {
 				method = () => erpnext.manufacturing.make_stock_entry(doc, 'Material Transfer for Manufacture');
 			}
 
@@ -70,30 +66,6 @@ frappe.listview_settings['Work Order'] = {
 					}
 				});
 			}
-		}
-	},
-
-	can_start_work_order: function (doc) {
-		if (doc.docstatus != 1 || ["Completed", "Stopped"].includes(doc.status)) {
-			return false;
-		}
-
-		return (
-			!doc.skip_transfer
-			&& doc.transfer_material_against != 'Job Card'
-			&& flt(doc.material_transferred_for_manufacturing) < flt(doc.qty)
-		);
-	},
-
-	can_finish_work_order: function (doc) {
-		if (doc.docstatus != 1 || ["Completed", "Stopped"].includes(doc.status)) {
-			return false;
-		}
-
-		if (doc.skip_transfer) {
-			return flt(doc.produced_qty) < flt(doc.qty);
-		} else {
-			return flt(doc.produced_qty) < flt(doc.material_transferred_for_manufacturing);
 		}
 	},
 };

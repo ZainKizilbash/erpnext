@@ -189,11 +189,9 @@ $.extend(erpnext.manufacturing, {
 	},
 
 	show_qty_prompt_for_multiple_work_orders: function(work_orders) {
-		let settings = frappe.listview_settings['Work Order'];
-
 		for (let d of work_orders) {
-			if (!settings.can_finish_work_order(d)) {
-				frappe.throw(__(`Work Order ${d.name} not ready to Finish`));
+			if (!erpnext.manufacturing.can_finish_work_order(d)) {
+				frappe.throw(__("Work Order {0} cannot be finished", ["<b>" + d.name + "</b>"]));
 			}
 
 			[d.max, d.max_with_allowance] = erpnext.manufacturing.get_max_transferable_qty(d, "Manufacture");
@@ -221,21 +219,22 @@ $.extend(erpnext.manufacturing, {
 						read_only: 1,
 						in_list_view: 1,
 						reqd: 1,
+						columns: 2,
 					},
 					{
-						label: __('Production Item Code'),
+						label: __('Production Item'),
 						fieldname: "production_item",
 						fieldtype: "Link",
 						options: "Item",
 						read_only: 1,
-						in_list_view: 0,
 					},
 					{
-						label: __('Production Item'),
+						label: __('Item Name'),
 						fieldname: "item_name",
 						fieldtype: "Data",
 						read_only: 1,
 						in_list_view: 1,
+						columns: 4,
 					},
 					{
 						label: __('Order Qty'),
@@ -243,6 +242,7 @@ $.extend(erpnext.manufacturing, {
 						fieldtype: "Float",
 						read_only: 1,
 						in_list_view: 1,
+						columns: 2,
 					},
 					{
 						label: __('Finished Qty'),
@@ -250,6 +250,7 @@ $.extend(erpnext.manufacturing, {
 						fieldtype: "Float",
 						in_list_view: 1,
 						reqd: 1,
+						columns: 2,
 					},
 				]
 			}];
@@ -410,5 +411,29 @@ $.extend(erpnext.manufacturing, {
 				},
 			],
 		});
+	},
+
+	can_start_work_order: function (doc) {
+		if (doc.docstatus != 1 || ["Completed", "Stopped"].includes(doc.status)) {
+			return false;
+		}
+
+		return (
+			!doc.skip_transfer
+			&& doc.transfer_material_against != 'Job Card'
+			&& flt(doc.material_transferred_for_manufacturing) < flt(doc.qty)
+		);
+	},
+
+	can_finish_work_order: function (doc) {
+		if (doc.docstatus != 1 || ["Completed", "Stopped"].includes(doc.status)) {
+			return false;
+		}
+
+		if (doc.skip_transfer) {
+			return flt(doc.produced_qty) < flt(doc.qty);
+		} else {
+			return flt(doc.produced_qty) < flt(doc.material_transferred_for_manufacturing);
+		}
 	},
 });
