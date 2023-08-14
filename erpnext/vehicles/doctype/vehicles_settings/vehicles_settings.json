@@ -58,6 +58,12 @@
   "column_break_14",
   "minimum_lead_time_days",
   "maximum_payment_adjustment",
+  "vehicle_gate_pass_permissions_section",
+  "restrict_sales_test_drive_gate_pass_to_role",
+  "restrict_sales_delivery_gate_pass_to_role",
+  "column_break_2tuh9",
+  "restrict_service_test_drive_gate_pass_to_role",
+  "restrict_service_delivery_gate_pass_to_role",
   "section_break_47",
   "opp_required_for_quotation",
   "role_skip_opportunity_for_quotation",
@@ -415,12 +421,45 @@
    "fieldname": "odometer_reading_required_for_service_receipt",
    "fieldtype": "Check",
    "label": "Odometer Reading Mandatory For Vehicle Service Receipt"
+  },
+  {
+   "fieldname": "vehicle_gate_pass_permissions_section",
+   "fieldtype": "Section Break",
+   "label": "Vehicle Gate Pass Permissions"
+  },
+  {
+   "fieldname": "restrict_sales_test_drive_gate_pass_to_role",
+   "fieldtype": "Link",
+   "label": "Restrict Sales - Test Drive Gate Pass to Role",
+   "options": "Role"
+  },
+  {
+   "fieldname": "restrict_sales_delivery_gate_pass_to_role",
+   "fieldtype": "Link",
+   "label": "Restrict Sales - Delivery Gate Pass to Role",
+   "options": "Role"
+  },
+  {
+   "fieldname": "restrict_service_test_drive_gate_pass_to_role",
+   "fieldtype": "Link",
+   "label": "Restrict Service - Test Drive Gate Pass to Role",
+   "options": "Role"
+  },
+  {
+   "fieldname": "restrict_service_delivery_gate_pass_to_role",
+   "fieldtype": "Link",
+   "label": "Restrict Service - Delivery Gate Pass to Role",
+   "options": "Role"
+  },
+  {
+   "fieldname": "column_break_2tuh9",
+   "fieldtype": "Column Break"
   }
  ],
  "icon": "fa fa-cog",
  "issingle": 1,
  "links": [],
- "modified": "2023-06-21 12:46:34.144330",
+ "modified": "2023-08-13 17:23:59.712050",
  "modified_by": "Administrator",
  "module": "Vehicles",
  "name": "Vehicles Settings",
