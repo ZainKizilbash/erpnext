@@ -1136,6 +1136,11 @@ def get_conversion_factor(item_code, uom):
 	})
 
 
+def is_item_uom_convertible(item_code, uom):
+	conversion = get_conversion_factor(item_code, uom)
+	return not conversion.get("not_convertible")
+
+
 @frappe.whitelist()
 def get_projected_qty(item_code, warehouse):
 	return {"projected_qty": frappe.db.get_value("Bin",
