@@ -8,6 +8,7 @@
  "hide_custom": 0,
  "icon": "share",
  "idx": 0,
+ "is_hidden": 0,
  "label": "HR",
  "links": [
   {
@@ -1054,10 +1055,11 @@
    "type": "Link"
   }
  ],
- "modified": "2022-12-18 15:27:31.583126",
+ "modified": "2023-08-21 01:52:21.162473",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "HR",
+ "number_cards": [],
  "owner": "Administrator",
  "parent_page": "",
  "public": 1,
@@ -1070,7 +1072,7 @@
    "role": "Accounts User"
   }
  ],
- "sequence_id": 8.0,
+ "sequence_id": 170.0,
  "shortcuts": [],
  "title": "HR"
 }
