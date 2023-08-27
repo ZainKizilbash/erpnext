@@ -470,7 +470,7 @@ class SellingController(StockController):
 
 			packing_slip = get_packing_slip_details(d.packing_slip)
 			if not packing_slip:
-				frappe.throw(_("Row #{0}: Packing Slip {1} does not exist").format(d.packing_slip))
+				frappe.throw(_("Row #{0}: Packing Slip {1} does not exist").format(d.idx, d.packing_slip))
 
 			if packing_slip.docstatus == 0:
 				frappe.throw(_("Row #{0}: {1} is in draft").format(
