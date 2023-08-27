@@ -73,6 +73,7 @@ class SalesOrder(SellingController):
 	def before_submit(self):
 		self.validate_delivery_date_required()
 		self.validate_item_code_mandatory()
+		self.validate_previous_docstatus()
 
 	def on_submit(self):
 		self.check_credit_limit()
@@ -149,6 +150,9 @@ class SalesOrder(SellingController):
 				"compare_fields": [["company", "="], ["order_type", "="]]
 			}
 		})
+
+	def validate_previous_docstatus(self):
+		pass
 
 	def update_previous_doc_status(self):
 		for quotation in list(set([d.quotation for d in self.get("items")])):
