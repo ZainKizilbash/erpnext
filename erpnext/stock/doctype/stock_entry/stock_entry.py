@@ -19,8 +19,6 @@ from erpnext.stock.doctype.stock_reconciliation.stock_reconciliation import Open
 
 import json
 
-from six import string_types, itervalues, iteritems
-
 class IncorrectValuationRateError(frappe.ValidationError): pass
 class DuplicateEntryForWorkOrderError(frappe.ValidationError): pass
 class OperationsNotCompleteError(frappe.ValidationError): pass
@@ -426,11 +424,13 @@ class StockEntry(StockController):
 		if self.purpose in ("Manufacture", "Material Transfer for Manufacture", "Material Consumption for Manufacture"):
 			# check if work order is entered
 
-			if (self.purpose=="Manufacture" or self.purpose=="Material Consumption for Manufacture") and self.work_order:
+			if self.purpose in ("Manufacture", "Material Consumption for Manufacture") and self.work_order:
 				if not self.fg_completed_qty:
-					frappe.throw(_("For Quantity (Manufactured Qty) is mandatory"))
+					frappe.throw(_("Production Qty is mandatory"))
+
 				self.check_if_operations_completed()
 				self.check_duplicate_entry_for_work_order()
+
 		elif self.purpose != "Material Transfer":
 			self.work_order = None
 
@@ -875,8 +875,9 @@ class StockEntry(StockController):
 
 		if item_account_wise_additional_cost:
 			for d in self.get("items"):
-				for account, amount in iteritems(item_account_wise_additional_cost.get((d.item_code, d.name), {})):
-					if not amount: continue
+				for account, amount in (item_account_wise_additional_cost.get((d.item_code, d.name), {})).items():
+					if not amount:
+						continue
 
 					gl_entries.append(self.get_gl_dict({
 						"account": account,
@@ -1031,7 +1032,7 @@ class StockEntry(StockController):
 		self.validate_work_order()
 
 		if not self.posting_date or not self.posting_time:
-			frappe.throw(_("Posting date and posting time is mandatory"))
+			frappe.throw(_("Posting Date and Posting Time is mandatory"))
 
 		self.set_work_order_details()
 
@@ -1122,7 +1123,7 @@ class StockEntry(StockController):
 			self.get_work_order()
 
 			scrap_item_dict = self.get_bom_scrap_material(self.fg_completed_qty)
-			for item in itervalues(scrap_item_dict):
+			for item in scrap_item_dict.values():
 				item.idx = ''
 				if self.pro_doc and self.pro_doc.scrap_warehouse:
 					item["to_warehouse"] = self.pro_doc.scrap_warehouse
@@ -1179,7 +1180,7 @@ class StockEntry(StockController):
 			fetch_exploded=self.use_multi_level_bom, fetch_qty_in_stock_uom=False)
 
 		used_alternative_items = get_used_alternative_items(work_order=self.work_order)
-		for item in itervalues(item_dict):
+		for item in item_dict.values():
 			# if source warehouse presents in BOM set from_warehouse as bom source_warehouse
 			if item["allow_alternative_item"]:
 				item["allow_alternative_item"] = cint(self.pro_doc.allow_alternative_item)
@@ -1201,10 +1202,11 @@ class StockEntry(StockController):
 
 		# item dict = { item_code: {qty, description, stock_uom} }
 		item_dict = get_bom_items_as_dict(self.bom_no, self.company, qty=qty,
-			fetch_exploded = 0, fetch_scrap_items = 1)
+			fetch_exploded=0, fetch_scrap_items=1)
 
-		for item in itervalues(item_dict):
+		for item in item_dict.values():
 			item.from_warehouse = ""
+
 		return item_dict
 
 	def get_unconsumed_raw_materials(self):
@@ -1547,7 +1549,7 @@ class StockEntry(StockController):
 
 @frappe.whitelist()
 def move_sample_to_retention_warehouse(company, items):
-	if isinstance(items, string_types):
+	if isinstance(items, str):
 		items = json.loads(items)
 	retention_warehouse = frappe.db.get_single_value('Stock Settings', 'sample_retention_warehouse')
 	stock_entry = frappe.new_doc("Stock Entry")
@@ -1722,7 +1724,7 @@ def get_expired_batch_items():
 
 @frappe.whitelist()
 def get_warehouse_details(args):
-	if isinstance(args, string_types):
+	if isinstance(args, str):
 		args = json.loads(args)
 
 	args = frappe._dict(args)
@@ -1779,7 +1781,7 @@ def get_expense_account(company, stock_entry_type=None, is_opening='No', expense
 
 @frappe.whitelist()
 def get_item_expense_accounts(args):
-	if isinstance(args, string_types):
+	if isinstance(args, str):
 		args = json.loads(args)
 
 	args = frappe._dict(args)
