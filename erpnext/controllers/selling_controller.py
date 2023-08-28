@@ -282,6 +282,7 @@ class SellingController(StockController):
 				"sales_invoice", "sales_invoice_item",
 				"quotation",
 			])
+			self.run_method("calculate_taxes_and_totals")
 
 	def has_product_bundle(self, item_code):
 		return frappe.db.sql("""select name from `tabProduct Bundle`

@@ -200,6 +200,8 @@ class StockEntry(StockController):
 	@frappe.whitelist()
 	def auto_select_batches(self):
 		auto_select_and_split_batches(self, 's_warehouse')
+		self.set_transfer_qty()
+		self.calculate_rate_and_amount(raise_error_if_no_rate=False)
 
 	def set_job_card_data(self):
 		if self.job_card and not self.work_order:

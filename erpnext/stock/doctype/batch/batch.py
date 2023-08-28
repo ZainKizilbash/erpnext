@@ -290,11 +290,6 @@ def auto_select_and_split_batches(doc, warehouse_field, additional_group_fields=
 		row.idx = i + 1
 	doc.items = updated_rows
 
-	if doc.doctype == 'Stock Entry':
-		doc.run_method("set_transfer_qty")
-	else:
-		doc.run_method("calculate_taxes_and_totals")
-
 
 @frappe.whitelist()
 def get_batch_no(item_code, warehouse, qty=1, throw=False, sales_order_item=None, serial_no=None):
