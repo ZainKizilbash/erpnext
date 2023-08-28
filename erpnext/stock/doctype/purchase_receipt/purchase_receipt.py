@@ -38,7 +38,7 @@ class PurchaseReceipt(BuyingController):
 		self.validate_posting_time()
 		super(PurchaseReceipt, self).validate()
 
-		if self._action=="submit":
+		if self._action == "submit" and not self.is_return:
 			self.make_batches('warehouse')
 
 		self.validate_order_required()
