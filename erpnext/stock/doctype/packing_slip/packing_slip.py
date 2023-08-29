@@ -49,6 +49,7 @@ class PackingSlip(StockController):
 		self.calculate_totals()
 		self.validate_weights()
 		self.set_cost_percentage()
+		self.set_packed_items()
 		self.set_title()
 		self.set_status(validate=False)
 
@@ -67,6 +68,16 @@ class PackingSlip(StockController):
 		self.title = self.package_type
 		if self.get("customer"):
 			self.title += " for {0}".format(self.customer_name or self.customer)
+
+	def set_packed_items(self):
+		packed_item_names = []
+		for d in self.items:
+			if d.item_name not in packed_item_names:
+				packed_item_names.append(d.item_name)
+
+		self.packed_items = ", ".join(packed_item_names)
+		if len(self.packed_items) > 140:
+			self.packed_items = self.packed_items[:137] + "..."
 
 	def set_missing_values(self, for_validate=False):
 		self.set_missing_item_details(for_validate)
