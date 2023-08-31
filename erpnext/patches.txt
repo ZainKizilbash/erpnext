@@ -802,6 +802,7 @@ erpnext.patches.v14_0.update_project_template_name_in_maintenance_schedule_detai
 erpnext.patches.v14_0.update_checkin_attendance_device_id
 erpnext.patches.v14_0.set_vehicle_gate_pass_purpose
 execute:frappe.delete_doc_if_exists("Custom Field", "Packing Slip-packed_items")
+erpnext.patches.v14_0.rename_late_deduction_policy_option
 
 [post_model_sync]
 execute:frappe.delete_doc_if_exists("Report", "Maintenance Schedules")
