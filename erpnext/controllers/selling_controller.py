@@ -34,6 +34,9 @@ class SellingController(StockController):
 		super(SellingController, self).onload()
 
 		if self.doctype in ("Sales Order", "Delivery Note", "Sales Invoice"):
+			self.set_onload("is_internal_customer",
+				frappe.get_cached_value("Customer", self.customer, "is_internal_customer"))
+
 			for item in self.get("items"):
 				item.update(get_bin_details(item.item_code, item.warehouse))
 				if item.meta.has_field('actual_batch_qty'):

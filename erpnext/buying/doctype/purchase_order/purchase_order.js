@@ -172,17 +172,11 @@ erpnext.buying.PurchaseOrderController = class PurchaseOrderController extends e
 					}
 
 					if (doc.docstatus === 1 && !doc.inter_company_reference) {
-						let me = this;
-						frappe.model.with_doc("Supplier", me.frm.doc.supplier, () => {
-							let supplier = frappe.model.get_doc("Supplier", me.frm.doc.supplier);
-							let internal = supplier.is_internal_supplier;
-							let disabled = supplier.disabled;
-							if (internal === 1 && disabled === 0) {
-								me.frm.add_custom_button("Inter Company Order", function() {
-									me.make_inter_company_order(me.frm);
-								}, __('Create'));
-							}
-						});
+						if (me.frm.doc.__onload?.is_internal_supplier) {
+							me.frm.add_custom_button("Inter Company Order", function() {
+								me.make_inter_company_order(me.frm);
+							}, __('Create'));
+						}
 					}
 				}
 				if(flt(doc.per_billed) == 0) {
