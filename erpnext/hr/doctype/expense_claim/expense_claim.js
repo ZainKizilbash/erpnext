@@ -15,10 +15,6 @@ erpnext.hr.ExpenseClaimController = class ExpenseClaimController extends frappe.
 			me.frm.doc.posting_date = frappe.datetime.get_today();
 		}
 
-		if (frappe.perm.has_perm("Company", 0, "read")) {
-			me.frm.add_fetch("company", "default_expense_claim_payable_account", "payable_account");
-		}
-
 		me.frm.fields_dict.employee.get_query = function() {
 			return {
 				query: "erpnext.controllers.queries.employee_query"

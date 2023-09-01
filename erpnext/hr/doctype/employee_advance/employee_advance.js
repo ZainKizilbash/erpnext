@@ -8,10 +8,6 @@ frappe.ui.form.on('Employee Advance', {
 			'Expense Claim': 'Expense Claim'
 		};
 
-		if (frappe.perm.has_perm("Company", 0, "read")) {
-			frm.add_fetch("company", "default_employee_advance_account", "advance_account");
-		}
-
 		frm.set_query("employee", function() {
 			return {
 				filters: {

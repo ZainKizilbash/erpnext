@@ -209,6 +209,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "fetch_from": "company.default_expense_claim_payable_account",
    "fetch_if_empty": 1,
    "fieldname": "payable_account",
    "fieldtype": "Link",
@@ -335,7 +336,7 @@
  "idx": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-08-31 00:32:36.548648",
+ "modified": "2023-09-01 22:47:50.494765",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Expense Claim",
