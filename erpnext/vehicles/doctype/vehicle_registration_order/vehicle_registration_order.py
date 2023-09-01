@@ -52,6 +52,7 @@ class VehicleRegistrationOrder(VehicleAdditionalServiceController):
 		self.set_payment_status()
 		self.set_invoice_status()
 		self.set_registration_receipt_details()
+		self.set_number_plate_receipt_details()
 		self.set_status()
 		self.set_title()
 
@@ -573,6 +574,27 @@ class VehicleRegistrationOrder(VehicleAdditionalServiceController):
 				"title": self.title,
 			})
 
+	def set_number_plate_receipt_details(self, update=False):
+		vehicle_number_plate_receipt = frappe.db.sql("""
+			select npr.name
+			from `tabVehicle Number Plate Receipt Detail` nprd
+			inner join `tabVehicle Number Plate Receipt` npr on npr.name = nprd.parent
+			where npr.docstatus = 1 and nprd.vehicle = %s
+			order by npr.posting_date desc, npr.creation desc
+		""", self.vehicle, as_dict=1)
+
+		registration_receipt = vehicle_number_plate_receipt[0] if vehicle_number_plate_receipt else frappe._dict()
+
+		if registration_receipt:
+			self.number_plate_status = "In Hand"
+		else:
+			self.number_plate_status = "Not Received"
+
+		if update:
+			self.db_set({
+				"number_plate_status": self.number_plate_status
+			})
+
 	def set_status(self, update=False, status=None, update_modified=True):
 		if self.is_new():
 			if self.get('amended_from'):
@@ -928,6 +950,26 @@ def get_registration_receipt(vehicle_registration_order):
 	receipt.run_method("set_missing_values")
 
 	return receipt
+
+
+@frappe.whitelist()
+def make_number_plate_receipt(vehicle_registration_order):
+	vro = frappe.get_doc("Vehicle Registration Order", vehicle_registration_order)
+
+	if vro.docstatus != 1:
+		frappe.throw(_("Vehicle Registration Order must be submitted"))
+
+	vnpr = frappe.new_doc("Vehicle Number Plate Receipt")
+	vnpr.company = vro.company
+	vnpr.agent = vro.agent
+
+	row = vnpr.append('number_plates')
+	row.vehicle_registration_order = vro.name
+	row.vehicle_booking_order = vro.vehicle_booking_order
+	row.vehicle = vro.vehicle
+
+	vnpr.run_method("set_missing_values")
+	return vnpr
 
 
 @frappe.whitelist()

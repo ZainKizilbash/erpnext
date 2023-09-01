@@ -514,6 +514,8 @@ class VehicleTransactionController(StockController):
 				vro.set_invoice_status(update=True)
 			elif self.doctype == "Vehicle Registration Receipt":
 				vro.set_registration_receipt_details(update=True)
+			elif self.doctype == "Vehicle Number Plate Receipt":
+				vro.set_number_plate_receipt_details(update=True)
 
 			vro.set_status(update=True)
 			vro.notify_update()
@@ -991,7 +993,11 @@ def get_vehicle_details(args, get_vehicle_booking_order=True, warn_reserved=True
 		out.vehicle_invoice = get_vehicle_invoice(args.vehicle)
 		out.update(get_vehicle_invoice_details(out.vehicle_invoice))
 
-	out.update(get_vehicle_registration_order_details(args))
+	get_registration_customer = False
+	if args.doctype == "Vehicle Number Plate Receipt":
+		get_registration_customer = True
+
+	out.update(get_vehicle_registration_order_details(args, get_customer=get_registration_customer))
 
 	if args.doctype == "Vehicle Invoice Delivery":
 		from erpnext.vehicles.doctype.vehicle_invoice_delivery.vehicle_invoice_delivery import get_default_documents
@@ -1007,7 +1013,8 @@ def get_vehicle_registration_order_details(args, get_customer=False):
 	out = frappe._dict()
 
 	get_registration = (args.doctype and frappe.get_meta(args.doctype).has_field('vehicle_registration_order')) \
-		or (args.doctype == 'Vehicle Invoice Movement' and args.issued_for == "Registration")
+		or (args.doctype == 'Vehicle Invoice Movement' and args.issued_for == "Registration") \
+		or args.doctype == 'Vehicle Number Plate Receipt'
 
 	if get_registration:
 		from erpnext.vehicles.doctype.vehicle_registration_order.vehicle_registration_order import get_vehicle_registration_order, \
