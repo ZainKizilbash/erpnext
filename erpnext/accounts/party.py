@@ -576,6 +576,7 @@ def set_taxes(party, party_type, posting_date, company, customer_group=None, sup
 		transaction_type=None, cost_center=None, tax_id=None, tax_cnic=None, tax_strn=None, has_stin=None,
 		billing_address=None, shipping_address=None, use_for_shopping_cart=None):
 	from erpnext.accounts.doctype.tax_rule.tax_rule import get_tax_template, get_party_details
+
 	args = {
 		scrub(party_type): party,
 		"company": company
@@ -604,19 +605,22 @@ def set_taxes(party, party_type, posting_date, company, customer_group=None, sup
 		args['has_stin'] = "Yes" if cint(has_stin) else "No"
 
 	if billing_address or shipping_address:
-		args.update(get_party_details(party, party_type, {"billing_address": billing_address,
-			"shipping_address": shipping_address}))
+		args.update(get_party_details(party, party_type, {
+			"billing_address": billing_address,
+			"shipping_address": shipping_address
+		}))
 	else:
 		args.update(get_party_details(party, party_type))
 
 	if party_type in ("Customer", "Lead"):
 		args.update({"tax_type": "Sales"})
 
-		if party_type=='Lead':
+		if party_type == 'Lead':
 			args['customer'] = None
 			del args['lead']
 	else:
 		args.update({"tax_type": "Purchase"})
+
 	if use_for_shopping_cart:
 		args.update({"use_for_shopping_cart": use_for_shopping_cart})
 
