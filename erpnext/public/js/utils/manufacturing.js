@@ -446,6 +446,6 @@ $.extend(erpnext.manufacturing, {
 	},
 
 	has_stock_entry_permission: function () {
-		return frappe.perm.has_perm("Stock Entry", "write");
+		return frappe.model.can_write("Stock Entry");
 	}
 });
