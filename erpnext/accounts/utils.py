@@ -1045,3 +1045,11 @@ def get_stock_accounts(company):
 		filters["company"] = company
 
 	return frappe.get_all("Account", filters=filters)
+
+
+def parse_naming_series_variable(doc, variable):
+	if variable == "FY":
+		date = doc.get("posting_date") or doc.get("transaction_date") or getdate()
+		return get_fiscal_year(date=date, company=doc.get("company"))[0]
+	elif variable == "CO":
+		return frappe.get_cached_value('Company', doc.get('company'), 'abbr')
