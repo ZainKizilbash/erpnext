@@ -682,7 +682,7 @@ erpnext.taxes_and_totals = class TaxesAndTotals extends erpnext.payments {
 		}
 		item.item_tax_detail[tax.name] += current_tax_amount;
 
-		if (!tax.exclude_from_item_tax_amount) {
+		if (!tax.exclude_from_item_tax_amount && tax.charge_type != "Actual") {
 			item.item_taxes_and_charges += current_tax_amount;
 		}
 
