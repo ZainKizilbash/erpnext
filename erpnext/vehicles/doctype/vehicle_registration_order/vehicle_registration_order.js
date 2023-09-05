@@ -119,6 +119,8 @@ erpnext.vehicles.VehicleRegistrationOrderController = class VehicleRegistrationO
 					this.frm.add_custom_button(__('Registration Receipt'), () => this.make_registration_receipt());
 				} else if (this.frm.doc.number_plate_status == "Not Received") {
 					this.frm.add_custom_button(__('Number Plate Receipt'), () => this.make_number_plate_receipt());
+				} else if (this.frm.doc.number_plate_status == "In Hand") {
+					this.frm.add_custom_button(__('Number Plate Delivery'), () => this.make_number_plate_delivery());
 				}
 			}
 
@@ -139,8 +141,6 @@ erpnext.vehicles.VehicleRegistrationOrderController = class VehicleRegistrationO
 				this.frm.custom_buttons[__('Create Invoice')] && this.frm.custom_buttons[__('Create Invoice')].addClass('btn-primary');
 			} else if (this.frm.doc.status == "To Deliver Invoice") {
 				this.frm.custom_buttons[__('Deliver Invoice')] && this.frm.custom_buttons[__('Deliver Invoice')].addClass('btn-primary');
-			} else if (this.frm.doc.number_plate_status == "Not Received") {
-				this.frm.custom_buttons[__('Number Plate Receipt')] && this.frm.custom_buttons[__('Number Plate Receipt')].addClass('btn-primary');
 			}
 
 		}
@@ -527,6 +527,21 @@ erpnext.vehicles.VehicleRegistrationOrderController = class VehicleRegistrationO
 	make_number_plate_receipt() {
 		return frappe.call({
 			method: "erpnext.vehicles.doctype.vehicle_registration_order.vehicle_registration_order.make_number_plate_receipt",
+			args: {
+				"vehicle_registration_order": this.frm.doc.name,
+			},
+			callback: function (r) {
+				if (!r.exc) {
+					var doclist = frappe.model.sync(r.message);
+					frappe.set_route("Form", doclist[0].doctype, doclist[0].name);
+				}
+			}
+		});
+	}
+
+	make_number_plate_delivery() {
+		return frappe.call({
+			method: "erpnext.vehicles.doctype.vehicle_registration_order.vehicle_registration_order.make_number_plate_delivery",
 			args: {
 				"vehicle_registration_order": this.frm.doc.name,
 			},

@@ -584,8 +584,11 @@ class VehicleRegistrationOrder(VehicleAdditionalServiceController):
 		""", self.vehicle, as_dict=1)
 
 		registration_receipt = vehicle_number_plate_receipt[0] if vehicle_number_plate_receipt else frappe._dict()
+		number_plate_delivery = frappe.get_all("Vehicle Number Plate Delivery", {"vehicle": self.vehicle})
 
-		if registration_receipt:
+		if number_plate_delivery:
+			self.number_plate_status = "Delivered"
+		elif registration_receipt:
 			self.number_plate_status = "In Hand"
 		else:
 			self.number_plate_status = "Not Received"
@@ -970,6 +973,23 @@ def make_number_plate_receipt(vehicle_registration_order):
 
 	vnpr.run_method("set_missing_values")
 	return vnpr
+
+
+@frappe.whitelist()
+def make_number_plate_delivery(vehicle_registration_order):
+	vro = frappe.get_doc("Vehicle Registration Order", vehicle_registration_order)
+
+	if vro.docstatus != 1:
+		frappe.throw(_("Vehicle Registration Order must be submitted"))
+
+	delivery = frappe.new_doc("Vehicle Number Plate Delivery")
+	delivery.company = vro.company
+	delivery.vehicle = vro.vehicle
+	delivery.vehicle_booking_order = vro.vehicle_booking_order
+	delivery.agent = vro.agent
+
+	delivery.run_method("set_missing_values")
+	return delivery
 
 
 @frappe.whitelist()
