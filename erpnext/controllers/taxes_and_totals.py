@@ -603,6 +603,14 @@ class calculate_taxes_and_totals(object):
 			self._set_in_company_currency(item, ['item_taxes', 'tax_inclusive_amount', 'tax_inclusive_rate'],
 				not self.should_round_transaction_currency())
 
+			if not self.discount_amount_applied:
+				item.item_taxes_before_discount = item.item_taxes
+				item.tax_inclusive_rate_before_discount = item.tax_inclusive_rate
+				item.tax_inclusive_amount_before_discount = item.tax_inclusive_amount
+				self._set_in_company_currency(item, [
+					'item_taxes_before_discount', 'tax_inclusive_rate_before_discount', 'tax_inclusive_amount_before_discount'
+				], not self.should_round_transaction_currency())
+
 	def calculate_totals(self):
 		self.doc.total_after_taxes = flt(self.doc.get("taxes")[-1].total) + flt(self.doc.rounding_adjustment) \
 			if self.doc.get("taxes") else flt(self.doc.taxable_total)

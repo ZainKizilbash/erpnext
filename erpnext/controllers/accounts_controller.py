@@ -41,12 +41,15 @@ force_applies_to_fields = ("vehicle_chassis_no", "vehicle_engine_no", "vehicle_l
 
 merge_items_sum_fields = ['qty', 'stock_qty', 'alt_uom_qty', 'net_weight',
 	'amount', 'taxable_amount', 'net_amount', 'total_discount', 'amount_before_discount',
-	'item_taxes', 'tax_inclusive_amount',
+	'item_taxes', 'item_taxes_before_discount', 'tax_inclusive_amount', 'tax_inclusive_amount_before_discount',
 	'amount_before_depreciation', 'depreciation_amount']
 
 merge_items_rate_fields = [('rate', 'amount'), ('taxable_rate', 'taxable_amount'), ('net_rate', 'net_amount'),
 	('discount_amount', 'total_discount'), ('price_list_rate', 'amount_before_discount'),
-	('tax_inclusive_rate', 'tax_inclusive_amount'), ('net_weight_per_unit', 'net_weight')]
+	('tax_inclusive_rate', 'tax_inclusive_amount'),
+	('tax_inclusive_rate_before_discount', 'tax_inclusive_amount_before_discount'),
+	('net_weight_per_unit', 'net_weight'),
+]
 
 print_total_fields_from_items = [
 	('total_qty', 'qty'),
@@ -69,7 +72,9 @@ print_total_fields_from_items = [
 	('tax_exclusive_total_before_depreciation', 'tax_exclusive_amount_before_depreciation'),
 
 	('grand_total', 'tax_inclusive_amount'),
+	('grand_total_before_discount', 'tax_inclusive_amount_before_discount'),
 	('total_taxes_and_charges', 'item_taxes'),
+	('total_taxes_and_charges_before_discount', 'item_taxes_before_discount'),
 
 	('total_net_weight', 'net_weight')
 ]
