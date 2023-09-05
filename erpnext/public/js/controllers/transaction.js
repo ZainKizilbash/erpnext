@@ -1623,7 +1623,7 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 				"base_rate_with_margin", "base_tax_exclusive_price_list_rate",
 				"base_tax_exclusive_rate", "base_tax_exclusive_amount", "base_tax_exclusive_rate_with_margin",
 				"base_amount_before_discount", "base_tax_exclusive_amount_before_discount",
-				"base_item_taxes_and_charges", "base_tax_inclusive_amount", "base_tax_inclusive_rate",
+				"base_item_taxes", "base_tax_inclusive_amount", "base_tax_inclusive_rate",
 				"base_total_discount", "base_tax_exclusive_total_discount",
 				"base_depreciation_amount", "base_amount_before_depreciation",
 				"base_tax_exclusive_depreciation_amount", "base_tax_exclusive_amount_before_depreciation",
@@ -1701,7 +1701,7 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 		let item_grid = this.frm.fields_dict["items"].grid;
 		$.each(["base_rate", "base_price_list_rate", "base_amount", "base_rate_with_margin",
 		"base_amount_before_discount", "base_total_discount", "base_depreciation_amount", "base_amount_before_depreciation",
-		"base_item_taxes_and_charges", "base_tax_inclusive_amount", "base_tax_inclusive_rate",
+		"base_item_taxes", "base_tax_inclusive_amount", "base_tax_inclusive_rate",
 		"base_retail_rate", "base_retail_amount"], function(i, fname) {
 			if(frappe.meta.get_docfield(item_grid.doctype, fname))
 				item_grid.set_column_disp(fname, me.frm.doc.currency != company_currency, true);

@@ -85,8 +85,8 @@
   "tax_exclusive_total_discount",
   "base_tax_exclusive_total_discount",
   "tax_inclusive_amounts_section",
-  "item_taxes_and_charges",
-  "base_item_taxes_and_charges",
+  "item_taxes",
+  "base_item_taxes",
   "column_break_78",
   "tax_inclusive_rate",
   "base_tax_inclusive_rate",
@@ -842,14 +842,14 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "item_taxes_and_charges",
-   "depends_on": "item_taxes_and_charges",
+   "collapsible_depends_on": "item_taxes",
+   "depends_on": "item_taxes",
    "fieldname": "tax_inclusive_amounts_section",
    "fieldtype": "Section Break",
    "label": "Tax Inclusive Amounts"
   },
   {
-   "fieldname": "item_taxes_and_charges",
+   "fieldname": "item_taxes",
    "fieldtype": "Currency",
    "label": "Taxes",
    "options": "currency",
@@ -857,10 +857,10 @@
    "read_only": 1
   },
   {
-   "fieldname": "base_item_taxes_and_charges",
+   "fieldname": "base_item_taxes",
    "fieldtype": "Currency",
    "force_currency_symbol": 1,
-   "label": "Taxes and Charges (Company Currency)",
+   "label": "Taxes (Company Currency)",
    "options": "Company:company:default_currency",
    "print_hide": 1,
    "read_only": 1
@@ -1060,7 +1060,7 @@
  "idx": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-05-22 13:13:50.500756",
+ "modified": "2023-09-04 23:48:40.480675",
  "modified_by": "Administrator",
  "module": "Selling",
  "name": "Quotation Item",
