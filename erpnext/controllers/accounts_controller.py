@@ -237,6 +237,7 @@ class AccountsController(TransactionBase):
 				self.group_similar_items()
 
 			self.uom = self.get_common_uom(self.get("items"))
+			self.stock_uom = self.get_common_uom(self.get("items"), "stock_uom")
 			self.items_by_item_group = self.group_items_by_item_group(self.items)
 			self.items_by_item_tax_and_item_group = self.group_items_by_item_tax_and_item_group()
 
@@ -1241,6 +1242,7 @@ class AccountsController(TransactionBase):
 	def group_items_by_postprocess(self, grouped):
 		for key_value, group_data in grouped.items():
 			group_data.uom = self.get_common_uom(group_data["items"])
+			group_data.stock_uom = self.get_common_uom(group_data["items"], "stock_uom")
 
 			for group_field, item_field in print_total_fields_from_items:
 				group_data[group_field] = sum([flt(d.get(item_field)) for d in group_data['items']])
@@ -1248,8 +1250,8 @@ class AccountsController(TransactionBase):
 
 			self.calculate_taxes_for_group(group_data)
 
-	def get_common_uom(self, items):
-		unique_group_uoms = list(set(row.get("uom") for row in items if row.get("uom")))
+	def get_common_uom(self, items, uom_field="uom"):
+		unique_group_uoms = list(set(row.get(uom_field) for row in items if row.get(uom_field)))
 		return unique_group_uoms[0] if len(unique_group_uoms) == 1 else ""
 
 	def get_item_group_print_heading(self, item):

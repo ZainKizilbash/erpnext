@@ -965,6 +965,7 @@ class PackingSlip(StockController):
 	def group_items_by_postprocess(self, grouped):
 		for key_value, group_data in grouped.items():
 			group_data.uom = self.get_common_uom(group_data["items"])
+			group_data.stock_uom = self.get_common_uom(group_data["items"], "stock_uom")
 
 			for group_field, item_field in print_total_fields_from_items:
 				group_data[group_field] = sum([flt(d.get(item_field)) for d in group_data['items']])
