@@ -245,6 +245,10 @@ def auto_select_and_split_batches(doc, warehouse_field, additional_group_fields=
 			group_qty_map.setdefault(key, 0)
 			group_qty_map[key] += flt(d.get('qty'))
 
+	# no lines valid for batch no selection
+	if not group_qty_map:
+		return
+
 	visited = set()
 	to_remove = []
 	for d in doc.items:

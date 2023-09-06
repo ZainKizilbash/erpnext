@@ -900,10 +900,12 @@ def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False, au
 		args = {}
 
 	work_order = frappe.get_doc("Work Order", work_order_id)
-	if not frappe.db.get_value("Warehouse", work_order.wip_warehouse, "is_group") and not work_order.skip_transfer:
+	if not work_order.skip_transfer and not frappe.db.get_value("Warehouse", work_order.wip_warehouse, "is_group", cache=1):
 		wip_warehouse = work_order.wip_warehouse
 	else:
 		wip_warehouse = None
+
+	settings = frappe.get_cached_doc("Manufacturing Settings", None)
 
 	stock_entry = frappe.new_doc("Stock Entry")
 
@@ -936,7 +938,7 @@ def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False, au
 		stock_entry.project = work_order.project
 
 	stock_entry.set_stock_entry_type()
-	stock_entry.get_items()
+	stock_entry.get_items(auto_select_batches=settings.auto_select_batches_in_stock_entry)
 
 	frappe.utils.call_hook_method("update_stock_entry_from_work_order", stock_entry, work_order)
 
@@ -951,10 +953,10 @@ def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False, au
 
 	try:
 		if purpose == "Material Transfer for Manufacture":
-			if auto_submit or frappe.db.get_single_value("Manufacturing Settings", "auto_submit_material_transfer_entry"):
+			if auto_submit or settings.auto_submit_material_transfer_entry:
 				stock_entry = submit_stock_entry(stock_entry)
 		else:
-			if auto_submit or frappe.db.get_single_value("Manufacturing Settings", "auto_submit_manufacture_entry"):
+			if auto_submit or settings.auto_submit_manufacture_entry:
 				stock_entry = submit_stock_entry(stock_entry)
 	except StockOverProductionError:
 		raise

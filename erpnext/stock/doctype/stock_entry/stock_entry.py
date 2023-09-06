@@ -196,10 +196,11 @@ class StockEntry(StockController):
 			allowance_type=None, from_doctype=from_doctype, row_names=row_names)
 
 	@frappe.whitelist()
-	def auto_select_batches(self):
+	def auto_select_batches(self, postprocess=True):
 		auto_select_and_split_batches(self, 's_warehouse')
-		self.set_transfer_qty()
-		self.calculate_rate_and_amount(raise_error_if_no_rate=False)
+		if cint(postprocess):
+			self.set_transfer_qty()
+			self.calculate_rate_and_amount(raise_error_if_no_rate=False)
 
 	def set_job_card_data(self):
 		if self.job_card and not self.work_order:
@@ -1016,7 +1017,9 @@ class StockEntry(StockController):
 				})
 
 	@frappe.whitelist()
-	def get_items(self):
+	def get_items(self, auto_select_batches=False):
+		auto_select_batches = cint(auto_select_batches)
+
 		self.set('items', [])
 		self.validate_work_order()
 
@@ -1031,7 +1034,7 @@ class StockEntry(StockController):
 				"Send to Subcontractor", "Material Transfer for Manufacture", "Material Consumption for Manufacture"
 			)
 			if self.purpose in allowed_raw_material_purposes:
-				self.add_raw_material_items()
+				self.add_raw_material_items(auto_select_batches=auto_select_batches)
 
 			if self.purpose in ("Manufacture", "Repack"):
 				add_additional_cost(self, self.pro_doc)
@@ -1042,7 +1045,7 @@ class StockEntry(StockController):
 		self.set_actual_qty()
 		self.calculate_rate_and_amount(raise_error_if_no_rate=False)
 
-	def add_raw_material_items(self):
+	def add_raw_material_items(self, auto_select_batches=False):
 		self.get_work_order()
 
 		backflush_based_on = frappe.db.get_single_value("Manufacturing Settings", "backflush_raw_materials_based_on")
@@ -1059,6 +1062,7 @@ class StockEntry(StockController):
 			and backflush_based_on == "Material Transferred for Manufacture"
 		):
 			self.get_raw_materials_to_backflush_based_on_transfer()
+			auto_select_batches = False
 
 		elif (
 			self.work_order
@@ -1071,6 +1075,9 @@ class StockEntry(StockController):
 		else:
 			items_dict = self.get_raw_materials_to_backflush_based_on_bom()
 			self.add_to_stock_entry_detail(items_dict)
+
+		if auto_select_batches:
+			self.auto_select_batches(postprocess=False)
 
 	def get_raw_materials_to_backflush_based_on_transfer(self):
 		self.get_work_order()
