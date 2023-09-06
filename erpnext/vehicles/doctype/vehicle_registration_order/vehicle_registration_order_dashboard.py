@@ -14,7 +14,7 @@ def get_data():
 			},
 			{
 				'label': _('Registration'),
-				'items': ['Vehicle Registration Receipt', 'Vehicle Transfer Letter']
+				'items': ['Vehicle Registration Receipt', 'Vehicle Transfer Letter', 'Vehicle Number Plate Receipt', 'Vehicle Number Plate Delivery']
 			},
 			{
 				'label': _('Vehicle Invoice'),

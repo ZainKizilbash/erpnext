@@ -52,7 +52,7 @@ class VehicleRegistrationOrder(VehicleAdditionalServiceController):
 		self.set_payment_status()
 		self.set_invoice_status()
 		self.set_registration_receipt_details()
-		self.set_number_plate_receipt_details()
+		self.set_number_plate_status()
 		self.set_status()
 		self.set_title()
 
@@ -574,21 +574,15 @@ class VehicleRegistrationOrder(VehicleAdditionalServiceController):
 				"title": self.title,
 			})
 
-	def set_number_plate_receipt_details(self, update=False):
-		vehicle_number_plate_receipt = frappe.db.sql("""
-			select npr.name
-			from `tabVehicle Number Plate Receipt Detail` nprd
-			inner join `tabVehicle Number Plate Receipt` npr on npr.name = nprd.parent
-			where npr.docstatus = 1 and nprd.vehicle = %s
-			order by npr.posting_date desc, npr.creation desc
-		""", self.vehicle, as_dict=1)
+	def set_number_plate_status(self, update=False):
+		filters = {
+			"vehicle": self.vehicle,
+			"docstatus": 1
+		}
 
-		registration_receipt = vehicle_number_plate_receipt[0] if vehicle_number_plate_receipt else frappe._dict()
-		number_plate_delivery = frappe.get_all("Vehicle Number Plate Delivery", {"vehicle": self.vehicle})
-
-		if number_plate_delivery:
+		if frappe.db.get_value("Vehicle Number Plate Delivery", filters=filters):
 			self.number_plate_status = "Delivered"
-		elif registration_receipt:
+		elif frappe.db.get_value("Vehicle Number Plate Receipt Detail", filters=filters):
 			self.number_plate_status = "In Hand"
 		else:
 			self.number_plate_status = "Not Received"
@@ -956,27 +950,27 @@ def get_registration_receipt(vehicle_registration_order):
 
 
 @frappe.whitelist()
-def make_number_plate_receipt(vehicle_registration_order):
+def get_number_plate_receipt(vehicle_registration_order):
 	vro = frappe.get_doc("Vehicle Registration Order", vehicle_registration_order)
 
 	if vro.docstatus != 1:
 		frappe.throw(_("Vehicle Registration Order must be submitted"))
 
-	vnpr = frappe.new_doc("Vehicle Number Plate Receipt")
-	vnpr.company = vro.company
-	vnpr.agent = vro.agent
+	receipt = frappe.new_doc("Vehicle Number Plate Receipt")
+	receipt.company = vro.company
+	receipt.agent = vro.agent
 
-	row = vnpr.append('number_plates')
+	row = receipt.append('number_plates')
+	row.vehicle = vro.vehicle
 	row.vehicle_registration_order = vro.name
 	row.vehicle_booking_order = vro.vehicle_booking_order
-	row.vehicle = vro.vehicle
 
-	vnpr.run_method("set_missing_values")
-	return vnpr
+	receipt.run_method("set_missing_values")
+	return receipt
 
 
 @frappe.whitelist()
-def make_number_plate_delivery(vehicle_registration_order):
+def get_number_plate_delivery(vehicle_registration_order):
 	vro = frappe.get_doc("Vehicle Registration Order", vehicle_registration_order)
 
 	if vro.docstatus != 1:
@@ -985,8 +979,8 @@ def make_number_plate_delivery(vehicle_registration_order):
 	delivery = frappe.new_doc("Vehicle Number Plate Delivery")
 	delivery.company = vro.company
 	delivery.vehicle = vro.vehicle
+	delivery.vehicle_registration_order = vro.name
 	delivery.vehicle_booking_order = vro.vehicle_booking_order
-	delivery.agent = vro.agent
 
 	delivery.run_method("set_missing_values")
 	return delivery

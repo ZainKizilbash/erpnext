@@ -515,7 +515,7 @@ class VehicleTransactionController(StockController):
 			elif self.doctype == "Vehicle Registration Receipt":
 				vro.set_registration_receipt_details(update=True)
 			elif self.doctype in ["Vehicle Number Plate Receipt", "Vehicle Number Plate Delivery"]:
-				vro.set_number_plate_receipt_details(update=True)
+				vro.set_number_plate_status(update=True)
 
 			vro.set_status(update=True)
 			vro.notify_update()

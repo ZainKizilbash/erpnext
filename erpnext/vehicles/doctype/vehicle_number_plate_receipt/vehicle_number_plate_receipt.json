@@ -55,6 +55,7 @@
    "options": "Supplier"
   },
   {
+   "depends_on": "eval:doc.agent && doc.agent_name != doc.agent",
    "fetch_from": "agent.supplier_name",
    "fieldname": "agent_name",
    "fieldtype": "Data",
@@ -87,7 +88,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-09-05 16:03:38.804651",
+ "modified": "2023-09-06 13:00:27.168409",
  "modified_by": "Administrator",
  "module": "Vehicles",
  "name": "Vehicle Number Plate Receipt",

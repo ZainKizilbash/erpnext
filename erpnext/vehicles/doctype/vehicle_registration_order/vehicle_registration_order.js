@@ -526,7 +526,7 @@ erpnext.vehicles.VehicleRegistrationOrderController = class VehicleRegistrationO
 
 	make_number_plate_receipt() {
 		return frappe.call({
-			method: "erpnext.vehicles.doctype.vehicle_registration_order.vehicle_registration_order.make_number_plate_receipt",
+			method: "erpnext.vehicles.doctype.vehicle_registration_order.vehicle_registration_order.get_number_plate_receipt",
 			args: {
 				"vehicle_registration_order": this.frm.doc.name,
 			},
@@ -541,7 +541,7 @@ erpnext.vehicles.VehicleRegistrationOrderController = class VehicleRegistrationO
 
 	make_number_plate_delivery() {
 		return frappe.call({
-			method: "erpnext.vehicles.doctype.vehicle_registration_order.vehicle_registration_order.make_number_plate_delivery",
+			method: "erpnext.vehicles.doctype.vehicle_registration_order.vehicle_registration_order.get_number_plate_delivery",
 			args: {
 				"vehicle_registration_order": this.frm.doc.name,
 			},
