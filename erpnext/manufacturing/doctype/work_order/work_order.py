@@ -880,7 +880,7 @@ def create_work_orders(items, company, ignore_version=True, ignore_feed=False):
 			"order_line_no": order_line_no,
 		})
 
-		frappe.utils.call_hook_method("update_work_order_from_sales_order", work_order)
+		frappe.utils.call_hook_method("update_work_order_on_create", work_order, d)
 
 		work_order.set_work_order_operations()
 		work_order.save()
