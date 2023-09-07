@@ -832,6 +832,68 @@ def make_work_order(bom_no, item, qty=0, project=None):
 
 
 @frappe.whitelist()
+def create_work_orders(items, company, ignore_version=True, ignore_feed=False):
+	'''Make Work Orders against the given Sales Order for the given `items`'''
+	if isinstance(items, str):
+		items = json.loads(items)
+
+	out = []
+
+	for d in items:
+		if not d.get("bom_no"):
+			frappe.throw(_("Please select BOM No against Item {0}").format(d.get("item_code")))
+		if not d.get("production_qty"):
+			frappe.throw(_("Please select Qty against Item {0}").format(d.get("item_code")))
+
+		sales_order = d.get("sales_order")
+		customer = d.get("customer")
+		customer_name = d.get("customer_name") if d.get("customer") else None
+
+		if not customer and sales_order:
+			customer = frappe.db.get_value("Sales Order", sales_order, "customer", cache=1)
+			customer_name = frappe.db.get_value("Sales Order", sales_order, "customer_name", cache=1)
+
+		if not customer_name and customer:
+			customer_name = frappe.get_cached_value("Customer", customer, "customer_name")
+
+		order_line_no = cint(d.get("order_line_no"))
+		if not order_line_no and d.get("sales_order_item"):
+			order_line_no = frappe.db.get_value("Sales Order Item", d.get("sales_order_item"), 'idx')
+
+		work_order = frappe.new_doc("Work Order")
+		work_order.flags.ignore_version = ignore_version
+		work_order.flags.ignore_feed = ignore_feed
+
+		work_order.update({
+			"production_item": d.get("item_code"),
+			"item_name": d.get("item_name"),
+			"description": d.get("description"),
+			"bom_no": d.get("bom_no"),
+			"qty": flt(d.get("production_qty")),
+			"fg_warehouse": d.get("warehouse"),
+			"company": company or d.get("company"),
+			"sales_order": sales_order,
+			"sales_order_item": d.get("sales_order_item"),
+			"customer": customer,
+			"customer_name": customer_name,
+			"project": d.get("project"),
+			"order_line_no": order_line_no,
+		})
+
+		frappe.utils.call_hook_method("update_work_order_from_sales_order", work_order)
+
+		work_order.set_work_order_operations()
+		work_order.save()
+
+		if frappe.db.get_single_value("Manufacturing Settings", "auto_submit_work_order"):
+			work_order.submit()
+
+		out.append(work_order)
+
+	return [p.name for p in out]
+
+
+@frappe.whitelist()
 def check_if_scrap_warehouse_mandatory(bom_no):
 	res = {"set_scrap_wh_mandatory": False}
 	if bom_no:

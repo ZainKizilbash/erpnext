@@ -679,7 +679,7 @@ class SalesOrder(SellingController):
 		"""Returns items with BOM that already do not have a linked work order"""
 		work_order_items = []
 		item_codes = [i.item_code for i in self.items]
-		product_bundle_parents = [pb.new_item_code for pb in frappe.get_all("Product Bundle", {"new_item_code": ["in", item_codes]}, ["new_item_code"])]
+		product_bundle_parents = frappe.get_all("Product Bundle", {"new_item_code": ["in", item_codes]}, pluck="new_item_code")
 		default_rm_warehouse = frappe.get_cached_value("Manufacturing Settings", None, "default_rm_warehouse")
 		for_raw_material_request = cint(for_raw_material_request)
 
@@ -687,11 +687,11 @@ class SalesOrder(SellingController):
 			if item_condition and not item_condition(d):
 				continue
 
-			bom = self.run_method("get_sales_order_item_bom", d)
-			if not bom:
-				bom = get_default_bom_item(d.item_code)
+			bom_no = self.run_method("get_sales_order_item_bom", d)
+			if not bom_no:
+				bom_no = get_default_bom_item(d.item_code)
 
-			if not bom:
+			if not bom_no:
 				continue
 
 			stock_qty = flt(d.qty) if d.doctype == "Packed Item" else flt(d.stock_qty)
@@ -710,18 +710,26 @@ class SalesOrder(SellingController):
 			pending_qty = round_up(pending_qty, work_order_precison)
 
 			if pending_qty and d.item_code not in product_bundle_parents:
-				work_order_items.append({
+				wo_item = {
 					"name": d.name,
 					"item_code": d.item_code,
 					"item_name": d.item_name,
 					"description": d.description,
-					"bom": bom,
+					"bom_no": bom_no,
 					"warehouse": default_rm_warehouse if for_raw_material_request else d.warehouse,
-					"pending_qty": pending_qty,
-					"required_qty": pending_qty if for_raw_material_request else 0,
+					"stock_uom": d.get("stock_uom") or d.get("uom"),
 					"sales_order": self.name,
-					"sales_order_item": d.name
-				})
+					"sales_order_item": d.name,
+					"order_line_no": d.idx,
+				}
+
+				if for_raw_material_request:
+					wo_item["required_qty"] = pending_qty
+				else:
+					wo_item["pending_qty"] = pending_qty
+					wo_item["production_qty"] = pending_qty
+
+				work_order_items.append(wo_item)
 
 		return work_order_items
 
@@ -1541,56 +1549,6 @@ def get_supplier(doctype, txt, searchfield, start, page_len, filters):
 		})
 
 
-@frappe.whitelist()
-def make_work_orders(items, company, sales_order=None, project=None, ignore_version=True, ignore_feed=True):
-	'''Make Work Orders against the given Sales Order for the given `items`'''
-	if isinstance(items, str):
-		items = json.loads(items)
-
-	out = []
-
-	for i in items:
-		if not i.get("bom"):
-			frappe.throw(_("Please select BOM against item {0}").format(i.get("item_code")))
-		if not i.get("pending_qty"):
-			frappe.throw(_("Please select Qty against item {0}").format(i.get("item_code")))
-
-		row_sales_order = sales_order or i.get('sales_order')
-		customer = frappe.db.get_value("Sales Order", row_sales_order, "customer", cache=1) if row_sales_order else None
-		customer_name = frappe.db.get_value("Sales Order", row_sales_order, "customer_name", cache=1) if row_sales_order else None
-
-		work_order = frappe.new_doc("Work Order")
-		work_order.flags.ignore_version = ignore_version
-		work_order.flags.ignore_feed = ignore_feed
-
-		work_order.update({
-			'order_line_no': frappe.db.get_value("Sales Order Item", i['sales_order_item'], 'idx'),
-			'production_item': i['item_code'],
-			'bom_no': i.get('bom'),
-			'qty': i['pending_qty'],
-			'company': company,
-			'sales_order': row_sales_order,
-			'sales_order_item': i['sales_order_item'],
-			'customer': customer,
-			'customer_name': customer_name,
-			'project': project,
-			'fg_warehouse': i['warehouse'],
-			'description': i['description']
-		})
-
-		frappe.utils.call_hook_method("update_work_order_from_sales_order", work_order)
-
-		work_order.set_work_order_operations()
-		work_order.save()
-
-		if frappe.db.get_single_value("Manufacturing Settings", "auto_submit_work_order"):
-			work_order.submit()
-
-		out.append(work_order)
-
-	return [p.name for p in out]
-
-
 def get_default_bom_item(item_code):
 	bom = frappe.get_all('BOM', dict(item=item_code, is_active=True),
 			order_by='is_default desc')
@@ -1608,13 +1566,13 @@ def make_raw_material_request(items, company, sales_order, project=None):
 		items = frappe._dict(json.loads(items))
 
 	for item in items.get('items'):
-		item["include_exploded_items"] = items.get('include_exploded_items')
-		item["ignore_existing_ordered_qty"] = items.get('ignore_existing_ordered_qty')
-		item["include_raw_materials_from_sales_order"] = items.get('include_raw_materials_from_sales_order')
+		item["include_exploded_items"] = items.get("include_exploded_items")
+		item["ignore_existing_ordered_qty"] = items.get("ignore_existing_ordered_qty")
+		item["include_raw_materials_from_sales_order"] = items.get("include_raw_materials_from_sales_order")
 
 	items.update({
-		'company': company,
-		'sales_order': sales_order
+		"company": company,
+		"sales_order": sales_order
 	})
 
 	raw_materials = get_items_for_material_requests(items)

@@ -341,99 +341,123 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 	}
 
 	make_work_order() {
-		var me = this;
-		this.frm.call({
+		return this.frm.call({
+			method: "get_work_order_items",
 			doc: this.frm.doc,
-			method: 'get_work_order_items',
-			callback: function(r) {
-				if(!r.message) {
+			callback: (r) => {
+				if (!r.message || !r.message.length) {
 					frappe.msgprint({
-						title: __('Work Order not created'),
+						title: __('Work Orders not created'),
 						message: __('No Items with Bill of Materials to Manufacture'),
 						indicator: 'orange'
 					});
 					return;
 				}
-				else if(!r.message) {
-					frappe.msgprint({
-						title: __('Work Order not created'),
-						message: __('Work Order already created for all items with BOM'),
-						indicator: 'orange'
-					});
-					return;
-				} else {
-					const fields = [{
-						label: 'Items',
-						fieldtype: 'Table',
-						fieldname: 'items',
-						description: __('Select BOM and Qty for Production'),
-						fields: [{
-							fieldtype: 'Read Only',
-							fieldname: 'item_code',
-							label: __('Item Code'),
-							in_list_view: 1
-						}, {
-							fieldtype: 'Link',
-							fieldname: 'bom',
-							options: 'BOM',
-							reqd: 1,
-							label: __('Select BOM'),
-							in_list_view: 1,
-							get_query: function (doc) {
-								return { filters: { item: doc.item_code } };
-							}
-						}, {
-							fieldtype: 'Float',
-							fieldname: 'pending_qty',
-							reqd: 1,
-							label: __('Qty'),
-							in_list_view: 1
-						}, {
-							fieldtype: 'Data',
-							fieldname: 'sales_order_item',
-							reqd: 1,
-							label: __('Sales Order Item'),
-							hidden: 1
-						}],
-						data: r.message,
-						get_data: () => {
-							return r.message
-						}
-					}]
-					var d = new frappe.ui.Dialog({
-						title: __('Select Items to Manufacture'),
-						fields: fields,
-						primary_action: function() {
-							var data = d.get_values();
-							me.frm.call({
-								method: 'make_work_orders',
-								args: {
-									items: data.items,
-									company: me.frm.doc.company,
-									sales_order: me.frm.docname,
-									project: me.frm.project
-								},
-								freeze: true,
-								callback: function(r) {
-									if(r.message) {
-										frappe.msgprint({
-											message: __('Work Orders Created: {0}',
-												[r.message.map(function(d) {
-													return repl('<a href="/app/work-order/%(name)s">%(name)s</a>', {name:d})
-												}).join(', ')]),
-											indicator: 'green'
-										})
-									}
-									d.hide();
-								}
-							});
-						},
-						primary_action_label: __('Create')
-					});
-					d.show();
-				}
+				return this.make_work_order_dialog(r.message);
 			}
 		});
+	}
+
+	make_work_order_dialog(items_data) {
+		let doc = {
+			items: items_data,
+		};
+
+		const fields = [{
+			label: "Items",
+			fieldtype: "Table",
+			fieldname: "items",
+			description: __("Select BOM and Qty for Production"),
+			fields: [
+				{
+					fieldname: "item_code",
+					label: __("Production Item"),
+					fieldtype: "Link",
+					options: "Item",
+					in_list_view: 1,
+					read_only: 1,
+					reqd: 1,
+					columns: 5,
+				},
+				{
+					fieldname: "bom_no",
+					label: __("BOM No"),
+					fieldtype: "Link",
+					options: "BOM",
+					reqd: 1,
+					in_list_view: 1,
+					columns: 3,
+					get_query: function (doc) {
+						return {
+							filters: {
+								item: doc.item_code,
+								is_active: 1
+							}
+						};
+					}
+				},
+				{
+					fieldname: "production_qty",
+					label: __("Qty"),
+					fieldtype: "Float",
+					reqd: 1,
+					in_list_view: 1,
+					columns: 1,
+				},
+				{
+					fieldname: "stock_uom",
+					label: __("UOM"),
+					fieldtype: "Data",
+					in_list_view: 1,
+					read_only: 1,
+					columns: 1,
+				},
+				{
+					fieldtype: "Data",
+					fieldname: "sales_order_item",
+					reqd: 1,
+					label: __("Sales Order Item"),
+					hidden: 1
+				},
+			],
+			data: doc.items,
+		}];
+
+		let dialog = new frappe.ui.Dialog({
+			title: __("Select Items to Manufacture"),
+			fields: fields,
+			doc: doc,
+			size: "extra-large",
+			primary_action: () => {
+				let values = dialog.get_values();
+				for (let d of values.items) {
+					d.sales_order = this.frm.doc.name;
+					d.customer = this.frm.doc.customer;
+					d.customer_name = this.frm.doc.customer_name;
+					d.project = this.frm.doc.project;
+				}
+				return this.frm.call({
+					method: "erpnext.manufacturing.doctype.work_order.work_order.create_work_orders",
+					args: {
+						items: values.items,
+						company: this.frm.doc.company,
+					},
+					freeze: true,
+					callback: (r) => {
+						if(r.message) {
+							frappe.msgprint({
+								message: __("Work Orders Created: {0}", [
+									r.message.map((d) => `<a href=${frappe.utils.get_form_link("Work Order", d)}>${d}</a>`).join(', ')
+								]), indicator: "green"
+							})
+						}
+						dialog.hide();
+					}
+				});
+			},
+			primary_action_label: __("Create")
+		});
+		dialog.show();
 	}
 
 	create_vehicles() {
@@ -542,81 +566,88 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 	}
 
 	make_raw_material_request() {
-		var me = this;
-		this.frm.call({
+		return this.frm.call({
 			doc: this.frm.doc,
-			method: 'get_work_order_items',
+			method: "get_work_order_items",
 			args: {
 				for_raw_material_request: 1
 			},
-			callback: function(r) {
-				if(!r.message || !r.message.length) {
+			callback: (r) => {
+				if (!r.message || !r.message.length) {
 					frappe.msgprint({
 						message: __('No Items with Bill of Materials.'),
 						indicator: 'orange'
 					});
 					return;
 				}
-				else {
-					me.make_raw_material_request_dialog(r);
-				}
+				this.make_raw_material_request_dialog(r.message);
 			}
 		});
 	}
 
-	make_raw_material_request_dialog(r) {
-		var me = this;
-		var fields = [
-			{fieldtype:'Check', fieldname:'include_exploded_items', default: 1, label: __('Include Exploded Items')},
-			{fieldtype:'Check', fieldname:'ignore_existing_ordered_qty', label: __('Ignore Existing Ordered Qty')},
-			{fieldtype:'Link', options: 'Warehouse', fieldname:'for_warehouse', label: __('For Warehouse'), reqd: 1,
-				default: r.message && r.message[0].warehouse, get_query: () => erpnext.queries.warehouse(me.frm.doc)},
+	make_raw_material_request_dialog(items_data) {
+		let dialog_doc = {
+			for_warehouse: items_data && items_data[0].warehouse,
+			include_exploded_items: 1,
+			ignore_existing_ordered_qty: 0,
+			items: items_data,
+		}
+		const fields = [
+			{fieldname: "for_warehouse", label: __("For Warehouse"), fieldtype: "Link", options: "Warehouse", reqd: 1,
+				get_query: () => erpnext.queries.warehouse(this.frm.doc)
+			},
+			{fieldtype: "Column Break"},
+			{fieldname: "include_exploded_items", label: __("Include Exploded Items"), fieldtype: "Check"},
+			{fieldname: "ignore_existing_ordered_qty", label: __("Ignore Existing Ordered Qty"), fieldtype: "Check"},
+			{fieldtype: "Section Break"},
 			{
-				fieldtype:'Table', fieldname: 'items',
-				description: __('Select BOM, Qty and For Warehouse'),
+				fieldname: "items",
+				fieldtype: "Table",
+				label: __("Items"),
+				description: __('Select BOM and Qty'),
 				fields: [
-					{fieldtype:'Link', options: "Item", fieldname:'item_code', label: __('Item Code'), read_only: 1, columns: 5, in_list_view:1},
-					{fieldtype:'Data', fieldname:'item_name', label: __('Item Name'), read_only: 1},
-					{fieldtype:'Link', fieldname:'bom', options: 'BOM', reqd: 1, label: __('BOM'), columns: 3, in_list_view:1,
-						get_query: function(doc) {
-							return {filters: {item: doc.item_code}};
-						}
+					{fieldname: "item_code", label: __("Item Code"), fieldtype: "Link", options: "Item", read_only: 1, reqd: 1, columns: 5, in_list_view: 1},
+					{fieldname: "item_name", label: __("Item Name"), fieldtype: "Data", read_only: 1},
+					{fieldname: "bom_no", label: __("BOM No"), fieldtype: "Link", options: "BOM", reqd: 1, columns: 3, in_list_view: 1,
+						get_query: (doc) => { return { filters: {
+							item: doc.item_code, is_active: 1,
+						} } }
 					},
-					{fieldtype:'Float', fieldname:'required_qty', reqd: 1, label: __('Qty'), columns: 2, in_list_view:1},
+					{fieldname: "required_qty", label: __("Qty"), fieldtype: "Float", reqd: 1, columns: 1, in_list_view: 1},
+					{fieldname: "stock_uom", label: __("UOM"), fieldtype: "Data", read_only: 1, columns: 1, in_list_view: 1},
 				],
-				data: r.message,
-				get_data: function() {
-					return r.message
-				}
+				data: dialog_doc.items,
 			}
-		]
-		var d = new frappe.ui.Dialog({
+		];
+
+		let dialog = new frappe.ui.Dialog({
 			title: __("Items for Raw Material Request"),
 			fields: fields,
 			size: "extra-large",
-			primary_action: function() {
-				var data = d.get_values();
-				frappe.call({
-					method: 'erpnext.selling.doctype.sales_order.sales_order.make_raw_material_request',
+			doc: dialog_doc,
+			primary_action: () => {
+				let values = dialog.get_values();
+				return frappe.call({
+					method: "erpnext.selling.doctype.sales_order.sales_order.make_raw_material_request",
 					args: {
-						items: data,
-						company: me.frm.doc.company,
-						sales_order: me.frm.docname,
-						project: me.frm.project
+						items: values,
+						company: this.frm.doc.company,
+						sales_order: this.frm.docname,
+						project: this.frm.project
 					},
 					freeze: true,
-					callback: function(r) {
-						if(r.message) {
-							var doc = frappe.model.sync(r.message);
+					callback: (r) => {
+						if (r.message) {
+							frappe.model.sync(r.message);
 							frappe.set_route("Form", r.message.doctype, r.message.name);
 						}
-						d.hide();
+						dialog.hide();
 					}
 				});
 			},
-			primary_action_label: __('Create')
+			primary_action_label: __("Create")
 		});
-		d.show();
+		dialog.show();
 	}
 
 	make_delivery_note_based_on(filters, packing_filter) {
