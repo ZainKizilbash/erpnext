@@ -576,10 +576,10 @@ class WorkOrder(StatusUpdater):
 			self.status = 'Draft'
 
 		elif self.docstatus == 1:
-			if self.production_status == "Produced":
-				self.status = "Completed"
-			elif self.status == "Stopped":
+			if self.status == "Stopped":
 				self.status = "Stopped"
+			elif self.production_status == "Produced":
+				self.status = "Completed"
 			elif self.has_stock_entry():
 				self.status = "In Process"
 			else:
