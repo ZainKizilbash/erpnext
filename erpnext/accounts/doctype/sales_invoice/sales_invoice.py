@@ -854,7 +854,7 @@ class SalesInvoice(SellingController):
 
 		for d in self.get_item_list():
 			if not d.warehouse and d.item_code and frappe.get_cached_value("Item", d.item_code, "is_stock_item"):
-				frappe.throw(_("Warehouse required for stock Item {0}").format(d.item_code))
+				frappe.throw(_("Warehouse required for Stock Item {0}").format(d.item_code))
 
 	def validate_delivery_note_if_update_stock(self):
 		if not cint(self.is_return) and cint(self.update_stock):
@@ -863,17 +863,21 @@ class SalesInvoice(SellingController):
 					msgprint(_("Stock cannot be updated against Delivery Note {0}").format(d.delivery_note), raise_exception=1)
 
 	def validate_update_stock_mandatory(self):
-		if not cint(self.update_stock) and not self.return_against and not cint(frappe.get_cached_value("Accounts Settings", None, "allow_invoicing_without_updating_stock")):
-			packed_items = []
-			for p in self.get('packed_items'):
-				packed_items.append(p.parent_detail_docname)
+		from erpnext.stock.get_item_details import item_is_product_bundle_with_stock_item
 
-			for d in self.items:
-				if d.item_code:
-					is_stock_item = frappe.get_cached_value("Item", d.item_code, "is_stock_item")\
-						or self.is_product_bundle_with_stock_item(d.item_code)
-					if d.item_code and not d.delivery_note and is_stock_item:
-						frappe.throw(_("'Update Stock' must be enabled for stock items if Sales Invoice is not made from Delivery Note."))
+		if cint(self.update_stock):
+			return
+		if self.return_against:
+			return
+		if cint(frappe.get_cached_value("Accounts Settings", None, "allow_invoicing_without_updating_stock")):
+			return
+
+		for d in self.items:
+			if d.item_code and not d.delivery_note:
+				is_stock_item = frappe.get_cached_value("Item", d.item_code, "is_stock_item")\
+					or item_is_product_bundle_with_stock_item(d.item_code)
+				if is_stock_item:
+					frappe.throw(_("'Update Stock' must be enabled for stock items if Sales Invoice is not against Delivery Note"))
 
 	def validate_write_off_account(self):
 		if flt(self.write_off_amount) and not self.write_off_account:

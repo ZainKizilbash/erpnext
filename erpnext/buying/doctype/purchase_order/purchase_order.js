@@ -195,7 +195,11 @@ erpnext.buying.PurchaseOrderController = class PurchaseOrderController extends e
 		this.frm.set_indicator_formatter('item_code', function(doc) {
 			if (doc.docstatus === 1) {
 				if (!doc.received_qty) {
-					return "orange";
+					if (!doc.is_stock_item && !doc.is_fixed_asset) {
+						return "purple";
+					} else {
+						return "orange";
+					}
 				} else if (doc.received_qty < doc.qty) {
 					return "yellow";
 				} else {

@@ -261,6 +261,7 @@ erpnext.stock.DeliveryNoteController = class DeliveryNoteController extends erpn
 				docstatus: 1,
 				status: ["not in", ["Closed", "On Hold"]],
 				delivery_status: "To Deliver",
+				skip_delivery_note: 0,
 				company: this.frm.doc.company,
 				customer: this.frm.doc.customer || undefined,
 			}

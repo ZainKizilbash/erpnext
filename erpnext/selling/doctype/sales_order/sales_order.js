@@ -105,7 +105,7 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 		// formatter for items table
 		this.frm.set_indicator_formatter('item_code', function(doc) {
 			if (doc.docstatus === 0) {
-				if (!doc.is_stock_item) {
+				if (!doc.is_stock_item || doc.skip_delivery_note) {
 					return "blue";
 				} else if (!doc.actual_qty) {
 					return "red";
@@ -116,7 +116,11 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 				}
 			} else {
 				if (!doc.delivered_qty) {
-					return "orange";
+					if (!doc.is_stock_item || doc.skip_delivery_note) {
+						return "purple";
+					} else {
+						return "orange";
+					}
 				} else if (doc.delivered_qty < doc.qty) {
 					return "yellow";
 				} else {
@@ -164,8 +168,10 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 
 			if(me.frm.doc.status !== 'Closed') {
 				if(me.frm.doc.status !== 'On Hold') {
-					allow_delivery = me.frm.doc.items.some(item => item.delivered_by_supplier === 0 && item.qty > flt(item.delivered_qty))
-						&& !me.frm.doc.skip_delivery_note;
+					allow_delivery = (
+						me.frm.doc.items.some(item => !item.skip_delivery_note && item.qty > flt(item.delivered_qty))
+						&& !me.frm.doc.skip_delivery_note
+					);
 
 					if (me.frm.has_perm("submit")) {
 						if(me.frm.doc.delivery_status == "To Deliver" || me.frm.doc.billing_status == "To Bill") {
@@ -177,13 +183,13 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 					}
 
 					// delivery note
-					let deliverable_rows = me.frm.doc.items.filter(d => d.is_stock_item || d.is_fixed_asset);
-
+					let deliverable_rows = me.frm.doc.items.filter(d => !d.skip_delivery_note);
 					let has_undelivered = deliverable_rows.some(d => {
 						return flt(d.delivered_qty, precision("qty", d)) < flt(d.qty, precision("qty", d));
 					});
 
-					let has_unpacked = deliverable_rows.some(d => {
+					let packable_rows = deliverable_rows.filter(d => d.is_stock_item);
+					let has_unpacked = packable_rows.some(d => {
 						let produced_qty_order_uom = flt(d.produced_qty) / flt(d.conversion_factor);
 						return produced_qty_order_uom
 							? flt(d.packed_qty, precision("qty", d)) < flt(produced_qty_order_uom, precision("qty", d))
@@ -202,13 +208,14 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 							me.frm.add_custom_button(__('Packing Slip'), () => me.make_packing_slip(), __('Create'));
 						}
 
+						me.frm.add_custom_button(__('Pick List'), () => me.create_pick_list(), __('Create'));
+
 						var has_vehicles = me.frm.doc.items.some(d => d.is_vehicle);
 						if (has_vehicles) {
 							me.frm.add_custom_button(__('Reserved Vehicles'), () => me.create_vehicles(), __('Create'));
 						}
 					}
 
-					me.frm.add_custom_button(__('Pick List'), () => me.create_pick_list(), __('Create'));
 
 					// sales invoice
 					if(flt(me.frm.doc.per_completed, 6) < 100) {
@@ -548,13 +555,13 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 	}
 
 	set_skip_delivery_note() {
-		var items = (this.frm.doc.items || []).filter(d => d.item_code);
+		let items = (this.frm.doc.items || []).filter(d => d.item_code);
 		if (!items.length) {
 			this.frm.set_value('skip_delivery_note', 0);
 			return;
 		}
 
-		var has_deliverable = items.some(d => d.is_stock_item || d.is_fixed_asset);
+		let has_deliverable = items.some(d => !d.skip_delivery_note);
 		this.frm.set_value('skip_delivery_note', cint(!has_deliverable));
 	}
 

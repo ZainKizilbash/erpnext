@@ -400,7 +400,7 @@ class DeliveryNote(SellingController):
 		for d in self.get_item_list():
 			if frappe.get_cached_value("Item", d['item_code'], "is_stock_item") == 1:
 				if not d['warehouse']:
-					frappe.throw(_("Warehouse required for stock Item {0}").format(d["item_code"]))
+					frappe.throw(_("Warehouse required for Stock Item {0}").format(d["item_code"]))
 
 	def update_current_stock(self):
 		if self.get("_action") and self._action != "update_after_submit":
