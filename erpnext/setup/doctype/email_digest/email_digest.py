@@ -245,7 +245,7 @@ class EmailDigest(Document):
 
 			if self.get(key):
 				cache_key = "email_digest:card:{0}:{1}:{2}:{3}".format(self.company, self.frequency, key, self.from_date)
-				card = cache.get(cache_key)
+				card = cache.get_value(cache_key)
 
 				if card:
 					card = frappe.safe_eval(card)
