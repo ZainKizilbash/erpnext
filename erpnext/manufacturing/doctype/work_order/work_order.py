@@ -126,7 +126,6 @@ class WorkOrder(StatusUpdater):
 			left join `tabProduct Bundle Item` pk_item on so_item.item_code = pk_item.parent
 			where so.name = %s
 				and so.docstatus = 1
-				and so.skip_delivery_note = 0
 				and (so_item.item_code = %s or pk_item.item_code = %s)
 		""", (self.sales_order, self.production_item, self.production_item), as_dict=1)
 
@@ -137,7 +136,6 @@ class WorkOrder(StatusUpdater):
 				where so.name = %s
 					and so.name = so_item.parent
 					and so.name = packed_item.parent
-					and so.skip_delivery_note = 0
 					and so_item.item_code = packed_item.parent_item
 					and so.docstatus = 1
 					and packed_item.item_code=%s

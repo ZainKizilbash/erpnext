@@ -404,7 +404,7 @@ class SalesOrder(SellingController):
 		producible_row_names = []
 
 		for d in self.items:
-			if d.is_stock_item and not d.skip_delivery_note:
+			if d.is_stock_item:
 				out.producible_rows.append(d)
 				producible_row_names.append(d.name)
 
