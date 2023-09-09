@@ -4,7 +4,8 @@
 import frappe
 import json
 import frappe.utils
-from frappe.utils import cstr, flt, getdate, cint, nowdate, add_days, get_link_to_form, round_up, round_down
+from frappe.utils import cstr, flt, getdate, cint, nowdate, add_days, get_link_to_form, round_up, round_down,\
+	call_hook_method
 from frappe import _
 from frappe.model.mapper import get_mapped_doc
 from erpnext.stock.stock_balance import update_bin_qty, get_reserved_qty
@@ -151,6 +152,10 @@ class SalesOrder(SellingController):
 			if d.item_code:
 				item = frappe.get_cached_doc("Item", d.item_code)
 				d.skip_delivery_note = get_skip_delivery_note(item, delivered_by_supplier=cint(d.delivered_by_supplier))
+				if not d.skip_delivery_note:
+					hooked_skip_delivery_note = self.run_method("get_skip_delivery_note", d)
+					if hooked_skip_delivery_note:
+						d.skip_delivery_note = 1
 			else:
 				d.skip_delivery_note = 1
 
