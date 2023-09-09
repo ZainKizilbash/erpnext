@@ -877,7 +877,8 @@ class SalesInvoice(SellingController):
 				is_stock_item = frappe.get_cached_value("Item", d.item_code, "is_stock_item")\
 					or item_is_product_bundle_with_stock_item(d.item_code)
 				if is_stock_item:
-					frappe.throw(_("'Update Stock' must be enabled for stock items if Sales Invoice is not against Delivery Note"))
+					if not d.sales_order_item or not frappe.db.get_value("Sales Order Item", d.sales_order_item, "skip_delivery_note"):
+						frappe.throw(_("'Update Stock' must be enabled for stock items if Sales Invoice is not against Delivery Note"))
 
 	def validate_write_off_account(self):
 		if flt(self.write_off_amount) and not self.write_off_account:
