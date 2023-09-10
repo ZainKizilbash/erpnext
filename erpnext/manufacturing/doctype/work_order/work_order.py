@@ -1006,8 +1006,11 @@ def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False, au
 		ste_copy = frappe.get_doc(copy.deepcopy(ste))
 		ste_copy.save()
 		ste_copy.submit()
-		frappe.msgprint(_("{0} {1} submitted successfully").format(
-			purpose, frappe.get_desk_link("Stock Entry", ste_copy.name)
+		frappe.msgprint(_("{0} submitted successfully ({1} {2}): {3}").format(
+			purpose,
+			stock_entry.get_formatted("fg_completed_qty"),
+			work_order.stock_uom,
+			frappe.get_desk_link("Stock Entry", ste_copy.name),
 		), indicator="green")
 		return ste_copy
 
