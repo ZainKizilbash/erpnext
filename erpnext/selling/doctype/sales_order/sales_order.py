@@ -149,18 +149,30 @@ class SalesOrder(SellingController):
 
 	def set_skip_delivery_note(self):
 		for d in self.get("items"):
-			if d.item_code:
-				item = frappe.get_cached_doc("Item", d.item_code)
-				d.skip_delivery_note = get_skip_delivery_note(item, delivered_by_supplier=cint(d.delivered_by_supplier))
-				if not d.skip_delivery_note:
-					hooked_skip_delivery_note = self.run_method("get_skip_delivery_note", d)
-					if hooked_skip_delivery_note:
-						d.skip_delivery_note = 1
-			else:
-				d.skip_delivery_note = 1
+			self.set_skip_delivery_note_for_row(d)
 
+		self.set_skip_delivery_note_for_order()
+
+	def set_skip_delivery_note_for_row(self, row, update=False, update_modified=True):
+		if row.item_code:
+			item = frappe.get_cached_doc("Item", row.item_code)
+			row.skip_delivery_note = get_skip_delivery_note(item, delivered_by_supplier=cint(row.delivered_by_supplier))
+			if not row.skip_delivery_note:
+				hooked_skip_delivery_note = self.run_method("get_skip_delivery_note", row)
+				if hooked_skip_delivery_note:
+					row.skip_delivery_note = 1
+		else:
+			row.skip_delivery_note = 1
+
+		if update:
+			row.db_set("skip_delivery_note", row.skip_delivery_note, update_modified=update_modified)
+
+	def set_skip_delivery_note_for_order(self, update=False, update_modified=True):
 		all_skip_delivery_note = all(d.skip_delivery_note for d in self.get("items"))
 		self.skip_delivery_note = cint(all_skip_delivery_note)
+
+		if update:
+			self.db_set("skip_delivery_note", self.skip_delivery_note, update_modified=update_modified)
 
 	def validate_with_previous_doc(self):
 		super(SalesOrder, self).validate_with_previous_doc({
