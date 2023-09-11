@@ -49,7 +49,6 @@
   "brand",
   "column_break_5",
   "vehicle",
-  "serial_no",
   "vehicle_color",
   "column_break_6",
   "vehicle_chassis_no",
@@ -346,15 +345,6 @@
    "search_index": 1
   },
   {
-   "fieldname": "serial_no",
-   "fieldtype": "Link",
-   "hidden": 1,
-   "label": "Serial No",
-   "no_copy": 1,
-   "options": "Serial No",
-   "read_only": 1
-  },
-  {
    "fieldname": "vehicle_color",
    "fieldtype": "Link",
    "label": "Color",
@@ -477,7 +467,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-09-05 18:50:05.286190",
+ "modified": "2023-09-10 23:05:46.093603",
  "modified_by": "Administrator",
  "module": "Vehicles",
  "name": "Vehicle Number Plate Delivery",
@@ -485,6 +475,8 @@
  "owner": "Administrator",
  "permissions": [
   {
+   "amend": 1,
+   "cancel": 1,
    "create": 1,
    "delete": 1,
    "email": 1,
@@ -492,9 +484,49 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "System Manager",
+   "role": "Vehicle Stock User",
    "share": 1,
+   "submit": 1,
    "write": 1
+  },
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Vehicle Registration User",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales Admin",
+   "share": 1
   }
  ],
  "restrict_to_domain": "Vehicles",

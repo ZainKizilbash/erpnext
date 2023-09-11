@@ -15,9 +15,9 @@
   "posting_date",
   "agent",
   "agent_name",
+  "amended_from",
   "section_break_8kitr",
-  "number_plates",
-  "amended_from"
+  "number_plates"
  ],
  "fields": [
   {
@@ -88,13 +88,43 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-09-06 13:00:27.168409",
+ "modified": "2023-09-10 23:24:33.207342",
  "modified_by": "Administrator",
  "module": "Vehicles",
  "name": "Vehicle Number Plate Receipt",
  "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Vehicle Stock User",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
   {
    "create": 1,
    "delete": 1,
@@ -103,9 +133,18 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "System Manager",
+   "role": "Vehicle Registration User",
    "share": 1,
    "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales Admin",
+   "share": 1
   }
  ],
  "restrict_to_domain": "Vehicles",

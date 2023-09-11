@@ -37,15 +37,15 @@ class VehicleNumberPlateReceipt(VehicleTransactionController):
 		for d in self.number_plates:
 			number_plate_received = frappe.db.get_value("Vehicle Number Plate Details", filters={
 				"vehicle": d.vehicle,
-				"vehicle_license_plate": d.vehicle_license_plate,
 				"docstatus": 1,
-				"name": ['!=', d.name]
+				"parent": ['!=', d.name]
 			}, fieldname="parent")
 
 			if number_plate_received:
-				frappe.throw(_("Row #{0}: Number Plate for {1} has already been received in {2}")
-					.format(d.idx, frappe.get_desk_link("Vehicle", d.vehicle),
-						frappe.get_desk_link("Vehicle Number Plate Receipt", number_plate_received)))
+				frappe.throw(_("Row #{0}: Number Plate for {1} has already been received in {2}").format(
+					d.idx, frappe.get_desk_link("Vehicle", d.vehicle),
+					frappe.get_desk_link("Vehicle Number Plate Receipt", number_plate_received)
+				))
 
 	def update_vehicle_registration_order(self, doc=None):
 		for d in self.number_plates:

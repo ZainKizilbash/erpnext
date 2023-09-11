@@ -574,7 +574,7 @@ class VehicleRegistrationOrder(VehicleAdditionalServiceController):
 				"title": self.title,
 			})
 
-	def set_number_plate_status(self, update=False):
+	def set_number_plate_status(self, update=False, update_modified=True):
 		filters = {
 			"vehicle": self.vehicle,
 			"docstatus": 1
@@ -590,7 +590,7 @@ class VehicleRegistrationOrder(VehicleAdditionalServiceController):
 		if update:
 			self.db_set({
 				"number_plate_status": self.number_plate_status
-			})
+			}, update_modified=update_modified)
 
 	def set_status(self, update=False, status=None, update_modified=True):
 		if self.is_new():

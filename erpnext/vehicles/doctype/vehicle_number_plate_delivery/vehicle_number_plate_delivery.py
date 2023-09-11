@@ -24,17 +24,16 @@ class VehicleNumberPlateDelivery(VehicleTransactionController):
 		filters = {
 			"vehicle": self.vehicle,
 			"docstatus": 1,
-			"vehicle_license_plate": self.vehicle_license_plate,
 			"name": ['!=', self.name]
 		}
 
 		number_plate_delivery = frappe.db.get_value("Vehicle Number Plate Delivery", filters=filters)
 
 		if number_plate_delivery:
-			frappe.throw(_("Number Plate for {0} has already been delivered in {1}")
-				.format(frappe.get_desk_link("Vehicle", self.vehicle),
-				frappe.get_desk_link("Vehicle Number Plate Delivery", number_plate_delivery)))
+			frappe.throw(_("Number Plate for {0} has already been delivered in {1}").format(
+				frappe.get_desk_link("Vehicle", self.vehicle),
+				frappe.get_desk_link("Vehicle Number Plate Delivery", number_plate_delivery)
+			))
 
 	def set_title(self):
 		self.title = "{0} - {1}".format(self.get('customer_name') or self.get('customer'), self.get('vehicle_license_plate'))
-
