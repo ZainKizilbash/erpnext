@@ -14,11 +14,15 @@ def get_data():
 			},
 			{
 				'label': _('Registration'),
-				'items': ['Vehicle Registration Receipt', 'Vehicle Transfer Letter', 'Vehicle Number Plate Receipt', 'Vehicle Number Plate Delivery']
+				'items': ['Vehicle Registration Receipt', 'Vehicle Transfer Letter']
 			},
 			{
 				'label': _('Vehicle Invoice'),
 				'items': ['Vehicle Invoice Movement', 'Vehicle Invoice Delivery']
+			},
+			{
+				'label': _('Number Plate'),
+				'items': ['Vehicle Number Plate Receipt', 'Vehicle Number Plate Delivery']
 			},
 			{
 				'label': _('Registration Invoice'),

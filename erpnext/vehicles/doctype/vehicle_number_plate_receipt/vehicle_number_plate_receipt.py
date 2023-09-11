@@ -6,11 +6,13 @@ from frappe import _
 from erpnext.vehicles.vehicle_transaction_controller import VehicleTransactionController
 from erpnext.vehicles.doctype.vehicle_registration_order.vehicle_registration_order import get_vehicle_registration_order
 
+
 class VehicleNumberPlateReceipt(VehicleTransactionController):
 	def validate(self):
 		super(VehicleNumberPlateReceipt, self).validate()
 		self.validate_duplicate_vehicle()
 		self.validate_number_plate_already_received()
+		self.set_vehicle_registration_order()
 		self.validate_vehicle_registration_order()
 
 	def on_submit(self):
@@ -35,10 +37,10 @@ class VehicleNumberPlateReceipt(VehicleTransactionController):
 
 	def validate_number_plate_already_received(self):
 		for d in self.number_plates:
-			number_plate_received = frappe.db.get_value("Vehicle Number Plate Details", filters={
+			number_plate_received = frappe.db.get_value("Vehicle Number Plate Receipt Detail", filters={
 				"vehicle": d.vehicle,
 				"docstatus": 1,
-				"parent": ['!=', d.name]
+				"name": ['!=', d.name]
 			}, fieldname="parent")
 
 			if number_plate_received:
@@ -69,4 +71,12 @@ class VehicleNumberPlateReceipt(VehicleTransactionController):
 
 	def validate_vehicle_registration_order(self):
 		for d in self.number_plates:
+			if not d.vehicle_registration_order:
+				frappe.throw(_("Row #{0}: Vehicle Registration Order is mandatory").format(d.idx))
+			if not frappe.db.get_value("Vehicle Registration Order", d.vehicle_registration_order, "vehicle_license_plate"):
+				frappe.throw(_("Row #{0}: Registration for {1} is not yet complete").format(
+					d.idx,
+					frappe.get_desk_link("Vehicle Registration Order", d.vehicle_registration_order)
+				))
+
 			super(VehicleNumberPlateReceipt, self).validate_vehicle_registration_order(d)

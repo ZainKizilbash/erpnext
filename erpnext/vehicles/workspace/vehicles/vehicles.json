@@ -263,48 +263,6 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Vehicle Documents",
-   "link_count": 0,
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Vehicle Invoice",
-   "link_count": 0,
-   "link_to": "Vehicle Invoice",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Vehicle Invoice Delivery",
-   "link_count": 0,
-   "link_to": "Vehicle Invoice Delivery",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Vehicle Invoice Movement",
-   "link_count": 0,
-   "link_to": "Vehicle Invoice Movement",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
    "label": "Reports",
    "link_count": 0,
    "link_type": "DocType",
@@ -590,7 +548,7 @@
    "hidden": 0,
    "is_query_report": 0,
    "label": "Vehicle Registration",
-   "link_count": 6,
+   "link_count": 5,
    "onboard": 0,
    "type": "Card Break"
   },
@@ -612,17 +570,6 @@
    "label": "Vehicle Registration Receipt",
    "link_count": 0,
    "link_to": "Vehicle Registration Receipt",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "dependencies": "Vehicle",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Vehicle Transfer Letter",
-   "link_count": 0,
-   "link_to": "Vehicle Transfer Letter",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -657,9 +604,60 @@
    "link_type": "Report",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Vehicle Documents",
+   "link_count": 4,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Vehicle Invoice",
+   "link_count": 0,
+   "link_to": "Vehicle Invoice",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Vehicle Invoice Delivery",
+   "link_count": 0,
+   "link_to": "Vehicle Invoice Delivery",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Vehicle Invoice Movement",
+   "link_count": 0,
+   "link_to": "Vehicle Invoice Movement",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Vehicle Transfer Letter",
+   "link_count": 0,
+   "link_to": "Vehicle Transfer Letter",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2023-09-06 13:58:12.780449",
+ "modified": "2023-09-11 23:16:02.929334",
  "modified_by": "Administrator",
  "module": "Vehicles",
  "name": "Vehicles",

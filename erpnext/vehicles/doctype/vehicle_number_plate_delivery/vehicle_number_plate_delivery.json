@@ -100,7 +100,8 @@
    "label": "Vehicle Registration Order",
    "no_copy": 1,
    "options": "Vehicle Registration Order",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "column_break_2",
@@ -467,7 +468,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-09-10 23:05:46.093603",
+ "modified": "2023-09-12 00:23:34.966243",
  "modified_by": "Administrator",
  "module": "Vehicles",
  "name": "Vehicle Number Plate Delivery",

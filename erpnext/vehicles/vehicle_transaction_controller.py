@@ -340,8 +340,10 @@ class VehicleTransactionController(StockController):
 
 			if self.meta.has_field('agent'):
 				if cstr(self.agent) != cstr(vro.agent):
-					frappe.throw(_("Agent does not match in {0}")
-						.format(frappe.get_desk_link("Vehicle Registration Order", doc.vehicle_registration_order)))
+					frappe.throw(_("Agent does not match in {0}. Agent should be {1}").format(
+						frappe.get_desk_link("Vehicle Registration Order", doc.vehicle_registration_order),
+						frappe.bold(vro.agent),
+					))
 
 			if doc.get('item_code'):
 				if doc.item_code != vro.item_code:

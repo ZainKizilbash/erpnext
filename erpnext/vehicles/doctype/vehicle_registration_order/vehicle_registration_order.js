@@ -12,6 +12,8 @@ erpnext.vehicles.VehicleRegistrationOrderController = class VehicleRegistrationO
 			'Vehicle Registration Receipt': 'Registration Receipt',
 			'Vehicle Transfer Letter': 'Transfer Letter',
 			'Sales Invoice': 'Create Invoice',
+			'Vehicle Number Plate Receipt': 'Receive Number Plate',
+			'Vehicle Number Plate Delivery': 'Deliver Number Plate',
 		}
 	}
 
@@ -118,9 +120,9 @@ erpnext.vehicles.VehicleRegistrationOrderController = class VehicleRegistrationO
 				if (!this.frm.doc.vehicle_license_plate) {
 					this.frm.add_custom_button(__('Registration Receipt'), () => this.make_registration_receipt());
 				} else if (this.frm.doc.number_plate_status == "Not Received") {
-					this.frm.add_custom_button(__('Number Plate Receipt'), () => this.make_number_plate_receipt());
+					this.frm.add_custom_button(__('Receive Number Plate'), () => this.make_number_plate_receipt());
 				} else if (this.frm.doc.number_plate_status == "In Hand") {
-					this.frm.add_custom_button(__('Number Plate Delivery'), () => this.make_number_plate_delivery());
+					this.frm.add_custom_button(__('Deliver Number Plate'), () => this.make_number_plate_delivery());
 				}
 			}
 
