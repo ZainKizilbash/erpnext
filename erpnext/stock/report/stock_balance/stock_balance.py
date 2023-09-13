@@ -541,8 +541,8 @@ def get_items_for_stock_report(filters):
 		items = frappe.db.sql_list("""
 			select name
 			from `tabItem` item
-			where {0}
-		""".format(" and ".join(conditions)), filters)
+			where is_stock_item = 1 {0}
+		""".format(" and " + " and ".join(conditions) if conditions else ""), filters)
 
 	return items
 
