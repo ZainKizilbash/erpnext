@@ -680,7 +680,7 @@ class SalesOrder(SellingController):
 		item_warehouse_list = []
 
 		for d in self.get("items"):
-			if (not so_item_rows or d.name in so_item_rows) and not d.skip_delivery_note:
+			if not so_item_rows or d.name in so_item_rows:
 				if item_has_product_bundle(d.item_code):
 					for p in self.get("packed_items"):
 						if p.parent_detail_docname == d.name and p.parent_item == d.item_code:
