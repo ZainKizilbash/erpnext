@@ -9,6 +9,7 @@
   "loan_name",
   "maximum_loan_amount",
   "rate_of_interest",
+  "loan_account",
   "column_break_2",
   "disabled",
   "description"
@@ -29,11 +30,11 @@
    "options": "Company:company:default_currency"
   },
   {
+   "default": "0",
    "fieldname": "rate_of_interest",
    "fieldtype": "Percent",
    "in_list_view": 1,
-   "label": "Rate of Interest (%) Yearly",
-   "reqd": 1
+   "label": "Rate of Interest (%) Yearly"
   },
   {
    "fieldname": "column_break_2",
@@ -49,10 +50,17 @@
    "fieldname": "description",
    "fieldtype": "Text",
    "label": "Description"
+  },
+  {
+   "fieldname": "loan_account",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "Default Loan Account",
+   "options": "Account"
   }
  ],
  "links": [],
- "modified": "2023-09-07 15:55:28.006867",
+ "modified": "2023-09-14 16:01:56.743900",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Loan Type",

@@ -208,6 +208,8 @@
    "fieldtype": "Column Break"
   },
   {
+   "fetch_from": "loan_type.loan_account",
+   "fetch_if_empty": 1,
    "fieldname": "loan_account",
    "fieldtype": "Link",
    "label": "Loan Account",
@@ -299,7 +301,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2023-08-30 23:23:59.031644",
+ "modified": "2023-09-14 16:03:19.169102",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Loan",

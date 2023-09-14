@@ -31,7 +31,8 @@ frappe.ui.form.on('Loan', {
 					"filters": {
 						"company": frm.doc.company,
 						"root_type": "Asset",
-						"is_group": 0
+						"is_group": 0,
+						"account_type": ["in", ["Receivable", "Payable"]]
 					}
 				};
 			});
