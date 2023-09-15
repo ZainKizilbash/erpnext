@@ -233,6 +233,9 @@ def get_basic_details(args, item, overwrite_warehouse=True):
 	if not args.get('uom'):
 		args.uom = default_uom
 
+	if not args.get('weight_uom'):
+		args.weight_uom = frappe.get_cached_value("Stock Settings", None, "weight_uom")
+
 	out = frappe._dict({
 		"item_code": item.name,
 		"item_name": item.item_name,
