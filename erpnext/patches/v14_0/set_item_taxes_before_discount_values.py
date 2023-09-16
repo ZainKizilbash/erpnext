@@ -10,6 +10,7 @@ def execute():
 
 	for dt in dts:
 		item_dt = f"{dt} Item"
+		frappe.reload_doctype(dt)
 		frappe.reload_doctype(item_dt)
 
 		frappe.db.sql(f"""
