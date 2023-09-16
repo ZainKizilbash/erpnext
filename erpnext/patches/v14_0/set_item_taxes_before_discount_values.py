@@ -1,5 +1,4 @@
 import frappe
-from frappe.model.utils.rename_field import rename_field
 
 
 def execute():
@@ -10,8 +9,8 @@ def execute():
 
 	for dt in dts:
 		item_dt = f"{dt} Item"
-		frappe.reload_doctype(dt)
-		frappe.reload_doctype(item_dt)
+		frappe.reload_doctype(dt, force=True)
+		frappe.reload_doctype(item_dt, force=True)
 
 		frappe.db.sql(f"""
 			update `tab{item_dt}` i

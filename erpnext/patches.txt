@@ -804,8 +804,6 @@ execute:frappe.delete_doc_if_exists("Custom Field", "Packing Slip-packed_items")
 erpnext.patches.v14_0.rename_late_deduction_policy_option
 erpnext.patches.v14_0.clean_up_tax_rules
 erpnext.patches.v14_0.rename_item_taxes_field
-erpnext.patches.v14_0.set_item_taxes_before_discount_values
-erpnext.patches.v14_0.set_sales_order_item_skip_delivery_note
 erpnext.patches.v14_0.clean_ledger_indexes
 
 [post_model_sync]
@@ -825,3 +823,5 @@ erpnext.patches.v14_0.delete_hub_docs
 erpnext.patches.v14_0.update_work_order_percentage_status #2
 execute:frappe.delete_doc_if_exists("Report", "Monthly Attendance Sheet")
 erpnext.patches.v14_0.set_order_line_no_in_work_order
+erpnext.patches.v14_0.set_item_taxes_before_discount_values
+erpnext.patches.v14_0.set_sales_order_item_skip_delivery_note
