@@ -770,7 +770,6 @@ execute:frappe.delete_doc_if_exists("Report", "Purchase Order Items To Be Receiv
 erpnext.patches.v12_0.set_booking_customer_name_in_jv
 erpnext.patches.v12_0.move_customer_reference_to_lead
 erpnext.patches.v12_0.rename_stock_valuation_restriction_field
-erpnext.patches.v12_0.set_item_tax_detail_lcv
 erpnext.patches.v12_0.set_item_project_from_sales_invoice
 erpnext.patches.v12_0.set_is_payable_in_lcv
 erpnext.patches.v12_0.trim_tables_maintenance_schedule
@@ -791,6 +790,7 @@ erpnext.patches.v14_0.update_uom_category_and_disabled
 erpnext.patches.v14_0.set_default_weight_uom
 erpnext.patches.v14_0.set_packed_qty_after_transaction #13-01-2023
 erpnext.patches.v14_0.rename_weight_fields
+erpnext.patches.v12_0.set_item_tax_detail_lcv
 erpnext.patches.v14_0.rename_apply_discount_after_taxes_to_retail
 erpnext.patches.v14_0.set_batch_auto_created
 erpnext.patches.v14_0.set_work_order_percentage
