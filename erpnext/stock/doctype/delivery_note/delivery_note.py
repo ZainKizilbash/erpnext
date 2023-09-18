@@ -278,7 +278,7 @@ class DeliveryNote(SellingController):
 					select i.delivery_note_item, -1 * sum(i.qty)
 					from `tabDelivery Note Item` i
 					inner join `tabDelivery Note` p on p.name = i.parent
-					where p.docstatus = 1 and p.is_return = 1 and p.reopen_order = 0 and i.delivery_note_item in %s
+					where p.docstatus = 1 and p.is_return = 1 and i.delivery_note_item in %s
 					group by i.delivery_note_item
 				""", [row_names]))
 
