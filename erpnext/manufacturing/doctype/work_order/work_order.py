@@ -548,7 +548,7 @@ class WorkOrder(StatusUpdater):
 		produced_qty = flt(self.produced_qty, self.precision("qty"))
 		packed_qty = flt(self.packed_qty, self.precision("qty"))
 		if packed_qty > produced_qty:
-			frappe.throw(_("Packed Qty cannot more than the Produced Qty {0} in {1}").format(
+			frappe.throw(_("Packed Qty cannot be more than the Produced Qty {0} in {1}").format(
 				frappe.bold(self.get_formatted("produced_qty")),
 				frappe.get_desk_link("Work Order", self.name)
 			), StockOverProductionError)
