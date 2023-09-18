@@ -105,6 +105,12 @@ frappe.query_reports["Stock Balance"] = {
 			options: "Item Source"
 		},
 		{
+			fieldname: "include_uom",
+			label: __("Include UOM"),
+			fieldtype: "Link",
+			options: "UOM"
+		},
+		{
 			fieldname: "customer_provided_items",
 			label: __("Customer Provided Items"),
 			fieldtype: "Select",
@@ -115,10 +121,10 @@ frappe.query_reports["Stock Balance"] = {
 			]
 		},
 		{
-			fieldname: "include_uom",
-			label: __("Include UOM"),
+			fieldname: "customer",
+			label: __("Customer"),
 			fieldtype: "Link",
-			options: "UOM"
+			options: "Customer",
 		},
 		{
 			fieldname: "package_wise_stock",

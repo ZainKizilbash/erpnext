@@ -530,6 +530,10 @@ def get_items_for_stock_report(filters):
 			conditions.append("item.item_source = %(item_source)s")
 		if filters.get("item_group"):
 			conditions.append(get_item_group_condition(filters.get("item_group")))
+
+		if filters.get("customer"):
+			conditions.append("customer = %(customer)s")
+
 		if filters.get("customer_provided_items"):
 			if filters.get("customer_provided_items") == "Customer Provided Items Only":
 				conditions.append("item.is_customer_provided_item = 1")

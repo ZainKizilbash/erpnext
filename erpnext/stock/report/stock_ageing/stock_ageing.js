@@ -93,6 +93,12 @@ frappe.query_reports["Stock Ageing"] = {
 			]
 		},
 		{
+			fieldname: "customer",
+			label: __("Customer"),
+			fieldtype: "Link",
+			options: "Customer",
+		},
+		{
 			fieldname: "package_wise_stock",
 			label: __("Package Wise Stock"),
 			fieldtype: "Select",
