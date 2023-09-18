@@ -861,7 +861,8 @@ def get_dashboard_info(party_type, party, loyalty_program=None):
 		select company, sum(debit_in_account_currency) - sum(credit_in_account_currency) as grand_total,
 			sum(debit) - sum(credit) as base_grand_total
 		from `tabGL Entry`
-		where party_type = %s and party=%s and voucher_type = '{0}' and ifnull(against_voucher, '') = ''
+		where party_type = %s and party=%s and voucher_type = '{0}'
+			and (against_voucher = '' or against_voucher is null)
 			and posting_date between %s and %s
 		group by company
 	""".format(doctype), [party_type, party, current_fiscal_year.year_start_date, current_fiscal_year.year_end_date], as_dict=1)
@@ -970,7 +971,9 @@ def get_partywise_advanced_payment_amount(party_type, posting_date=None):
 	data = frappe.db.sql("""
 		SELECT party, sum({dr_or_cr}) as amount
 		FROM `tabGL Entry`
-		WHERE party_type = %(party_type)s and ifnull(against_voucher, '') = '' and {advance_condition} {date_condition}
+		WHERE party_type = %(party_type)s
+			and (against_voucher = '' or against_voucher is null)
+			and {advance_condition} {date_condition}
 		GROUP BY party
 	""".format(dr_or_cr=dr_or_cr, advance_condition=advance_condition, date_condition=date_condition),  # nosec
 		{"party_type": party_type, "posting_date": posting_date})
