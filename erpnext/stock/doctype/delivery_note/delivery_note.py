@@ -7,12 +7,9 @@ import frappe.defaults
 from erpnext.controllers.selling_controller import SellingController
 from erpnext.stock.doctype.serial_no.serial_no import get_delivery_note_serial_no
 from frappe import _
-from frappe.contacts.doctype.address.address import get_company_address
 from frappe.desk.notifications import clear_doctype_notifications
 from frappe.model.mapper import get_mapped_doc
-from frappe.model.utils import get_fetch_values
 from frappe.utils import cint, flt
-from six import string_types
 
 
 form_grid_templates = {
@@ -480,7 +477,7 @@ def get_list_context(context=None):
 
 
 def update_directly_billed_qty_for_dn(delivery_note, delivery_note_item, update_modified=True):
-	if isinstance(delivery_note, string_types):
+	if isinstance(delivery_note, str):
 		is_delivery_return = frappe.db.get_value("Delivery Note", delivery_note, "is_return", cache=1)
 	else:
 		is_delivery_return = delivery_note.get('is_return')
