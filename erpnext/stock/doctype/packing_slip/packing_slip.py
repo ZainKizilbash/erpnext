@@ -1215,8 +1215,10 @@ def make_delivery_note(source_name, target_doc=None):
 	so_item_mapper = get_item_mapper_for_delivery(allow_duplicate=True)
 	packing_slip_item_mapper = get_packing_slip_item_mapper("Delivery Note Item")
 
-	frappe.utils.call_hook_method("update_delivery_note_from_packing_slip_mapper", so_item_mapper, "Sales Order Item")
-	frappe.utils.call_hook_method("update_delivery_note_from_packing_slip_mapper", packing_slip_item_mapper, "Packing Slip Item")
+	frappe.utils.call_hook_method("update_delivery_note_from_packing_slip_mapper", so_item_mapper,
+		"Sales Order Item")
+	frappe.utils.call_hook_method("update_delivery_note_from_packing_slip_mapper", packing_slip_item_mapper,
+		"Packing Slip Item")
 
 	# Map Packing Slip Items
 	for ps_item in packing_slip.get("items"):
@@ -1251,9 +1253,14 @@ def make_sales_invoice(source_name, target_doc=None):
 	for sales_order in sales_orders:
 		sales_order_docs[sales_order] = frappe.get_doc("Sales Order", sales_order)
 		sales_order_mappers[sales_order] = get_item_mapper_for_invoice(sales_order, allow_duplicate=True)
+		frappe.utils.call_hook_method("update_sales_invoice_from_packing_slip_mapper",
+			sales_order_mappers[sales_order], "Sales Order Item")
+
 		target_doc = make_sales_invoice_from_sales_order(sales_order, target_doc, skip_item_mapping=True)
 
 	packing_slip_item_mapper = get_packing_slip_item_mapper("Sales Invoice Item")
+	frappe.utils.call_hook_method("update_sales_invoice_from_packing_slip_mapper",
+		packing_slip_item_mapper, "Packing Slip Item")
 
 	# Map Packing Slip Items
 	for ps_item in packing_slip.get("items"):
