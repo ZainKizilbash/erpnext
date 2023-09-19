@@ -266,6 +266,32 @@ class SalesInvoice(SellingController):
 			doc.set_status(update=True)
 			doc.notify_update()
 
+		# Update Returned Against Sales Invoice
+		sales_invoice_row_names = set()
+		for d in self.items:
+			if d.sales_invoice_item:
+				sales_invoice_row_names.add(d.sales_invoice_item)
+
+		if self.is_return and self.return_against:
+			doc = frappe.get_doc("Sales Invoice", self.return_against)
+			doc.set_returned_status(update=True)
+
+			if self.update_stock:
+				doc.validate_returned_qty(from_doctype=self.doctype, row_names=sales_invoice_row_names)
+
+			if self.update_stock and self.reopen_order:
+				return_against_packing_slips = set([d.packing_slip for d in doc.items
+					if d.packing_slip and d.name in sales_invoice_row_names])
+				return_against_packing_slip_row_names = [d.packing_slip_item for d in doc.items
+					if d.packing_slip_item and d.name in sales_invoice_row_names]
+
+				for packing_slip in return_against_packing_slips:
+					ps_doc = frappe.get_doc("Packing Slip", packing_slip)
+					ps_doc.set_unpacked_return_status(update=True, row_names=return_against_packing_slip_row_names)
+					ps_doc.notify_update()
+
+			doc.notify_update()
+
 		# Update Sales Orders
 		sales_orders = set()
 		sales_order_row_names_without_dn = set()
@@ -283,6 +309,10 @@ class SalesInvoice(SellingController):
 			doc.validate_billed_qty(from_doctype=self.doctype, row_names=sales_order_row_names_without_dn)
 			if self.update_stock:
 				doc.validate_delivered_qty(from_doctype=self.doctype, row_names=sales_order_row_names_without_dn)
+
+			# Update packed qty for unpacked returns
+			if self.update_stock and self.is_return and self.reopen_order:
+				doc.set_production_packing_status(update=True)
 
 			doc.set_status(update=True)
 			doc.notify_update()
@@ -311,14 +341,6 @@ class SalesInvoice(SellingController):
 				doc.validate_billed_qty(from_doctype=self.doctype, row_names=delivery_note_row_names)
 
 			doc.set_status(update=True)
-			doc.notify_update()
-
-		# Update Returned Against Sales Invoice
-		if self.is_return and self.return_against:
-			doc = frappe.get_doc("Sales Invoice", self.return_against)
-			doc.set_returned_status(update=True)
-			if self.update_stock:
-				doc.validate_returned_qty(from_doctype=self.doctype)
 			doc.notify_update()
 
 		self.update_project_billing_and_sales()

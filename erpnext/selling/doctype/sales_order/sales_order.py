@@ -443,9 +443,9 @@ class SalesOrder(SellingController):
 					if d.packing_status == "To Pack":
 						out.has_unpacked_work_orders = True
 
-				# Delivered By Delivery Note
+				# Packed by Packing Slip
 				packed_by_packing_slip = frappe.db.sql("""
-					select i.sales_order_item, i.qty
+					select i.sales_order_item, i.qty - i.unpacked_return_qty as qty
 					from `tabPacking Slip Item` i
 					inner join `tabPacking Slip` p on p.name = i.parent
 					where p.docstatus = 1 and i.sales_order_item in %s and ifnull(i.source_packing_slip, '') = ''

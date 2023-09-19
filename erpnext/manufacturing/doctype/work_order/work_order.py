@@ -481,13 +481,15 @@ class WorkOrder(StatusUpdater):
 
 		if self.docstatus == 1:
 			packing_data = frappe.db.sql("""
-				select sum(psi.stock_qty) as stock_qty, max(ps.posting_date) as max_posting_date
+				select
+					sum(psi.stock_qty - (psi.unpacked_return_qty * psi.conversion_factor)) as packed_qty,
+					max(ps.posting_date) as max_posting_date
 				from `tabPacking Slip Item` psi
 				inner join `tabPacking Slip` ps on ps.name = psi.parent
 				where psi.work_order = %s and ps.docstatus = 1 and ifnull(psi.source_packing_slip, '') = ''
 			""", self.name, as_dict=1)
 
-			self.packed_qty = flt(packing_data[0].stock_qty) if packing_data else 0
+			self.packed_qty = flt(packing_data[0].packed_qty) if packing_data else 0
 			self.last_packing_date = packing_data[0].max_posting_date if packing_data else None
 
 		self.per_packed = flt(self.packed_qty / self.qty * 100, 6)

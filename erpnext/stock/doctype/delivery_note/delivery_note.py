@@ -148,6 +148,26 @@ class DeliveryNote(SellingController):
 			if d.delivery_note_item:
 				delivery_note_row_names.add(d.delivery_note_item)
 
+		# Update Returned Against Delivery Note
+		if self.is_return and self.return_against:
+			doc = frappe.get_doc("Delivery Note", self.return_against)
+			doc.update_billing_status()
+			doc.validate_returned_qty(from_doctype=self.doctype, row_names=delivery_note_row_names)
+			doc.validate_billed_qty(from_doctype=self.doctype, row_names=delivery_note_row_names)
+
+			if self.reopen_order:
+				return_against_packing_slips = set([d.packing_slip for d in doc.items
+					if d.packing_slip and d.name in delivery_note_row_names])
+				return_against_packing_slip_row_names = [d.packing_slip_item for d in doc.items
+					if d.packing_slip_item and d.name in delivery_note_row_names]
+
+				for packing_slip in return_against_packing_slips:
+					ps_doc = frappe.get_doc("Packing Slip", packing_slip)
+					ps_doc.set_unpacked_return_status(update=True, row_names=return_against_packing_slip_row_names)
+					ps_doc.notify_update()
+
+			doc.notify_update()
+
 		# Update Sales Orders
 		for name in sales_orders:
 			doc = frappe.get_doc("Sales Order", name)
@@ -156,6 +176,10 @@ class DeliveryNote(SellingController):
 
 			if self.is_return:
 				doc.set_billing_status(update=True)
+
+			# Update packed qty for unpacked returns
+			if self.is_return and self.reopen_order:
+				doc.set_production_packing_status(update=True)
 
 			doc.set_status(update=True)
 			doc.notify_update()
@@ -166,14 +190,6 @@ class DeliveryNote(SellingController):
 			doc.set_delivery_status(update=True)
 			doc.validate_delivered_qty(from_doctype=self.doctype, row_names=sales_invoice_row_names)
 			doc.set_status(update=True)
-			doc.notify_update()
-
-		# Update Returned Against Delivery Note
-		if self.is_return and self.return_against:
-			doc = frappe.get_doc("Delivery Note", self.return_against)
-			doc.update_billing_status()
-			doc.validate_returned_qty(from_doctype=self.doctype, row_names=delivery_note_row_names)
-			doc.validate_billed_qty(from_doctype=self.doctype, row_names=delivery_note_row_names)
 			doc.notify_update()
 
 		self.update_project_billing_and_sales()
