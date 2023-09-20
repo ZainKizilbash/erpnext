@@ -1137,9 +1137,15 @@ def get_projected_qty(item_code, warehouse):
 
 @frappe.whitelist()
 def get_bin_details(item_code, warehouse):
-	return frappe.db.get_value("Bin", {"item_code": item_code, "warehouse": warehouse},
-		["projected_qty", "actual_qty", "reserved_qty"], as_dict=True, cache=True) \
-			or {"projected_qty": 0, "actual_qty": 0, "reserved_qty": 0}
+	def generator():
+		return frappe.db.get_value(
+			"Bin",
+			{"item_code": item_code, "warehouse": warehouse},
+			["projected_qty", "actual_qty", "reserved_qty"],
+			as_dict=True
+		) or {"projected_qty": 0, "actual_qty": 0, "reserved_qty": 0}
+
+	return frappe.local_cache("get_bin_details", (item_code, warehouse), generator)
 
 
 @frappe.whitelist()
