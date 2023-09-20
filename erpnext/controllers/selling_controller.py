@@ -2,7 +2,7 @@
 # License: GNU General Public License v3. See license.txt
 
 import frappe
-from frappe.utils import cint, flt, cstr, comma_or
+from frappe.utils import cint, flt, cstr
 from frappe import _, throw
 from erpnext.stock.get_item_details import get_bin_details
 from erpnext.stock.utils import get_incoming_rate, has_valuation_read_permission
@@ -563,6 +563,8 @@ class SellingController(StockController):
 				""", [sales_orders])
 				if po_nos:
 					self.po_no = ', '.join(po_nos)
+					if len(self.po_no) > 140:
+						self.po_no = self.po_no[:137] + "..."
 
 	def set_gross_profit(self):
 		if self.doctype == "Sales Order":
