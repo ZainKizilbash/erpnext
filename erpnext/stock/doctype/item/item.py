@@ -1025,14 +1025,16 @@ class Item(WebsiteGenerator):
 	def validate_item_override_values(self):
 		get_item_override_values(self.as_dict(), validate=True)
 
-	def check_if_linked_doctype_exists(self, doctype):
+	def check_if_linked_doctype_exists(self, doctype, fieldname=None):
 		if not hasattr(self, "_linked_doctype_exists"):
 			self._linked_doctype_exists = {}
 
 		if doctype in self._linked_doctype_exists:
 			return self._linked_doctype_exists[doctype]
 
-		fieldname = "production_item" if doctype == "Work Order" else "item_code"
+		if not fieldname:
+			fieldname = "production_item" if doctype == "Work Order" else "item_code"
+
 		self._linked_doctype_exists[doctype] = frappe.db.get_value(doctype, filters={fieldname: self.name, "docstatus": 1})
 		return self._linked_doctype_exists[doctype]
 
