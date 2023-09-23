@@ -353,13 +353,9 @@ erpnext.stock.StockController = class StockController extends frappe.ui.form.Con
 			],
 			columns: columns,
 			get_query: () => {
-				var filters = {
+				let filters = {
 					company: this.frm.doc.company,
 				};
-
-				if (this.frm.doc.customer) {
-					filters["customer"] = this.frm.doc.customer;
-				}
 
 				return {
 					query: "erpnext.controllers.queries.get_packing_slips_to_be_delivered",
