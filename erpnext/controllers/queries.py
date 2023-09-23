@@ -548,6 +548,10 @@ def _get_packing_slips_to_be_delivered(doctype="Packing Slip", txt="", searchfie
 
 	exists_conditions = []
 
+	if filters.get("no_customer"):
+		filters.pop("no_customer", None)
+		filters["customer"] = ["is", "not set"]
+
 	if filters.get("sales_order"):
 		exists_conditions.append("`tabPacking Slip Item`.sales_order = {0}".format(
 			frappe.db.escape(filters.pop("sales_order"))))
