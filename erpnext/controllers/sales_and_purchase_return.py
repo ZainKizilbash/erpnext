@@ -423,13 +423,13 @@ def make_return_doc(doctype, source_name, target_doc=None):
 	mapper = {
 		doctype: {
 			"doctype": doctype,
-
 			"validation": {
 				"docstatus": ["=", 1],
 			},
-
 			"field_map": {
-				"to_warehouse": "to_warehouse"
+				"to_warehouse": "to_warehouse",
+				"po_no": "po_no",
+				"po_date": "po_date",
 			}
 		},
 		doctype + " Item": {
