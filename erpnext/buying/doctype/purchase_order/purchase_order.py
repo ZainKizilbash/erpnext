@@ -2,9 +2,8 @@
 # License: GNU General Public License v3. See license.txt
 
 import frappe
-import json
+from frappe import _
 from frappe.utils import cstr, flt, cint
-from frappe import msgprint, _
 from frappe.model.mapper import get_mapped_doc
 from erpnext.controllers.buying_controller import BuyingController
 from erpnext.stock.doctype.item.item import get_last_purchase_details
@@ -13,9 +12,9 @@ from frappe.desk.notifications import clear_doctype_notifications
 from erpnext.buying.utils import validate_for_items, check_on_hold_or_closed_status
 from erpnext.stock.utils import get_bin
 from erpnext.accounts.party import get_party_account_currency
-from six import string_types
 from erpnext.accounts.doctype.sales_invoice.sales_invoice import validate_inter_company_party, update_linked_doc,\
 	unlink_inter_company_doc
+import json
 
 
 form_grid_templates = {
@@ -491,7 +490,7 @@ class PurchaseOrder(BuyingController):
 		date_diff = frappe.db.sql("select '%s' - '%s' " % (mod_db[0][0], cstr(self.modified)))
 
 		if date_diff and date_diff[0][0]:
-			msgprint(_("{0} {1} has been modified. Please refresh.").format(self.doctype, self.name),
+			frappe.msgprint(_("{0} {1} has been modified. Please refresh.").format(self.doctype, self.name),
 				raise_exception=True)
 
 	def has_drop_ship_item(self):
@@ -512,7 +511,7 @@ def item_last_purchase_rate(name, conversion_rate, item_code, conversion_factor=
 
 	conversion_rate = flt(conversion_rate) or 1.0
 
-	last_purchase_details =  get_last_purchase_details(item_code, name)
+	last_purchase_details = get_last_purchase_details(item_code, name)
 	if last_purchase_details:
 		last_purchase_rate = (last_purchase_details['base_net_rate'] * (flt(conversion_factor) or 1.0)) / conversion_rate
 		return last_purchase_rate
@@ -703,7 +702,7 @@ def get_unbilled_pr_qty_map(purchase_order):
 
 @frappe.whitelist()
 def make_rm_stock_entry(purchase_order, rm_items):
-	if isinstance(rm_items, string_types):
+	if isinstance(rm_items, str):
 		rm_items_list = json.loads(rm_items)
 	else:
 		frappe.throw(_("No Items available for transfer"))

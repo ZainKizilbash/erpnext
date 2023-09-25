@@ -2,11 +2,8 @@
 # License: GNU General Public License v3. See license.txt
 
 import frappe
-
+from frappe import _
 from frappe.utils import flt, cint, nowdate, getdate
-
-from frappe import throw, _
-import frappe.defaults
 from erpnext.controllers.buying_controller import BuyingController
 from erpnext.accounts.utils import get_account_currency
 from frappe.desk.notifications import clear_doctype_notifications
@@ -53,7 +50,7 @@ class PurchaseReceipt(BuyingController):
 		validate_inter_company_party(self.doctype, self.supplier, self.company, self.inter_company_reference)
 
 		if getdate(self.posting_date) > getdate(nowdate()):
-			throw(_("Posting Date cannot be future date"))
+			frappe.throw(_("Posting Date cannot be future date"))
 
 		self.set_billing_status()
 		self.set_status()
@@ -64,8 +61,7 @@ class PurchaseReceipt(BuyingController):
 		super(PurchaseReceipt, self).on_submit()
 
 		# Check for Approving Authority
-		frappe.get_doc('Authorization Control').validate_approving_authority(self.doctype,
-			self.company, self.base_grand_total)
+		frappe.get_doc('Authorization Control').validate_approving_authority(self.doctype, self.company, self.base_grand_total)
 
 		self.validate_previous_docstatus()
 		self.update_previous_doc_status()
@@ -88,10 +84,11 @@ class PurchaseReceipt(BuyingController):
 		self.update_status_on_cancel()
 
 		# Check if Purchase Invoice has been submitted against current Purchase Order
-		submitted = frappe.db.sql("""select t1.name
+		submitted = frappe.db.sql("""
+			select t1.name
 			from `tabPurchase Invoice` t1,`tabPurchase Invoice Item` t2
-			where t1.name = t2.parent and t2.purchase_receipt = %s and t1.docstatus = 1""",
-			self.name)
+			where t1.name = t2.parent and t2.purchase_receipt = %s and t1.docstatus = 1
+		""", self.name)
 		if submitted:
 			frappe.throw(_("Purchase Invoice {0} is already submitted").format(submitted[0][0]))
 
@@ -481,8 +478,8 @@ class PurchaseReceipt(BuyingController):
 	def add_lcv_gl_entries(self, item, gl_entries):
 		expenses_included_in_asset_valuation = self.get_company_default("expenses_included_in_asset_valuation")
 		if not is_cwip_accounting_enabled(item.asset_category):
-			asset_account = get_asset_category_account(asset_category=item.asset_category, \
-					fieldname='fixed_asset_account', company=self.company)
+			asset_account = get_asset_category_account(asset_category=item.asset_category, fieldname='fixed_asset_account',
+				company=self.company)
 		else:
 			# This returns company's default cwip account
 			asset_account = get_asset_account("capital_work_in_progress_account", company=self.company)
@@ -621,7 +618,7 @@ def update_purchase_receipt_status(docname, status):
 def make_stock_entry(source_name,target_doc=None):
 	def set_missing_values(source, target):
 		target.stock_entry_type = "Material Transfer"
-		target.purpose =  "Material Transfer"
+		target.purpose = "Material Transfer"
 
 	doclist = get_mapped_doc("Purchase Receipt", source_name,{
 		"Purchase Receipt": {
