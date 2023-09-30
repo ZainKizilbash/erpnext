@@ -5,7 +5,7 @@ import frappe
 import erpnext
 from frappe import _, scrub
 from frappe.utils import flt, fmt_money
-from erpnext.controllers.accounts_controller import AccountsController
+from erpnext.controllers.accounts_controller import AccountsController, validate_conversion_rate
 from erpnext.accounts.general_ledger import make_gl_entries, delete_voucher_gl_entries
 from erpnext.accounts.doctype.account.account import get_account_currency
 from erpnext.accounts.party import get_party_account
@@ -34,6 +34,7 @@ class LandedCostVoucher(AccountsController):
 		self.set_purchase_receipt_details()
 		self.clear_advances_table_if_not_payable()
 		self.clear_unallocated_advances("Landed Cost Voucher Advance", "advances")
+		self.validate_conversion_rate()
 		self.calculate_taxes_and_totals()
 		self.validate_manual_distribution_totals()
 		self.set_status()
@@ -272,6 +273,17 @@ class LandedCostVoucher(AccountsController):
 
 			if account.company != self.company:
 				frappe.throw(_("Credit To Account does not belong to Company {0}").format(self.company))
+
+	def validate_conversion_rate(self):
+		company_currency = erpnext.get_company_currency(self.company)
+		if not self.currency:
+			self.currency = company_currency
+
+		if self.currency == company_currency:
+			self.conversion_rate = 1.0
+		else:
+			self.conversion_rate = flt(self.conversion_rate)
+			validate_conversion_rate(self.currency, self.conversion_rate, self.meta.get_label("conversion_rate"), self.company)
 
 	def calculate_taxes_and_totals(self):
 		item_total_fields = ['qty', 'amount', 'net_weight']
