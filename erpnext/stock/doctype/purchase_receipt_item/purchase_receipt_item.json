@@ -706,8 +706,8 @@
    "print_hide": 1
   },
   {
-   "default": "0",
-   "depends_on": "eval:parent.is_subcontracted == 'Yes'",
+   "default": "1",
+   "depends_on": "eval:parent.is_subcontracted",
    "fieldname": "include_exploded_items",
    "fieldtype": "Check",
    "label": "Include Exploded Items",
@@ -1481,7 +1481,7 @@
  "idx": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-09-05 13:10:52.451240",
+ "modified": "2023-09-25 14:50:45.256683",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Purchase Receipt Item",

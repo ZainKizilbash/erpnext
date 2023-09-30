@@ -403,7 +403,6 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 				() => set_value('currency', currency),
 				() => set_value('price_list_currency', currency),
 				() => set_value('status', 'Draft'),
-				() => set_value('is_subcontracted', 'No'),
 				() => {
 					if(this.frm.doc.company && !this.frm.doc.amended_from) {
 						this.set_company_defaults();

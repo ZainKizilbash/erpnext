@@ -51,16 +51,19 @@ class PurchaseOrder(BuyingController):
 		self.validate_minimum_order_qty()
 
 		self.validate_for_subcontracting()
-		self.validate_bom_for_subcontracting_items()
-		self.create_raw_materials_supplied("supplied_items")
+		self.set_raw_materials_supplied()
 
 		validate_inter_company_party(self.doctype, self.supplier, self.company, self.inter_company_reference)
 
 		self.validate_with_previous_doc()
 		self.set_receipt_status()
 		self.set_billing_status()
+		self.set_raw_materials_supplied_status()
 		self.set_status()
 		self.set_title()
+
+	def before_submit(self):
+		self.validate_raw_materials_reserve_warehouse()
 
 	def on_submit(self):
 		super(PurchaseOrder, self).on_submit()
@@ -70,7 +73,7 @@ class PurchaseOrder(BuyingController):
 		self.update_ordered_qty()
 		self.validate_budget()
 
-		if self.is_subcontracted == "Yes":
+		if self.is_subcontracted:
 			self.update_reserved_qty_for_subcontract()
 
 		frappe.get_doc('Authorization Control').validate_approving_authority(self.doctype,
@@ -87,7 +90,7 @@ class PurchaseOrder(BuyingController):
 		if self.has_drop_ship_item():
 			self.update_delivered_qty_in_sales_order()
 
-		if self.is_subcontracted == "Yes":
+		if self.is_subcontracted:
 			self.update_reserved_qty_for_subcontract()
 
 		self.check_on_hold_or_closed_status()
@@ -143,7 +146,7 @@ class PurchaseOrder(BuyingController):
 		self.set_billing_status(update=True)
 		self.update_requested_qty()
 		self.update_ordered_qty()
-		if self.is_subcontracted == "Yes":
+		if self.is_subcontracted:
 			self.update_reserved_qty_for_subcontract()
 
 		self.notify_update()
@@ -363,6 +366,39 @@ class PurchaseOrder(BuyingController):
 			self.validate_completed_qty('billed_amt', 'amount', self.items,
 				allowance_type='billing', from_doctype=from_doctype, row_names=row_names)
 
+	def set_raw_materials_supplied_status(self, update=False, update_modified=True):
+		supplied_qty_map = self.get_raw_materials_supplied_qty_map()
+
+		for d in self.get("supplied_items"):
+			key = (d.rm_item_code, d.main_item_code)
+			d.supplied_qty = flt(supplied_qty_map.get(key))
+
+			if update:
+				d.db_set("supplied_qty", d.supplied_qty, update_modified=update_modified)
+
+	def get_raw_materials_supplied_qty_map(self):
+		supplied_qty_map = {}
+
+		if self.docstatus == 1:
+			subcontract_item_codes = [d.main_item_code for d in self.get("supplied_items")]
+			if subcontract_item_codes:
+				supplied_qty_data = frappe.db.sql("""
+					select
+						if(i.original_item != '' and i.original_item is not null, i.original_item, i.item_code) as rm_item_code,
+						i.subcontracted_item as main_item_code,
+						sum(i.transfer_qty) as supplied_qty
+					from `tabStock Entry Detail` i
+					inner join `tabStock Entry` ste on ste.name = i.parent
+					where ste.docstatus = 1 and ste.purpose = 'Send to Subcontractor'
+						and ste.purchase_order = %s and i.subcontracted_item in %s
+					group by rm_item_code, main_item_code
+				""", (self.name, subcontract_item_codes), as_dict=1)
+
+				for d in supplied_qty_data:
+					supplied_qty_map[(d.rm_item_code, d.main_item_code)] = d.supplied_qty
+
+		return supplied_qty_map
+
 	def update_delivered_qty_in_sales_order(self):
 		"""Update delivered qty in Sales Order for drop ship"""
 		sales_orders_to_update = []
@@ -412,12 +448,13 @@ class PurchaseOrder(BuyingController):
 				frappe.throw(_("Item {0}: Ordered qty {1} cannot be less than minimum order qty {2} (defined in Item).")
 					.format(item_code, qty, itemwise_min_order_qty.get(item_code)))
 
-	def validate_bom_for_subcontracting_items(self):
-		if self.is_subcontracted == "Yes":
-			for item in self.items:
-				if not item.bom:
-					frappe.throw(_("BOM is not specified for subcontracting item {0} at row {1}"\
-						.format(item.item_code, item.idx)))
+	def validate_raw_materials_reserve_warehouse(self):
+		if self.is_subcontracted:
+			for supplied_item in self.get("supplied_items"):
+				if not supplied_item.reserve_warehouse:
+					frappe.throw(_("Row #{0}: Reserve Warehouse is mandatory for Material Item {0} in Raw Materials supplied").format(
+						supplied_item.idx, frappe.bold(supplied_item.rm_item_code)
+					))
 
 	def get_schedule_dates(self):
 		for d in self.get('items'):
@@ -474,11 +511,15 @@ class PurchaseOrder(BuyingController):
 		"""update requested qty (before ordered_qty is updated)"""
 		item_wh_list = []
 		for d in self.get("items"):
-			if (not po_item_rows or d.name in po_item_rows) \
-				and [d.item_code, d.warehouse] not in item_wh_list \
-				and frappe.get_cached_value("Item", d.item_code, "is_stock_item") \
-				and d.warehouse and not d.delivered_by_supplier:
-					item_wh_list.append([d.item_code, d.warehouse])
+			if (
+				(not po_item_rows or d.name in po_item_rows)
+				and [d.item_code, d.warehouse] not in item_wh_list
+				and d.warehouse
+				and not d.delivered_by_supplier
+				and frappe.db.get_value("Item", d.item_code, "is_stock_item", cache=1)
+			):
+				item_wh_list.append([d.item_code, d.warehouse])
+
 		for item_code, warehouse in item_wh_list:
 			update_bin_qty(item_code, warehouse, {
 				"ordered_qty": get_ordered_qty(item_code, warehouse)
@@ -500,10 +541,16 @@ class PurchaseOrder(BuyingController):
 		return any([d.sales_order for d in self.items if d.sales_order])
 
 	def update_reserved_qty_for_subcontract(self):
+		bins = []
+
 		for d in self.supplied_items:
-			if d.rm_item_code:
-				stock_bin = get_bin(d.rm_item_code, d.reserve_warehouse)
-				stock_bin.update_reserved_qty_for_sub_contracting()
+			b = (d.rm_item_code, d.reserve_warehouse)
+			if b not in bins:
+				bins.append(b)
+
+		for b in bins:
+			stock_bin = get_bin(b[0], b[1])
+			stock_bin.update_reserved_qty_for_sub_contracting()
 
 
 def item_last_purchase_rate(name, conversion_rate, item_code, conversion_factor= 1.0):
@@ -701,56 +748,49 @@ def get_unbilled_pr_qty_map(purchase_order):
 
 
 @frappe.whitelist()
-def make_rm_stock_entry(purchase_order, rm_items):
-	if isinstance(rm_items, str):
-		rm_items_list = json.loads(rm_items)
-	else:
-		frappe.throw(_("No Items available for transfer"))
+def make_rm_stock_entry(purchase_order):
+	purchase_order = frappe.get_doc("Purchase Order", purchase_order)
 
-	if rm_items_list:
-		fg_items = list(set(d["item_code"] for d in rm_items_list))
-	else:
-		frappe.throw(_("No Items selected for transfer"))
+	if purchase_order.docstatus != 1:
+		frappe.throw(_("Purchase Order {0} not submitted").format(purchase_order.name))
+	if not purchase_order.is_subcontracted:
+		frappe.throw(_("Purchase Order {0} is not a subcontracted order").format(purchase_order.name))
 
-	if purchase_order:
-		purchase_order = frappe.get_doc("Purchase Order", purchase_order)
+	supplied_items = [d for d in purchase_order.supplied_items if
+		flt(d.supplied_qty, d.precision("required_qty")) < flt(d.required_qty, d.precision("required_qty"))]
 
-	if fg_items:
-		items = tuple(set(d["rm_item_code"] for d in rm_items_list))
-		item_wh = get_item_details(items)
+	if not supplied_items:
+		frappe.throw(_("No raw material to transfer"))
 
-		stock_entry = frappe.new_doc("Stock Entry")
-		stock_entry.purpose = "Send to Subcontractor"
-		stock_entry.purchase_order = purchase_order.name
-		stock_entry.supplier = purchase_order.supplier
-		stock_entry.supplier_name = purchase_order.supplier_name
-		stock_entry.supplier_address = purchase_order.supplier_address
-		stock_entry.address_display = purchase_order.address_display
-		stock_entry.company = purchase_order.company
-		stock_entry.to_warehouse = purchase_order.supplier_warehouse
-		stock_entry.set_stock_entry_type()
+	ste = frappe.new_doc("Stock Entry")
+	ste.company = purchase_order.company
+	ste.purpose = "Send to Subcontractor"
+	ste.purchase_order = purchase_order.name
+	ste.supplier = purchase_order.supplier
+	ste.supplier_name = purchase_order.supplier_name
+	ste.supplier_address = purchase_order.supplier_address
+	ste.address_display = purchase_order.address_display
+	ste.from_warehouse = purchase_order.set_reserve_warehouse
+	ste.to_warehouse = purchase_order.supplier_warehouse
+	ste.set_stock_entry_type()
 
-		for item_code in fg_items:
-			for rm_item_data in rm_items_list:
-				if rm_item_data["item_code"] == item_code:
-					rm_item_code = rm_item_data["rm_item_code"]
-					items_dict = {
-						rm_item_code: {
-							"purchase_order_item": rm_item_data.get("name"),
-							"item_name": rm_item_data["item_name"],
-							"description": item_wh.get(rm_item_code, {}).get('description', ""),
-							'qty': rm_item_data["qty"],
-							'from_warehouse': rm_item_data["warehouse"],
-							'stock_uom': rm_item_data["stock_uom"],
-							'main_item_code': rm_item_data["item_code"],
-							'allow_alternative_item': item_wh.get(rm_item_code, {}).get('allow_alternative_item')
-						}
-					}
-					stock_entry.add_to_stock_entry_detail(items_dict)
-		return stock_entry.as_dict()
-	else:
-		frappe.throw(_("No Items selected for transfer"))
-	return purchase_order.name
+	for d in supplied_items:
+		ste.add_to_stock_entry_detail({
+			d.rm_item_code: {
+				"item_code": d.rm_item_code,
+				"subcontracted_item": d.main_item_code,
+				"purchase_order_item": d.name,
+				"qty": flt(d.required_qty) - flt(d.supplied_qty),
+				"from_warehouse": d.reserve_warehouse,
+				"uom": d.stock_uom,
+			}
+		})
+
+	ste.set_missing_values()
+	ste.set_actual_qty()
+	ste.calculate_rate_and_amount(raise_error_if_no_rate=False)
+
+	return ste.as_dict()
 
 
 def get_item_details(items):

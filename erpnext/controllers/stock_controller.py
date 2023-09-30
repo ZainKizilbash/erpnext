@@ -73,11 +73,11 @@ class StockController(AccountsController):
 			if sle_list:
 				for sle in sle_list:
 					if warehouse_account.get(sle.warehouse):
-						# from warehouse account
-
 						self.check_expense_account(item_row)
 
-						gl_list.append(self.get_gl_dict({
+						item_gles = []
+
+						item_gles.append(self.get_gl_dict({
 							"account": warehouse_account[sle.warehouse]["account"],
 							"against": item_row.expense_account,
 							"cost_center": item_row.get('cost_center') or self.get("cost_center"),
@@ -88,7 +88,7 @@ class StockController(AccountsController):
 						}, warehouse_account[sle.warehouse]["account_currency"], item=item_row))
 
 						# to target warehouse / expense account
-						gl_list.append(self.get_gl_dict({
+						item_gles.append(self.get_gl_dict({
 							"account": item_row.expense_account,
 							"against": warehouse_account[sle.warehouse]["account"],
 							"cost_center": item_row.get('cost_center') or self.get("cost_center"),
@@ -97,17 +97,26 @@ class StockController(AccountsController):
 							"project": item_row.get("project") or self.get("project"),
 							"is_opening": item_row.get("is_opening") or self.get("is_opening") or "No"
 						}, item=item_row))
+
+						if sle.stock_value_difference < 0:
+							item_gles = reversed(item_gles)
+
+						gl_list += item_gles
+
 					elif sle.warehouse not in warehouse_with_no_account:
 						warehouse_with_no_account.append(sle.warehouse)
 
+		self.validate_warehouse_with_no_account(warehouse_with_no_account)
+
+		return process_gl_map(gl_list)
+
+	def validate_warehouse_with_no_account(self, warehouse_with_no_account):
 		if warehouse_with_no_account:
 			for wh in warehouse_with_no_account:
 				if frappe.db.get_value("Warehouse", wh, "company"):
 					frappe.throw(_("Warehouse {0} is not linked to any account, "
-						"please mention the account in the warehouse record or "
+						"please mention the account in the Warehouse or "
 						"set default inventory account in company {1}.").format(wh, self.company))
-
-		return process_gl_map(gl_list)
 
 	def update_stock_ledger_entries(self, sle):
 		sle.valuation_rate = get_valuation_rate(sle.item_code, sle.warehouse,
@@ -408,7 +417,8 @@ def update_gl_entries_for_stock_voucher(stock_vouchers, excluded_vouchers=None, 
 				delete_voucher_gl_entries(voucher_type, voucher_no)
 				voucher_obj.make_gl_entries(gl_entries=expected_gle, repost_future_gle=False, from_repost=True)
 		elif existing_gle:
-			print("Deleting GLEs for {0} {1} because expected GLEs is empty".format(voucher_type, voucher_no))
+			if verbose:
+				print("Deleting GLEs for {0} {1} because expected GLEs is empty".format(voucher_type, voucher_no))
 			delete_voucher_gl_entries(voucher_type, voucher_no)
 
 

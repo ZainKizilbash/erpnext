@@ -416,8 +416,7 @@ class AccountsController(TransactionBase):
 		if not args.get("transaction_date"):
 			args["transaction_date"] = args.get("posting_date")
 
-		if self.get("is_subcontracted"):
-			args["is_subcontracted"] = self.is_subcontracted
+		args["is_subcontracted"] = self.get("is_subcontracted")
 
 		return args
 
@@ -869,7 +868,7 @@ class AccountsController(TransactionBase):
 		stock_items = []
 
 		if item_codes is None:
-			item_codes = [item.item_code for item in self.get("items")]
+			item_codes = [item.item_code for item in self.get("items") if item.item_code]
 
 		if item_codes:
 			item_codes = list(set(item_codes))
@@ -2195,7 +2194,7 @@ def update_child_qty_rate(parent_doctype, trans_items, parent_doctype_name, chil
 		parent.update_ordered_qty()
 		parent.update_ordered_and_reserved_qty()
 		parent.set_receipt_status()
-		if parent.is_subcontracted == "Yes":
+		if parent.get("is_subcontracted"):
 			parent.update_reserved_qty_for_subcontract()
 	else:
 		parent.update_reserved_qty()
@@ -2207,6 +2206,7 @@ def update_child_qty_rate(parent_doctype, trans_items, parent_doctype_name, chil
 
 	parent.update_blanket_order()
 	parent.set_status()
+
 
 @erpnext.allow_regional
 def validate_regional(doc):

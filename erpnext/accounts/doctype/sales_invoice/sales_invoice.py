@@ -1037,10 +1037,8 @@ class SalesInvoice(SellingController):
 		gl_entries = []
 
 		self.make_customer_gl_entry(gl_entries)
-
-		self.make_tax_gl_entries(gl_entries)
-
 		self.make_item_gl_entries(gl_entries)
+		self.make_tax_gl_entries(gl_entries)
 
 		# merge gl entries before adding pos entries
 		gl_entries = merge_similar_entries(gl_entries)

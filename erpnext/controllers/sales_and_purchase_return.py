@@ -428,9 +428,11 @@ def make_return_doc(doctype, source_name, target_doc=None):
 			},
 			"field_map": {
 				"to_warehouse": "to_warehouse",
+				"supplier_warehouse": "supplier_warehouse",
 				"po_no": "po_no",
 				"po_date": "po_date",
-			}
+			},
+			"field_no_map": ["is_subcontracted"],
 		},
 		doctype + " Item": {
 			"doctype": doctype + " Item",

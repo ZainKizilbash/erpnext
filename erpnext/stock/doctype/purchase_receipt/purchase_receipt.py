@@ -256,7 +256,8 @@ class PurchaseReceipt(BuyingController):
 		super(PurchaseReceipt, self).validate_with_previous_doc({
 			"Purchase Order": {
 				"ref_dn_field": "purchase_order",
-				"compare_fields": [["supplier", "="], ["company", "="],	["currency", "="]],
+				"compare_fields": [["supplier", "="], ["company", "="],	["currency", "="],
+					["supplier_warehouse", "="]],
 			},
 			"Purchase Order Item": {
 				"ref_dn_field": "purchase_order_item",
@@ -320,117 +321,89 @@ class PurchaseReceipt(BuyingController):
 	def get_gl_entries(self):
 		from erpnext.accounts.general_ledger import process_gl_map
 
-		warehouse_account = get_warehouse_account_map(self.company)
-		stock_rbnb = self.get_company_default("stock_received_but_not_billed")
-		stock_rbnb_currency = get_account_currency(stock_rbnb)
-		expenses_included_in_valuation = self.get_company_default("expenses_included_in_valuation")
-
 		gl_entries = []
-		warehouse_with_no_account = []
-		negative_expense_to_be_booked = 0.0
-		stock_items = self.get_stock_items()
-		for d in self.get("items"):
-			if d.item_code in stock_items:
-				if warehouse_account.get(d.warehouse):
-					stock_value_diff = frappe.db.get_value("Stock Ledger Entry",
-						fieldname="sum(stock_value_difference)",
-						filters={
-							"voucher_type": "Purchase Receipt",
-							"voucher_no": self.name,
-							"voucher_detail_no": d.name,
-							"warehouse": d.warehouse
-						})
+		sle_map = self.get_stock_value_difference_map()
+		warehouse_account = get_warehouse_account_map(self.company)
 
-					valuation_net_amount = self.get_item_valuation_net_amount(d)
-					valuation_item_tax_amount = self.get_item_valuation_tax_amount(d)
-
-					if not stock_value_diff:
-						continue
-
-					# If PR is sub-contracted and fg item rate is zero
-					# in that case if account for shource and target warehouse are same,
-					# then GL entries should not be posted
-					if flt(stock_value_diff) == flt(d.rm_supp_cost) \
-						and warehouse_account.get(self.supplier_warehouse) \
-						and warehouse_account[d.warehouse]["account"] == warehouse_account[self.supplier_warehouse]["account"]:
-							continue
-
-					gl_entries.append(self.get_gl_dict({
-						"account": warehouse_account[d.warehouse]["account"],
-						"against": stock_rbnb,
-						"cost_center": d.cost_center or self.get("cost_center"),
-						"remarks": self.get("remarks") or _("Accounting Entry for Stock"),
-						"debit": stock_value_diff
-					}, warehouse_account[d.warehouse]["account_currency"], item=d))
-
-					# stock received but not billed
-					if valuation_net_amount or valuation_item_tax_amount:
-						gl_entries.append(self.get_gl_dict({
-							"account": stock_rbnb,
-							"against": warehouse_account[d.warehouse]["account"],
-							"cost_center": d.cost_center or self.get("cost_center"),
-							"remarks": self.get("remarks") or _("Accounting Entry for Stock"),
-							"credit": flt(valuation_net_amount + valuation_item_tax_amount, d.precision('base_net_amount'))
-						}, stock_rbnb_currency, item=d))
-
-					negative_expense_to_be_booked += valuation_item_tax_amount
-
-					# Amount added through landed-cost-voucher
-					if flt(d.landed_cost_voucher_amount):
-						from erpnext.stock.doctype.landed_cost_voucher.landed_cost_voucher import get_purchase_landed_cost_gl_details
-						landed_cost_gl_details = get_purchase_landed_cost_gl_details(self, d)
-						for lc_gl_details in landed_cost_gl_details:
-							gl_entries.append(self.get_gl_dict({
-								"account": lc_gl_details.account_head,
-								"against": warehouse_account[d.warehouse]["account"],
-								"cost_center": lc_gl_details.cost_center or d.cost_center or self.get("cost_center"),
-								"remarks": self.get("remarks") or _("Accounting Entry for Stock"),
-								"credit": flt(lc_gl_details.amount),
-								"project": d.project
-							}, item=d))
-
-					# sub-contracting warehouse
-					if flt(d.rm_supp_cost) and warehouse_account.get(self.supplier_warehouse):
-						gl_entries.append(self.get_gl_dict({
-							"account": warehouse_account[self.supplier_warehouse]["account"],
-							"against": warehouse_account[d.warehouse]["account"],
-							"cost_center": d.cost_center or self.get("cost_center"),
-							"remarks": self.get("remarks") or _("Accounting Entry for Stock"),
-							"credit": flt(d.rm_supp_cost)
-						}, warehouse_account[self.supplier_warehouse]["account_currency"], item=d))
-
-					# divisional loss adjustment
-					valuation_amount_as_per_doc = valuation_net_amount + valuation_item_tax_amount + \
-						flt(d.landed_cost_voucher_amount) + flt(d.rm_supp_cost)
-
-					divisional_loss = flt(valuation_amount_as_per_doc - stock_value_diff)
-
-					if divisional_loss:
-						loss_account = self.get_company_default("stock_adjustment_account")
-						loss_account_currency = get_account_currency(loss_account)
-
-						gl_entries.append(self.get_gl_dict({
-							"account": loss_account,
-							"against": warehouse_account[d.warehouse]["account"],
-							"cost_center": d.cost_center or self.get("cost_center"),
-							"remarks": self.get("remarks") or _("Accounting Entry for Stock"),
-							"debit": divisional_loss,
-							"project": d.project
-						}, loss_account_currency, item=d))
-
-				elif d.warehouse not in warehouse_with_no_account or \
-					d.rejected_warehouse not in warehouse_with_no_account:
-						warehouse_with_no_account.append(d.warehouse)
-
-		self.get_asset_gl_entry(gl_entries)
-
-		if warehouse_with_no_account:
-			frappe.msgprint(_("No accounting entries for the following warehouses") + ": \n" +
-				"\n".join(warehouse_with_no_account))
+		self.make_supplied_items_gl_entry(gl_entries, sle_map, warehouse_account)
+		self.make_item_gl_entries(gl_entries, sle_map, warehouse_account)
+		self.make_asset_gl_entry(gl_entries)
 
 		return process_gl_map(gl_entries)
 
-	def get_asset_gl_entry(self, gl_entries):
+	def make_item_gl_entries(self, gl_entries, sle_map, warehouse_account):
+		stock_rbnb = self.get_company_default("stock_received_but_not_billed")
+		stock_rbnb_currency = get_account_currency(stock_rbnb)
+		warehouse_with_no_account = []
+
+		for d in self.get("items"):
+			stock_value_diff = flt(sle_map.get((d.name, d.item_code)))
+			if not stock_value_diff:
+				continue
+
+			if not warehouse_account.get(d.warehouse):
+				if d.warehouse not in warehouse_with_no_account:
+					warehouse_with_no_account.append(d.warehouse)
+				continue
+
+			valuation_net_amount = self.get_item_valuation_net_amount(d)
+			valuation_item_tax_amount = self.get_item_valuation_tax_amount(d)
+
+			# debit inventory account
+			gl_entries.append(self.get_gl_dict({
+				"account": warehouse_account[d.warehouse]["account"],
+				"against": stock_rbnb,
+				"cost_center": d.cost_center or self.get("cost_center"),
+				"remarks": self.get("remarks") or _("Accounting Entry for Stock"),
+				"debit": stock_value_diff
+			}, warehouse_account[d.warehouse]["account_currency"], item=d))
+
+			# credit stock received but not billed
+			if valuation_net_amount or valuation_item_tax_amount:
+				gl_entries.append(self.get_gl_dict({
+					"account": stock_rbnb,
+					"against": warehouse_account[d.warehouse]["account"],
+					"cost_center": d.cost_center or self.get("cost_center"),
+					"remarks": self.get("remarks") or _("Accounting Entry for Stock"),
+					"credit": flt(valuation_net_amount + valuation_item_tax_amount, d.precision('base_net_amount'))
+				}, stock_rbnb_currency, item=d))
+
+			# Amount added through landed-cost-voucher
+			if flt(d.landed_cost_voucher_amount):
+				from erpnext.stock.doctype.landed_cost_voucher.landed_cost_voucher import get_purchase_landed_cost_gl_details
+				landed_cost_gl_details = get_purchase_landed_cost_gl_details(self, d)
+				for lc_gl_details in landed_cost_gl_details:
+					gl_entries.append(self.get_gl_dict({
+						"account": lc_gl_details.account_head,
+						"against": warehouse_account[d.warehouse]["account"],
+						"cost_center": lc_gl_details.cost_center or d.cost_center or self.get("cost_center"),
+						"remarks": self.get("remarks") or _("Accounting Entry for Stock"),
+						"credit": flt(lc_gl_details.amount),
+						"project": d.project
+					}, item=d))
+
+			# divisional loss adjustment
+			valuation_amount_as_per_doc = valuation_net_amount + valuation_item_tax_amount + \
+				flt(d.landed_cost_voucher_amount) + flt(d.get("rm_supp_stock_value_diff"))
+
+			divisional_loss = flt(valuation_amount_as_per_doc - stock_value_diff)
+
+			if divisional_loss:
+				loss_account = self.get_company_default("stock_adjustment_account")
+				loss_account_currency = get_account_currency(loss_account)
+
+				gl_entries.append(self.get_gl_dict({
+					"account": loss_account,
+					"against": warehouse_account[d.warehouse]["account"],
+					"cost_center": d.cost_center or self.get("cost_center"),
+					"remarks": self.get("remarks") or _("Accounting Entry for Stock"),
+					"debit": divisional_loss,
+					"project": d.project
+				}, loss_account_currency, item=d))
+
+		self.validate_warehouse_with_no_account(warehouse_with_no_account)
+
+	def make_asset_gl_entry(self, gl_entries):
 		for item in self.get("items"):
 			if item.is_fixed_asset:
 				if is_cwip_accounting_enabled(item.asset_category):

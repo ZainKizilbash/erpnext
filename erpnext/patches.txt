@@ -807,6 +807,7 @@ erpnext.patches.v14_0.rename_item_taxes_field
 erpnext.patches.v14_0.set_item_taxes_before_discount_values
 erpnext.patches.v14_0.set_sales_order_item_skip_delivery_note
 erpnext.patches.v14_0.clean_ledger_indexes
+erpnext.patches.v14_0.refactor_subcontracting
 
 [post_model_sync]
 erpnext.patches.v12_0.update_salary_slip_leave_with_pay

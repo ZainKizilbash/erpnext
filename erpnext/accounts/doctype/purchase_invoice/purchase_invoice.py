@@ -609,26 +609,32 @@ class PurchaseInvoice(BuyingController):
 
 	def get_gl_entries(self):
 		self.auto_accounting_for_stock = erpnext.is_perpetual_inventory_enabled(self.company)
+		self.negative_expense_to_be_booked = 0.0
+
+		self.stock_received_but_not_billed = None
 		if self.auto_accounting_for_stock:
 			self.stock_received_but_not_billed = self.get_company_default("stock_received_but_not_billed")
-		else:
-			self.stock_received_but_not_billed = None
-
-		self.expenses_included_in_valuation = self.get_company_default("expenses_included_in_valuation")
-		self.negative_expense_to_be_booked = 0.0
 
 		gl_entries = []
 
-		self.make_supplier_gl_entry(gl_entries)
-		self.make_item_gl_entries(gl_entries)
+		sle_map = {}
+		if self.update_stock:
+			sle_map = self.get_stock_value_difference_map()
+
+		warehouse_account = {}
+		if self.update_stock and self.auto_accounting_for_stock:
+			warehouse_account = get_warehouse_account_map(self.company)
+
+		self.make_supplied_items_gl_entry(gl_entries, sle_map, warehouse_account)
+		self.make_item_gl_entries(gl_entries, sle_map, warehouse_account)
 
 		if self.check_asset_cwip_enabled():
 			self.get_asset_gl_entry(gl_entries)
 
 		self.make_tax_gl_entries(gl_entries)
+		self.make_supplier_gl_entry(gl_entries)
 
 		gl_entries = make_regional_gl_entries(gl_entries, self)
-
 		gl_entries = merge_similar_entries(gl_entries)
 
 		self.make_payment_gl_entries(gl_entries)
@@ -670,37 +676,20 @@ class PurchaseInvoice(BuyingController):
 				}, self.party_account_currency, item=self)
 			)
 
-	def make_item_gl_entries(self, gl_entries):
-		# item gl entries
-		stock_items = self.get_stock_items()
-		expenses_included_in_valuation = self.get_company_default("expenses_included_in_valuation")
-
-		if self.update_stock and self.auto_accounting_for_stock:
-			warehouse_account = get_warehouse_account_map(self.company)
-		
+	def make_item_gl_entries(self, gl_entries, sle_map, warehouse_account):
 		billing_party_type, billing_party, billing_party_name = self.get_billing_party(with_name=True)
 
-		voucher_wise_stock_value = {}
-		if self.update_stock:
-			for d in frappe.get_all('Stock Ledger Entry',
-					fields=["voucher_detail_no", "stock_value_difference"],
-					filters={'voucher_type': self.doctype, 'voucher_no': self.name}):
-				voucher_wise_stock_value.setdefault(d.voucher_detail_no, d.stock_value_difference)
-
-		valuation_tax_accounts = [d.account_head for d in self.get("taxes")
-			if d.category in ('Valuation', 'Valuation and Total')
-			and flt(d.base_tax_amount_after_discount_amount)]
+		stock_items = self.get_stock_items()
 
 		for item in self.get("items"):
-			if flt(item.base_net_amount) or item.name in voucher_wise_stock_value:
+			if flt(item.base_net_amount) or (item.name, item.item_code) in sle_map:
 				account_currency = get_account_currency(item.expense_account)
 				if item.item_code:
 					asset_category = frappe.get_cached_value("Item", item.item_code, "asset_category")
 
 				if self.update_stock and self.auto_accounting_for_stock and item.item_code in stock_items:
 					# warehouse account
-					warehouse_debit_amount = self.make_stock_adjustment_entry(gl_entries,
-						item, voucher_wise_stock_value, account_currency)
+					warehouse_debit_amount = self.make_stock_adjustment_entry(gl_entries, item, sle_map)
 
 					gl_entries.append(
 						self.get_gl_dict({
@@ -738,21 +727,6 @@ class PurchaseInvoice(BuyingController):
 								"credit": flt(lc_gl_details.amount),
 								"project": item.project
 							}, item=item))
-
-					# sub-contracting warehouse
-					if flt(item.rm_supp_cost):
-						supplier_warehouse_account = warehouse_account[self.supplier_warehouse]["account"]
-						if not supplier_warehouse_account:
-							frappe.throw(_("Please set account in Warehouse {0}")
-								.format(self.supplier_warehouse))
-						gl_entries.append(self.get_gl_dict({
-							"account": supplier_warehouse_account,
-							"against": item.expense_account,
-							"cost_center": item.cost_center or self.cost_center,
-							"project": item.project or self.project,
-							"remarks": self.get("remarks") or _("Accounting Entry for Stock"),
-							"credit": flt(item.rm_supp_cost)
-						}, warehouse_account[self.supplier_warehouse]["account_currency"], item=item))
 
 				elif not item.is_fixed_asset or (item.is_fixed_asset and not is_cwip_accounting_enabled(asset_category)):
 					expense_account = (item.expense_account
@@ -801,21 +775,25 @@ class PurchaseInvoice(BuyingController):
 							frappe.db.set_value("Asset", asset.name, "gross_purchase_amount", flt(item.valuation_rate))
 							frappe.db.set_value("Asset", asset.name, "purchase_receipt_amount", flt(item.valuation_rate))
 
-			if self.auto_accounting_for_stock and self.is_opening == "No" and not self.update_stock and \
-				item.item_code in stock_items and item.item_tax_amount:
-						gl_entries.append(
-							self.get_gl_dict({
-								"account": self.stock_received_but_not_billed,
-								"against": billing_party_name or billing_party,
-								"debit": flt(item.item_tax_amount, item.precision("item_tax_amount")),
-								"remarks": self.remarks,
-								"cost_center": item.cost_center or self.cost_center,
-								"project": item.project or self.project
-							}, item=item)
-						)
+			if (
+				self.auto_accounting_for_stock
+				and self.is_opening == "No"
+				and not self.update_stock
+				and item.item_code in stock_items
+				and item.item_tax_amount
+			):
+				gl_entries.append(
+					self.get_gl_dict({
+						"account": self.stock_received_but_not_billed,
+						"against": billing_party_name or billing_party,
+						"debit": flt(item.item_tax_amount, item.precision("item_tax_amount")),
+						"remarks": self.remarks,
+						"cost_center": item.cost_center or self.cost_center,
+						"project": item.project or self.project
+					}, item=item)
+				)
 
-						self.negative_expense_to_be_booked += flt(item.item_tax_amount, \
-							item.precision("item_tax_amount"))
+				self.negative_expense_to_be_booked += flt(item.item_tax_amount, item.precision("item_tax_amount"))
 
 	def get_asset_gl_entry(self, gl_entries):
 		billing_party_type, billing_party, billing_party_name = self.get_billing_party(with_name=True)
@@ -917,14 +895,14 @@ class PurchaseInvoice(BuyingController):
 
 		return gl_entries
 
-	def make_stock_adjustment_entry(self, gl_entries, item, voucher_wise_stock_value, account_currency):
+	def make_stock_adjustment_entry(self, gl_entries, item, sle_map):
 		valuation_net_amount = self.get_item_valuation_net_amount(item)
 		valuation_item_tax_amount = self.get_item_valuation_tax_amount(item)
 
 		valuation_amount_as_per_doc = valuation_net_amount + valuation_item_tax_amount + \
-			flt(item.landed_cost_voucher_amount) + flt(item.rm_supp_cost)
+			flt(item.landed_cost_voucher_amount) + flt(item.get("rm_supp_stock_value_diff"))
 
-		stock_value_diff = flt(voucher_wise_stock_value.get(item.name))
+		stock_value_diff = flt(sle_map.get((item.name, item.item_code)))
 
 		stock_adjustment_amt = flt(valuation_amount_as_per_doc - stock_value_diff)
 
@@ -940,7 +918,7 @@ class PurchaseInvoice(BuyingController):
 					"remarks": self.get("remarks") or _("Stock Adjustment"),
 					"cost_center": item.cost_center or self.get("cost_center"),
 					"project": item.project or self.project
-				}, account_currency, item=item)
+				}, item=item)
 			)
 
 		return stock_value_diff

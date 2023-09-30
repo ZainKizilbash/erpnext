@@ -109,7 +109,7 @@ erpnext.buying.BuyingController = class BuyingController extends erpnext.Transac
 		this.frm.set_query("item_code", "items", function(doc) {
 			var filters = {};
 
-			if (me.frm.doc.is_subcontracted == "Yes") {
+			if (me.frm.doc.is_subcontracted) {
 				filters['is_sub_contracted_item'] = 1;
 			} else {
 				filters['is_purchase_item'] = 1;
@@ -470,7 +470,7 @@ erpnext.buying.BuyingController = class BuyingController extends erpnext.Transac
 
 erpnext.buying.get_default_bom = function(frm) {
 	$.each(frm.doc["items"] || [], function(i, d) {
-		if (d.item_code && d.bom === "") {
+		if (d.item_code && !d.bom) {
 			return frappe.call({
 				type: "GET",
 				method: "erpnext.stock.get_item_details.get_default_bom",
