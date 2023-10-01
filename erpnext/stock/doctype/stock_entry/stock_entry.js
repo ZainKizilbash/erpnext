@@ -1015,7 +1015,7 @@ erpnext.stock.StockEntry = class StockEntry extends erpnext.stock.StockControlle
 	}
 
 	set_warehouse_in_children(child_table, warehouse_field, warehouse) {
-		this.autofill_warehouse(child_table, warehouse_field, warehouse);
+		erpnext.utils.autofill_warehouse(child_table, warehouse_field, warehouse);
 	}
 
 	items_on_form_rendered(doc, cdt, cdn) {

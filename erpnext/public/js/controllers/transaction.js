@@ -2544,12 +2544,8 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 		}
 	}
 
-	set_reserve_warehouse() {
-		this.autofill_warehouse(this.frm.doc.supplied_items, "reserve_warehouse", this.frm.doc.set_reserve_warehouse);
-	}
-
 	set_warehouse() {
-		this.autofill_warehouse(this.frm.doc.items, "warehouse", this.frm.doc.set_warehouse);
+		erpnext.utils.autofill_warehouse(this.frm.doc.items, "warehouse", this.frm.doc.set_warehouse);
 	}
 
 	coupon_code() {

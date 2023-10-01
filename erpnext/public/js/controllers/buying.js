@@ -286,10 +286,13 @@ erpnext.buying.BuyingController = class BuyingController extends erpnext.Transac
 	}
 
 	rejected_warehouse(doc, cdt) {
-		// trigger autofill_warehouse only if parent rejected_warehouse field is triggered
 		if (["Purchase Invoice", "Purchase Receipt"].includes(cdt)) {
-			this.autofill_warehouse(doc.items, "rejected_warehouse", doc.rejected_warehouse, true);
+			erpnext.utils.autofill_warehouse(doc.items, "rejected_warehouse", doc.rejected_warehouse, true);
 		}
+	}
+
+	set_reserve_warehouse() {
+		erpnext.utils.autofill_warehouse(this.frm.doc.supplied_items, "reserve_warehouse", this.frm.doc.set_reserve_warehouse);
 	}
 
 	category(doc, cdt, cdn) {
