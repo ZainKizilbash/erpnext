@@ -10,6 +10,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 		this.frm.custom_make_buttons = {
 			"Stock Entry": "Start",
 			"Pick List": "Pick List",
+			"Packing Slip": "Packing Slip",
 			"Job Card": "Create Job Card",
 		};
 
@@ -140,6 +141,9 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 	setup_buttons() {
 		let doc = this.frm.doc;
 
+		// Start / Finish Buttons
+		this.setup_start_finish_buttons();
+
 		// Stop / Resume button
 		if (doc.docstatus === 1) {
 			if (doc.status != 'Stopped' && doc.status != 'Completed') {
@@ -152,9 +156,6 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 				}, __("Status"));
 			}
 		}
-
-		// Start / Finish Buttons
-		this.setup_start_finish_buttons();
 
 		// Create Job Cards button
 		if (
@@ -187,14 +188,28 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 			}
 		}
 
+		// Create Packing Slip
+		if (this.frm.doc.packing_status == "To Pack") {
+			this.frm.add_custom_button(__("Packing Slip"), () => {
+				this.make_packing_slip("Material Transfer for Manufacture");
+			}, __("Create"));
+		}
+
+		// Create Pick List button
+		if (this.frm.show_pick_list_btn) {
+			this.frm.add_custom_button(__("Pick List"), () => {
+				this.make_pick_list("Material Transfer for Manufacture");
+			}, __("Create"));
+		}
+
 		// Create BOM button
 		// if (
 		// 	doc.status == "Completed"
 		// 	&& doc.__onload.backflush_raw_materials_based_on == "Material Transferred for Manufacture"
 		// ) {
-		// 	this.frm.add_custom_button(__("Create BOM"), () => {
+		// 	this.frm.add_custom_button(__("BOM"), () => {
 		// 		this.make_bom();
-		// 	});
+		// 	}, __("Create"));
 		// }
 	}
 
@@ -215,9 +230,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 		);
 
 		if (show_start_btn) {
-			this.frm.add_custom_button(__("Pick List"), () => {
-				this.make_pick_list("Material Transfer for Manufacture");
-			}, __("Create"));
+			this.frm.show_pick_list_btn = true;
 
 			let start_btn = this.frm.add_custom_button(__("Start"), () => {
 				erpnext.manufacturing.make_stock_entry(doc, "Material Transfer for Manufacture");
@@ -477,6 +490,19 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 		}
 	}
 
+	make_packing_slip() {
+		return frappe.call({
+			method: "erpnext.manufacturing.doctype.work_order.work_order.make_packing_slip",
+			args: {
+				work_orders: [this.frm.doc.name],
+			},
+			callback: (r) => {
+				let doclist = frappe.model.sync(r.message);
+				frappe.set_route("Form", doclist[0].doctype, doclist[0].name);
+			}
+		});
+	}
+
 	make_pick_list(purpose) {
 		return erpnext.manufacturing.show_prompt_for_qty_input(this.frm.doc, purpose).then((r) => {
 			return frappe.xcall("erpnext.manufacturing.doctype.work_order.work_order.create_pick_list", {
@@ -503,7 +529,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 		}
 
 		return frappe.call({
-			method:"erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry",
+			method: "erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry",
 			args: {
 				"work_order_id": doc.name,
 				"purpose": "Material Consumption for Manufacture",

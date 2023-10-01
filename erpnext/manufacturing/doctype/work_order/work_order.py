@@ -1173,7 +1173,7 @@ def make_packing_slip(work_orders, target_doc=None):
 		work_orders = json.loads(work_orders)
 
 	if not work_orders:
-		frappe.throw(_("Please select Work Orders to pack"))
+		frappe.throw(_("Please select Work Order(s) to pack"))
 
 	pack_from_sales_orders = {}
 	pack_from_work_orders = []
@@ -1206,7 +1206,7 @@ def make_packing_slip(work_orders, target_doc=None):
 
 	# Empty packable work order list error
 	if not pack_from_sales_orders and not pack_from_work_orders:
-		frappe.throw(_("Selected Work Orders are not applicable for packing"))
+		frappe.throw(_("Selected Work Order(s) are not applicable for packing"))
 
 	# Map from Sales Orders first
 	for sales_order, sales_order_items in pack_from_sales_orders.items():
@@ -1221,6 +1221,8 @@ def make_packing_slip(work_orders, target_doc=None):
 	for wo_details in pack_from_work_orders:
 		if not target_doc.customer and wo_details.customer:
 			target_doc.customer = wo_details.customer
+		if not target_doc.warehouse and wo_details.fg_warehouse:
+			target_doc.warehouse = wo_details.fg_warehouse
 
 		row = frappe.new_doc("Packing Slip Item")
 		row.work_order = wo_details.name
