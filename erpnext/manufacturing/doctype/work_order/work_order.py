@@ -203,19 +203,26 @@ class WorkOrder(StatusUpdater):
 				self.set(field, warehouse)
 
 	def validate_warehouses(self):
+		if self.docstatus == 1:
+			if not self.wip_warehouse and not self.skip_transfer:
+				frappe.throw(_("Work-in-Progress Warehouse is required before Submit"))
+			if not self.fg_warehouse:
+				frappe.throw(_("Target Warehouse is required before Submit"))
+
+			for d in self.get("required_items"):
+				if not d.source_warehouse and self.source_warehouse:
+					d.source_warehouse = self.source_warehouse
+				if not d.source_warehouse:
+					frappe.throw(_("Row #{0}: Source Warehouse is required before submit").format(d.idx))
+
 		warehouses = [self.fg_warehouse, self.wip_warehouse]
 		for d in self.get("required_items"):
 			if d.source_warehouse not in warehouses:
 				warehouses.append(d.source_warehouse)
 
 		for wh in warehouses:
-			validate_warehouse_company(wh, self.company)
-
-		if self.docstatus == 1:
-			if not self.wip_warehouse and not self.skip_transfer:
-				frappe.throw(_("Work-in-Progress Warehouse is required before Submit"))
-			if not self.fg_warehouse:
-				frappe.throw(_("Target Warehouse is required before Submit"))
+			if wh:
+				validate_warehouse_company(wh, self.company)
 
 	@frappe.whitelist()
 	def get_items_and_operations_from_bom(self):
@@ -1056,19 +1063,6 @@ def stop_unstop(work_order, status):
 	frappe.msgprint(_("Work Order has been {0}").format(frappe.bold(status)))
 
 	return pro_order.status
-
-
-@frappe.whitelist()
-def query_sales_order(production_item):
-	out = frappe.db.sql_list("""
-		select distinct so.name from `tabSales Order` so, `tabSales Order Item` so_item
-		where so_item.parent=so.name and so_item.item_code=%s and so.docstatus=1
-	union
-		select distinct so.name from `tabSales Order` so, `tabPacked Item` pi_item
-		where pi_item.parent=so.name and pi_item.item_code=%s and so.docstatus=1
-	""", (production_item, production_item))
-
-	return out
 
 
 @frappe.whitelist()
