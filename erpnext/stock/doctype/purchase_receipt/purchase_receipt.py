@@ -545,7 +545,7 @@ def make_purchase_invoice(source_name, target_doc=None):
 		doc.run_method("set_missing_values")
 		doc.run_method("calculate_taxes_and_totals")
 
-	doclist = get_mapped_doc("Purchase Receipt", source_name, {
+	mapper = {
 		"Purchase Receipt": {
 			"doctype": "Purchase Invoice",
 			"field_map": {
@@ -579,7 +579,11 @@ def make_purchase_invoice(source_name, target_doc=None):
 			"doctype": "Purchase Taxes and Charges",
 			"add_if_empty": True
 		}
-	}, target_doc, set_missing_values)
+	}
+
+	frappe.utils.call_hook_method("update_purchase_invoice_from_purchase_receipt_mapper", mapper, "Purchase Invoice")
+
+	doclist = get_mapped_doc("Purchase Receipt", source_name, mapper, target_doc, set_missing_values)
 
 	return doclist
 

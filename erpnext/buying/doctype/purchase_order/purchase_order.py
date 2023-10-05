@@ -628,7 +628,7 @@ def make_purchase_receipt(source_name, target_doc=None):
 		target.qty = get_pending_qty(source)
 		target.received_qty = target.qty + flt(target.rejected_qty)
 
-	doc = get_mapped_doc("Purchase Order", source_name,	{
+	mapper = {
 		"Purchase Order": {
 			"doctype": "Purchase Receipt",
 			"field_map": {
@@ -656,7 +656,11 @@ def make_purchase_receipt(source_name, target_doc=None):
 			"doctype": "Purchase Taxes and Charges",
 			"add_if_empty": True
 		}
-	}, target_doc, set_missing_values)
+	}
+
+	frappe.utils.call_hook_method("update_purchase_receipt_from_purchase_order_mapper", mapper, "Purchase Receipt")
+
+	doc = get_mapped_doc("Purchase Order", source_name,	mapper, target_doc, set_missing_values)
 
 	return doc
 
@@ -701,7 +705,7 @@ def get_mapped_purchase_invoice(source_name, target_doc=None, ignore_permissions
 		if target.get("allocate_advances_automatically"):
 			target.set_advances()
 
-	fields = {
+	mapper = {
 		"Purchase Order": {
 			"doctype": "Purchase Invoice",
 			"field_map": {
@@ -730,12 +734,14 @@ def get_mapped_purchase_invoice(source_name, target_doc=None, ignore_permissions
 	}
 
 	if frappe.get_single("Accounts Settings").automatically_fetch_payment_terms == 1:
-		fields["Payment Schedule"] = {
+		mapper["Payment Schedule"] = {
 			"doctype": "Payment Schedule",
 			"add_if_empty": True
 		}
 
-	doc = get_mapped_doc("Purchase Order", source_name,	fields,
+	frappe.utils.call_hook_method("update_purchase_invoice_from_purchase_order_mapper", mapper, "Purchase Invoice")
+
+	doc = get_mapped_doc("Purchase Order", source_name,	mapper,
 		target_doc, postprocess, ignore_permissions=ignore_permissions)
 
 	return doc

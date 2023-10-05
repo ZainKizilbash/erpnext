@@ -1473,6 +1473,8 @@ def make_purchase_order(work_orders, target_doc=None, supplier=None):
 			row.sales_order = wo.sales_order
 			row.sales_order_item = wo.sales_order_item
 
+		frappe.utils.call_hook_method("update_purchase_order_from_work_order", target_doc, row, wo)
+
 	target_doc.run_method("set_missing_values")
 	target_doc.run_method("calculate_taxes_and_totals")
 
