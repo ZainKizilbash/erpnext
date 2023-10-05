@@ -282,6 +282,8 @@ class PurchaseReceipt(BuyingController):
 			}
 		})
 
+		self.validate_work_orders()
+
 		if cint(frappe.db.get_single_value('Buying Settings', 'maintain_same_rate')) and not self.is_return:
 			self.validate_rate_with_reference_doc([["Purchase Order", "purchase_order", "purchase_order_item"]])
 

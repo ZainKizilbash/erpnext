@@ -282,18 +282,19 @@ class BuyingController(StockController):
 		if self.get("is_return"):
 			return
 
+		if any(d for d in self.get("items") if d.get("work_order")):
+			self.is_subcontracted = 1
+
 		if self.doctype in ("Purchase Receipt", "Purchase Invoice"):
 			purchase_orders = set([d.get("purchase_order") for d in self.items if d.get("purchase_order")])
-			if purchase_orders:
+			if purchase_orders and not self.get("is_subcontracted"):
 				if frappe.db.exists("Purchase Order", {"name": ["in", purchase_orders], "is_subcontracted": 1}):
 					self.is_subcontracted = 1
-					return
 
 			purchase_receipts = set([d.get("purchase_receipt") for d in self.items if d.get("purchase_receipt")])
-			if purchase_receipts:
+			if purchase_receipts and not self.get("is_subcontracted"):
 				if self.subcontracted_items and frappe.db.exists("Purchase Receipt", {"name": ["in", purchase_receipts], "is_subcontracted": 1}):
 					self.is_subcontracted = 1
-					return
 
 		if self.doctype == "Purchase Invoice" and not self.update_stock:
 			self.is_subcontracted = 0
@@ -622,6 +623,52 @@ class BuyingController(StockController):
 			main.rm_supp_stock_value_diff += -1 * stock_value_diff
 
 		self.validate_warehouse_with_no_account(warehouse_with_no_account)
+
+	def validate_work_orders(self):
+		work_orders = set([d.get("work_order") for d in self.get("items") if d.get("work_order")])
+		if not work_orders:
+			return
+
+		work_order_details = {}
+		for name in work_orders:
+			wo = frappe.db.get_value("Work Order", name, [
+				"name", "company", "docstatus", "status", "production_item", "fg_warehouse"
+			], as_dict=1)
+			if not wo:
+				frappe.throw(_("Work Order {0} does not exist").format(name))
+
+			work_order_details[name] = wo
+
+		for d in self.get("items"):
+			if not d.get("work_order"):
+				continue
+
+			wo = work_order_details[d.work_order]
+
+			if wo.docstatus != 1:
+				frappe.throw(_("Row #{0}: {1} is not submitted").format(
+					d.idx, frappe.get_desk_link("Work Order", wo.name)
+				))
+
+			if self.doctype == "Purchase Order" and wo.status == "Stopped":
+				frappe.throw(_("Row #{0}: {1} is {2}").format(
+					d.idx, frappe.get_desk_link("Work Order", wo.name)), wo.status
+				)
+
+			if self.company != wo.company:
+				frappe.throw(_("Row #{0}: Company does not match in {1}. Company should be {2}").format(
+					d.idx, frappe.get_desk_link("Work Order", wo.name), frappe.bold(wo.company)
+				))
+
+			if d.item_code != wo.production_item:
+				frappe.throw(_("Row #{0}: Production Item does not match in {1}. Item Code should be {2}").format(
+					d.idx, frappe.get_desk_link("Work Order", wo.name), frappe.bold(wo.production_item)
+				))
+
+			if self.doctype == "Purchase Order" and d.warehouse != wo.fg_warehouse:
+				frappe.throw(_("Row #{0}: Finished Goods Warehouse does not match in {1}. Warehouse should be {2}").format(
+					d.idx, frappe.get_desk_link("Work Order", wo.name), frappe.bold(wo.fg_warehouse)
+				))
 
 	def get_stock_value_difference_map(self):
 		sle_data = frappe.db.sql("""

@@ -184,6 +184,8 @@ class PurchaseOrder(BuyingController):
 			}
 		})
 
+		self.validate_work_orders()
+
 		if cint(frappe.get_cached_value('Buying Settings', None, 'maintain_same_rate')):
 			self.validate_rate_with_reference_doc([["Supplier Quotation", "supplier_quotation", "supplier_quotation_item"]])
 
