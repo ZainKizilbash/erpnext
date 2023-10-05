@@ -115,6 +115,7 @@ class PurchaseOrder(BuyingController):
 		material_requests = set()
 		material_request_row_names = set()
 		sales_orders = set()
+		work_orders = set()
 
 		for d in self.items:
 			if d.material_request:
@@ -123,6 +124,8 @@ class PurchaseOrder(BuyingController):
 				material_request_row_names.add(d.material_request_item)
 			if d.sales_order:
 				sales_orders.add(d.sales_order)
+			if d.work_order:
+				work_orders.add(d.work_order)
 
 		# Update Material Requests
 		for name in material_requests:
@@ -137,6 +140,12 @@ class PurchaseOrder(BuyingController):
 			doc = frappe.get_doc("Sales Order", name)
 			doc.set_purchase_status(update=True)
 			doc.set_status(update=True)
+			doc.notify_update()
+
+		# Update Work Orders
+		for name in work_orders:
+			doc = frappe.get_doc("Work Order", name)
+			doc.run_method("update_status", from_doctype=self.doctype)
 			doc.notify_update()
 
 	def update_status(self, status):
@@ -637,7 +646,8 @@ def make_purchase_receipt(source_name, target_doc=None):
 				"parent": "purchase_order",
 				"bom": "bom",
 				"material_request": "material_request",
-				"material_request_item": "material_request_item"
+				"material_request_item": "material_request_item",
+				"work_order": "work_order",
 			},
 			"postprocess": update_item,
 			"condition": item_condition,
@@ -708,6 +718,7 @@ def get_mapped_purchase_invoice(source_name, target_doc=None, ignore_permissions
 			"field_map": {
 				"name": "purchase_order_item",
 				"parent": "purchase_order",
+				"work_order": "work_order",
 			},
 			"postprocess": update_item,
 			"condition": item_condition,

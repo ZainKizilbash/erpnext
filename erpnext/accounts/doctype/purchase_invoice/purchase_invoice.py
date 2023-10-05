@@ -157,6 +157,7 @@ class PurchaseInvoice(BuyingController):
 		purchase_order_row_names_without_prec = set()
 		purchase_receipts = set()
 		purchase_receipt_row_names = set()
+		work_orders = set()
 		for d in self.items:
 			if d.purchase_order:
 				purchase_orders.add(d.purchase_order)
@@ -166,6 +167,8 @@ class PurchaseInvoice(BuyingController):
 				purchase_receipts.add(d.purchase_receipt)
 			if d.purchase_receipt_item:
 				purchase_receipt_row_names.add(d.purchase_receipt_item)
+			if d.work_order:
+				work_orders.add(d.work_order)
 
 		# Update Purchase Orders
 		for name in purchase_orders:
@@ -189,6 +192,13 @@ class PurchaseInvoice(BuyingController):
 
 			doc.set_status(update=True)
 			doc.notify_update()
+
+		# Update Work Orders
+		if self.update_stock:
+			for name in work_orders:
+				doc = frappe.get_doc("Work Order", name)
+				doc.run_method("update_status", from_doctype=self.doctype)
+				doc.notify_update()
 
 		# Update Returned Against Purchase Invoice
 		if self.is_return and self.return_against:

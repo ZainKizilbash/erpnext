@@ -68,7 +68,7 @@ class BuyingController(StockController):
 			self.validate_accepted_rejected_qty()
 			validate_for_items(self)
 
-			# sub-contracting
+			# subcontracting
 			self.validate_for_subcontracting()
 			self.set_raw_materials_supplied()
 			self.validate_raw_materials_supplied()
@@ -273,7 +273,7 @@ class BuyingController(StockController):
 		return flt(amt, self.precision("base_net_amount", "items"))
 
 	def set_is_subcontracted(self):
-		if self.is_return:
+		if self.get("is_return"):
 			return
 
 		if self.doctype in ("Purchase Receipt", "Purchase Invoice"):
@@ -294,12 +294,15 @@ class BuyingController(StockController):
 
 	def validate_for_subcontracting(self):
 		if self.get("is_subcontracted"):
-			if self.doctype in ["Purchase Receipt", "Purchase Invoice"] and not self.supplier_warehouse:
-				frappe.throw(_("Supplier Warehouse is mandatory for sub-contracted Purchase Receipt"))
+			if not self.supplier_warehouse:
+				if self.doctype in ("Purchase Receipt", "Purchase Invoice"):
+					frappe.throw(_("Supplier Warehouse is mandatory for subcontracted receipt"))
+				elif self.doctype == "Purchase Order" and self.docstatus == 1:
+					frappe.throw(_("Supplier Warehouse is mandatory for subcontracted order before submission"))
 
 			for item in self.get("items"):
 				if item in self.subcontracted_items and not item.bom:
-					frappe.throw(_("Row #{0}: Please select BOM for sub-contracted Item {0}").format(
+					frappe.throw(_("Row #{0}: Please select BOM for subcontracted Item {0}").format(
 						item.idx, frappe.bold(item.item_code)
 					))
 
@@ -1019,7 +1022,8 @@ class BuyingController(StockController):
 				if d.schedule_date and self.transaction_date and getdate(d.schedule_date) < getdate(self.transaction_date):
 					frappe.throw(_("Row #{0}: Reqd by Date cannot be before Transaction Date").format(d.idx))
 		else:
-			frappe.throw(_("Please enter Reqd by Date"))
+			if self.docstatus == 1:
+				frappe.throw(_("Please enter Reqd by Date"))
 
 	def validate_items(self):
 		# validate items to see if they have is_purchase_item or is_subcontracted_item enabled

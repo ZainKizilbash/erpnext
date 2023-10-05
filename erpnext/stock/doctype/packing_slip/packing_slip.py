@@ -703,7 +703,7 @@ class PackingSlip(StockController):
 		for name in work_orders:
 			doc = frappe.get_doc("Work Order", name)
 			doc.set_packing_status(update=True)
-			doc.validate_overpacking()
+			doc.validate_overpacking(from_doctype=self.doctype)
 			doc.notify_update()
 
 	def update_stock_ledger(self, allow_negative_stock=False):

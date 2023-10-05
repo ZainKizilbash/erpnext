@@ -902,7 +902,7 @@ class StockEntry(StockController):
 		if self.work_order:
 			self.pro_doc = frappe.get_doc("Work Order", self.work_order)
 			_validate_work_order(self.pro_doc)
-			self.pro_doc.run_method("update_status")
+			self.pro_doc.run_method("update_status", from_doctype=self.doctype)
 			self.pro_doc.notify_update()
 
 	@frappe.whitelist()
@@ -1612,9 +1612,8 @@ def make_stock_in_entry(source_name, target_doc=None):
 
 
 @frappe.whitelist()
-def get_work_order_details(work_order, company):
+def get_work_order_details(work_order, purpose=None):
 	work_order = frappe.get_doc("Work Order", work_order)
-	pending_qty_to_produce = flt(work_order.qty) - flt(work_order.produced_qty)
 
 	return {
 		"from_bom": 1,
@@ -1622,7 +1621,7 @@ def get_work_order_details(work_order, company):
 		"use_multi_level_bom": work_order.use_multi_level_bom,
 		"wip_warehouse": work_order.wip_warehouse,
 		"fg_warehouse": work_order.fg_warehouse,
-		"fg_completed_qty": pending_qty_to_produce
+		"fg_completed_qty": work_order.get_balance_qty(purpose)
 	}
 
 

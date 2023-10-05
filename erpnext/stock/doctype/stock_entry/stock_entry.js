@@ -5,12 +5,19 @@ frappe.provide("erpnext.stock");
 frappe.ui.form.on('Stock Entry', {
 	setup: function(frm) {
 		frm.set_query('work_order', function() {
+			let filters = {
+				'docstatus': 1,
+				'company': frm.doc.company,
+				'status': ['!=', 'Completed']
+			};
+			if (frm.doc.purpose == "Material Transfer for Manufacture") {
+				filters['per_material_transferred'] = ['<', 100];
+				filters['skip_transfer'] = 0;
+			} else {
+				filters['per_produced'] = ['<', 100];
+			}
 			return {
-				filters: [
-					['Work Order', 'docstatus', '=', 1],
-					['Work Order', 'qty', '>','`tabWork Order`.produced_qty'],
-					['Work Order', 'company', '=', frm.doc.company]
-				]
+				filters: filters
 			}
 		});
 
@@ -960,7 +967,7 @@ erpnext.stock.StockEntry = class StockEntry extends erpnext.stock.StockControlle
 			method: "erpnext.stock.doctype.stock_entry.stock_entry.get_work_order_details",
 			args: {
 				work_order: me.frm.doc.work_order,
-				company: me.frm.doc.company
+				purpose: me.frm.doc.purpose,
 			},
 			callback: function(r) {
 				if (!r.exc) {

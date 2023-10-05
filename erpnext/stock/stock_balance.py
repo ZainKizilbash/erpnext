@@ -174,10 +174,12 @@ def get_ordered_qty(item_code, warehouse):
 
 def get_planned_qty(item_code, warehouse):
 	planned_qty = frappe.db.sql("""
-		select sum(qty - produced_qty - scrap_qty)
+		select sum(producible_qty - produced_qty - scrap_qty)
 		from `tabWork Order`
 		where production_item = %s and fg_warehouse = %s
-			and docstatus = 1 and qty > (produced_qty + scrap_qty) and status not in ('Stopped', 'Completed')
+			and docstatus = 1
+			and producible_qty > (produced_qty + scrap_qty)
+			and status not in ('Stopped', 'Completed')
 	""", (item_code, warehouse))
 
 	return flt(planned_qty[0][0]) if planned_qty else 0

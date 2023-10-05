@@ -115,6 +115,7 @@ class PurchaseReceipt(BuyingController):
 		purchase_order_row_names = set()
 		purchase_receipt_row_names = set()
 		material_requests = set()
+		work_orders = set()
 
 		for d in self.items:
 			if d.purchase_order:
@@ -125,6 +126,8 @@ class PurchaseReceipt(BuyingController):
 				purchase_receipt_row_names.add(d.purchase_receipt_item)
 			if d.material_request:
 				material_requests.add(d.material_request)
+			if d.work_order:
+				work_orders.add(d.work_order)
 
 		# Update Purchase Orders
 		for name in purchase_orders:
@@ -143,6 +146,12 @@ class PurchaseReceipt(BuyingController):
 			doc = frappe.get_doc("Material Request", name)
 			doc.set_completion_status(update=True)
 			doc.set_status(update=True)
+			doc.notify_update()
+
+		# Update Work Orders
+		for name in work_orders:
+			doc = frappe.get_doc("Work Order", name)
+			doc.run_method("update_status", from_doctype=self.doctype)
 			doc.notify_update()
 
 		# Update Returned Against Purchase Receipt
