@@ -459,5 +459,6 @@ frappe.provide("erpnext.buying");
 frappe.ui.form.on("Purchase Order", "is_subcontracted", function(frm) {
 	if (frm.doc.is_subcontracted) {
 		erpnext.buying.get_default_bom(frm);
+		erpnext.buying.set_default_supplier_warehouse(frm);
 	}
 });

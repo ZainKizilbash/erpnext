@@ -490,6 +490,15 @@ erpnext.buying.get_default_bom = function(frm) {
 	});
 }
 
+erpnext.buying.set_default_supplier_warehouse = function(frm) {
+	if (frm.doc.is_subcontracted && !frm.doc.supplier_warehouse && frm.fields_dict.supplier_warehouse) {
+		let default_supplier_warehouse = frappe.defaults.get_default("default_subcontracting_supplier_warehouse");
+		if (default_supplier_warehouse) {
+			frm.set_value("supplier_warehouse", default_supplier_warehouse);
+		}
+	}
+}
+
 erpnext.buying.get_items_from_product_bundle = function(frm) {
 	var dialog = new frappe.ui.Dialog({
 		title: __("Get Items from Product Bundle"),

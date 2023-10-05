@@ -82,6 +82,7 @@ class BuyingController(StockController):
 
 		super(BuyingController, self).set_missing_values(for_validate)
 
+		self.set_default_supplier_warehouse()
 		self.set_is_subcontracted()
 
 		self.set_supplier_from_item_default()
@@ -271,6 +272,11 @@ class BuyingController(StockController):
 			amt -= flt(item.debit_note_amount)
 
 		return flt(amt, self.precision("base_net_amount", "items"))
+
+	def set_default_supplier_warehouse(self):
+		if self.get("is_subcontracted") and not self.get("supplier_warehouse") and self.meta.has_field("supplier_warehouse"):
+			self.supplier_warehouse = frappe.get_cached_value("Buying Settings", None,
+				"default_subcontracting_supplier_warehouse")
 
 	def set_is_subcontracted(self):
 		if self.get("is_return"):
