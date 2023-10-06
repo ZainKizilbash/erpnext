@@ -760,9 +760,12 @@ class WorkOrder(StatusUpdater):
 		return max(flt(self.producible_qty) - flt(self.material_transferred_for_manufacturing), 0)
 
 	def get_subcontractable_qty(self):
-		production_completed_qty = max(flt(self.produced_qty), flt(self.material_transferred_for_manufacturing))
-		subcontractable_qty = flt(self.producible_qty) - flt(self.scrap_qty) - production_completed_qty
-		return flt(subcontractable_qty, self.precision("qty"))
+		return get_subcontractable_qty(
+			self.producible_qty,
+			self.material_transferred_for_manufacturing,
+			self.produced_qty,
+			self.scrap_qty
+		)
 
 	def set_status(self, status=None, update=False, update_modified=True):
 		previous_status = self.status
@@ -1311,6 +1314,12 @@ def get_work_order_operation_data(work_order, operation, workstation):
 			return d
 
 
+def get_subcontractable_qty(producible_qty, material_transferred_for_manufacturing, produced_qty, scrap_qty):
+	production_completed_qty = max(flt(produced_qty), flt(material_transferred_for_manufacturing))
+	subcontractable_qty = flt(producible_qty) - flt(scrap_qty) - production_completed_qty
+	return subcontractable_qty
+
+
 @frappe.whitelist()
 def create_pick_list(source_name, target_doc=None, for_qty=None):
 	for_qty = for_qty or json.loads(target_doc).get('for_qty')
@@ -1443,6 +1452,8 @@ def make_purchase_order(work_orders, target_doc=None, supplier=None):
 
 	if not target_doc:
 		target_doc = frappe.new_doc("Purchase Order")
+	if target_doc and isinstance(target_doc, str):
+		target_doc = frappe.get_doc(json.loads(target_doc))
 
 	for name in work_orders:
 		wo = frappe.get_doc("Work Order", name)
