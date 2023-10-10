@@ -377,6 +377,64 @@ class StockController(AccountsController):
 				if d.meta.has_field('serial_no'):
 					d.serial_no = d.vehicle
 
+	def validate_purchase_order_raw_material_qty(self):
+		if not self.get("purchase_order"):
+			return
+
+		backflush_raw_materials_based_on = frappe.get_cached_value("Buying Settings", None,
+			"backflush_raw_materials_of_subcontract_based_on")
+		qty_allowance = flt(frappe.get_cached_value("Buying Settings", None,
+			"over_transfer_allowance"))
+
+		if backflush_raw_materials_based_on == 'BOM':
+			supplied_items = frappe.db.sql("""
+				select rm_item_code, main_item_code, required_qty
+				from `tabPurchase Order Item Supplied`
+				where parent = %s
+			""", self.purchase_order, as_dict=1)
+
+			for row in self.items:
+				item_code = row.get("original_item") or row.item_code
+				precision = row.precision("qty")
+
+				required_qty = sum([flt(d.required_qty) for d in supplied_items if d.rm_item_code == item_code])
+				total_allowed = required_qty + (required_qty * (qty_allowance/100))
+
+				if not required_qty:
+					frappe.throw(_("Item {0} not found in 'Raw Materials Supplied' table in Purchase Order {1}")
+						.format(row.item_code, self.purchase_order))
+
+				total_supplied = frappe.db.sql("""
+					select sum(transfer_qty)
+					from `tabStock Entry Detail`, `tabStock Entry`
+					where `tabStock Entry`.purchase_order = %s
+						and `tabStock Entry`.docstatus = 1
+						and `tabStock Entry Detail`.item_code = %s
+						and `tabStock Entry Detail`.parent = `tabStock Entry`.name
+				""", (self.purchase_order, row.item_code))[0][0]
+
+				if flt(total_supplied, precision) > flt(total_allowed, precision):
+					frappe.throw(_("Row {0}# Item {1} cannot be transferred more than {2} against Purchase Order {3}")
+						.format(row.idx, row.item_code, total_allowed, self.purchase_order))
+
+		elif backflush_raw_materials_based_on == "Material Transferred for Subcontract":
+			subcontracted_items = frappe.db.sql_list("""
+				select po_item.item_code
+				from `tabPurchase Order Item` po_item
+				inner join `tabItem` i on i.name = po_item.item_code
+				where po_item.parent = %s and i.is_sub_contracted_item = 1
+			""", self.purchase_order)
+
+			for row in self.get("items"):
+				if not row.subcontracted_item:
+					frappe.throw(_("Row {0}: Subcontracted Item is mandatory for raw material {1}")
+						.format(row.idx, frappe.bold(row.item_code)))
+
+				if row.subcontracted_item not in subcontracted_items:
+					frappe.throw(_("Row #{0}: Subcontracted Item {1} is not part of Purchase Order {2}").format(
+						row.idx, frappe.bold(row.subcontracted_item), self.purchase_order
+					))
+
 	def validate_packing_slip(self):
 		def get_packing_slip_details(name):
 			if not packing_slip_map.get(name):
@@ -385,11 +443,16 @@ class StockController(AccountsController):
 
 			return packing_slip_map[name]
 
-		is_delivery = self.doctype == "Sales Invoice" and self.get("update_stock")
+		is_delivery = (
+			self.doctype == "Delivery Note"
+			or (self.doctype == "Sales Invoice" and self.get("update_stock"))
+			or (self.doctype == "Stock Entry" and self.purpose == "Send to Subcontractor")
+		)
+		# is_transfer = self.doctype == "Material Transfer"
+
+		required_packing_slip_status = None
 		if is_delivery:
-			required_packing_slip_status = "Delivered" if self.get("is_return") else "In Stock"
-		else:
-			required_packing_slip_status = None
+			required_packing_slip_status = "In Stock" if not self.get("is_return") else "Delivered"
 
 		# Validate Packing Slips
 		packing_slip_map = {}
@@ -417,27 +480,33 @@ class StockController(AccountsController):
 					frappe.bold(packing_slip.status)
 				))
 
-			if self.company != packing_slip.company:
+			if self.get("company") != packing_slip.company:
 				frappe.throw(_("Row #{0}: Company does not match with {1}. Company must be {2}").format(
 					d.idx, frappe.get_desk_link("Packing Slip", packing_slip.name), packing_slip.company
 				))
 
-			if cstr(self.project) != cstr(packing_slip.project):
+			if cstr(self.get("project")) != cstr(packing_slip.project):
 				frappe.throw(_("Row #{0}: Project does not match with {1}. Project must be {2}").format(
 					d.idx, frappe.get_desk_link("Packing Slip", packing_slip.name), packing_slip.project
 				))
 
-			if packing_slip.customer and self.customer != packing_slip.customer:
+			if packing_slip.customer and self.get("customer") != packing_slip.customer:
 				frappe.throw(_("Row #{0}: Customer does not match with {1}. Customer must be {2}").format(
 					d.idx, frappe.get_desk_link("Packing Slip", packing_slip.name), packing_slip.customer
 				))
 
-			if d.weight_uom != packing_slip.weight_uom:
+			if packing_slip.supplier and self.get("supplier") != packing_slip.supplier:
+				frappe.throw(_("Row #{0}: Supplier does not match with {1}. Supplier must be {2}").format(
+					d.idx, frappe.get_desk_link("Packing Slip", packing_slip.name), packing_slip.supplier
+				))
+
+			if d.meta.has_field("weight_uom") and d.weight_uom != packing_slip.weight_uom:
 				frappe.throw(_("Row #{0}: Weight UOM does not match with {1}. Weight UOM must be {2}").format(
 					d.idx, frappe.get_desk_link("Packing Slip", packing_slip.name), packing_slip.weight_uom
 				))
 
-			if d.warehouse != packing_slip.warehouse:
+			warehouse_field = "s_warehouse" if self.doctype == "Stock Entry" else "warehouse"
+			if d.get(warehouse_field) != packing_slip.warehouse:
 				frappe.throw(_("Row #{0}: Warehouse does not match with {1}. Warehouse must be {2}").format(
 					d.idx, frappe.get_desk_link("Packing Slip", packing_slip.name), packing_slip.warehouse
 				))
@@ -446,7 +515,7 @@ class StockController(AccountsController):
 				frappe.throw(_("Row #{0}: Missing Packing Slip Row Reference").format(d.idx))
 
 			if is_delivery and not self.get("is_return"):
-				packing_slip_qty = flt(frappe.db.get_value("Packing Slip Item", d.packing_slip_item, 'qty'))
+				packing_slip_qty = flt(frappe.db.get_value("Packing Slip Item", d.packing_slip_item, 'qty', cache=1))
 
 				if flt(d.qty) != packing_slip_qty:
 					frappe.throw(_("Row #{0}: Qty does not match with {1}. Qty must be {2}").format(

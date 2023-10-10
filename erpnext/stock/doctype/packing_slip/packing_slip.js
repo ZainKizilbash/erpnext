@@ -30,6 +30,10 @@ erpnext.stock.PackingSlipController = class PackingSlipController extends erpnex
 			return erpnext.queries.item({is_stock_item: 1});
 		});
 
+		me.frm.set_query("subcontracted_item", "items", function() {
+			return erpnext.queries.subcontracted_item(me.frm.doc.purchase_order);
+		});
+
 		me.setup_warehouse_query();
 		erpnext.queries.setup_warehouse_qty_query(me.frm, "source_warehouse", "items");
 		erpnext.queries.setup_warehouse_qty_query(me.frm, "source_warehouse", "packaging_items");

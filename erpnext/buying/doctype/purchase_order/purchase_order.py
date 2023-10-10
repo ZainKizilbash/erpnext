@@ -769,17 +769,7 @@ def get_unbilled_pr_qty_map(purchase_order):
 @frappe.whitelist()
 def make_rm_stock_entry(purchase_order):
 	purchase_order = frappe.get_doc("Purchase Order", purchase_order)
-
-	if purchase_order.docstatus != 1:
-		frappe.throw(_("Purchase Order {0} not submitted").format(purchase_order.name))
-	if not purchase_order.is_subcontracted:
-		frappe.throw(_("Purchase Order {0} is not a subcontracted order").format(purchase_order.name))
-
-	supplied_items = [d for d in purchase_order.supplied_items if
-		flt(d.supplied_qty, d.precision("required_qty")) < flt(d.required_qty, d.precision("required_qty"))]
-
-	if not supplied_items:
-		frappe.throw(_("No raw material to transfer"))
+	supplied_items = get_pending_raw_materials_to_transfer(purchase_order)
 
 	ste = frappe.new_doc("Stock Entry")
 	ste.company = purchase_order.company
@@ -797,10 +787,10 @@ def make_rm_stock_entry(purchase_order):
 		ste.add_to_stock_entry_detail({
 			d.rm_item_code: {
 				"item_code": d.rm_item_code,
+				"from_warehouse": d.reserve_warehouse,
 				"subcontracted_item": d.main_item_code,
 				"purchase_order_item": d.name,
 				"qty": flt(d.required_qty) - flt(d.supplied_qty),
-				"from_warehouse": d.reserve_warehouse,
 				"uom": d.stock_uom,
 			}
 		})
@@ -810,6 +800,52 @@ def make_rm_stock_entry(purchase_order):
 	ste.calculate_rate_and_amount(raise_error_if_no_rate=False)
 
 	return ste.as_dict()
+
+
+@frappe.whitelist()
+def make_packing_slip(purchase_order):
+	purchase_order = frappe.get_doc("Purchase Order", purchase_order)
+	supplied_items = get_pending_raw_materials_to_transfer(purchase_order)
+
+	doc = frappe.new_doc("Packing Slip")
+	doc.company = purchase_order.company
+	doc.purchase_order = purchase_order.name
+	doc.supplier = purchase_order.supplier
+	doc.supplier_name = purchase_order.supplier_name
+	doc.from_warehouse = purchase_order.set_reserve_warehouse
+	doc.warehouse = purchase_order.set_reserve_warehouse
+
+	for d in supplied_items:
+		row = doc.append("items", frappe.new_doc("Packing Slip Item"))
+		row.update({
+			"item_code": d.rm_item_code,
+			"source_warehouse": d.reserve_warehouse,
+			"subcontracted_item": d.main_item_code,
+			"purchase_order_item": d.name,
+			"qty": flt(d.required_qty) - flt(d.supplied_qty),
+			"uom": d.stock_uom,
+		})
+
+	doc.run_method("set_missing_values")
+	doc.run_method("set_target_warehouse_as_source_warehouse")
+	doc.run_method("calculate_totals")
+
+	return doc
+
+
+def get_pending_raw_materials_to_transfer(purchase_order):
+	if purchase_order.docstatus != 1:
+		frappe.throw(_("Purchase Order {0} not submitted").format(purchase_order.name))
+	if not purchase_order.is_subcontracted:
+		frappe.throw(_("Purchase Order {0} is not a subcontracted order").format(purchase_order.name))
+
+	supplied_items = [d for d in purchase_order.supplied_items if
+		flt(d.supplied_qty, d.precision("required_qty")) < flt(d.required_qty, d.precision("required_qty"))]
+
+	if not supplied_items:
+		frappe.throw(_("No raw materials to transfer"))
+
+	return supplied_items
 
 
 def get_item_details(items):
@@ -844,3 +880,27 @@ def update_status(status, name):
 def make_inter_company_sales_order(source_name, target_doc=None):
 	from erpnext.accounts.doctype.sales_invoice.sales_invoice import make_inter_company_transaction
 	return make_inter_company_transaction("Purchase Order", source_name, target_doc)
+
+
+def get_subcontracted_item_from_material_item(material_item, purchase_order):
+	out = frappe._dict()
+	if not purchase_order or not material_item:
+		return out
+
+	subcontract_item_codes = frappe.get_all("Purchase Order Item Supplied",
+		{"parent": purchase_order, "rm_item_code": material_item}, pluck="main_item_code")
+	subcontract_item_codes = list(set(subcontract_item_codes))
+
+	if not subcontract_item_codes:
+		subcontract_item_codes = frappe.db.sql_list("""
+			select distinct po_item.item_code
+			from `tabPurchase Order Item` po_item
+			inner join `tabItem` i on i.name = po_item.item_code
+			where po_item.parent = %s and i.is_sub_contracted_item = 1
+		""", purchase_order)
+
+	if subcontract_item_codes and len(subcontract_item_codes) == 1:
+		out["subcontracted_item"] = subcontract_item_codes[0]
+		out["subcontracted_item_name"] = frappe.get_cached_value("Item", out.subcontracted_item, "item_name")
+
+	return out

@@ -25,6 +25,7 @@ erpnext.stock.PackingController = class PackingController extends erpnext.stock.
 						name: me.frm.doc.name,
 						child_doctype: item.doctype,
 						default_source_warehouse: me.frm.doc.default_source_warehouse,
+						purchase_order: me.frm.doc.purchase_order,
 					}
 				},
 				callback: function(r) {

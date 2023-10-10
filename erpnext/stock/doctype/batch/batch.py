@@ -240,7 +240,7 @@ def auto_select_and_split_batches(doc, warehouse_field, additional_group_fields=
 	for d in doc.items:
 		has_batch_no = d.get("item_code") and frappe.get_cached_value("Item", d.item_code, "has_batch_no")
 		warehouse = d.get(warehouse_field)
-		if has_batch_no and warehouse and not d.get("packing_slip"):
+		if has_batch_no and warehouse and not d.get("packing_slip") and not d.get("source_packing_slip"):
 			key = get_key(d)
 			group_qty_map.setdefault(key, 0)
 			group_qty_map[key] += flt(d.get('qty'))
@@ -254,7 +254,7 @@ def auto_select_and_split_batches(doc, warehouse_field, additional_group_fields=
 	for d in doc.items:
 		has_batch_no = d.get("item_code") and frappe.get_cached_value("Item", d.item_code, "has_batch_no")
 		warehouse = d.get(warehouse_field)
-		if has_batch_no and warehouse and not d.get("packing_slip"):
+		if has_batch_no and warehouse and not d.get("packing_slip") and not d.get("source_packing_slip"):
 			key = get_key(d)
 			if key not in visited:
 				visited.add(key)
@@ -274,7 +274,7 @@ def auto_select_and_split_batches(doc, warehouse_field, additional_group_fields=
 		has_batch_no = d.get("item_code") and frappe.get_cached_value("Item", d.item_code, "has_batch_no")
 		warehouse = d.get(warehouse_field)
 
-		if has_batch_no and warehouse and not d.get("packing_slip"):
+		if has_batch_no and warehouse and not d.get("packing_slip") and not d.get("source_packing_slip"):
 			batches = get_sufficient_batch_or_fifo(d.item_code, warehouse, flt(d.qty), flt(d.conversion_factor),
 				batches_used=batches_used, include_empty_batch=True, precision=d.precision('qty'))
 

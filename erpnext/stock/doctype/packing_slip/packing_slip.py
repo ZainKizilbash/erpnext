@@ -11,6 +11,7 @@ from erpnext.stock.get_item_details import get_conversion_factor, get_hide_item_
 	get_global_default_warehouse
 from erpnext.stock.utils import get_incoming_rate
 from erpnext.accounts.party import validate_party_frozen_disabled
+from erpnext.stock.doctype.batch.batch import auto_select_and_split_batches
 import json
 
 
@@ -38,11 +39,13 @@ class PackingSlip(StockController):
 		self.validate_posting_time()
 		super(PackingSlip, self).validate()
 		self.validate_items()
+		self.validate_for_subcontracting()
 		self.validate_source_packing_slips()
 		self.validate_sales_orders()
 		self.validate_unpack_against()
 		self.validate_with_previous_doc()
 		self.validate_customer()
+		self.validate_supplier()
 		self.validate_warehouse()
 		self.validate_uom_is_integer("stock_uom", "stock_qty")
 		self.validate_uom_is_integer("uom", "qty")
@@ -53,6 +56,9 @@ class PackingSlip(StockController):
 		self.set_title()
 		self.set_unpacked_return_status()
 		self.set_status(validate=False)
+
+	def before_submit(self):
+		self.validate_purchase_order_raw_material_qty()
 
 	def on_submit(self):
 		self.update_previous_doc_status()
@@ -67,8 +73,8 @@ class PackingSlip(StockController):
 
 	def set_title(self):
 		self.title = self.package_type
-		if self.get("customer"):
-			self.title += " for {0}".format(self.customer_name or self.customer)
+		if self.get("customer") or self.get("supplier"):
+			self.title += " for {0}".format(self.customer_name or self.customer or self.supplier_name or self.supplier)
 
 	def set_packed_items(self):
 		packed_item_names = []
@@ -182,6 +188,44 @@ class PackingSlip(StockController):
 							frappe.throw(_("Row #{0}: Item {1}, quantity must be positive number")
 								.format(d.idx, frappe.bold(d.item_code)))
 
+	def validate_for_subcontracting(self):
+		if self.get("purchase_order"):
+			self.customer = None
+
+			po = frappe.db.get_value("Purchase Order", self.purchase_order,
+				['name', 'docstatus', 'status', 'supplier', 'is_subcontracted'], as_dict=1)
+
+			if not po:
+				frappe.throw(_("Purchase Order {0} does not exist").format(self.purchase_order))
+			if po.docstatus != 1:
+				frappe.throw(_("{0} is not submitted").format(frappe.get_desk_link("Purchase Order", po.name)))
+			if po.status in ("Closed", "On Hold"):
+				frappe.throw(_("{0} is {1}").format(
+					frappe.get_desk_link("Purchase Order", po.name), po.status
+				))
+
+			if not po.is_subcontracted:
+				frappe.throw(_("{0} is not a subcontracted order").format(
+					frappe.get_desk_link("Purchase Order", po.name)
+				))
+
+			if self.supplier != po.supplier:
+				frappe.throw(_("Supplier does not match with {0}. Supplier must be {1}").format(
+					frappe.get_desk_link("Purchase Order", po.name), frappe.bold(po.supplier)
+				))
+
+			for d in self.items:
+				if d.get("sales_order"):
+					frappe.throw(_("Row #{0}: Packing Slip against a subcontracted Purchase Order cannot also include Sales Order").format(
+						d.idx
+					))
+		else:
+			self.supplier = None
+			for d in self.items:
+				d.purchase_order_item = None
+				d.subcontracted_item = None
+				d.subcontracted_item_name = None
+
 	def validate_weights(self):
 		weight_fields = ["net_weight", "tare_weight", "gross_weight"]
 
@@ -277,7 +321,7 @@ class PackingSlip(StockController):
 			if not packing_slip_map.get(name):
 				packing_slip_map[name] = frappe.db.get_value("Packing Slip", name, [
 					"name", "docstatus", "status",
-					"company", "customer", "project", "weight_uom",
+					"company", "customer", "supplier", "project", "weight_uom",
 					"posting_date", "posting_time"
 				], as_dict=1)
 
@@ -322,6 +366,11 @@ class PackingSlip(StockController):
 				if packing_slip.customer and self.customer != packing_slip.customer:
 					frappe.throw(_("Row #{0}: Customer does not match with Source {1}. Customer must be {2}").format(
 						d.idx, frappe.get_desk_link("Packing Slip", packing_slip.name), frappe.bold(packing_slip.customer)
+					))
+
+				if packing_slip.supplier and self.supplier != packing_slip.supplier:
+					frappe.throw(_("Row #{0}: Supplier does not match with Source {1}. Supplier must be {2}").format(
+						d.idx, frappe.get_desk_link("Packing Slip", packing_slip.name), frappe.bold(packing_slip.supplier)
 					))
 
 				if self.weight_uom != packing_slip.weight_uom:
@@ -442,7 +491,7 @@ class PackingSlip(StockController):
 
 		unpack_against = frappe.db.get_value("Packing Slip", self.unpack_against, [
 			"name", "docstatus", "status",
-			"company", "customer", "package_type", "warehouse",
+			"company", "customer", "supplier", "package_type", "warehouse",
 			"posting_date", "posting_time"
 		], as_dict=1)
 
@@ -467,6 +516,11 @@ class PackingSlip(StockController):
 		if unpack_against.customer and self.customer != unpack_against.customer:
 			frappe.throw(_("Customer does not match with Unpack Against {0}. Customer must be {1}").format(
 				frappe.get_desk_link("Packing Slip", unpack_against.name), frappe.bold(unpack_against.customer)
+			))
+
+		if unpack_against.supplier and self.supplier != unpack_against.supplier:
+			frappe.throw(_("Supplier does not match with Unpack Against {0}. Supplier must be {1}").format(
+				frappe.get_desk_link("Packing Slip", unpack_against.name), frappe.bold(unpack_against.supplier)
 			))
 
 		if self.package_type != unpack_against.package_type:
@@ -590,6 +644,13 @@ class PackingSlip(StockController):
 		else:
 			self.customer_name = None
 
+	def validate_supplier(self):
+		if self.get("supplier"):
+			validate_party_frozen_disabled("Supplier", self.supplier)
+			self.supplier_name = frappe.get_cached_value("Supplier", self.supplier, "supplier_name")
+		else:
+			self.supplier_name = None
+
 	def calculate_totals(self):
 		self.total_qty = 0
 		self.total_stock_qty = 0
@@ -629,6 +690,19 @@ class PackingSlip(StockController):
 
 		self.round_floats_in(self, ['total_qty', 'total_stock_qty', 'total_net_weight', 'total_tare_weight'])
 		self.total_gross_weight = flt(self.total_net_weight + self.total_tare_weight, self.precision("total_gross_weight"))
+
+	def set_target_warehouse_as_source_warehouse(self):
+		source_warehouses = set([d.source_warehouse for d in self.get("items")])
+		if len(source_warehouses) == 1:
+			self.warehouse = list(source_warehouses)[0]
+
+	@frappe.whitelist()
+	def auto_select_batches(self):
+		auto_select_and_split_batches(self, 'source_warehouse', additional_group_fields=[
+			"sales_order", "sales_order_item",
+			"subcontracted_item", "purchase_order_item",
+		])
+		self.run_method("calculate_totals")
 
 	def set_cost_percentage(self):
 		total_cost = 0
@@ -1130,6 +1204,13 @@ def get_item_details(args):
 	out.source_warehouse = get_default_source_warehouse(item, args)
 	out.force_default_warehouse = get_force_default_warehouse(item, args)
 
+	# Subcontracting
+	if args.subcontracted_item:
+		out.subcontracted_item_name = frappe.get_cached_value("Item", args.get("subcontracted_item"), "item_name")
+	elif args.purchase_order:
+		from erpnext.buying.doctype.purchase_order.purchase_order import get_subcontracted_item_from_material_item
+		out.update(get_subcontracted_item_from_material_item(args.item_code, args.purchase_order))
+
 	# Accounting
 	if args.company:
 		stock_adjustment_account = frappe.get_cached_value('Company', args.company, 'stock_adjustment_account')
@@ -1191,6 +1272,8 @@ def make_target_packing_slip(source_name, target_doc=None):
 			"name": "packing_slip_item",
 			"sales_order": "sales_order",
 			"sales_order_item": "sales_order_item",
+			"purchase_order_item": "purchase_order_item",
+			"subcontracted_item": "subcontracted_item",
 			"batch_no": "batch_no",
 			"serial_no": "serial_no",
 		},
@@ -1361,8 +1444,13 @@ def map_target_document(target_doctype, target_doc, packing_slip):
 	if not target_doc:
 		target_doc = frappe.new_doc(target_doctype)
 
-	if not target_doc.get("customer"):
+	if packing_slip.customer and not target_doc.get("customer") and target_doc.meta.has_field("customer"):
 		target_doc.customer = packing_slip.customer
+
+	if packing_slip.supplier and not target_doc.get("supplier") and target_doc.meta.has_field("supplier"):
+		target_doc.supplier = packing_slip.supplier
+	if packing_slip.purchase_order and target_doc.meta.has_field("purchase_order"):
+		target_doc.purchase_order = packing_slip.purchase_order
 
 	return target_doc
 

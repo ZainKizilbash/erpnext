@@ -714,6 +714,10 @@ erpnext.stock.StockEntry = class StockEntry extends erpnext.stock.StockControlle
 			return erpnext.queries.item_uom(item.item_code);
 		});
 
+		this.frm.set_query("subcontracted_item", "items", function() {
+			return erpnext.queries.subcontracted_item(me.frm.doc.purchase_order);
+		});
+
 		this.frm.add_fetch("purchase_order", "supplier", "supplier");
 
 		this.frm.set_query("supplier_address", function() {

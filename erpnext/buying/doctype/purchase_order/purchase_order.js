@@ -67,12 +67,12 @@ erpnext.buying.PurchaseOrderController = class PurchaseOrderController extends e
 			'Purchase Receipt': 'Purchase Receipt',
 			'Purchase Invoice': 'Purchase Invoice',
 			'Stock Entry': 'Materials to Supplier',
+			'Packing Slip': 'Packing Slip',
 			'Payment Entry': 'Payment',
 			'Auto Repeat': 'Subscription',
 		}
 
 		super.setup();
-
 	}
 
 	refresh(doc, cdt, cdn) {
@@ -157,6 +157,8 @@ erpnext.buying.PurchaseOrderController = class PurchaseOrderController extends e
 						if (doc.is_subcontracted && me.has_unsupplied_items()) {
 							this.frm.add_custom_button(__('Materials to Supplier'), () => me.make_rm_stock_entry(),
 								__("Subcontract"));
+							this.frm.add_custom_button(__('Packing Slip'), () => me.make_packing_slip(),
+								__("Subcontract"));
 						}
 
 						this.frm.add_custom_button(__('Purchase Receipt'), this.make_purchase_receipt, __('Create'));
@@ -234,6 +236,19 @@ erpnext.buying.PurchaseOrderController = class PurchaseOrderController extends e
 	make_rm_stock_entry() {
 		return frappe.call({
 			method: "erpnext.buying.doctype.purchase_order.purchase_order.make_rm_stock_entry",
+			args: {
+				purchase_order: this.frm.doc.name,
+			},
+			callback: function(r) {
+				let doclist = frappe.model.sync(r.message);
+				frappe.set_route("Form", doclist[0].doctype, doclist[0].name);
+			}
+		});
+	}
+
+	make_packing_slip() {
+		return frappe.call({
+			method: "erpnext.buying.doctype.purchase_order.purchase_order.make_packing_slip",
 			args: {
 				purchase_order: this.frm.doc.name,
 			},

@@ -194,6 +194,25 @@ def tax_account_query(doctype, txt, searchfield, start, page_len, filters):
 
 @frappe.whitelist()
 @frappe.validate_and_sanitize_search_inputs
+def subcontracted_item_query(doctype, txt, searchfield, start, page_len, filters, as_dict=False):
+	if not filters:
+		filters = {}
+
+	filters["is_sub_contracted_item"] = 1
+
+	purchase_order = filters.pop("purchase_order", None)
+	if purchase_order:
+		po_item_codes = frappe.get_all("Purchase Order Item", {"parent": purchase_order}, pluck="item_code")
+		po_item_codes = list(set(po_item_codes))
+
+		if po_item_codes:
+			filters["name"] = ("in", po_item_codes)
+
+	return item_query(doctype, txt, searchfield, start, page_len, filters, as_dict=as_dict)
+
+
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
 def item_query(doctype, txt, searchfield, start, page_len, filters, as_dict=False):
 	conditions = []
 
