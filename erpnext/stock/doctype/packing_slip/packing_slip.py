@@ -39,7 +39,7 @@ class PackingSlip(StockController):
 		self.validate_posting_time()
 		super(PackingSlip, self).validate()
 		self.validate_items()
-		self.validate_for_subcontracting()
+		self.validate_purchase_order()
 		self.validate_source_packing_slips()
 		self.validate_sales_orders()
 		self.validate_unpack_against()
@@ -188,12 +188,12 @@ class PackingSlip(StockController):
 							frappe.throw(_("Row #{0}: Item {1}, quantity must be positive number")
 								.format(d.idx, frappe.bold(d.item_code)))
 
-	def validate_for_subcontracting(self):
+	def validate_purchase_order(self):
 		if self.get("purchase_order"):
 			self.customer = None
 
 			po = frappe.db.get_value("Purchase Order", self.purchase_order,
-				['name', 'docstatus', 'status', 'supplier', 'is_subcontracted'], as_dict=1)
+				['name', 'docstatus', 'status', 'company', 'supplier', 'is_subcontracted'], as_dict=1)
 
 			if not po:
 				frappe.throw(_("Purchase Order {0} does not exist").format(self.purchase_order))
@@ -207,6 +207,11 @@ class PackingSlip(StockController):
 			if not po.is_subcontracted:
 				frappe.throw(_("{0} is not a subcontracted order").format(
 					frappe.get_desk_link("Purchase Order", po.name)
+				))
+
+			if self.company != po.company:
+				frappe.throw(_("Company does not match with {0}. Company must be {1}").format(
+					frappe.get_desk_link("Purchase Order", po.name), frappe.bold(po.company)
 				))
 
 			if self.supplier != po.supplier:
@@ -773,6 +778,11 @@ class PackingSlip(StockController):
 			doc.set_status(update=True)
 			doc.notify_update()
 
+		if self.purchase_order:
+			doc = frappe.get_doc("Purchase Order", self.purchase_order)
+			doc.set_raw_materials_packed_qty(update=True)
+			doc.notify_update()
+
 	def update_work_order_packing_status(self, work_orders):
 		for name in work_orders:
 			doc = frappe.get_doc("Work Order", name)
@@ -993,8 +1003,16 @@ class PackingSlip(StockController):
 			having delivered_qty != 0
 		""", self.name, as_dict=1)
 
+		delivered_by_ste = frappe.db.sql("""
+			select packing_slip_item, sum(qty) as delivered_qty
+			from `tabStock Entry Detail`
+			where packing_slip = %s and docstatus = 1
+			group by packing_slip_item
+			having delivered_qty != 0
+		""", self.name, as_dict=1)
+
 		delivered_qty_map = {}
-		for d in delivered_by_dn + delivered_by_sinv:
+		for d in delivered_by_dn + delivered_by_sinv + delivered_by_ste:
 			delivered_qty_map.setdefault(d.packing_slip_item, 0)
 			delivered_qty_map[d.packing_slip_item] += d.delivered_qty
 
@@ -1320,6 +1338,7 @@ def make_unpack_packing_slip(source_name, target_doc=None):
 				"name": "unpack_against",
 				"warehouse": "warehouse",
 				"package_type": "package_type",
+				"purchase_order": "purchase_order",
 			}
 		},
 		"Packing Slip Item": {
@@ -1437,6 +1456,14 @@ def make_sales_invoice(source_name, target_doc=None):
 	return target_doc
 
 
+def map_stock_entry_items(packing_slip, target_doc, target_warehouse=None):
+	packing_slip_item_mapper = get_packing_slip_item_mapper("Stock Entry Detail")
+	for ps_item in packing_slip.get("items"):
+		ste_item = map_child_doc(ps_item, target_doc, packing_slip_item_mapper, packing_slip)
+		ste_item.t_warehouse = target_warehouse
+		update_mapped_delivery_item(ste_item, packing_slip, "s_warehouse")
+
+
 def map_target_document(target_doctype, target_doc, packing_slip):
 	if isinstance(target_doc, str):
 		target_doc = frappe.get_doc(json.loads(target_doc))
@@ -1476,6 +1503,9 @@ def get_packing_slip_item_mapper(target_doctype):
 			"sales_order": "sales_order",
 			"sales_order_item": "sales_order_item",
 
+			"subcontracted_item": "subcontracted_item",
+			"purchase_order_item": "purchase_order_item",
+
 			"qty": "qty",
 			"uom": "uom",
 			"conversion_factor": "conversion_factor",
@@ -1487,9 +1517,11 @@ def get_packing_slip_item_mapper(target_doctype):
 	}
 
 
-def update_mapped_delivery_item(target, packing_slip):
-	target.weight_uom = packing_slip.weight_uom
-	target.warehouse = packing_slip.warehouse
+def update_mapped_delivery_item(target, packing_slip, warehouse_field="warehouse"):
+	if target.meta.has_field("weight_uom"):
+		target.weight_uom = packing_slip.weight_uom
+	if target.meta.has_field(warehouse_field):
+		target.set(warehouse_field, packing_slip.warehouse)
 
 
 def postprocess_mapped_delivery_document(target):

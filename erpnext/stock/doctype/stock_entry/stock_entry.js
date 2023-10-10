@@ -331,7 +331,7 @@ frappe.ui.form.on('Stock Entry', {
 	},
 
 	auto_select_batches: function(frm) {
-		return frappe.call({
+		return frm.call({
 			method: 'auto_select_batches',
 			doc: frm.doc,
 			freeze: 1,

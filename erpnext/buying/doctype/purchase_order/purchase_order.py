@@ -58,7 +58,8 @@ class PurchaseOrder(BuyingController):
 		self.validate_with_previous_doc()
 		self.set_receipt_status()
 		self.set_billing_status()
-		self.set_raw_materials_supplied_status()
+		self.set_raw_materials_supplied_qty()
+		self.set_raw_materials_packed_qty()
 		self.set_status()
 		self.set_title()
 
@@ -377,7 +378,7 @@ class PurchaseOrder(BuyingController):
 			self.validate_completed_qty('billed_amt', 'amount', self.items,
 				allowance_type='billing', from_doctype=from_doctype, row_names=row_names)
 
-	def set_raw_materials_supplied_status(self, update=False, update_modified=True):
+	def set_raw_materials_supplied_qty(self, update=False, update_modified=True):
 		supplied_qty_map = self.get_raw_materials_supplied_qty_map()
 
 		for d in self.get("supplied_items"):
@@ -409,6 +410,39 @@ class PurchaseOrder(BuyingController):
 					supplied_qty_map[(d.rm_item_code, d.main_item_code)] = d.supplied_qty
 
 		return supplied_qty_map
+
+	def set_raw_materials_packed_qty(self, update=False, update_modified=True):
+		packed_qty_map = self.get_raw_materials_packed_qty_map()
+
+		for d in self.get("supplied_items"):
+			key = (d.rm_item_code, d.main_item_code)
+			d.packed_qty = flt(packed_qty_map.get(key))
+
+			if update:
+				d.db_set("packed_qty", d.packed_qty, update_modified=update_modified)
+
+	def get_raw_materials_packed_qty_map(self):
+		packed_qty_map = {}
+
+		if self.docstatus == 1:
+			subcontract_item_codes = [d.main_item_code for d in self.get("supplied_items")]
+			if subcontract_item_codes:
+				packed_qty_data = frappe.db.sql("""
+					select
+						i.item_code as rm_item_code,
+						i.subcontracted_item as main_item_code,
+						sum(i.stock_qty) as packed_qty
+					from `tabPacking Slip Item` i
+					inner join `tabPacking Slip` ps on ps.name = i.parent
+					where ps.docstatus = 1 and ifnull(i.source_packing_slip, '') = ''
+						and ps.purchase_order = %s and i.subcontracted_item in %s
+					group by rm_item_code, main_item_code
+				""", (self.name, subcontract_item_codes), as_dict=1)
+
+				for d in packed_qty_data:
+					packed_qty_map[(d.rm_item_code, d.main_item_code)] = d.packed_qty
+
+		return packed_qty_map
 
 	def update_delivered_qty_in_sales_order(self):
 		"""Update delivered qty in Sales Order for drop ship"""
@@ -767,7 +801,7 @@ def get_unbilled_pr_qty_map(purchase_order):
 
 
 @frappe.whitelist()
-def make_rm_stock_entry(purchase_order):
+def make_rm_stock_entry(purchase_order, packing_slips=None):
 	purchase_order = frappe.get_doc("Purchase Order", purchase_order)
 	supplied_items = get_pending_raw_materials_to_transfer(purchase_order)
 
@@ -783,17 +817,34 @@ def make_rm_stock_entry(purchase_order):
 	ste.to_warehouse = purchase_order.supplier_warehouse
 	ste.set_stock_entry_type()
 
-	for d in supplied_items:
-		ste.add_to_stock_entry_detail({
-			d.rm_item_code: {
-				"item_code": d.rm_item_code,
-				"from_warehouse": d.reserve_warehouse,
-				"subcontracted_item": d.main_item_code,
-				"purchase_order_item": d.name,
-				"qty": flt(d.required_qty) - flt(d.supplied_qty),
-				"uom": d.stock_uom,
-			}
-		})
+	if packing_slips:
+		if isinstance(packing_slips, str):
+			packing_slips = json.loads(packing_slips)
+	else:
+		packing_slips = frappe.get_all("Packing Slip", filters={
+			"purchase_order": purchase_order.name,
+			"status": "In Stock",
+			"docstatus": 1,
+		}, pluck="name", order_by="posting_date, posting_time, creation")
+
+	if packing_slips:
+		from erpnext.stock.doctype.packing_slip.packing_slip import map_stock_entry_items
+		for name in packing_slips:
+			ps = frappe.get_doc("Packing Slip", name)
+			map_stock_entry_items(ps, ste, target_warehouse=purchase_order.supplier_warehouse)
+	else:
+		for d in supplied_items:
+			ste.add_to_stock_entry_detail({
+				d.rm_item_code: {
+					"item_code": d.rm_item_code,
+					"from_warehouse": d.reserve_warehouse,
+					"to_warehouse": purchase_order.supplier_warehouse,
+					"subcontracted_item": d.main_item_code,
+					"purchase_order_item": d.name,
+					"qty": flt(d.required_qty) - flt(d.supplied_qty),
+					"uom": d.stock_uom,
+				}
+			})
 
 	ste.set_missing_values()
 	ste.set_actual_qty()
@@ -816,13 +867,18 @@ def make_packing_slip(purchase_order):
 	doc.warehouse = purchase_order.set_reserve_warehouse
 
 	for d in supplied_items:
+		unsupplied_qty = flt(d.required_qty) - flt(d.supplied_qty)
+		unpacked_qty = flt(d.required_qty) - flt(d.packed_qty)
+		to_pack = min(unpacked_qty, unsupplied_qty)
+		to_pack = max(to_pack, 0)
+
 		row = doc.append("items", frappe.new_doc("Packing Slip Item"))
 		row.update({
 			"item_code": d.rm_item_code,
 			"source_warehouse": d.reserve_warehouse,
 			"subcontracted_item": d.main_item_code,
 			"purchase_order_item": d.name,
-			"qty": flt(d.required_qty) - flt(d.supplied_qty),
+			"qty": to_pack,
 			"uom": d.stock_uom,
 		})
 

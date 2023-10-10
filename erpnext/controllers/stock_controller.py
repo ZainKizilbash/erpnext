@@ -438,8 +438,12 @@ class StockController(AccountsController):
 	def validate_packing_slip(self):
 		def get_packing_slip_details(name):
 			if not packing_slip_map.get(name):
-				packing_slip_map[name] = frappe.db.get_value("Packing Slip", name,
-					["name", "docstatus", "status", "company", "customer", "project", "warehouse", "weight_uom"], as_dict=1)
+				packing_slip_map[name] = frappe.db.get_value("Packing Slip", name, [
+					"name", "docstatus", "status",
+					"company", "customer", "supplier",
+					"project", "warehouse", "weight_uom",
+					"purchase_order",
+				], as_dict=1)
 
 			return packing_slip_map[name]
 
@@ -498,6 +502,11 @@ class StockController(AccountsController):
 			if packing_slip.supplier and self.get("supplier") != packing_slip.supplier:
 				frappe.throw(_("Row #{0}: Supplier does not match with {1}. Supplier must be {2}").format(
 					d.idx, frappe.get_desk_link("Packing Slip", packing_slip.name), packing_slip.supplier
+				))
+
+			if packing_slip.purchase_order and self.get("purchase_order") != packing_slip.purchase_order:
+				frappe.throw(_("Row #{0}: Purchase Order does not match with {1}. Purchase Order must be {2}").format(
+					d.idx, frappe.get_desk_link("Packing Slip", packing_slip.name), packing_slip.purchase_order
 				))
 
 			if d.meta.has_field("weight_uom") and d.weight_uom != packing_slip.weight_uom:

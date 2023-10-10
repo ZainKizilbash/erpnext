@@ -58,6 +58,7 @@ class StockEntry(StockController):
 		self.validate_bom()
 		self.validate_finished_goods()
 		self.validate_with_material_request()
+		self.validate_packing_slip()
 		self.validate_batch()
 		self.validate_inspection()
 		self.validate_fg_completed_qty()
@@ -155,6 +156,8 @@ class StockEntry(StockController):
 				doc.validate_transferred_qty(from_doctype=self.doctype, row_names=stock_entry_row_names)
 				doc.set_status(update=True)
 				doc.notify_update()
+
+		self.update_packing_slips()
 
 	def set_transferred_status(self, update=False, update_modified=True):
 		transferred_qty_map = self.get_transferred_qty_map()
@@ -741,7 +744,8 @@ class StockEntry(StockController):
 				sle = self.get_sl_entries(d, {
 					"warehouse": cstr(d.t_warehouse),
 					"actual_qty": flt(d.transfer_qty),
-					"incoming_rate": flt(d.valuation_rate)
+					"incoming_rate": flt(d.valuation_rate),
+					"packing_slip": None,
 				})
 
 				# SLE Dependency
@@ -1449,7 +1453,7 @@ class StockEntry(StockController):
 			return
 
 		po = frappe.get_doc("Purchase Order", self.purchase_order)
-		po.set_raw_materials_supplied_status(update=True)
+		po.set_raw_materials_supplied_qty(update=True)
 		po.update_reserved_qty_for_subcontract()
 		po.notify_update()
 

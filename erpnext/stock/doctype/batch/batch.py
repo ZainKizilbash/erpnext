@@ -435,7 +435,9 @@ def get_batches(item_code, warehouse, posting_date=None, posting_time=None, qty_
 			min(timestamp(sle.posting_date, sle.posting_time)) received_date
 		from `tabStock Ledger Entry` sle
 		join `tabBatch` b on b.name = sle.batch_no
-		where sle.item_code = %(item_code)s and sle.warehouse = %(warehouse)s {0}
+		where sle.item_code = %(item_code)s and sle.warehouse = %(warehouse)s
+			and (sle.packing_slip = '' or sle.packing_slip is null)
+			{0}
 		group by b.name
 		{1}
 	""".format(date_cond, having), args, as_dict=True)

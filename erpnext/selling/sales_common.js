@@ -568,7 +568,7 @@ erpnext.selling.SellingController = class SellingController extends erpnext.Tran
 	auto_select_batches() {
 		if ((this.frm.doc.doctype === "Delivery Note" || this.frm.doc.update_stock) && !this.frm.doc.is_return) {
 			var me = this;
-			return frappe.call({
+			return me.frm.call({
 				method: 'auto_select_batches',
 				doc: me.frm.doc,
 				freeze: 1,
