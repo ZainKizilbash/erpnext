@@ -781,7 +781,7 @@ class SalesInvoice(SellingController):
 			},
 		})
 
-		self.validate_packing_slip()
+		self.validate_packing_slips()
 
 		if not self.get('project'):
 			super(SalesInvoice, self).validate_with_previous_doc({

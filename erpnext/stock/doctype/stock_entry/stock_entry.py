@@ -58,7 +58,7 @@ class StockEntry(StockController):
 		self.validate_bom()
 		self.validate_finished_goods()
 		self.validate_with_material_request()
-		self.validate_packing_slip()
+		self.validate_packing_slips()
 		self.validate_batch()
 		self.validate_inspection()
 		self.validate_fg_completed_qty()
@@ -1432,6 +1432,12 @@ class StockEntry(StockController):
 				mreq_item.warehouse != (item.s_warehouse if self.purpose== "Material Issue" else item.t_warehouse):
 					frappe.throw(_("Item or Warehouse for row {0} does not match Material Request").format(item.idx),
 						frappe.MappingMismatchError)
+
+	def validate_packing_slips(self):
+		if self.purpose != "Send to Subcontractor" and any(d for d in self.get("items") if d.get("packing_slip")):
+			frappe.throw(_("Stock Entry against Packing Slip is only allowed for purpose 'Send to Subcontractor'"))
+
+		super().validate_packing_slips()
 
 	def validate_batch(self):
 		if self.purpose in ["Material Transfer for Manufacture", "Manufacture", "Repack", "Send to Subcontractor"]:

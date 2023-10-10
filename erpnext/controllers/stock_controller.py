@@ -435,7 +435,7 @@ class StockController(AccountsController):
 						row.idx, frappe.bold(row.subcontracted_item), self.purchase_order
 					))
 
-	def validate_packing_slip(self):
+	def validate_packing_slips(self):
 		def get_packing_slip_details(name):
 			if not packing_slip_map.get(name):
 				packing_slip_map[name] = frappe.db.get_value("Packing Slip", name, [

@@ -401,7 +401,7 @@ class DeliveryNote(SellingController):
 			},
 		})
 
-		self.validate_packing_slip()
+		self.validate_packing_slips()
 
 		if cint(frappe.get_cached_value('Selling Settings', None, 'maintain_same_sales_rate')) and not self.is_return:
 			self.validate_rate_with_reference_doc([["Sales Order", "sales_order", "sales_order_item"],
