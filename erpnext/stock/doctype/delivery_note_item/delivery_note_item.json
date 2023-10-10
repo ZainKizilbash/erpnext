@@ -181,7 +181,6 @@
    "options": "Item",
    "print_width": "150px",
    "reqd": 1,
-   "search_index": 1,
    "width": "150px"
   },
   {
@@ -539,7 +538,6 @@
    "options": "Warehouse",
    "print_hide": 1,
    "print_width": "100px",
-   "search_index": 1,
    "width": "100px"
   },
   {
@@ -1403,7 +1401,7 @@
  "idx": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-10-01 13:29:03.952830",
+ "modified": "2023-10-10 14:10:59.779985",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Delivery Note Item",

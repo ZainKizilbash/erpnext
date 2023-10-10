@@ -449,8 +449,7 @@
    "no_copy": 1,
    "options": "Stock Entry",
    "print_hide": 1,
-   "read_only": 1,
-   "search_index": 1
+   "read_only": 1
   },
   {
    "fieldname": "ste_detail",
@@ -458,7 +457,8 @@
    "label": "Stock Entry Child",
    "no_copy": 1,
    "print_hide": 1,
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "column_break_51",
@@ -639,7 +639,7 @@
  "idx": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-10-07 15:37:15.572747",
+ "modified": "2023-10-10 17:06:55.190127",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Stock Entry Detail",

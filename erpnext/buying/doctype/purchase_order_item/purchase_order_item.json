@@ -161,8 +161,7 @@
    "oldfieldname": "item_code",
    "oldfieldtype": "Link",
    "options": "Item",
-   "reqd": 1,
-   "search_index": 1
+   "reqd": 1
   },
   {
    "fieldname": "supplier_part_no",
@@ -476,8 +475,7 @@
    "oldfieldname": "warehouse",
    "oldfieldtype": "Link",
    "options": "Warehouse",
-   "print_hide": 1,
-   "search_index": 1
+   "print_hide": 1
   },
   {
    "fieldname": "project",
@@ -1244,7 +1242,7 @@
  "idx": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-10-05 00:05:29.650961",
+ "modified": "2023-10-10 14:11:56.466176",
  "modified_by": "Administrator",
  "module": "Buying",
  "name": "Purchase Order Item",

@@ -617,9 +617,9 @@ def get_future_stock_vouchers(posting_date, posting_time, for_warehouses=None, f
 	sle_vouchers = frappe.db.sql("""
 		select distinct sle.voucher_type, sle.voucher_no
 		from `tabStock Ledger Entry` sle
-		where timestamp(sle.posting_date, sle.posting_time) >= timestamp(%(posting_date)s, %(posting_time)s)
+		where (sle.posting_date, sle.posting_time) >= (%(posting_date)s, %(posting_time)s)
 		{condition}
-		order by timestamp(sle.posting_date, sle.posting_time) asc, creation asc
+		order by sle.posting_date, sle.posting_time, sle.creation
 		for update
 	""".format(condition=condition), {
 		"posting_date": posting_date,

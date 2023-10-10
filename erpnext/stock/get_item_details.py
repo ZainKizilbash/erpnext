@@ -803,8 +803,7 @@ def get_item_price(args, item_code, ignore_party=False):
 
 	args['item_code'] = item_code
 
-	conditions = """where item_code=%(item_code)s
-		and price_list=%(price_list)s"""
+	conditions = """where item_code = %(item_code)s and price_list = %(price_list)s"""
 	order_by = "order by ifnull(valid_from, '2000-01-01') desc, uom desc"
 
 	if not ignore_party:
@@ -821,8 +820,11 @@ def get_item_price(args, item_code, ignore_party=False):
 			conditions += """ and ifnull(valid_from, '2000-01-01') > %(transaction_date)s and ifnull(uom, '') = %(uom)s"""
 			order_by = "order by valid_from asc "
 		else:
-			conditions += """ and %(transaction_date)s between
-				ifnull(valid_from, '2000-01-01') and ifnull(valid_upto, '2500-12-31')"""
+			conditions += """ and (
+				%(transaction_date)s between valid_from and valid_upto
+				or valid_from is null
+				or valid_upto is null
+			)"""
 
 	out = frappe.db.sql("""
 		select name, price_list_rate, uom,
@@ -1041,7 +1043,7 @@ def get_serial_nos_by_fifo(args, sales_order=None):
 		return "\n".join(frappe.db.sql_list("""select name from `tabSerial No`
 			where item_code=%(item_code)s and warehouse=%(warehouse)s and
 			sales_order=IF(%(sales_order)s IS NULL, sales_order, %(sales_order)s)
-			order by timestamp(purchase_date, purchase_time)
+			order by purchase_date, purchase_time
 			asc limit %(qty)s""",
 			{
 				"item_code": args.item_code,
@@ -1057,7 +1059,7 @@ def get_serial_no_batchwise(args, sales_order=None):
 			where item_code=%(item_code)s and warehouse=%(warehouse)s and
 			sales_order=IF(%(sales_order)s IS NULL, sales_order, %(sales_order)s)
 			and batch_no=IF(%(batch_no)s IS NULL, batch_no, %(batch_no)s) order
-			by timestamp(purchase_date, purchase_time) asc limit %(qty)s""", {
+			by purchase_date, purchase_time limit %(qty)s""", {
 				"item_code": args.item_code,
 				"warehouse": args.warehouse,
 				"batch_no": args.batch_no,

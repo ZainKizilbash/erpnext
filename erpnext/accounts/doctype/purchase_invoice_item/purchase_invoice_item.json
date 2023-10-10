@@ -176,8 +176,7 @@
    "oldfieldname": "item_code",
    "oldfieldtype": "Link",
    "options": "Item",
-   "print_hide": 1,
-   "search_index": 1
+   "print_hide": 1
   },
   {
    "fieldname": "col_break1",
@@ -459,8 +458,7 @@
    "fieldtype": "Link",
    "in_standard_filter": 1,
    "label": "Accepted Warehouse",
-   "options": "Warehouse",
-   "search_index": 1
+   "options": "Warehouse"
   },
   {
    "fieldname": "rejected_warehouse",
@@ -1373,7 +1371,7 @@
  "idx": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-10-04 00:07:05.023337",
+ "modified": "2023-10-10 14:12:36.915735",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Purchase Invoice Item",

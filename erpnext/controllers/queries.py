@@ -727,23 +727,20 @@ def get_batch_no(doctype, txt, searchfield, start, page_len, filters):
 			batch.manufacturing_date,
 			batch.expiry_date
 		from `tabStock Ledger Entry` sle
-			INNER JOIN `tabBatch` batch on sle.batch_no = batch.name
+		inner join `tabBatch` batch on sle.batch_no = batch.name
 		where
 			batch.disabled = 0
 			and sle.item_code = %(item_code)s
-			and (sle.batch_no like %(txt)s
-			or batch.expiry_date like %(txt)s
-			or batch.manufacturing_date like %(txt)s)
-			and batch.docstatus < 2
+			and sle.batch_no like %(txt)s
 			{cond}
-			{match_conditions}
-		group by batch_no {having_clause}
+		group by batch_no
+		{having_clause}
 		order by batch.expiry_date, received_dt, sle.batch_no desc
-		limit %(start)s, %(page_len)s""".format(
-			cond=cond,
-			match_conditions=get_match_cond(doctype),
-			having_clause = having_clause
-		), args, as_list=1)
+		limit %(start)s, %(page_len)s
+	""".format(
+		cond=cond,
+		having_clause=having_clause
+	), args, as_list=1)
 
 	for d in batch_nos:
 		d[1] = "{0} {1}".format(frappe.format(flt(d[1])), cstr(d[2]))  # Actual Qty
