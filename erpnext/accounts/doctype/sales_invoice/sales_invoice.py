@@ -598,7 +598,7 @@ class SalesInvoice(SellingController):
 			if d.time_sheet:
 				timesheet = frappe.get_doc("Timesheet", d.time_sheet)
 				self.update_time_sheet_detail(timesheet, d, sales_invoice)
-				timesheet.calculate_total_amounts()
+				timesheet.calculate_totals()
 				timesheet.calculate_percentage_billed()
 				timesheet.flags.ignore_validate_update_after_submit = True
 				timesheet.set_status()
@@ -969,12 +969,12 @@ class SalesInvoice(SellingController):
 	def add_timesheet_data(self):
 		self.set('timesheets', [])
 		if self.project:
-			for data in get_projectwise_timesheet_data(self.project):
+			for d in get_projectwise_timesheet_data(self.project):
 				self.append('timesheets', {
-						'time_sheet': data.parent,
-						'billing_hours': data.billing_hours,
-						'billing_amount': data.billing_amt,
-						'timesheet_detail': data.name
+						'time_sheet': d.timesheet,
+						'timesheet_detail': d.name,
+						'billing_hours': d.billing_hours,
+						'billing_amount': d.billing_amount,
 					})
 
 			self.calculate_billing_amount_for_timesheet()
