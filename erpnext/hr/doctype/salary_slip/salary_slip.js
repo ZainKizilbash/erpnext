@@ -157,9 +157,6 @@ frappe.ui.form.on("Salary Slip", {
 	toggle_fields: function(frm) {
 		frm.toggle_display(['hourly_wages', 'timesheets'], cint(frm.doc.salary_slip_based_on_timesheet)===1);
 
-		frm.toggle_display(['payment_days', 'total_working_days', 'leave_without_pay'],
-			frm.doc.payroll_frequency!="");
-
 		frm.set_df_property('leave_without_pay', 'read_only', cint(frm.doc.set_lwp_manually) ? 0 : 1);
 		frm.set_df_property('late_days', 'read_only', cint(frm.doc.set_lwp_manually) ? 0 : 1);
 
