@@ -575,7 +575,7 @@ class VehicleTransactionController(StockController):
 			make_vehicle_log(self.vehicle,
 				odometer=cint(self.get('vehicle_odometer')),
 				customer=self.get('customer'),
-				vehicle_owner=self.get('financer'),
+				vehicle_owner=self.get('vehicle_owner') or self.get('financer'),
 				date=self.get('posting_date') or self.get('transaction_date'),
 				project=self.get('project'),
 				reference_type=self.doctype,
