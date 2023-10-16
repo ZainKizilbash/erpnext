@@ -12,11 +12,11 @@ from erpnext.stock.stock_ledger import get_valuation_rate
 from erpnext.stock.doctype.stock_entry.stock_entry import get_used_alternative_items
 from erpnext.stock.doctype.serial_no.serial_no import get_serial_nos
 from erpnext.accounts.doctype.budget.budget import validate_expense_against_budget
-from erpnext.controllers.stock_controller import StockController
+from erpnext.controllers.transaction_controller import TransactionController
 import json
 
 
-class BuyingController(StockController):
+class BuyingController(TransactionController):
 	def __setup__(self):
 		if hasattr(self, "taxes"):
 			self.flags.print_taxes_with_zero_amount = cint(frappe.get_cached_value("Print Settings", None,
@@ -77,33 +77,86 @@ class BuyingController(StockController):
 		if self.doctype in ("Purchase Receipt", "Purchase Invoice"):
 			self.update_valuation_rate("items")
 
-	def set_missing_values(self, for_validate=False):
-		from erpnext.controllers.accounts_controller import force_party_fields
+	def on_submit(self):
+		if self.get('is_return'):
+			return
 
+		if self.doctype == "Purchase Order":
+			if frappe.get_cached_value("Buying Settings", None, "update_buying_prices_on_submission_of_purchase_order"):
+				self.update_item_prices()
+
+		if self.doctype in ['Purchase Receipt', 'Purchase Invoice']:
+			field = 'purchase_invoice' if self.doctype == 'Purchase Invoice' else 'purchase_receipt'
+
+			self.process_fixed_asset()
+			self.update_fixed_asset(field)
+
+		update_last_purchase_rate(self, is_submit=1)
+
+	def on_cancel(self):
+		if not self.get('is_return'):
+			update_last_purchase_rate(self, is_submit=0)
+			if self.doctype in ['Purchase Receipt', 'Purchase Invoice']:
+				field = 'purchase_invoice' if self.doctype == 'Purchase Invoice' else 'purchase_receipt'
+
+				self.delete_linked_asset()
+				self.update_fixed_asset(field, delete_asset=True)
+
+	def update_status_on_cancel(self):
+		to_update = {}
+		if self.meta.has_field("status"):
+			to_update["status"] = "Cancelled"
+
+		not_applicable_fields = ["billing_status", "receipt_status"]
+		for f in not_applicable_fields:
+			if self.meta.has_field(f):
+				to_update[f] = "Not Applicable"
+
+		if to_update:
+			self.db_set(to_update)
+
+	def get_party(self):
+		party = self.get("supplier")
+		party_name = self.get("supplier_name") if party else None
+		return "Supplier", party, party_name
+
+	def get_billing_party(self):
+		if self.get("letter_of_credit"):
+			return "Letter of Credit", self.get("letter_of_credit"), self.get("letter_of_credit")
+
+		return super().get_billing_party()
+
+	def set_missing_values(self, for_validate=False):
 		super(BuyingController, self).set_missing_values(for_validate)
 
 		self.set_default_supplier_warehouse()
 		self.set_is_subcontracted()
 
 		self.set_supplier_from_item_default()
-		self.set_price_list_currency("Buying")
 
 		# set contact and address details for supplier, if they are not mentioned
-		if getattr(self, "supplier", None):
-			self.update_if_missing(get_party_details(self.supplier,
+		if self.get("supplier"):
+			self.update_if_missing(get_party_details(
+				party=self.supplier,
 				party_type="Supplier",
 				ignore_permissions=self.flags.ignore_permissions,
 				letter_of_credit=self.get("letter_of_credit"),
 				doctype=self.doctype,
 				company=self.company,
 				project=self.get('project'),
-				party_address=self.supplier_address,
+				party_address=self.get("supplier_address"),
 				shipping_address=self.get('shipping_address'),
 				contact_person=self.get('contact_person'),
 				account=self.get('credit_to'),
-				posting_date=self.get('posting_date') or self.get('transaction_date')
-			), force_fields=force_party_fields)
+				posting_date=self.get('posting_date') or self.get('transaction_date'),
+				bill_date=self.get('bill_date'),
+				delivery_date=self.get('schedule_date'),
+				currency=self.get('currency'),
+				price_list=self.get('buying_price_list'),
+				transaction_type=self.get('transaction_type')
+			), force_fields=self.force_party_fields)
 
+		self.set_price_list_currency("Buying")
 		self.set_missing_item_details(for_validate)
 
 	def set_supplier_from_item_default(self):
@@ -166,23 +219,6 @@ class BuyingController(StockController):
 			""".format(purchase_item_field=purchase_item_field), d.name)
 
 			d.landed_cost_voucher_amount = flt(lc_voucher_data[0][0]) if lc_voucher_data else 0.0
-
-	def set_total_in_words(self):
-		from frappe.utils import money_in_words
-		if self.meta.get_field("base_in_words"):
-			if self.meta.get_field("base_rounded_total") and not self.is_rounded_total_disabled():
-				amount = self.base_rounded_total
-			else:
-				amount = self.base_grand_total
-			self.base_in_words = money_in_words(amount, self.company_currency)
-
-		if self.meta.get_field("in_words"):
-			if self.meta.get_field("rounded_total") and not self.is_rounded_total_disabled():
-				amount = self.rounded_total
-			else:
-				amount = self.grand_total
-
-			self.in_words = money_in_words(amount, self.currency)
 
 	# update valuation rate
 	def update_valuation_rate(self, parentfield):
@@ -882,48 +918,6 @@ class BuyingController(StockController):
 			if self.get("is_subcontracted"):
 				po_obj.update_reserved_qty_for_subcontract()
 
-	def on_submit(self):
-		if self.get('is_return'):
-			return
-
-		if self.doctype == "Purchase Order":
-			if frappe.get_cached_value("Buying Settings", None, "update_buying_prices_on_submission_of_purchase_order"):
-				self.update_item_prices()
-
-		if self.doctype in ['Purchase Receipt', 'Purchase Invoice']:
-			field = 'purchase_invoice' if self.doctype == 'Purchase Invoice' else 'purchase_receipt'
-
-			self.process_fixed_asset()
-			self.update_fixed_asset(field)
-
-		update_last_purchase_rate(self, is_submit=1)
-
-	def on_cancel(self):
-		super(BuyingController, self).on_cancel()
-
-		if self.get('is_return'):
-			return
-
-		update_last_purchase_rate(self, is_submit = 0)
-		if self.doctype in ['Purchase Receipt', 'Purchase Invoice']:
-			field = 'purchase_invoice' if self.doctype == 'Purchase Invoice' else 'purchase_receipt'
-
-			self.delete_linked_asset()
-			self.update_fixed_asset(field, delete_asset=True)
-
-	def update_status_on_cancel(self):
-		to_update = {}
-		if self.meta.has_field("status"):
-			to_update["status"] = "Cancelled"
-
-		not_applicable_fields = ["billing_status", "receipt_status"]
-		for f in not_applicable_fields:
-			if self.meta.has_field(f):
-				to_update[f] = "Not Applicable"
-
-		if to_update:
-			self.db_set(to_update)
-
 	def validate_budget(self):
 		if self.docstatus == 1:
 			for data in self.get('items'):
@@ -1063,9 +1057,9 @@ class BuyingController(StockController):
 		if not self.get("items"):
 			return
 
-		earliest_schedule_date = min([getdate(d.schedule_date) for d in self.get("items") if d.get("schedule_date")])
-		if earliest_schedule_date:
-			self.schedule_date = earliest_schedule_date
+		schedule_dates = [getdate(d.schedule_date) for d in self.get("items") if d.get("schedule_date")]
+		if schedule_dates:
+			self.schedule_date = min(schedule_dates)
 
 		if self.schedule_date:
 			for d in self.get('items'):

@@ -86,6 +86,7 @@ class PurchaseOrder(BuyingController):
 
 	def on_cancel(self):
 		super(PurchaseOrder, self).on_cancel()
+		self.unlink_payments_on_order_cancel()
 		self.update_status_on_cancel()
 
 		if self.has_drop_ship_item():

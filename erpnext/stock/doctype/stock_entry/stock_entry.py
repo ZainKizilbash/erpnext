@@ -15,7 +15,7 @@ from erpnext.manufacturing.doctype.work_order.work_order import get_qty_with_all
 from frappe.model.mapper import get_mapped_doc
 from erpnext.stock.doctype.serial_no.serial_no import update_serial_nos_after_submit, get_serial_nos
 from erpnext.stock.doctype.stock_reconciliation.stock_reconciliation import OpeningEntryAccountError
-from erpnext.controllers.stock_controller import StockController
+from erpnext.controllers.transaction_controller import TransactionController
 import json
 
 
@@ -32,13 +32,21 @@ form_grid_templates = {
 force_fields = ["stock_uom", "has_batch_no", "has_serial_no", "is_vehicle", "alt_uom", "alt_uom_size"]
 
 
-class StockEntry(StockController):
+class StockEntry(TransactionController):
 	def get_feed(self):
 		return self.stock_entry_type
 
 	def onload(self):
 		for item in self.get("items"):
 			item.update(get_bin_details(item.item_code, item.s_warehouse))
+
+	def before_print(self, print_settings=None):
+		super().before_print(print_settings)
+
+		self.s_warehouses = list(set([frappe.get_cached_value("Warehouse", item.s_warehouse, 'warehouse_name')
+			for item in self.items if item.get('s_warehouse')]))
+		self.t_warehouses = list(set([frappe.get_cached_value("Warehouse", item.t_warehouse, 'warehouse_name')
+			for item in self.items if item.get('t_warehouse')]))
 
 	def validate(self):
 		self.get_work_order()
@@ -70,7 +78,7 @@ class StockEntry(StockController):
 			self.fg_completed_qty = 0.0
 
 		if self._action == 'submit':
-			self.make_batches("t_warehouse", item_condition=lambda d: not d.s_warehouse)
+			self.auto_create_batches("t_warehouse", item_condition=lambda d: not d.s_warehouse)
 
 		self.set_incoming_rate()
 		self.validate_serialized_batch()
