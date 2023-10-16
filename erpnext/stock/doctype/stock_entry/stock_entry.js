@@ -722,11 +722,11 @@ erpnext.stock.StockEntry = class StockEntry extends erpnext.stock.StockControlle
 
 		this.frm.set_query("supplier_address", function() {
 			frappe.dynamic_link = { doc: me.frm.doc, fieldname: 'supplier', doctype: 'Supplier' };
-			return erpnext.queries.address_query
+			return erpnext.queries.address_query(me.frm.doc);
 		});
 		this.frm.set_query("customer_address", function() {
 			frappe.dynamic_link = { doc: me.frm.doc, fieldname: 'customer', doctype: 'Customer' };
-			return erpnext.queries.address_query
+			return erpnext.queries.address_query(me.frm.doc);
 		});
 
 		let batch_no_field = this.frm.get_docfield("items", "batch_no");
