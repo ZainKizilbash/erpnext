@@ -1236,7 +1236,7 @@ def make_stock_entry(source_name, target_doc=None):
 		"Purchase Invoice Item": {
 			"doctype": "Stock Entry Detail",
 			"field_map": {
-				"stock_qty": "transfer_qty",
+				"stock_qty": "stock_qty",
 				"batch_no": "batch_no"
 			},
 		}

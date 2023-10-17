@@ -392,7 +392,7 @@ class StockController(AccountsController):
 						.format(row.item_code, self.purchase_order))
 
 				total_supplied = frappe.db.sql("""
-					select sum(transfer_qty)
+					select sum(stock_qty)
 					from `tabStock Entry Detail`, `tabStock Entry`
 					where `tabStock Entry`.purchase_order = %s
 						and `tabStock Entry`.docstatus = 1

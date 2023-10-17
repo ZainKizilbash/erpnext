@@ -399,7 +399,7 @@ class PurchaseOrder(BuyingController):
 					select
 						if(i.original_item != '' and i.original_item is not null, i.original_item, i.item_code) as rm_item_code,
 						i.subcontracted_item as main_item_code,
-						sum(i.transfer_qty) as supplied_qty
+						sum(i.stock_qty) as supplied_qty
 					from `tabStock Entry Detail` i
 					inner join `tabStock Entry` ste on ste.name = i.parent
 					where ste.docstatus = 1 and ste.purpose = 'Send to Subcontractor'
