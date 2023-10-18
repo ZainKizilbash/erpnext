@@ -384,7 +384,12 @@ class PurchaseOrder(BuyingController):
 
 		for d in self.get("supplied_items"):
 			key = (d.rm_item_code, d.main_item_code)
+			last_rm_of_key = [x for x in self.get("supplied_items") if (x.rm_item_code, x.main_item_code) == key][-1]
+
 			d.supplied_qty = flt(supplied_qty_map.get(key))
+			if d != last_rm_of_key and key in supplied_qty_map:
+				d.supplied_qty = min(d.required_qty, d.supplied_qty)
+				supplied_qty_map[key] -= d.supplied_qty
 
 			if update:
 				d.db_set("supplied_qty", d.supplied_qty, update_modified=update_modified)
@@ -417,7 +422,12 @@ class PurchaseOrder(BuyingController):
 
 		for d in self.get("supplied_items"):
 			key = (d.rm_item_code, d.main_item_code)
+			last_rm_of_key = [x for x in self.get("supplied_items") if (x.rm_item_code, x.main_item_code) == key][-1]
+
 			d.packed_qty = flt(packed_qty_map.get(key))
+			if d != last_rm_of_key and key in packed_qty_map:
+				d.packed_qty = min(d.required_qty, d.packed_qty)
+				packed_qty_map[key] -= d.packed_qty
 
 			if update:
 				d.db_set("packed_qty", d.packed_qty, update_modified=update_modified)
