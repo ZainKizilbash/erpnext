@@ -69,6 +69,7 @@ class Project(StatusUpdater):
 		self.set_onload('valid_manual_project_status_names', get_valid_manual_project_status_names(self))
 		self.set_onload('is_manual_project_status', is_manual_project_status(self.project_status))
 		self.set_onload('contact_nos', get_all_contact_nos('Customer', self.customer))
+		self.set_onload('task_count', self.get_task_count())
 
 		if self.meta.has_field('applies_to_vehicle'):
 			self.set_onload('customer_vehicle_selector_data', get_customer_vehicle_selector_data(self.customer,
@@ -101,6 +102,7 @@ class Project(StatusUpdater):
 		self.validate_warranty()
 		self.validate_vehicle_panels()
 
+		self.set_tasks_status()
 		self.set_percent_complete()
 		self.set_vehicle_status()
 		self.set_project_date()
@@ -386,6 +388,41 @@ class Project(StatusUpdater):
 				'per_gross_margin': self.per_gross_margin,
 			}, None, update_modified=update_modified)
 
+	def set_tasks_status(self, update=False, update_modified=False):
+		tasks_data = frappe.get_all("Task", fields=["name", "status"], filters={
+			"project": self.name,
+			"status": ["!=", "Cancelled"],
+		})
+
+		if not tasks_data:
+			self.tasks_status = "No Tasks"
+		elif all(d.status == "Completed" for d in tasks_data):
+			self.tasks_status = "Completed"
+		elif all(d.status == "Open" for d in tasks_data):
+			self.tasks_status = "Not Started"
+		elif any(d.status in ["Working", "Pending Review"] for d in tasks_data):
+			self.tasks_status = "In Progress"
+		elif any(d.status == "On Hold" for d in tasks_data):
+			self.tasks_status = "On Hold"
+		else:
+			self.tasks_status = "In Progress"
+
+		if update:
+			self.db_set('tasks_status', self.tasks_status, update_modified=update_modified)
+
+	def get_task_count(self):
+		tasks_data = frappe.get_all("Task", pluck="status", filters={
+			"project": self.name,
+			"status": ["!=", "Cancelled"],
+		})
+
+		count = frappe._dict({
+			"total_tasks": len(tasks_data),
+			"completed_tasks": len([status for status in tasks_data if status == "Completed"]),
+		})
+
+		return count
+
 	def set_percent_complete(self, update=False, update_modified=False):
 		if self.percent_complete_method == "Manual":
 			if self.status == "Completed":
@@ -423,6 +460,8 @@ class Project(StatusUpdater):
 			}, None, update_modified=update_modified)
 
 	def set_ready_to_close(self, update=True):
+		self.validate_tasks_completed()
+
 		previous_ready_to_close = self.ready_to_close
 
 		self.ready_to_close = 1
@@ -438,6 +477,20 @@ class Project(StatusUpdater):
 				'ready_to_close_dt': self.ready_to_close_dt,
 				'status': self.status,
 			}, None)
+
+	def validate_tasks_completed(self):
+		if not frappe.get_cached_value("Projects Settings", None, "validate_tasks_completed"):
+			return
+
+		incomplete_tasks = frappe.get_all("Task", filters={
+			"project": self.name,
+			"status": ["not in", ["Completed", "Cancelled"]]
+		}, fields=["name", "subject"])
+
+		if incomplete_tasks:
+			frappe.throw(_("Task not completed:<br><br><ul>{0}</ul>").format(
+				"".join([f"<li>{frappe.utils.get_link_to_form('Task', d.name)} ({d.subject})</li>" for d in incomplete_tasks])
+			))
 
 	def validate_ready_to_close(self):
 		if not frappe.get_cached_value("Projects Settings", None, "validate_ready_to_close"):
