@@ -1217,8 +1217,8 @@ def get_stock_items(project, get_sales_invoice=True):
 		from `tabSales Invoice Item` i
 		inner join `tabSales Invoice` p on p.name = i.parent
 		where p.docstatus = 1 and {0} and ifnull(i.sales_order, '') = '' and ifnull(i.delivery_note, '') = ''
-			and (p.project = %s or i.project = %s)
-	""".format(is_material_condition), [project.name, project.name], as_dict=1)
+			and i.project = %s
+	""".format(is_material_condition), project.name, as_dict=1)
 	set_sales_data_customer_amounts(sinv_data, project)
 
 	stock_data = get_items_data_template()
@@ -1293,9 +1293,9 @@ def get_service_items(project, get_sales_invoice=True):
 			from `tabSales Invoice Item` i
 			inner join `tabSales Invoice` p on p.name = i.parent
 			where p.docstatus = 1 and {0} and ifnull(i.sales_order, '') = ''
-				and (p.project = %s or i.project = %s)
+				and i.project = %s
 			order by p.posting_date, p.creation, i.idx
-		""".format(is_service_condition), [project.name, project.name], as_dict=1)
+		""".format(is_service_condition), project.name, as_dict=1)
 	set_sales_data_customer_amounts(sinv_data, project)
 
 	service_data = get_items_data_template()
