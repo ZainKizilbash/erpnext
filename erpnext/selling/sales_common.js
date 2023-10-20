@@ -232,7 +232,26 @@ erpnext.selling.SellingController = class SellingController extends erpnext.Tran
 		}
 	}
 
+	default_underinsurance_percentage() {
+		let me = this;
+		$.each(me.frm.doc.items || [], function (i, d) {
+			d.underinsurance_percentage = flt(me.frm.doc.default_underinsurance_percentage);
+		});
+
+		if (this.frm.doc.docstatus === 0) {
+			me.calculate_taxes_and_totals();
+		} else {
+			me.frm.refresh_field('items');
+		}
+	}
+
 	depreciation_percentage() {
+		if (this.frm.doc.docstatus === 0) {
+			this.calculate_taxes_and_totals();
+		}
+	}
+
+	underinsurance_percentage() {
 		if (this.frm.doc.docstatus === 0) {
 			this.calculate_taxes_and_totals();
 		}

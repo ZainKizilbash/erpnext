@@ -42,7 +42,7 @@ class TransactionController(StockController):
 		'qty', 'stock_qty', 'alt_uom_qty', 'net_weight',
 		'amount', 'taxable_amount', 'net_amount', 'total_discount', 'amount_before_discount',
 		'item_taxes', 'item_taxes_before_discount', 'tax_inclusive_amount', 'tax_inclusive_amount_before_discount',
-		'amount_before_depreciation', 'depreciation_amount',
+		'amount_before_depreciation', 'depreciation_amount', 'underinsurance_amount',
 	]
 
 	merge_items_rate_fields = [
@@ -70,10 +70,12 @@ class TransactionController(StockController):
 		('total_before_discount', 'amount_before_discount'),
 		('tax_exclusive_total_before_discount', 'tax_exclusive_amount_before_discount'),
 
-		('total_depreciation', 'depreciation_amount'),
-		('tax_exclusive_total_depreciation', 'tax_exclusive_depreciation_amount'),
 		('total_before_depreciation', 'amount_before_depreciation'),
 		('tax_exclusive_total_before_depreciation', 'tax_exclusive_amount_before_depreciation'),
+		('total_depreciation', 'depreciation_amount'),
+		('tax_exclusive_total_depreciation', 'tax_exclusive_depreciation_amount'),
+		('total_underinsurance', 'underinsurance_amount'),
+		('tax_exclusive_total_underinsurance', 'tax_exclusive_underinsurance_amount'),
 
 		('grand_total', 'tax_inclusive_amount'),
 		('grand_total_before_discount', 'tax_inclusive_amount_before_discount'),
@@ -440,6 +442,10 @@ class TransactionController(StockController):
 		if self.doctype == "Sales Invoice":
 			group_item.depreciation_percentage = group_item.depreciation_amount / group_item.amount_before_depreciation * 100\
 				if group_item.amount_before_depreciation else group_item.depreciation_percentage
+
+			amount_after_depreciation = group_item.amount_before_depreciation - group_item.depreciation_amount
+			group_item.underinsurance_percentage = group_item.underinsurance_amount / amount_after_depreciation * 100\
+				if flt(amount_after_depreciation, 6) else group_item.underinsurance_percentage
 
 	def group_items_by_item_tax_and_item_group(self):
 		grouped = self.group_items_by(key="item_tax_template")
