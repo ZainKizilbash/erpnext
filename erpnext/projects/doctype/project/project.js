@@ -316,7 +316,7 @@ erpnext.projects.ProjectController = class ProjectController extends erpnext.con
 			status_items = [vehicle_status_item].concat(status_items);
 		}
 
-		me.add_indicator_section(__("Work"), status_items);
+		me.add_indicator_section(__("Status"), status_items);
 
 		// Billing Status
 		var billing_status_color;
