@@ -43,7 +43,6 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 
 	before_submit() {
 		this.frm.toggle_reqd("transfer_material_against", this.frm.doc.operations && this.frm.doc.operations.length);
-		this.frm.fields_dict.operations.grid.toggle_reqd("workstation", this.frm.doc.operations?.length);
 	}
 
 	setup_queries() {

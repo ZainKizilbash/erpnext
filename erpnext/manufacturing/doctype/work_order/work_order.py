@@ -341,12 +341,14 @@ class WorkOrder(StatusUpdater):
 
 		operations = []
 		if bom_list:
+			bom_list_order_str = ', '.join(frappe.db.escape(bom) for bom in bom_list)
 			operations = frappe.db.sql("""
-				select operation, description, workstation, idx, base_hour_rate as hour_rate, time_in_mins,
-					'Pending' as status, parent as bom, batch_size
-				from `tabBOM Operation`
-				where parent in %s order by idx
-			""", [bom_list], as_dict=1)
+				SELECT operation, description, workstation, base_hour_rate AS hour_rate, time_in_mins,
+					'Pending' AS status, parent AS bom, batch_size
+				FROM `tabBOM Operation`
+				WHERE parent IN %s
+				ORDER BY FIELD(parent, {bom_list_order_str}), idx
+			""".format(bom_list_order_str=bom_list_order_str), [bom_list], as_dict=1)
 
 		self.set('operations', operations)
 
