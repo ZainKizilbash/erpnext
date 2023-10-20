@@ -2143,10 +2143,14 @@ def get_delivery_note(project_name):
 
 	project_details = get_project_details(project, "Delivery Note")
 
-	# Create Sales Invoice
+	# Create Delivery Note
 	target_doc = frappe.new_doc("Delivery Note")
 	target_doc.company = project.company
 	target_doc.project = project.name
+
+	default_transaction_type = frappe.get_cached_value("Projects Settings", None, "default_sales_transaction_type")
+	if default_transaction_type:
+		target_doc.transaction_type = default_transaction_type
 
 	# Set Project Details
 	for k, v in project_details.items():
@@ -2199,6 +2203,10 @@ def get_sales_order(project_name, items_type=None):
 	sales_order_print_heading = frappe.get_cached_value("Projects Settings", None, "sales_order_print_heading")
 	if sales_order_print_heading:
 		target_doc.select_print_heading = sales_order_print_heading
+
+	default_transaction_type = frappe.get_cached_value("Projects Settings", None, "default_sales_transaction_type")
+	if default_transaction_type:
+		target_doc.transaction_type = default_transaction_type
 
 	# Set Project Details
 	for k, v in project_details.items():
