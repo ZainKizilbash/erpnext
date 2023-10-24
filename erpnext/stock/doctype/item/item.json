@@ -389,7 +389,7 @@
    "fieldname": "default_material_request_type",
    "fieldtype": "Select",
    "label": "Default Material Request Type",
-   "options": "Purchase\nManufacture\nCustomer Provided",
+   "options": "\nPurchase\nManufacture\nCustomer Provided",
    "read_only_depends_on": "eval: doc.is_customer_provided_item"
   },
   {
@@ -1362,7 +1362,7 @@
  "idx": 2,
  "image_field": "image",
  "links": [],
- "modified": "2023-10-24 13:49:33.294249",
+ "modified": "2023-10-24 14:33:27.959772",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Item",
