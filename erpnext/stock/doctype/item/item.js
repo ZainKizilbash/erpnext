@@ -125,8 +125,6 @@ frappe.ui.form.on("Item", {
 			frm.set_df_property(fieldname, "read_only_depends_on", null);
 			frm.set_df_property(fieldname, "read_only", 1);
 		});
-
-		frm.toggle_reqd('customer', frm.doc.is_customer_provided_item ? 1:0);
 	},
 
 	validate: function(frm){
@@ -138,7 +136,7 @@ frappe.ui.form.on("Item", {
 	},
 
 	is_customer_provided_item: function(frm) {
-		frm.toggle_reqd('customer', frm.doc.is_customer_provided_item ? 1:0);
+		frm.set_value("is_purchase_item", frm.doc.is_customer_provided_item ? 0 : 1);
 	},
 
 	is_fixed_asset: function(frm) {
