@@ -284,6 +284,7 @@
    "precision": "9",
    "print_hide": 1,
    "read_only": 1,
+   "read_only_depends_on": "eval:doc.stock_uom && doc.uom == doc.stock_uom",
    "reqd": 1
   },
   {
@@ -1394,7 +1395,7 @@
  "idx": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-10-20 18:27:19.504641",
+ "modified": "2023-10-23 23:15:25.844727",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Delivery Note Item",
