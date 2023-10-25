@@ -903,13 +903,20 @@ class Project(StatusUpdater):
 	def validate_depreciation(self):
 		if not self.insurance_company:
 			self.default_depreciation_percentage = 0
+			self.default_underinsurance_percentage = 0
 			self.non_standard_depreciation = []
+			self.non_standard_underinsurance = []
 			return
 
 		if flt(self.default_depreciation_percentage) > 100:
 			frappe.throw(_("Default Depreciation Rate cannot be greater than 100%"))
 		elif flt(self.default_depreciation_percentage) < 0:
 			frappe.throw(_("Default Depreciation Rate cannot be negative"))
+
+		if flt(self.default_underinsurance_percentage) > 100:
+			frappe.throw(_("Default Underinsurance Rate cannot be greater than 100%"))
+		elif flt(self.default_underinsurance_percentage) < 0:
+			frappe.throw(_("Default Underinsurance Rate cannot be negative"))
 
 		item_codes_visited = set()
 		for d in self.non_standard_depreciation:
@@ -922,7 +929,18 @@ class Project(StatusUpdater):
 				frappe.throw(_("Row #{0}: Duplicate Non Standard Depreciation row for Item {1}")
 					.format(d.idx, frappe.bold(d.depreciation_item_code)))
 
-			item_codes_visited.add(d.depreciation_item_code)
+		item_codes_visited = set()
+		for d in self.non_standard_underinsurance:
+			if flt(d.underinsurance_percentage) > 100:
+				frappe.throw(_("Row #{0}: Underinsurance Rate cannot be greater than 100%").format(d.idx))
+			elif flt(d.underinsurance_percentage) < 0:
+				frappe.throw(_("Row #{0}: Underinsurance Rate cannot be negative").format(d.idx))
+
+			if d.underinsurance_item_code in item_codes_visited:
+				frappe.throw(_("Row #{0}: Duplicate Non Standard Underinsurance row for Item {1}")
+					.format(d.idx, frappe.bold(d.underinsurance_item_code)))
+
+			item_codes_visited.add(d.underinsurance_item_code)
 
 	def validate_warranty(self):
 		if self.get('warranty_claim_denied'):
@@ -1365,8 +1383,16 @@ def set_sales_data_customer_amounts(data, project):
 
 			if project.insurance_company and project.bill_to and project.bill_to != project.customer:
 				d.has_customer_depreciation = 1
-				d.customer_net_amount = d.net_amount * flt(d.depreciation_percentage) / 100
-				d.customer_net_rate = d.net_rate * flt(d.depreciation_percentage) / 100
+
+				depreciation_amount = d.net_amount * flt(d.depreciation_percentage) / 100
+				underinsurance_amount = (d.net_amount - depreciation_amount) * flt(d.underinsurance_percentage) / 100
+				d.customer_net_amount = depreciation_amount + underinsurance_amount
+
+				depreciation_rate = d.net_rate * flt(d.depreciation_percentage) / 100
+				underinsurance_rate = (d.net_rate - depreciation_rate) * flt(d.underinsurance_percentage) / 100
+				d.customer_net_rate = depreciation_rate + underinsurance_rate
+
+				d.cumulative_depreciation_percentage = d.customer_net_amount / d.net_amount * 100 if d.net_amount else 0
 			else:
 				d.customer_net_amount = d.net_amount
 				d.customer_net_rate = d.net_rate
@@ -1401,7 +1427,7 @@ def get_item_taxes(project, data, company):
 
 					customer_tax_amount = 0 if d.get('is_claim_item') else flt(amount)
 					if d.has_customer_depreciation:
-						customer_tax_amount *= d.depreciation_percentage / 100
+						customer_tax_amount *= d.cumulative_depreciation_percentage / 100
 
 					customer_tax_amount *= conversion_rate
 
@@ -1887,11 +1913,14 @@ def get_project_details(project, doctype):
 		'service_advisor', 'service_manager',
 		'insurance_company', 'insurance_loss_no', 'insurance_policy_no',
 		'insurance_surveyor', 'insurance_surveyor_company',
-		'has_stin', 'default_depreciation_percentage',
+		'has_stin', 'default_depreciation_percentage', 'default_underinsurance_percentage',
 		'campaign'
 	]
-	sales_only_fields = ['customer', 'bill_to', 'vehicle_owner', 'has_stin', 'default_depreciation_percentage',
-		'contact_person', 'contact_mobile', 'contact_phone']
+	sales_only_fields = [
+		'customer', 'bill_to', 'vehicle_owner', 'has_stin',
+		'default_depreciation_percentage', 'default_underinsurance_percentage',
+		'contact_person', 'contact_mobile', 'contact_phone'
+	]
 
 	for f in fieldnames:
 		if f in sales_only_fields and doctype not in sales_doctypes:
@@ -1997,7 +2026,14 @@ def make_sales_invoice(project_name, target_doc=None, depreciation_type=None, cl
 				target_doc.set(k, v)
 
 	def set_depreciation_type_and_customer():
-		if depreciation_type and (project.default_depreciation_percentage or project.non_standard_depreciation):
+		has_depreciation_rate = (
+			project.default_depreciation_percentage
+			or project.default_underinsurance_percentage
+			or project.non_standard_depreciation
+			or project.non_standard_underinsurance
+		)
+
+		if depreciation_type and has_depreciation_rate:
 			target_doc.depreciation_type = depreciation_type
 			if depreciation_type == "Depreciation Amount Only":
 				target_doc.bill_to = target_doc.customer
@@ -2107,10 +2143,14 @@ def get_delivery_note(project_name):
 
 	project_details = get_project_details(project, "Delivery Note")
 
-	# Create Sales Invoice
+	# Create Delivery Note
 	target_doc = frappe.new_doc("Delivery Note")
 	target_doc.company = project.company
 	target_doc.project = project.name
+
+	default_transaction_type = frappe.get_cached_value("Projects Settings", None, "default_sales_transaction_type")
+	if default_transaction_type:
+		target_doc.transaction_type = default_transaction_type
 
 	# Set Project Details
 	for k, v in project_details.items():
@@ -2163,6 +2203,10 @@ def get_sales_order(project_name, items_type=None):
 	sales_order_print_heading = frappe.get_cached_value("Projects Settings", None, "sales_order_print_heading")
 	if sales_order_print_heading:
 		target_doc.select_print_heading = sales_order_print_heading
+
+	default_transaction_type = frappe.get_cached_value("Projects Settings", None, "default_sales_transaction_type")
+	if default_transaction_type:
+		target_doc.transaction_type = default_transaction_type
 
 	# Set Project Details
 	for k, v in project_details.items():
@@ -2294,9 +2338,16 @@ def set_depreciation_in_invoice_items(items_list, project, force=False):
 		if d.depreciation_item_code:
 			non_standard_depreciation_items[d.depreciation_item_code] = flt(d.depreciation_percentage)
 
+	non_standard_underinsurance_items = {}
+	for d in project.non_standard_underinsurance:
+		if d.underinsurance_item_code:
+			non_standard_underinsurance_items[d.underinsurance_item_code] = flt(d.underinsurance_percentage)
+
 	materials_item_groups = project.get_item_groups_subtree(project.materials_item_group)
+
 	for d in items_list:
-		if d.is_stock_item or d.item_group in materials_item_groups or d.item_code in non_standard_depreciation_items:
+		is_material = d.is_stock_item or d.item_group in materials_item_groups
+		if is_material or d.item_code in non_standard_depreciation_items:
 			if force or not flt(d.depreciation_percentage):
 				if d.item_code in non_standard_depreciation_items:
 					d.depreciation_percentage = non_standard_depreciation_items[d.item_code]
@@ -2304,6 +2355,12 @@ def set_depreciation_in_invoice_items(items_list, project, force=False):
 					d.depreciation_percentage = flt(project.default_depreciation_percentage)
 		else:
 			d.depreciation_percentage = 0
+
+		if force or not flt(d.underinsurance_percentage):
+			if d.item_code in non_standard_underinsurance_items:
+				d.underinsurance_percentage = non_standard_underinsurance_items[d.item_code]
+			else:
+				d.underinsurance_percentage = flt(project.default_underinsurance_percentage)
 
 
 @frappe.whitelist()

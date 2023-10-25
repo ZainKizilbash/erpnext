@@ -83,6 +83,7 @@ erpnext.projects.ProjectController = class ProjectController extends erpnext.con
 
 		// depreciation item
 		me.frm.set_query('depreciation_item_code', 'non_standard_depreciation', () => erpnext.queries.item());
+		me.frm.set_query('underinsurance_item_code', 'non_standard_underinsurance', () => erpnext.queries.item());
 
 		me.frm.set_query("project_template", "project_templates",
 			() => erpnext.queries.project_template(me.frm.doc.applies_to_item));
@@ -315,7 +316,7 @@ erpnext.projects.ProjectController = class ProjectController extends erpnext.con
 			status_items = [vehicle_status_item].concat(status_items);
 		}
 
-		me.add_indicator_section(__("Work"), status_items);
+		me.add_indicator_section(__("Status"), status_items);
 
 		// Billing Status
 		var billing_status_color;
@@ -793,7 +794,12 @@ erpnext.projects.ProjectController = class ProjectController extends erpnext.con
 		var me = this;
 		me.frm.check_if_unsaved();
 
-		if (me.frm.doc.default_depreciation_percentage || (me.frm.doc.non_standard_depreciation || []).length) {
+		if (
+			me.frm.doc.default_depreciation_percentage
+			|| me.frm.doc.default_underinsurance_percentage
+			|| (me.frm.doc.non_standard_depreciation || []).length
+			|| (me.frm.doc.non_standard_underinsurance || []).length
+		) {
 			var html = `
 <div class="text-center">
 	<button type="button" class="btn btn-primary btn-bill-customer">${__("Bill Depreciation Amount Only to <b>Customer (User)</b>")}</button>
