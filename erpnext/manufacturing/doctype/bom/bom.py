@@ -57,7 +57,6 @@ class BOM(WebsiteGenerator):
 
 	def validate(self):
 		self.route = frappe.scrub(self.name).replace('_', '-')
-		self.clear_operations()
 		self.validate_main_item()
 		self.validate_currency()
 		self.set_conversion_rate()
@@ -355,8 +354,7 @@ class BOM(WebsiteGenerator):
 
 		operation = self.operations[0].get('operation')
 		for d in self.items:
-			if not d.operation:
-				d.operation = operation
+			d.operation = operation
 
 	def manage_default_bom(self):
 		""" Uncheck others if current one is selected as default or
@@ -377,10 +375,6 @@ class BOM(WebsiteGenerator):
 			item = frappe.get_doc("Item", self.item)
 			if item.default_bom == self.name:
 				frappe.db.set_value('Item', self.item, 'default_bom', None)
-
-	def clear_operations(self):
-		if not self.with_operations:
-			self.set('operations', [])
 
 	def validate_main_item(self):
 		""" Validate main FG item"""
@@ -695,15 +689,26 @@ class BOM(WebsiteGenerator):
 				frappe.throw(_("Cannot deactivate or cancel BOM as it is linked with other BOMs"))
 
 	def validate_operations(self):
-		if self.with_operations and not self.get('operations'):
-			frappe.throw(_("Operations cannot be left blank"))
-
 		if self.with_operations:
+			if not self.operations:
+				frappe.throw(_("Operations cannot be left blank"))
+
+			bom_operations = set()
 			for d in self.operations:
-				if not d.description:
-					d.description = frappe.db.get_value('Operation', d.operation, 'description')
 				if not d.batch_size or d.batch_size <= 0:
 					d.batch_size = 1
+
+				bom_operations.add(d.operation)
+
+			for d in self.items:
+				if d.operation and d.operation not in bom_operations:
+					frappe.throw(_("Row #{0}: Item Operation {1} not in BOM Operations")
+						.format(d.idx, d.operation))
+
+		else:
+			self.set('operations', [])
+			for d in self.items:
+				d.operation = None
 
 
 def get_list_context(context):

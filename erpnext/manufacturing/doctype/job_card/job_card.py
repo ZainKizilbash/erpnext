@@ -68,6 +68,10 @@ class JobCard(Document):
 			return
 
 		for d in doc.required_items:
+			if not d.operation and not d.skip_transfer_for_manufacture:
+				frappe.throw(_("Row {0} : Operation is required against the raw material item {1}")
+					.format(d.idx, d.item_code))
+
 			if self.get('operation') == d.operation:
 				self.append('items', {
 					'item_code': d.item_code,
@@ -103,6 +107,8 @@ class JobCard(Document):
 		if self.work_order:
 			doc = frappe.get_doc("Work Order", self.work_order)
 			doc.set_operation_status(update=True)
+			doc.set_actual_dates(update=True)
+			doc.notify_update()
 
 	def set_transferred_qty(self, update_status=False):
 		if not self.items:

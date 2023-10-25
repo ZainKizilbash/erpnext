@@ -55,6 +55,7 @@ class WorkOrder(StatusUpdater):
 		ste_qty_map = self.get_ste_qty_map()
 		self.set_subcontracting_status()
 		self.set_production_status(ste_qty_map=ste_qty_map)
+		self.set_operation_status()
 		self.set_actual_dates(ste_qty_map=ste_qty_map)
 		self.set_completed_qty()
 		self.set_packing_status()
@@ -373,48 +374,61 @@ class WorkOrder(StatusUpdater):
 		if not self.operations:
 			return
 
-		operation_data = frappe.db.sql("""
-			SELECT operation_id,
-				sum(total_time_in_mins) as time_in_mins,
-				sum(total_completed_qty) as completed_qty
-			FROM `tabJob Card`
-			WHERE docstatus = 1 AND work_order = %s
-			GROUP BY operation_id
-		""", self.name, as_dict=1)
-
-		operation_time_data = frappe.db.sql("""
-			SELECT jc.operation_id,
-				min(from_time) as start_time,
-				max(to_time) as end_time
-			FROM `tabJob Card Time Log` jctl
-			INNER JOIN `tabJob Card` jc ON jc.name = jctl.parent
-			WHERE jc.docstatus = 1 AND jc.work_order = %s
-			GROUP BY operation_id
-		""", self.name, as_dict=1)
-
 		operation_data_map = {}
-		for d in operation_data:
-			operation_data_map.setdefault(d.operation_id, d)
-		for d in operation_time_data:
-			operation_data_map.setdefault(d.operation_id, {}).update(d)
 
+		if self.docstatus == 1:
+			operation_data = frappe.db.sql("""
+				SELECT operation_id,
+					sum(total_time_in_mins) as time_in_mins,
+					sum(total_completed_qty) as completed_qty
+				FROM `tabJob Card`
+				WHERE docstatus = 1 AND work_order = %s
+				GROUP BY operation_id
+			""", self.name, as_dict=1)
+
+			operation_time_data = frappe.db.sql("""
+				SELECT jc.operation_id,
+					min(from_time) as start_time,
+					max(to_time) as end_time
+				FROM `tabJob Card Time Log` jctl
+				INNER JOIN `tabJob Card` jc ON jc.name = jctl.parent
+				WHERE jc.docstatus = 1 AND jc.work_order = %s
+				GROUP BY operation_id
+			""", self.name, as_dict=1)
+
+			for d in operation_data:
+				operation_data_map.setdefault(d.operation_id, d)
+			for d in operation_time_data:
+				operation_data_map.setdefault(d.operation_id, {}).update(d)
+
+		max_allowed_qty_for_wo = self.get_qty_with_allowance(self.qty)
 		for d in self.operations:
 			d.completed_qty = flt(operation_data_map.get(d.name, {}).get('completed_qty'))
 			d.actual_operation_time = flt(operation_data_map.get(d.name, {}).get('time_in_mins'))
 			d.actual_start_time = operation_data_map.get(d.name, {}).get('start_time')
 			d.actual_end_time = operation_data_map.get(d.name, {}).get('end_time')
 
-		self.update_operation_status()
+			# set operation status
+			if not d.completed_qty:
+				d.status = "Pending"
+			elif flt(d.completed_qty) < flt(self.qty):
+				d.status = "Work in Progress"
+			elif flt(d.completed_qty) == flt(self.qty):
+				d.status = "Completed"
+			elif flt(d.completed_qty) <= max_allowed_qty_for_wo:
+				d.status = "Completed"
+			else:
+				frappe.throw(_("Completed Qty can not be greater than 'Qty to Produce'"))
+
 		self.calculate_operating_cost()
-		self.set_actual_dates()
 
 		if update:
 			for row in self.operations:
 				row.db_set({
 					'completed_qty': row.completed_qty,
-					'actual_operation_time': row.actual_operation_time,
 					'actual_start_time': row.actual_start_time,
 					'actual_end_time': row.actual_end_time,
+					'actual_operation_time': row.actual_operation_time,
 					'actual_operating_cost': row.actual_operating_cost,
 					'planned_operating_cost': row.planned_operating_cost,
 					'status': row.status,
@@ -431,26 +445,7 @@ class WorkOrder(StatusUpdater):
 				'planned_operating_cost': self.planned_operating_cost,
 				'additional_operating_cost': self.additional_operating_cost,
 				'total_operating_cost': self.total_operating_cost,
-				'actual_start_date': self.actual_start_date,
-				'actual_end_date': self.actual_end_date,
 			}, update_modified=update_modified)
-
-			self.notify_update()
-
-	def update_operation_status(self):
-		max_allowed_qty_for_wo = self.get_qty_with_allowance(self.qty)
-
-		for d in self.get("operations"):
-			if not d.completed_qty:
-				d.status = "Pending"
-			elif flt(d.completed_qty) < flt(self.qty):
-				d.status = "Work in Progress"
-			elif flt(d.completed_qty) == flt(self.qty):
-				d.status = "Completed"
-			elif flt(d.completed_qty) <= max_allowed_qty_for_wo:
-				d.status = "Completed"
-			else:
-				frappe.throw(_("Completed Qty can not be greater than 'Qty to Produce'"))
 
 	def calculate_time(self):
 		bom_qty = frappe.db.get_value("BOM", self.bom_no, "quantity", cache=1)
@@ -591,11 +586,13 @@ class WorkOrder(StatusUpdater):
 			"material_transferred_for_manufacturing": flt(ste_qty_map.get("Material Transfer for Manufacture", {}).get("fg_completed_qty")),
 		})
 		if self.operations and self.transfer_material_against == 'Job Card':
-			to_update["material_transferred_for_manufacturing"] = 0
+			del to_update["material_transferred_for_manufacturing"]
+		else:
+			# Set percentage transferred
+			to_update.per_material_transferred = flt(to_update.material_transferred_for_manufacturing / self.qty * 100, 3)
 
-		# Set percentage completed
+		# Set percentage produced
 		to_update.per_produced = flt(to_update.produced_qty / self.qty * 100, 3)
-		to_update.per_material_transferred = flt(to_update.material_transferred_for_manufacturing / self.qty * 100, 3)
 
 		# Set status fields
 		if self.docstatus == 1:

@@ -459,6 +459,8 @@ frappe.ui.form.on("BOM Operation", "operation", function(frm, cdt, cdn) {
 frappe.ui.form.on("BOM Operation", "workstation", function(frm, cdt, cdn) {
 	var d = locals[cdt][cdn];
 
+	if(!d.workstation) return;
+
 	frappe.call({
 		"method": "frappe.client.get",
 		args: {
