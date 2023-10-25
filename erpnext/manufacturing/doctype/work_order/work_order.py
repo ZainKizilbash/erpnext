@@ -73,8 +73,6 @@ class WorkOrder(StatusUpdater):
 		self.update_reserved_qty_for_production()
 		self.update_planned_qty()
 
-		self.create_job_card()
-
 	def on_cancel(self):
 		self.validate_cancel()
 		self.update_status_on_cancel()
@@ -371,6 +369,74 @@ class WorkOrder(StatusUpdater):
 
 		self.calculate_time()
 
+	def set_operation_status(self, update=False, update_modified=True):
+		if not self.operations:
+			return
+
+		operation_data = frappe.db.sql("""
+			SELECT operation_id,
+				sum(total_time_in_mins) as time_in_mins,
+				sum(total_completed_qty) as completed_qty
+			FROM `tabJob Card`
+			WHERE docstatus = 1 AND work_order = %s
+			GROUP BY operation_id
+		""", self.name, as_dict=1)
+
+		operation_time_data = frappe.db.sql("""
+			SELECT jc.operation_id,
+				min(from_time) as start_time,
+				max(to_time) as end_time
+			FROM `tabJob Card Time Log` jctl
+			INNER JOIN `tabJob Card` jc ON jc.name = jctl.parent
+			WHERE jc.docstatus = 1 AND jc.work_order = %s
+			GROUP BY operation_id
+		""", self.name, as_dict=1)
+
+		operation_data_map = {}
+		for d in operation_data:
+			operation_data_map.setdefault(d.operation_id, d)
+		for d in operation_time_data:
+			operation_data_map.setdefault(d.operation_id, {}).update(d)
+
+		for d in self.operations:
+			d.completed_qty = flt(operation_data_map.get(d.name, {}).get('completed_qty'))
+			d.actual_operation_time = flt(operation_data_map.get(d.name, {}).get('time_in_mins'))
+			d.actual_start_time = operation_data_map.get(d.name, {}).get('start_time')
+			d.actual_end_time = operation_data_map.get(d.name, {}).get('end_time')
+
+		self.update_operation_status()
+		self.calculate_operating_cost()
+		self.set_actual_dates()
+
+		if update:
+			for row in self.operations:
+				row.db_set({
+					'completed_qty': row.completed_qty,
+					'actual_operation_time': row.actual_operation_time,
+					'actual_start_time': row.actual_start_time,
+					'actual_end_time': row.actual_end_time,
+					'actual_operating_cost': row.actual_operating_cost,
+					'planned_operating_cost': row.planned_operating_cost,
+					'status': row.status,
+				}, update_modified=update_modified)
+
+
+			for row in self.get('additional_costs'):
+				row.db_set({
+					'amount': row.amount
+				}, update_modified=update_modified)
+
+			self.db_set({
+				'actual_operating_cost': self.actual_operating_cost,
+				'planned_operating_cost': self.planned_operating_cost,
+				'additional_operating_cost': self.additional_operating_cost,
+				'total_operating_cost': self.total_operating_cost,
+				'actual_start_date': self.actual_start_date,
+				'actual_end_date': self.actual_end_date,
+			}, update_modified=update_modified)
+
+			self.notify_update()
+
 	def update_operation_status(self):
 		max_allowed_qty_for_wo = self.get_qty_with_allowance(self.qty)
 
@@ -525,7 +591,7 @@ class WorkOrder(StatusUpdater):
 			"material_transferred_for_manufacturing": flt(ste_qty_map.get("Material Transfer for Manufacture", {}).get("fg_completed_qty")),
 		})
 		if self.operations and self.transfer_material_against == 'Job Card':
-			del to_update["material_transferred_for_manufacturing"]
+			to_update["material_transferred_for_manufacturing"] = 0
 
 		# Set percentage completed
 		to_update.per_produced = flt(to_update.produced_qty / self.qty * 100, 3)
@@ -551,9 +617,6 @@ class WorkOrder(StatusUpdater):
 			self.db_set(to_update, update_modified=update_modified)
 
 	def set_actual_dates(self, update=False, update_modified=True, ste_qty_map=None):
-		if not ste_qty_map:
-			ste_qty_map = self.get_ste_qty_map()
-
 		if self.get("operations"):
 			actual_start_dates = [getdate(d.actual_start_time) for d in self.get("operations") if d.actual_start_time]
 			actual_end_dates = [getdate(d.actual_end_time) for d in self.get("operations") if d.actual_end_time]
@@ -561,6 +624,9 @@ class WorkOrder(StatusUpdater):
 			self.actual_start_date = min(actual_start_dates) if actual_start_dates else None
 			self.actual_end_date = max(actual_end_dates) if actual_end_dates else None
 		else:
+			if not ste_qty_map:
+				ste_qty_map = self.get_ste_qty_map()
+
 			if not self.skip_transfer:
 				self.actual_start_date = ste_qty_map.get("Material Transfer for Manufacture", {}).get("min_posting_date")
 			else:
