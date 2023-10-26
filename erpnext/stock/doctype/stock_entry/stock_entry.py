@@ -1073,7 +1073,7 @@ class StockEntry(TransactionController):
 				and ste.work_order = %s
 				and ste.purpose = 'Material Transfer for Manufacture'
 				and ifnull(i.t_warehouse, '') != ''
-			group by i.item_code, i.t_warehouse, batch_no
+			group by i.item_code, i.t_warehouse, ifnull(i.batch_no, '')
 		""", self.work_order, as_dict=1)
 
 		backflushed_materials_data = frappe.db.sql("""
@@ -1131,6 +1131,9 @@ class StockEntry(TransactionController):
 					break
 
 				pending_qty = flt(pending_iwb.pending_qty, qty_precision)
+				if pending_qty <= 0:
+					continue
+
 				consumed_qty = min(pending_qty, total_remaining)
 
 				self.add_to_stock_entry_detail({
