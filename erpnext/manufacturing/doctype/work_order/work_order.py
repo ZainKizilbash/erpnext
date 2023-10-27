@@ -450,7 +450,7 @@ class WorkOrder(StatusUpdater):
 		max_production_qty = flt(self.get_qty_with_allowance(self.producible_qty), self.precision("qty"))
 		for d in self.operations:
 			if flt(d.completed_qty) > max_production_qty:
-				frappe.throw(_("Completed Qty can not be greater than 'Qty to Produce'"))
+				frappe.throw(_("Completed Qty for Operation {0} can not be greater than 'Qty to Produce'").format(d.operation))
 
 	def calculate_time(self):
 		bom_qty = frappe.db.get_value("BOM", self.bom_no, "quantity", cache=1)
