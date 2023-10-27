@@ -401,7 +401,8 @@ class WorkOrder(StatusUpdater):
 			for d in operation_time_data:
 				operation_data_map.setdefault(d.operation_id, {}).update(d)
 
-		max_allowed_qty_for_wo = self.get_qty_with_allowance(self.qty)
+		min_production_qty = flt(self.get_min_qty(self.producible_qty), self.precision("qty"))
+
 		for d in self.operations:
 			d.completed_qty = flt(operation_data_map.get(d.name, {}).get('completed_qty'))
 			d.actual_operation_time = flt(operation_data_map.get(d.name, {}).get('time_in_mins'))
@@ -409,16 +410,14 @@ class WorkOrder(StatusUpdater):
 			d.actual_end_time = operation_data_map.get(d.name, {}).get('end_time')
 
 			# set operation status
-			if not d.completed_qty:
+			if self.status == "Stopped" and d.completed_qty > 0:
+				d.status = "Completed"
+			elif not d.completed_qty:
 				d.status = "Pending"
-			elif flt(d.completed_qty) < flt(self.qty):
+			elif flt(d.completed_qty) < min_production_qty:
 				d.status = "Work in Progress"
-			elif flt(d.completed_qty) == flt(self.qty):
-				d.status = "Completed"
-			elif flt(d.completed_qty) <= max_allowed_qty_for_wo:
-				d.status = "Completed"
 			else:
-				frappe.throw(_("Completed Qty can not be greater than 'Qty to Produce'"))
+				d.status = "Completed"
 
 		self.calculate_operating_cost()
 
@@ -446,6 +445,12 @@ class WorkOrder(StatusUpdater):
 				'additional_operating_cost': self.additional_operating_cost,
 				'total_operating_cost': self.total_operating_cost,
 			}, update_modified=update_modified)
+
+	def validate_completed_qty_in_operations(self):
+		max_production_qty = flt(self.get_qty_with_allowance(self.producible_qty), self.precision("qty"))
+		for d in self.operations:
+			if flt(d.completed_qty) > max_production_qty:
+				frappe.throw(_("Completed Qty can not be greater than 'Qty to Produce'"))
 
 	def calculate_time(self):
 		bom_qty = frappe.db.get_value("BOM", self.bom_no, "quantity", cache=1)
