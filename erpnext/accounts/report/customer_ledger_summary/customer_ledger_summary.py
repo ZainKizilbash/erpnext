@@ -7,7 +7,7 @@ from frappe.utils import getdate, nowdate
 from erpnext.accounts.utils import get_account_currency
 from erpnext.accounts.report.financial_statements import get_cost_centers_with_children
 from erpnext import get_default_currency
-from six import iteritems, itervalues
+
 
 class PartyLedgerSummaryReport(object):
 	def __init__(self, filters=None):
@@ -51,7 +51,7 @@ class PartyLedgerSummaryReport(object):
 				"width": 200
 			})
 
-		if self.filters.party_type == "Customer":
+		if self.filters.party_type == "Customer" and self.filters.has_sales_persons:
 			columns.append({
 				"label": _("Sales Person"),
 				"fieldtype": "Link",
@@ -68,13 +68,6 @@ class PartyLedgerSummaryReport(object):
 			return_label = None
 
 		columns += [
-			{
-				"label": _("Currency"),
-				"fieldname": "currency",
-				"fieldtype": "Link",
-				"options": "Currency",
-				"width": 80
-			},
 			{
 				"label": _("Opening Balance"),
 				"fieldname": "opening_balance",
@@ -133,6 +126,14 @@ class PartyLedgerSummaryReport(object):
 					"width": 120,
 					"is_adjustment": 1
 				})
+
+		columns.append({
+			"label": _("Currency"),
+			"fieldname": "currency",
+			"fieldtype": "Link",
+			"options": "Currency",
+			"width": 70
+		})
 
 		return columns
 
@@ -206,14 +207,17 @@ class PartyLedgerSummaryReport(object):
 					group by steam.parent
 				""", [customers]))
 
+				if sales_person_map:
+					self.filters.has_sales_persons = True
+
 				for d in self.party_data.values():
 					d.sales_person = sales_person_map.get(d.party)
 
 		out = []
-		for party, row in iteritems(self.party_data):
+		for party, row in self.party_data.items():
 			if row.opening_balance or row.invoiced_amount or row.paid_amount or row.return_amount or row.closing_amount:
 				if self.adjustment_details:
-					total_party_adjustment = sum([amount for amount in itervalues(self.adjustment_details.parties.get(party, {}))])
+					total_party_adjustment = sum([amount for amount in self.adjustment_details.parties.get(party, {}).values()])
 					row.paid_amount -= total_party_adjustment
 					row.total_deductions = total_party_adjustment
 
@@ -446,7 +450,7 @@ def get_adjustment_details(adjustment_voucher_entries, invoice_dr_or_cr, reverse
 		if parties and adj_accounts:
 			if len(parties) == 1:
 				party = list(parties.keys())[0]
-				for adj_account, adj_amount in iteritems(adj_accounts):
+				for adj_account, adj_amount in adj_accounts.items():
 					if adj_amount <= 0:
 						continue
 
@@ -459,7 +463,7 @@ def get_adjustment_details(adjustment_voucher_entries, invoice_dr_or_cr, reverse
 				adj_account = list(adj_accounts.keys())[0]
 				party_sum = sum(parties.values())
 
-				for party, party_amount in iteritems(parties):
+				for party, party_amount in parties.items():
 					if total_adj_amount <= 0:
 						continue
 
@@ -472,7 +476,7 @@ def get_adjustment_details(adjustment_voucher_entries, invoice_dr_or_cr, reverse
 		if vouchers and adj_accounts:
 			if len(vouchers) == 1:
 				voucher = list(vouchers.keys())[0]
-				for adj_account, adj_amount in iteritems(adj_accounts):
+				for adj_account, adj_amount in adj_accounts.items():
 					if adj_amount <= 0:
 						continue
 
@@ -485,7 +489,7 @@ def get_adjustment_details(adjustment_voucher_entries, invoice_dr_or_cr, reverse
 				adj_account = list(adj_accounts.keys())[0]
 				vouchers_sum = sum(vouchers.values())
 
-				for voucher, voucher_amount in iteritems(vouchers):
+				for voucher, voucher_amount in vouchers.items():
 					if total_adj_amount <= 0:
 						continue
 
