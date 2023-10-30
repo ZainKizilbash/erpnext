@@ -112,8 +112,8 @@ class SalesPurchaseDetailsReport(object):
 				if cint(self.filters.show_discount_values):
 					self.amount_fields += ['base_amount_before_discount', 'base_total_discount']
 					self.rate_fields += [
-						('base_discount_rate', 'base_total_discount', 'base_amount_before_discount', 100),
-						('base_rate_before_discount', 'base_amount_before_discount')
+						('discount_percentage', 'base_total_discount', 'base_amount_before_discount', 100),
+						('base_price_list_rate', 'base_amount_before_discount')
 					]
 				self.amount_fields += ['base_amount']
 				self.rate_fields += [('base_rate', 'base_amount')]
@@ -121,10 +121,6 @@ class SalesPurchaseDetailsReport(object):
 			if cint(self.filters.show_tax_exclusive_values):
 				if cint(self.filters.show_discount_values):
 					self.amount_fields += ['base_tax_exclusive_amount_before_discount', 'base_tax_exclusive_total_discount']
-					self.rate_fields += [
-						('base_tax_exclusive_discount_rate', 'base_tax_exclusive_total_discount', 'base_tax_exclusive_amount_before_discount', 100),
-						('base_tax_exclusive_rate_before_discount', 'base_tax_exclusive_amount_before_discount')
-					]
 				self.amount_fields += ['base_tax_exclusive_amount']
 				self.rate_fields += [('base_tax_exclusive_rate', 'base_tax_exclusive_amount')]
 
@@ -655,7 +651,7 @@ class SalesPurchaseDetailsReport(object):
 		value_columns = [
 			{
 				"label": _("Rate Before Discount"),
-				"fieldname": "base_rate_before_discount",
+				"fieldname": "base_price_list_rate",
 				"fieldtype": "Currency",
 				"options": "Company:company:default_currency",
 				"width": 110
@@ -676,7 +672,7 @@ class SalesPurchaseDetailsReport(object):
 			},
 			{
 				"label": _("Discount (%)"),
-				"fieldname": "base_discount_rate",
+				"fieldname": "discount_percentage",
 				"fieldtype": "Percent",
 				"width": 60
 			},
@@ -696,7 +692,7 @@ class SalesPurchaseDetailsReport(object):
 			},
 			{
 				"label": _("Rate Before Discount (Tax Exclusive)"),
-				"fieldname": "base_tax_exclusive_rate_before_discount",
+				"fieldname": "base_tax_exclusive_price_list_rate",
 				"fieldtype": "Currency",
 				"options": "Company:company:default_currency",
 				"width": 110
@@ -714,12 +710,6 @@ class SalesPurchaseDetailsReport(object):
 				"fieldtype": "Currency",
 				"options": "Company:company:default_currency",
 				"width": 110
-			},
-			{
-				"label": _("Discount (%)"),
-				"fieldname": "base_tax_exclusive_discount_rate",
-				"fieldtype": "Percent",
-				"width": 60
 			},
 			{
 				"label": _("Rate (Tax Exclusive)"),
@@ -886,6 +876,11 @@ class SalesPurchaseDetailsReport(object):
 				columns = [c for c in columns if c.get('fieldname') not in (
 					'parent', 'date', 'sales_person', 'territory', 'stin',
 				)]
+
+			if "project" not in self.group_by:
+				columns = [c for c in columns if c.get('fieldname') != "project"]
+			if "cost_center" not in self.group_by:
+				columns = [c for c in columns if c.get('fieldname') != "cost_center"]
 
 		return columns
 
