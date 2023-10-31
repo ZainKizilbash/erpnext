@@ -242,7 +242,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 		let start_btn_default = (
 			(
 				!flt(doc.material_transferred_for_manufacturing) ||
-				flt(doc.produced_qty, precision("qty")) >= flt(doc.material_transferred_for_manufacturing, precision("qty"))
+				flt(doc.material_transferred_for_manufacturing, precision("qty")) < flt(doc.producible_qty, precision("qty"))
 			) &&
 			flt(doc.produced_qty, precision("qty")) < flt(doc.producible_qty, precision("qty"))
 		)
