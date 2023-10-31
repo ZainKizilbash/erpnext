@@ -57,7 +57,6 @@ class BOM(WebsiteGenerator):
 
 	def validate(self):
 		self.route = frappe.scrub(self.name).replace('_', '-')
-		self.clear_operations()
 		self.validate_main_item()
 		self.validate_currency()
 		self.set_conversion_rate()
@@ -77,6 +76,9 @@ class BOM(WebsiteGenerator):
 		self.check_recursion()
 		self.update_stock_qty()
 		self.update_exploded_items()
+
+	def before_submit(self):
+		self.set_item_operation()
 
 	def on_submit(self):
 		self.manage_default_bom()
@@ -346,6 +348,14 @@ class BOM(WebsiteGenerator):
 
 		return flt(valuation_rate)
 
+	def set_item_operation(self):
+		if len(self.operations) != 1:
+			return
+
+		operation = self.operations[0].get('operation')
+		for d in self.items:
+			d.operation = operation
+
 	def manage_default_bom(self):
 		""" Uncheck others if current one is selected as default or
 			check the current one as default if it the only bom for the selected item,
@@ -365,10 +375,6 @@ class BOM(WebsiteGenerator):
 			item = frappe.get_doc("Item", self.item)
 			if item.default_bom == self.name:
 				frappe.db.set_value('Item', self.item, 'default_bom', None)
-
-	def clear_operations(self):
-		if not self.with_operations:
-			self.set('operations', [])
 
 	def validate_main_item(self):
 		""" Validate main FG item"""
@@ -465,8 +471,12 @@ class BOM(WebsiteGenerator):
 		def _get_children(bom_no):
 			children = frappe.cache().hget('bom_children', bom_no)
 			if children is None:
-				children = frappe.db.sql_list("""SELECT `bom_no` FROM `tabBOM Item`
-					WHERE `parent`=%s AND `bom_no`!='' AND `parenttype`='BOM'""", bom_no)
+				children = frappe.db.sql_list("""
+					SELECT bom_no FROM `tabBOM Item`
+					WHERE parent = %s AND parenttype = 'BOM'
+						AND bom_no != '' AND bom_no IS NOT NULL
+					ORDER BY idx DESC
+				""", bom_no)
 				frappe.cache().hset('bom_children', bom_no, children)
 			return children
 
@@ -679,15 +689,26 @@ class BOM(WebsiteGenerator):
 				frappe.throw(_("Cannot deactivate or cancel BOM as it is linked with other BOMs"))
 
 	def validate_operations(self):
-		if self.with_operations and not self.get('operations'):
-			frappe.throw(_("Operations cannot be left blank"))
-
 		if self.with_operations:
+			if not self.operations:
+				frappe.throw(_("Operations cannot be left blank"))
+
+			bom_operations = set()
 			for d in self.operations:
-				if not d.description:
-					d.description = frappe.db.get_value('Operation', d.operation, 'description')
 				if not d.batch_size or d.batch_size <= 0:
 					d.batch_size = 1
+
+				bom_operations.add(d.operation)
+
+			for d in self.items:
+				if d.operation and d.operation not in bom_operations:
+					frappe.throw(_("Row #{0}: Item Operation {1} not in BOM Operations")
+						.format(d.idx, d.operation))
+
+		else:
+			self.set('operations', [])
+			for d in self.items:
+				d.operation = None
 
 
 def get_list_context(context):

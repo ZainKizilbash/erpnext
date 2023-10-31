@@ -779,7 +779,7 @@
    "print_hide": 1
   },
   {
-   "depends_on": "is_stock_item",
+   "depends_on": "eval: doc.is_stock_item || doc.default_bom",
    "fieldname": "manufacturing",
    "fieldtype": "Tab Break",
    "label": "Manufacturing",
@@ -1362,7 +1362,7 @@
  "idx": 2,
  "image_field": "image",
  "links": [],
- "modified": "2023-10-24 14:33:27.959772",
+ "modified": "2023-10-24 14:21:42.613467",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Item",

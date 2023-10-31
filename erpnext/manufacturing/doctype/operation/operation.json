@@ -1,4 +1,5 @@
 {
+ "actions": [],
  "allow_import": 1,
  "allow_rename": 1,
  "autoname": "Prompt",
@@ -8,7 +9,6 @@
  "engine": "InnoDB",
  "field_order": [
   "workstation",
-  "section_break_4",
   "description"
  ],
  "fields": [
@@ -21,20 +21,18 @@
    "options": "Workstation"
   },
   {
-   "fieldname": "section_break_4",
-   "fieldtype": "Section Break"
-  },
-  {
    "fieldname": "description",
    "fieldtype": "Text",
    "label": "Description"
   }
  ],
  "icon": "fa fa-wrench",
- "modified": "2020-03-03 15:44:57.147810",
+ "links": [],
+ "modified": "2023-10-13 12:31:33.886146",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Operation",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
   {
@@ -61,5 +59,6 @@
  ],
  "quick_entry": 1,
  "sort_field": "modified",
- "sort_order": "DESC"
+ "sort_order": "DESC",
+ "states": []
 }

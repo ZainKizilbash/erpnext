@@ -68,7 +68,7 @@ class JobCard(Document):
 			return
 
 		for d in doc.required_items:
-			if not d.operation:
+			if not d.operation and not d.skip_transfer_for_manufacture:
 				frappe.throw(_("Row {0} : Operation is required against the raw material item {1}")
 					.format(d.idx, d.item_code))
 
@@ -104,45 +104,12 @@ class JobCard(Document):
 				.format(total_completed_qty, frappe.bold(self.total_completed_qty), qty_to_manufacture,frappe.bold(self.for_quantity))))
 
 	def update_work_order(self):
-		if not self.work_order:
-			return
-
-		for_quantity, time_in_mins = 0, 0
-		from_time_list, to_time_list = [], []
-
-		field = "operation_id"
-		data = frappe.get_all('Job Card',
-			fields = ["sum(total_time_in_mins) as time_in_mins", "sum(total_completed_qty) as completed_qty"],
-			filters = {"docstatus": 1, "work_order": self.work_order, field: self.get(field)})
-
-		if data and len(data) > 0:
-			for_quantity = data[0].completed_qty
-			time_in_mins = data[0].time_in_mins
-
-		if self.get(field):
-			time_data = frappe.db.sql("""
-				SELECT
-					min(from_time) as start_time, max(to_time) as end_time
-				FROM `tabJob Card` jc, `tabJob Card Time Log` jctl
-				WHERE
-					jctl.parent = jc.name and jc.work_order = %s
-					and jc.{0} = %s and jc.docstatus = 1
-			""".format(field), (self.work_order, self.get(field)), as_dict=1)
-
-			wo = frappe.get_doc('Work Order', self.work_order)
-
-			for data in wo.operations:
-				if data.get("name") == self.get(field):
-					data.completed_qty = for_quantity
-					data.actual_operation_time = time_in_mins
-					data.actual_start_time = time_data[0].start_time if time_data else None
-					data.actual_end_time = time_data[0].end_time if time_data else None
-
-			wo.flags.ignore_validate_update_after_submit = True
-			wo.update_operation_status()
-			wo.calculate_operating_cost()
-			wo.set_actual_dates()
-			wo.save()
+		if self.work_order:
+			doc = frappe.get_doc("Work Order", self.work_order)
+			doc.set_operation_status(update=True)
+			doc.validate_completed_qty_in_operations()
+			doc.set_actual_dates(update=True)
+			doc.notify_update()
 
 	def set_transferred_qty(self, update_status=False):
 		if not self.items:
