@@ -230,14 +230,22 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 			return;
 		}
 
-		// Start Button
 		let qty_with_allowance = erpnext.manufacturing.get_qty_with_allowance(doc.producible_qty, doc);
 
+		// Start Button
 		const show_start_btn = (
 			!doc.skip_transfer
 			&& doc.transfer_material_against != "Job Card"
 			&& flt(doc.material_transferred_for_manufacturing) < qty_with_allowance
 		);
+
+		let start_btn_default = (
+			(
+				!flt(doc.material_transferred_for_manufacturing) ||
+				flt(doc.produced_qty, precision("qty")) >= flt(doc.material_transferred_for_manufacturing, precision("qty"))
+			) &&
+			flt(doc.produced_qty, precision("qty")) < flt(doc.producible_qty, precision("qty"))
+		)
 
 		if (show_start_btn) {
 			this.frm.show_pick_list_btn = true;
@@ -246,50 +254,45 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 				erpnext.manufacturing.make_stock_entry(doc, "Material Transfer for Manufacture");
 			});
 
-			if (
-				(
-					!flt(doc.material_transferred_for_manufacturing)
-					|| flt(doc.produced_qty, precision("qty")) >= flt(doc.material_transferred_for_manufacturing, precision("qty"))
-				) && flt(doc.produced_qty, precision("qty")) < flt(doc.producible_qty, precision("qty"))
-			) {
+			if (start_btn_default) {
 				start_btn.removeClass("btn-default").addClass("btn-primary");
 			}
 		}
 
 		// Finish Button
-		if (doc.skip_transfer) {
-			if (flt(doc.produced_qty) < qty_with_allowance) {
-				let finish_btn = this.frm.add_custom_button(__("Finish"), () => {
-					erpnext.manufacturing.make_stock_entry(doc, "Manufacture");
-				});
+		let show_finish_button = (
+			(doc.skip_transfer && flt(doc.produced_qty) < qty_with_allowance) ||
+			(!doc.skip_transfer && flt(doc.produced_qty) < flt(doc.material_transferred_for_manufacturing))
+		)
 
-				if (flt(doc.produced_qty) < flt(doc.producible_qty)) {
-					finish_btn.removeClass("btn-default").addClass("btn-primary");
-				}
+		let finish_button_default = (
+			(doc.skip_transfer && flt(doc.produced_qty) < flt(doc.producible_qty)) ||
+			(!doc.skip_transfer && flt(doc.material_transferred_for_manufacturing) >= flt(doc.produced_qty))
+		)
+
+		if (show_finish_button) {
+			let finish_btn = this.frm.add_custom_button(__("Finish"), () => {
+				erpnext.manufacturing.make_stock_entry(doc, "Manufacture");
+			});
+
+			if (finish_button_default) {
+				finish_btn.removeClass("btn-default").addClass("btn-primary");
 			}
-		} else {
-			if (flt(doc.produced_qty) < flt(doc.material_transferred_for_manufacturing)) {
-				let finish_btn = this.frm.add_custom_button(__("Finish"), () => {
-					erpnext.manufacturing.make_stock_entry(doc, "Manufacture");
-				});
-				if (flt(doc.material_transferred_for_manufacturing) >= flt(doc.produced_qty)) {
-					finish_btn.removeClass("btn-default").addClass("btn-primary");
-				}
+		}
 
-				// If "Material Consumption is check in Manufacturing Settings, allow Material Consumption
-				if (doc.__onload && doc.__onload.material_consumption) {
-					// Only show "Material Consumption" when required_qty > consumed_qty
-					let required_items = doc.required_items || [];
+		// If "Material Consumption is check in Manufacturing Settings, allow Material Consumption
+		let show_consumption_button = (
+			!doc.skip_transfer &&
+			doc.__onload && doc.__onload.material_consumption &&
+			flt(doc.produced_qty) < flt(doc.material_transferred_for_manufacturing) &&
+			(doc.required_items || []).some(d => flt(d.required_qty) > flt(d.consumed_qty))
+		)
 
-					if (required_items.some(d => flt(d.required_qty) > flt(d.consumed_qty))) {
-						let consumption_btn = this.frm.add_custom_button(__('Material Consumption'), () => {
-							const backflush_raw_materials_based_on = doc.__onload.backflush_raw_materials_based_on;
-							this.make_material_consumption_entry(backflush_raw_materials_based_on);
-						});
-						consumption_btn.removeClass("btn-default").addClass('btn-primary');
-					}
-				}
-			}
+		if (show_consumption_button) {
+			let consumption_btn = this.frm.add_custom_button(__('Material Consumption'), () => {
+				this.make_material_consumption_entry(doc.__onload.backflush_raw_materials_based_on);
+			});
+			consumption_btn.removeClass("btn-default").addClass('btn-primary');
 		}
 	}
 
