@@ -251,7 +251,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 			this.frm.show_pick_list_btn = true;
 
 			let start_btn = this.frm.add_custom_button(__("Start"), () => {
-				erpnext.manufacturing.make_stock_entry(doc, "Material Transfer for Manufacture");
+				erpnext.manufacturing.process_work_order(doc, "Material Transfer for Manufacture");
 			});
 
 			if (start_btn_default) {
@@ -272,7 +272,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 
 		if (show_finish_button) {
 			let finish_btn = this.frm.add_custom_button(__("Finish"), () => {
-				erpnext.manufacturing.make_stock_entry(doc, "Manufacture");
+				erpnext.manufacturing.process_work_order(doc, "Manufacture");
 			});
 
 			if (finish_button_default) {

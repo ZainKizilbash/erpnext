@@ -4,7 +4,7 @@ erpnext.manufacturing.work_order_qty_prompt_hooks = [];
 erpnext.manufacturing.multiple_work_orders_qty_prompt_hooks = [];
 
 $.extend(erpnext.manufacturing, {
-	make_stock_entry: function(doc, purpose) {
+	process_work_order: function(doc, purpose) {
 		if (doc.docstatus != 1) {
 			return;
 		}
