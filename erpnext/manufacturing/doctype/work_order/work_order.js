@@ -532,7 +532,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 	}
 
 	make_pick_list(purpose) {
-		return erpnext.manufacturing.show_prompt_for_qty_input(this.frm.doc, purpose).then((r) => {
+		return erpnext.manufacturing.show_qty_prompt_for_stock_entry(this.frm.doc, purpose).then((r) => {
 			return frappe.xcall("erpnext.manufacturing.doctype.work_order.work_order.create_pick_list", {
 				"source_name": this.frm.doc.name,
 				"for_qty": r.data.qty

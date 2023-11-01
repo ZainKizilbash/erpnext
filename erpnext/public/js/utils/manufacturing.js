@@ -9,7 +9,7 @@ $.extend(erpnext.manufacturing, {
 			return;
 		}
 
-		return erpnext.manufacturing.show_prompt_for_qty_input(doc, purpose).then(r => {
+		return erpnext.manufacturing.show_qty_prompt_for_stock_entry(doc, purpose).then(r => {
 			return frappe.call({
 				method: "erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry",
 				args: {
@@ -37,7 +37,7 @@ $.extend(erpnext.manufacturing, {
 		});
 	},
 
-	show_prompt_for_qty_input: function(doc, purpose) {
+	show_qty_prompt_for_stock_entry: function(doc, purpose) {
 		return new Promise((resolve, reject) => {
 			frappe.model.with_doctype("Work Order", () => {
 				let [max, max_with_allowance] = erpnext.manufacturing.get_max_transferable_qty(doc, purpose);
