@@ -597,7 +597,7 @@ class WorkshopCP {
 					"onchange": () => {
 						let employee = dialog.get_value('employee');
 						if (employee) {
-							frappe.db.get_value("Employee", employee, ['employee_name',], (r) => {
+							frappe.db.get_value("Employee", employee, ['employee_name'], (r) => {
 								if (r) {
 									dialog.set_value('employee_name', r.employee_name);
 								}

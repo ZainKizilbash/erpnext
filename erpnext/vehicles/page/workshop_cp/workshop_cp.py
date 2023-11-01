@@ -119,7 +119,7 @@ def set_task_action_conditions(data):
 	for d in data:
 		d.actions = {
 			"start_task": has_task_write and d.assigned_to and d.status == "Open",
-			"complete_task":has_task_write and d.status in ("On Hold", "Working", "Pending Review"),
+			"complete_task": has_task_write and d.status in ("On Hold", "Working", "Pending Review"),
 			"pause_task": has_task_write and d.status == "Working",
 			"resume_task": has_task_write and d.status in ("On Hold", "Completed") and not d.ready_to_close,
 			"assign_technician": has_task_write and not d.assigned_to,
