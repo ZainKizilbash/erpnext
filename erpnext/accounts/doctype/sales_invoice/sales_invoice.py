@@ -1614,15 +1614,18 @@ class SalesInvoice(SellingController):
 				frappe.throw(_("Applicable Commission Item is not set for {0}").format(
 					frappe.get_desk_link("Item", item_code)
 				))
+
+			vbo_exists = False
 			for row in self.items:
 				if row.vehicle_booking_order == vbo:
-					frappe.throw(_("An item for {0} already exists")
-				  .format(frappe.get_desk_link('Vehicle Booking Order', vbo)))
+					vbo_exists = True
+					break
 
-			row = self.append("items", frappe.new_doc("Sales Invoice Item"))
-			row.item_code = applicable_commission_item
-			row.vehicle_booking_order = vbo
-			row.qty = 1
+			if not vbo_exists:
+				row = self.append("items", frappe.new_doc("Sales Invoice Item"))
+				row.item_code = applicable_commission_item
+				row.vehicle_booking_order = vbo
+				row.qty = 1
 
 		self.set_missing_values()
 		self.calculate_taxes_and_totals()
