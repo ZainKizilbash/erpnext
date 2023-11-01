@@ -65,21 +65,21 @@
 				<div class="dropdown-divider"></div>
 
 				{% if doc.actions.create_task %}
-				<button class="dropdown-item create_task" data-project="{{ doc.project }}">
-					{{ __("Create Task") }}
-				</button>
+					<button class="dropdown-item create_task" data-project="{{ doc.project }}">
+						{{ __("Create Task") }}
+					</button>
 				{% endif %}
 
 				{% if doc.actions.create_template_tasks %}
-				<button class="dropdown-item create_template_tasks" data-project="{{ doc.project }}">
-					{%= __("Create Template Task") %}
-				</button>
+					<button class="dropdown-item create_template_tasks" data-project="{{ doc.project }}">
+						{%= __("Create Template Task") %}
+					</button>
 				{% endif %}
 
 				{% if doc.actions.reopen %}
-				<button class="dropdown-item reopen" data-project="{{ doc.project }}">
-					{{ __("Re-Open") }}
-				</button>
+					<button class="dropdown-item reopen" data-project="{{ doc.project }}">
+						{{ __("Re-Open") }}
+					</button>
 				{% endif %}
 			</div>
 		</div>
