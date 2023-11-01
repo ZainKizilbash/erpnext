@@ -587,6 +587,13 @@ class WorkshopCP {
 					"fieldtype": "Link",
 					"options": "Employee",
 					"reqd": 1,
+					"get_query": function() {
+						return {
+							filters: {
+								"is_technician": 1
+							}
+						};
+					},
 					"onchange": () => {
 						let employee = dialog.get_value('employee');
 						if (employee) {
@@ -642,6 +649,13 @@ class WorkshopCP {
 					"fieldtype": "Link",
 					"options": "Employee",
 					"default": task_data.assigned_to,
+					"get_query": function() {
+						return {
+							filters: {
+								"is_technician": 1
+							}
+						};
+					},
 					"onchange": () => {
 						let employee = dialog.get_value('employee');
 						if (employee) {
