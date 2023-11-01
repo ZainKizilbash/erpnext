@@ -996,7 +996,7 @@ def get_vbos_for_sales_invoice(from_date, to_date, item_code=None):
             AND vbo.vehicle_delivered_date <= %(to_date)s
             AND vbo.docstatus = 1
             {item_condition}
-        """.format(item_condition = item_condition), {'item_code': item_code, 'from_date': from_date, 'to_date': to_date}, as_dict =1)
+        """.format(item_condition=item_condition), {'item_code': item_code, 'from_date': from_date, 'to_date': to_date}, as_dict=1)
 
     if not vbo_names:
         frappe.throw(_("No Vehicle Booking Orders found"))
