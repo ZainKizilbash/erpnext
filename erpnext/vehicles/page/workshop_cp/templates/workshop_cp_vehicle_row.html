@@ -49,6 +49,7 @@
 	</td>
 
 	<td class="text-center text-nowrap actions-button-column">
+	{% if Object.values(doc.actions).some(action => action) %}
 		<div class="inner-group-button show">
 			<button type="button" class="btn btn-default btn-sm" data-toggle="dropdown">Actions
 				<svg class="icon icon-xs">
@@ -83,5 +84,6 @@
 				{% endif %}
 			</div>
 		</div>
+	{% endif %}
 	</td>
 </tr>
