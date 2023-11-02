@@ -61,65 +61,65 @@
 	</td>
 
 	<td class="text-center text-nowrap actions-button-column">
-		{% if doc && Object.values(doc.actions).some(action => action) %}
-			<div class="inner-group-button show">
-				<button type="button" class="btn btn-default btn-sm" data-toggle="dropdown">Actions
-					<svg class="icon icon-xs">
-						<use class="" href="#icon-select"></use>
-					</svg>
-				</button>
-				<div role="menu" class="dropdown-menu dropdown-menu-right">
-					{% if doc.actions.start_task %}
-						<button class="dropdown-item start_task" data-task="{{ doc.task }}">
-							{{ __("Start Task") }}
-						</button>
-					{% endif %}
+	{% if doc && Object.values(doc.actions).some(action => action) %}
+		<div class="inner-group-button show">
+			<button type="button" class="btn btn-default btn-sm" data-toggle="dropdown">Actions
+				<svg class="icon icon-xs">
+					<use class="" href="#icon-select"></use>
+				</svg>
+			</button>
+			<div role="menu" class="dropdown-menu dropdown-menu-right">
+				{% if doc.actions.start_task %}
+					<button class="dropdown-item start_task" data-task="{{ doc.task }}">
+						{{ __("Start Task") }}
+					</button>
+				{% endif %}
 
-					{% if doc.actions.complete_task %}
-						<button class="dropdown-item complete_task" data-task="{{ doc.task }}">
-							{{ __("Complete Task") }}
-						</button>
-					{% endif %}
+				{% if doc.actions.complete_task %}
+					<button class="dropdown-item complete_task" data-task="{{ doc.task }}">
+						{{ __("Complete Task") }}
+					</button>
+				{% endif %}
 
-					{% if doc.actions.pause_task %}
-						<button class="dropdown-item pause_task" data-task="{{ doc.task }}">
-							{{ __("Pause Task") }}
-						</button>
-					{% endif %}
+				{% if doc.actions.pause_task %}
+					<button class="dropdown-item pause_task" data-task="{{ doc.task }}">
+						{{ __("Pause Task") }}
+					</button>
+				{% endif %}
 
-					{% if doc.actions.resume_task %}
-						<button class="dropdown-item resume_task" data-task="{{ doc.task }}">
-							{{ __("Resume Task") }}
-						</button>
-					{% endif %}
+				{% if doc.actions.resume_task %}
+					<button class="dropdown-item resume_task" data-task="{{ doc.task }}">
+						{{ __("Resume Task") }}
+					</button>
+				{% endif %}
 
-					<div class="dropdown-divider"></div>
+				<div class="dropdown-divider"></div>
 
-					{% if (doc.actions.assign_technician) { %}
-						<button class="dropdown-item assign_technician" data-task="{{ doc.task }}">
-							{{ __("Assign Technician") }}
-						</button>
-					{% } else if (doc.actions.reassign_technician) { %}
-						<button class="dropdown-item reassign_technician" data-task="{{ doc.task }}">
-							{{ __("Re-Assign Technician") }}
-						</button>
-					{% endif %}
+				{% if (doc.actions.assign_technician) { %}
+					<button class="dropdown-item assign_technician" data-task="{{ doc.task }}">
+						{{ __("Assign Technician") }}
+					</button>
+				{% } else if (doc.actions.reassign_technician) { %}
+					<button class="dropdown-item reassign_technician" data-task="{{ doc.task }}">
+						{{ __("Re-Assign Technician") }}
+					</button>
+				{% endif %}
 
-					<div class="dropdown-divider"></div>
+				<div class="dropdown-divider"></div>
 
-					{% if doc.actions.edit_task %}
-						<button class="dropdown-item edit_task" data-task="{{ doc.task }}">
-							{{ __("Edit Task") }}
-						</button>
-					{% endif %}
+				{% if doc.actions.edit_task %}
+					<button class="dropdown-item edit_task" data-task="{{ doc.task }}">
+						{{ __("Edit Task") }}
+					</button>
+				{% endif %}
 
-					{% if doc.actions.cancel_task %}
-						<button class="dropdown-item cancel_task" data-task="{{ doc.task }}">
-							{{ __("Cancel Task") }}
-						</button>
-					{% endif %}
-				</div>
+				{% if doc.actions.cancel_task %}
+					<button class="dropdown-item cancel_task" data-task="{{ doc.task }}">
+						{{ __("Cancel Task") }}
+					</button>
+				{% endif %}
 			</div>
-		{% endif %}
+		</div>
+	{% endif %}
 	</td>
 </tr>
