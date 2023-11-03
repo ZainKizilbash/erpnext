@@ -235,7 +235,7 @@ erpnext.projects.ProjectController = class ProjectController extends erpnext.con
 
 			if (frappe.model.can_create("Sales Order")) {
 				me.frm.add_custom_button(__("Sales Order (Services)"), () => me.make_sales_order("service"), __("Create"));
-				me.frm.add_custom_button(__("Sales Order (Meterials)"), () => me.make_sales_order("stock"), __("Create"));
+				me.frm.add_custom_button(__("Sales Order (Materials)"), () => me.make_sales_order("stock"), __("Create"));
 				me.frm.add_custom_button(__("Sales Order (All)"), () => me.make_sales_order(), __("Create"));
 			}
 		}
