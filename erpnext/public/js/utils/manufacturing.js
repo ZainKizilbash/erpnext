@@ -22,28 +22,35 @@ $.extend(erpnext.manufacturing, {
 
 			if (pending_operations.length) {
 				if (can_backflush) {
+					let html = `
+						<div class="text-center">
+							<button type="button" class="btn btn-primary btn-finish-operation">
+								${__("Finish Operation")}
+							</button>
+							<br/><br/>
+							<button type="button" class="btn btn-primary btn-finish-work-order">
+								${__("Finish Work Order")}
+							</button>
+						</div>
+					`;
+
 					let dialog = new frappe.ui.Dialog({
-						title: __('Select Action'),
+						title: __("Select Action"),
 						fields: [
-							{
-								label: __('Action'),
-								fieldname: 'action',
-								fieldtype: 'Select',
-								options: '\nFinish Operation\nFinish Work Order',
-							},
+							{fieldtype: "HTML", options: html}
 						],
-						primary_action: function() {
-							let d = dialog.get_values();
-							dialog.hide();
-							if (d.action == "Finish Operation") {
-								return erpnext.manufacturing.finish_work_order_operation(r, purpose);
-							} else {
-								return erpnext.manufacturing.make_stock_entry_from_work_order(r, purpose);
-							}
-						},
-						primary_action_label: __('Select')
 					});
+
 					dialog.show();
+
+					$('.btn-finish-operation', dialog.$wrapper).click(function () {
+						dialog.hide();
+						erpnext.manufacturing.finish_work_order_operation(r, purpose);
+					});
+					$('.btn-finish-work-order', dialog.$wrapper).click(function () {
+						dialog.hide();
+						erpnext.manufacturing.make_stock_entry_from_work_order(r, purpose);
+					});
 				} else {
 					return erpnext.manufacturing.finish_work_order_operation(r, purpose);
 				}
@@ -55,7 +62,6 @@ $.extend(erpnext.manufacturing, {
 
 	finish_work_order_operation: function(doc, purpose) {
 		return erpnext.manufacturing.show_qty_dialog_for_work_order_operation(doc, purpose).then(args => {
-			console.log(args);
 			return frappe.call({
 				method: "erpnext.manufacturing.doctype.work_order.work_order.finish_work_order_operation",
 				args: {
