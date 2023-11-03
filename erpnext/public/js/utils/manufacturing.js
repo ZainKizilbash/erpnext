@@ -45,14 +45,14 @@ $.extend(erpnext.manufacturing, {
 
 					$('.btn-finish-operation', dialog.$wrapper).click(function () {
 						dialog.hide();
-						erpnext.manufacturing.finish_work_order_operation(r, purpose);
+						erpnext.manufacturing.finish_work_order_operation(r);
 					});
 					$('.btn-finish-work-order', dialog.$wrapper).click(function () {
 						dialog.hide();
 						erpnext.manufacturing.make_stock_entry_from_work_order(r, purpose);
 					});
 				} else {
-					return erpnext.manufacturing.finish_work_order_operation(r, purpose);
+					return erpnext.manufacturing.finish_work_order_operation(r);
 				}
 			} else {
 				return erpnext.manufacturing.make_stock_entry_from_work_order(r, purpose);
@@ -60,8 +60,8 @@ $.extend(erpnext.manufacturing, {
 		})
 	},
 
-	finish_work_order_operation: function(doc, purpose) {
-		return erpnext.manufacturing.show_qty_dialog_for_work_order_operation(doc, purpose).then(args => {
+	finish_work_order_operation: function(doc) {
+		return erpnext.manufacturing.show_qty_dialog_for_work_order_operation(doc).then(args => {
 			return frappe.call({
 				method: "erpnext.manufacturing.doctype.work_order.work_order.finish_work_order_operation",
 				args: {
@@ -75,7 +75,7 @@ $.extend(erpnext.manufacturing, {
 		});
 	},
 
-	show_qty_dialog_for_work_order_operation: function(doc, purpose) {
+	show_qty_dialog_for_work_order_operation: function(doc) {
 		return new Promise((resolve, reject) => {
 			let max = max_with_allowance = 0;
 			let row = null;
