@@ -36,6 +36,8 @@
   "leave_approver_mandatory_in_leave_application",
   "show_leaves_of_all_department_members_in_calendar",
   "auto_leave_encashment",
+  "allow_leave_allocation_cancellation",
+  "allow_leave_allocation_cancellation_role",
   "hiring_settings",
   "check_vacancies"
  ],
@@ -233,13 +235,25 @@
   {
    "fieldname": "column_break_12",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_leave_allocation_cancellation",
+   "fieldtype": "Check",
+   "label": "Allow Cancelling Leave Allocation When Leave Applications Exists"
+  },
+  {
+   "fieldname": "allow_leave_allocation_cancellation_role",
+   "fieldtype": "Link",
+   "label": "Restrict Leave Allocation Cancellation to Role",
+   "options": "Role"
   }
  ],
  "icon": "fa fa-cog",
  "idx": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-09-02 14:42:39.106487",
+ "modified": "2023-11-03 15:26:14.042250",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "HR Settings",
