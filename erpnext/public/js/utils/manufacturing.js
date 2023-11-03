@@ -5,10 +5,187 @@ erpnext.manufacturing.multiple_work_orders_qty_prompt_hooks = [];
 
 $.extend(erpnext.manufacturing, {
 	process_work_order: function(doc, purpose) {
-		if (doc.docstatus != 1) {
-			return;
-		}
+		if (doc.docstatus != 1) return;
 
+		if (purpose == "Manufacture") {
+			return erpnext.manufacturing.finish_work_order(doc, purpose);
+		} else if (purpose == "Material Transfer for Manufacture") {
+			return erpnext.manufacturing.make_stock_entry_from_work_order(doc, purpose);
+		}
+	},
+
+	finish_work_order: function(doc, purpose) {
+		frappe.model.with_doc(doc.doctype, doc.name).then(r => {
+			let pending_operations = (r.operations || []).filter(d => d.completed_qty < doc.producible_qty);
+			let min_operation_completed_qty = Math.min(...r.operations.map(d => flt(d.completed_qty)));
+			let can_backflush = r.produced_qty < min_operation_completed_qty;
+
+			if (pending_operations.length) {
+				if (can_backflush) {
+					let dialog = new frappe.ui.Dialog({
+						title: __('Select Action'),
+						fields: [
+							{
+								label: __('Action'),
+								fieldname: 'action',
+								fieldtype: 'Select',
+								options: '\nFinish Operation\nFinish Work Order',
+							},
+						],
+						primary_action: function() {
+							let d = dialog.get_values();
+							dialog.hide();
+							if (d.action == "Finish Operation") {
+								return erpnext.manufacturing.finish_work_order_operation(r, purpose);
+							} else {
+								return erpnext.manufacturing.make_stock_entry_from_work_order(r, purpose);
+							}
+						},
+						primary_action_label: __('Select')
+					});
+					dialog.show();
+				} else {
+					return erpnext.manufacturing.finish_work_order_operation(r, purpose);
+				}
+			} else {
+				return erpnext.manufacturing.make_stock_entry_from_work_order(r, purpose);
+			}
+		})
+	},
+
+	finish_work_order_operation: function(doc, purpose) {
+		return erpnext.manufacturing.show_qty_dialog_for_work_order_operation(doc, purpose).then(args => {
+			console.log(args);
+			return frappe.call({
+				method: "erpnext.manufacturing.doctype.work_order.work_order.finish_work_order_operation",
+				args: {
+					"work_order": doc.name,
+					"operation": args.operation,
+					"finish_qty": args.finish_qty,
+				},
+				freeze: 1,
+			});
+		});
+	},
+
+	show_qty_dialog_for_work_order_operation: function(doc, purpose) {
+		return new Promise((resolve, reject) => {
+			let max = max_with_allowance = 0;
+			let row = null;
+
+			frappe.model.with_doctype("Work Order", () => {
+				let operation_options = doc.operations.map(d => d.operation).join('\n');
+				let fields = [
+					{
+						fieldtype: 'Select',
+						label: __('Select Operation'),
+						fieldname: 'operation',
+						options: operation_options,
+						reqd: 1,
+						onchange: () => {
+							let operation = dialog.get_value('operation');
+							let workstation = null;
+							let finish_qty = completed_qty = 0;
+
+							if (operation) {
+									row = doc.operations.find(d => d.operation == operation);
+									[max, max_with_allowance] = erpnext.manufacturing.get_max_qty_for_operation(doc, row);
+
+									workstation = row.workstation;
+									completed_qty = flt(row.completed_qty);
+									finish_qty = max;
+									dialog.set_df_property('finish_qty', 'description', __('Max: {0}', [format_number(max)]));
+							}
+							dialog.set_value('workstation', workstation);
+							dialog.set_value('finish_qty', finish_qty);
+							dialog.set_value('completed_qty', completed_qty);
+						},
+					},
+					{
+						label: __('Workstation'),
+						fieldname: 'workstation',
+						fieldtype: 'Link',
+						options: 'Workstation',
+						reqd: 1,
+					},
+					{
+						label: __('Finish Qty'),
+						fieldname: 'finish_qty',
+						fieldtype: 'Float',
+						reqd: 1,
+						default: 0,
+					},
+					{
+						fieldtype: 'Section Break',
+					},
+					{
+						label: __('Qty to Produce'),
+						fieldname: 'qty_to_produce',
+						fieldtype: 'Float',
+						default: flt(doc.producible_qty),
+						read_only: 1,
+					},
+					{
+						fieldtype: 'Column Break',
+					},
+					{
+						label: __('Completed Qty'),
+						fieldname: 'completed_qty',
+						fieldtype: 'Float',
+						default: 0,
+						read_only: 1,
+					},
+					{
+						fieldtype: 'Section Break',
+					},
+					{
+						label: __('Work Order'),
+						fieldname: 'work_order',
+						fieldtype: 'Link',
+						options: "Work Order",
+						default: doc.name,
+						read_only: 1,
+					},
+					{
+						label: __('Production Item'),
+						fieldname: 'production_item',
+						fieldtype: 'Link',
+						options: "Item",
+						default: doc.production_item,
+						read_only: 1,
+					},
+					{
+						label: __('Production Item Name'),
+						fieldname: 'production_item_name',
+						fieldtype: 'Data',
+						default: doc.item_name,
+						read_only: 1,
+					},
+				];
+
+				let dialog = new frappe.ui.Dialog({
+					title: __('Finish Operation'),
+					fields: fields,
+					primary_action: function() {
+						let data = dialog.get_values();
+						if (flt(data.finish_qty) > max_with_allowance) {
+							frappe.msgprint(__('Quantity can not be more than {0}', [format_number(max_with_allowance)]));
+							reject();
+						}
+						dialog.hide();
+						resolve({
+							operation: row.operation,
+							finish_qty: data.finish_qty,
+						});
+					},
+					primary_action_label: __('Finish')
+				});
+				dialog.show();
+			});
+		});
+	},
+
+	make_stock_entry_from_work_order: function(doc, purpose) {
 		return erpnext.manufacturing.show_qty_prompt_for_stock_entry(doc, purpose).then(r => {
 			return frappe.call({
 				method: "erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry",
@@ -326,6 +503,27 @@ $.extend(erpnext.manufacturing, {
 		return [flt(pending_qty, qty_precision), flt(pending_qty_with_allowance, qty_precision)];
 	},
 
+	get_max_qty_for_operation: (doc, operation_row) => {
+		let producible_qty_with_allowance = erpnext.manufacturing.get_qty_with_allowance(doc.producible_qty, doc);
+
+		let pending_qty = 0;
+		let pending_qty_with_allowance = 0;
+
+		if (doc.skip_transfer) {
+			pending_qty = flt(doc.producible_qty) - flt(operation_row.completed_qty);
+			pending_qty_with_allowance = producible_qty_with_allowance - flt(operation_row.completed_qty);
+		} else {
+			let qty_to_produce = Math.min(flt(doc.material_transferred_for_manufacturing), flt(doc.qty));
+			pending_qty = qty_to_produce - flt(operation_row.completed_qty);
+			pending_qty_with_allowance = flt(doc.material_transferred_for_manufacturing) - flt(operation_row.completed_qty);
+		}
+
+		pending_qty = Math.max(pending_qty, 0);
+
+		let qty_precision = erpnext.manufacturing.get_work_order_precision();
+		return [flt(pending_qty, qty_precision), flt(pending_qty_with_allowance, qty_precision)];
+	},
+
 	get_qty_with_allowance: function (qty, doc) {
 		let allowance_percentage = erpnext.manufacturing.get_over_production_allowance(doc);
 		let qty_with_allowance = flt(qty) + flt(qty) * allowance_percentage / 100;
@@ -470,5 +668,68 @@ $.extend(erpnext.manufacturing, {
 
 	has_stock_entry_permission: function () {
 		return frappe.model.can_write("Stock Entry");
-	}
+	},
+	finish_operation: function(doc) {
+		if (doc.docstatus != 1) {
+			return;
+		}
+		// frappe.prompt(fields, data => {
+		// 	resolve();
+		// }, __('Finish Operation'), __('Finish'));
+	},
 });
+
+
+function show_transition_dialog(doc, purpose) {
+	var dialog = new frappe.ui.Dialog({
+		title: __('Finish What?'),
+		fields: [
+			{
+				label: __('Select Action'),
+				fieldname: 'action',
+				fieldtype: 'Select',
+				options: '\nFinish Operation\nFinish Work Order',
+			},
+		],
+		primary_action: function() {
+			let d = dialog.get_values();
+			if (d.action == "Finish Operation") {
+				return show_prompt_for_work_order_operation(doc);
+			} else if (d.action == "Finish Work Order") {
+				return show_prompt_for_work_order_stock_entry(doc, purpose);
+			}
+			dialog.hide()
+		},
+		primary_action_label: __('Finish')
+	});
+	dialog.show();
+}
+
+function show_prompt_for_work_order_stock_entry(doc, purpose) {
+	return erpnext.manufacturing.show_qty_prompt_for_stock_entry(doc, purpose).then(r => {
+		return frappe.call({
+			method: "erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry",
+			args: {
+				"work_order_id": doc.name,
+				"purpose": purpose,
+				"scrap_remaining": r.data.scrap_remaining,
+				"qty": r.data.qty,
+				"args": r.args,
+			},
+			freeze: 1,
+			callback: (r) => {
+				if (r.message) {
+					frappe.model.sync(r.message);
+
+					if (cur_frm && cur_frm.doc.doctype == "Work Order" && cur_frm.doc.name == doc.name) {
+						cur_frm.reload_doc();
+					}
+
+					if (r.message.docstatus != 1) {
+						frappe.set_route('Form', r.message.doctype, r.message.name);
+					}
+				}
+			}
+		});
+	});
+}

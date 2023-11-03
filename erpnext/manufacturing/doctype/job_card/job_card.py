@@ -4,7 +4,7 @@
 
 import frappe
 from frappe import _
-from frappe.utils import flt, time_diff_in_hours, get_datetime, time_diff, get_link_to_form
+from frappe.utils import cint, flt, time_diff_in_hours, get_datetime, time_diff, get_link_to_form
 from frappe.model.mapper import get_mapped_doc
 from frappe.model.document import Document
 
@@ -17,6 +17,9 @@ class JobCard(Document):
 		self.validate_operation_id()
 
 	def validate_time_logs(self):
+		if cint(frappe.db.get_single_value("Manufacturing Settings", "disable_capacity_planning")):
+			return
+
 		self.total_completed_qty = 0.0
 		self.total_time_in_mins = 0.0
 
@@ -92,7 +95,7 @@ class JobCard(Document):
 		self.set_transferred_qty()
 
 	def validate_job_card(self):
-		if not self.time_logs:
+		if not self.time_logs and not cint(frappe.db.get_single_value("Manufacturing Settings", "disable_capacity_planning")):
 			frappe.throw(_("Time logs are required for {0} {1}")
 				.format(frappe.bold("Job Card"), get_link_to_form("Job Card", self.name)))
 
