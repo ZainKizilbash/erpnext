@@ -15,7 +15,7 @@ $.extend(erpnext.manufacturing, {
 	},
 
 	finish_work_order: function(doc, purpose) {
-		frappe.model.with_doc(doc.doctype, doc.name).then(r => {
+		frappe.model.with_doc("Work Order", doc.name).then(r => {
 			let pending_operations = (r.operations || []).filter(d => d.completed_qty < doc.producible_qty);
 			let min_operation_completed_qty = Math.min(...r.operations.map(d => flt(d.completed_qty)));
 			let can_backflush = r.produced_qty < min_operation_completed_qty;
@@ -61,6 +61,7 @@ $.extend(erpnext.manufacturing, {
 				args: {
 					"work_order": doc.name,
 					"operation": args.operation,
+					"workstation": args.workstation,
 					"finish_qty": args.finish_qty,
 				},
 				freeze: 1,
@@ -175,6 +176,7 @@ $.extend(erpnext.manufacturing, {
 						dialog.hide();
 						resolve({
 							operation: row.operation,
+							workstation: data.workstation,
 							finish_qty: data.finish_qty,
 						});
 					},

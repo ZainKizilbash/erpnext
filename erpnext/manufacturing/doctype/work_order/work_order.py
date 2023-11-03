@@ -1564,12 +1564,13 @@ def make_purchase_order(work_orders, target_doc=None, supplier=None):
 
 
 @frappe.whitelist()
-def finish_work_order_operation(work_order, operation, finish_qty):
+def finish_work_order_operation(work_order, operation, workstation, finish_qty):
 	pro_doc = frappe.get_doc("Work Order", work_order)
 	operation_row = [d for d in pro_doc.operations if d.operation == operation]
 
 	if operation_row:
 		job_card_doc = create_job_card(pro_doc, operation_row[0], finish_qty)
+		job_card_doc.workstation = workstation
 		job_card_doc.total_completed_qty = finish_qty
 		job_card_doc.submit()
 
