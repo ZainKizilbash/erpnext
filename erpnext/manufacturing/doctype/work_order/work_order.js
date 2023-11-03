@@ -163,7 +163,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 			doc.docstatus === 1
 			&& doc.operations && doc.operations.length
 			&& flt(doc.completed_qty) < flt(doc.qty)
-			&& doc.__onload && !doc.__onload.disable_capacity_planning
+			&& !doc.__onload?.disable_capacity_planning
 		) {
 			const not_completed = doc.operations.some(d => d.status != "Completed");
 			if (not_completed) {

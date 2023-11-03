@@ -1568,17 +1568,17 @@ def finish_work_order_operation(work_order, operation, workstation, finish_qty):
 	pro_doc = frappe.get_doc("Work Order", work_order)
 	operation_row = [d for d in pro_doc.operations if d.operation == operation]
 
-	if operation_row:
-		job_card_doc = create_job_card(pro_doc, operation_row[0], finish_qty)
-		job_card_doc.workstation = workstation
-		job_card_doc.total_completed_qty = finish_qty
-		job_card_doc.submit()
-
-		frappe.msgprint(_("{0} submitted successfully ({1} {2}): {3}").format(
-			frappe.get_desk_link("Job Card", job_card_doc.name),
-			job_card_doc.get_formatted("total_completed_qty"),
-			pro_doc.stock_uom,
-			job_card_doc.operation,
-		), indicator="green")
-	else:
+	if not operation_row:
 		frappe.throw(_("Operation {0} not in Work Order {1}").format(operation, work_order))
+
+	job_card_doc = create_job_card(pro_doc, operation_row[0], finish_qty)
+	job_card_doc.workstation = workstation
+	job_card_doc.total_completed_qty = finish_qty
+	job_card_doc.submit()
+
+	frappe.msgprint(_("{0} submitted successfully ({1} {2}): {3}").format(
+		frappe.get_desk_link("Job Card", job_card_doc.name),
+		job_card_doc.get_formatted("total_completed_qty"),
+		pro_doc.stock_uom,
+		job_card_doc.operation,
+	), indicator="green")
