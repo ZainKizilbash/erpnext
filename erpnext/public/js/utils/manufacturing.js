@@ -24,8 +24,8 @@ $.extend(erpnext.manufacturing, {
 				if (pending_operations.length) {
 					if (can_backflush) {
 						let html = `
-							<div class="text-center">
-								<button type="button" class="btn btn-primary btn-finish-operation">
+							<div class="d-flex justify-content-center">
+								<button type="button" class="btn btn-primary btn-finish-operation mr-4">
 									${__("Finish Operation")}
 								</button>
 								<br/><br/>
