@@ -15,49 +15,51 @@ $.extend(erpnext.manufacturing, {
 	},
 
 	finish_work_order: function(doc, purpose) {
-		frappe.model.with_doc("Work Order", doc.name).then(r => {
-			let pending_operations = (r.operations || []).filter(d => d.completed_qty < doc.producible_qty);
-			let min_operation_completed_qty = Math.min(...r.operations.map(d => flt(d.completed_qty)));
-			let can_backflush = r.produced_qty < min_operation_completed_qty;
+		return new Promise(() => {
+			frappe.model.with_doc("Work Order", doc.name).then(r => {
+				let pending_operations = (r.operations || []).filter(d => d.completed_qty < doc.producible_qty);
+				let min_operation_completed_qty = Math.min(...r.operations.map(d => flt(d.completed_qty)));
+				let can_backflush = r.produced_qty < min_operation_completed_qty;
 
-			if (pending_operations.length) {
-				if (can_backflush) {
-					let html = `
-						<div class="text-center">
-							<button type="button" class="btn btn-primary btn-finish-operation">
-								${__("Finish Operation")}
-							</button>
-							<br/><br/>
-							<button type="button" class="btn btn-primary btn-finish-work-order">
-								${__("Finish Work Order")}
-							</button>
-						</div>
-					`;
+				if (pending_operations.length) {
+					if (can_backflush) {
+						let html = `
+							<div class="text-center">
+								<button type="button" class="btn btn-primary btn-finish-operation">
+									${__("Finish Operation")}
+								</button>
+								<br/><br/>
+								<button type="button" class="btn btn-primary btn-finish-work-order">
+									${__("Finish Work Order")}
+								</button>
+							</div>
+						`;
 
-					let dialog = new frappe.ui.Dialog({
-						title: __("Select Action"),
-						fields: [
-							{fieldtype: "HTML", options: html}
-						],
-					});
+						let dialog = new frappe.ui.Dialog({
+							title: __("Select Action"),
+							fields: [
+								{fieldtype: "HTML", options: html}
+							],
+						});
 
-					dialog.show();
+						dialog.show();
 
-					$('.btn-finish-operation', dialog.$wrapper).click(function () {
-						dialog.hide();
-						erpnext.manufacturing.finish_work_order_operation(r);
-					});
-					$('.btn-finish-work-order', dialog.$wrapper).click(function () {
-						dialog.hide();
-						erpnext.manufacturing.make_stock_entry_from_work_order(r, purpose);
-					});
+						$('.btn-finish-operation', dialog.$wrapper).click(function () {
+							dialog.hide();
+							return erpnext.manufacturing.finish_work_order_operation(r);
+						});
+						$('.btn-finish-work-order', dialog.$wrapper).click(function () {
+							dialog.hide();
+							return erpnext.manufacturing.make_stock_entry_from_work_order(r, purpose);
+						});
+					} else {
+						return erpnext.manufacturing.finish_work_order_operation(r);
+					}
 				} else {
-					return erpnext.manufacturing.finish_work_order_operation(r);
+					return erpnext.manufacturing.make_stock_entry_from_work_order(r, purpose);
 				}
-			} else {
-				return erpnext.manufacturing.make_stock_entry_from_work_order(r, purpose);
-			}
-		})
+			});
+		});
 	},
 
 	finish_work_order_operation: function(doc) {
