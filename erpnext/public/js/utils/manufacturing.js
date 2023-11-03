@@ -71,6 +71,19 @@ $.extend(erpnext.manufacturing, {
 					"finish_qty": args.finish_qty,
 				},
 				freeze: 1,
+				callback: (r) => {
+					if (r.message) {
+						frappe.model.sync(r.message);
+
+						if (cur_frm && cur_frm.doc.doctype == "Work Order" && cur_frm.doc.name == doc.name) {
+							cur_frm.reload_doc();
+						}
+
+						if (r.message.docstatus != 1) {
+							frappe.set_route('Form', r.message.doctype, r.message.name);
+						}
+					}
+				}
 			});
 		});
 	},

@@ -1564,7 +1564,7 @@ def make_purchase_order(work_orders, target_doc=None, supplier=None):
 
 
 @frappe.whitelist()
-def finish_work_order_operation(work_order, operation, workstation, finish_qty):
+def finish_work_order_operation(work_order, operation, workstation, finish_qty, auto_submit=False):
 	pro_doc = frappe.get_doc("Work Order", work_order)
 	operation_row = [d for d in pro_doc.operations if d.operation == operation]
 
@@ -1574,11 +1574,16 @@ def finish_work_order_operation(work_order, operation, workstation, finish_qty):
 	job_card_doc = create_job_card(pro_doc, operation_row[0], finish_qty)
 	job_card_doc.workstation = workstation
 	job_card_doc.total_completed_qty = finish_qty
-	job_card_doc.submit()
 
-	frappe.msgprint(_("{0} submitted successfully ({1} {2}): {3}").format(
-		frappe.get_desk_link("Job Card", job_card_doc.name),
-		job_card_doc.get_formatted("total_completed_qty"),
-		pro_doc.stock_uom,
-		job_card_doc.operation,
-	), indicator="green")
+	if auto_submit or frappe.db.get_single_value('Manufacturing Settings', 'auto_submit_job_card'):
+		job_card_doc.submit()
+
+		frappe.msgprint(_("{0} submitted successfully ({1} {2}): {3}").format(
+			frappe.get_desk_link("Job Card", job_card_doc.name),
+			job_card_doc.get_formatted("total_completed_qty"),
+			pro_doc.stock_uom,
+			job_card_doc.operation,
+		), indicator="green")
+
+	else:
+		return job_card_doc
