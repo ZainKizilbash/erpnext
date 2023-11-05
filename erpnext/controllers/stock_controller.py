@@ -623,7 +623,7 @@ def get_future_stock_vouchers(posting_date, posting_time, for_warehouses=None, f
 		"posting_date": posting_date,
 		"posting_time": posting_time,
 		"item_codes": for_items,
-		"warehouses": for_items,
+		"warehouses": for_warehouses,
 		"item_warehouse_list": item_warehouse_list
 	}, as_dict=True)
 
