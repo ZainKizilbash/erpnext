@@ -539,6 +539,8 @@ def update_gl_entries_for_reposted_stock_vouchers(excluded_vouchers=None, only_i
 
 		update_gl_entries_for_stock_voucher(vouchers, excluded_vouchers=excluded_vouchers, verbose=verbose)
 
+		frappe.flags.stock_ledger_vouchers_reposted = None
+
 
 def update_gl_entries_after(posting_date, posting_time, for_warehouses=None, for_items=None, item_warehouse_list=None):
 	future_stock_vouchers = get_future_stock_vouchers(posting_date, posting_time,
