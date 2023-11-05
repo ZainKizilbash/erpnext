@@ -4,15 +4,18 @@
 
 import frappe
 from frappe import _
-from frappe.utils import flt, getdate, add_days, formatdate, today
+from frappe.utils import getdate, add_days, formatdate, today
 from frappe.model.document import Document
 from datetime import date
 from erpnext.controllers.item_variant import ItemTemplateCannotHaveStock
 from erpnext.accounts.utils import get_fiscal_year
 
+
 class StockFreezeError(frappe.ValidationError): pass
 
+
 exclude_from_linked_with = True
+
 
 class StockLedgerEntry(Document):
 	def autoname(self):

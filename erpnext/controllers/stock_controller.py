@@ -38,7 +38,7 @@ class StockController(AccountsController):
 					gl_entries = self.get_gl_entries()
 				make_gl_entries(gl_entries, from_repost=from_repost)
 
-			if (repost_future_gle or self.flags.repost_future_gle):
+			if repost_future_gle or self.flags.repost_future_gle:
 				update_gl_entries_for_reposted_stock_vouchers((self.doctype, self.name))
 
 		elif self.doctype in ['Purchase Receipt', 'Purchase Invoice'] and self.docstatus == 1:
