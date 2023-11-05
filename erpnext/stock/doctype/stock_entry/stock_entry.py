@@ -1065,7 +1065,8 @@ class StockEntry(TransactionController):
 			select
 				i.item_code, i.t_warehouse as warehouse, ifnull(i.batch_no, '') as batch_no,
 				sum(i.qty) as transferred_qty,
-				i.item_name, i.original_item, i.description, i.uom,
+				i.item_name, i.original_item, i.description,
+				i.uom, sum(i.qty * i.conversion_factor) / sum(i.qty) as conversion_factor,
 				i.expense_account, i.cost_center
 			from `tabStock Entry Detail` i
 			inner join `tabStock Entry` ste on ste.name = i.parent
@@ -1146,6 +1147,7 @@ class StockEntry(TransactionController):
 						"to_warehouse": "",
 						"qty": consumed_qty,
 						"uom": pending_iwb.uom,
+						"conversion_factor": pending_iwb.conversion_factor,
 						"expense_account": pending_iwb.expense_account,
 						"cost_center": pending_iwb.cost_center,
 						"original_item": pending_iwb.original_item
