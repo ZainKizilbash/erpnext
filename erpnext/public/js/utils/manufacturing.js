@@ -512,6 +512,11 @@ $.extend(erpnext.manufacturing, {
 		} else {
 			if (purpose === 'Manufacture') {
 				let qty_to_produce = Math.min(flt(doc.material_transferred_for_manufacturing), flt(doc.qty));
+				if (doc.operations.length) {
+					let min_operation_completed_qty = Math.min(...doc.operations.map(d => flt(d.completed_qty)));
+					qty_to_produce = Math.min(qty_to_produce, min_operation_completed_qty);
+				}
+
 				pending_qty = qty_to_produce - flt(doc.produced_qty);
 				pending_qty_with_allowance = flt(doc.material_transferred_for_manufacturing) - flt(doc.produced_qty);
 			} else {
