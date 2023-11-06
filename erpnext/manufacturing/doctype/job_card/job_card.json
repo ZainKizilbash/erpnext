@@ -111,7 +111,7 @@
    "reqd": 1
   },
   {
-   "depends_on": "frappe.defaults.get_default('disable_capacity_planning')",
+   "depends_on": "eval: !cint(frappe.defaults.get_default('disable_capacity_planning'))",
    "fieldname": "timing_detail",
    "fieldtype": "Section Break",
    "label": "Timing Detail"
@@ -131,7 +131,7 @@
    "options": "Job Card Time Log"
   },
   {
-   "depends_on": "frappe.defaults.get_default('disable_capacity_planning')",
+   "depends_on": "eval: !cint(frappe.defaults.get_default('disable_capacity_planning'))",
    "fieldname": "section_break_13",
    "fieldtype": "Section Break"
   },
@@ -303,7 +303,7 @@
  "is_calendar_and_gantt": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-11-06 13:11:00.532474",
+ "modified": "2023-11-06 13:22:49.824587",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Job Card",
