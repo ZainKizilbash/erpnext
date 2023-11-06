@@ -692,12 +692,4 @@ $.extend(erpnext.manufacturing, {
 	has_stock_entry_permission: function () {
 		return frappe.model.can_write("Stock Entry");
 	},
-	finish_operation: function(doc) {
-		if (doc.docstatus != 1) {
-			return;
-		}
-		// frappe.prompt(fields, data => {
-		// 	resolve();
-		// }, __('Finish Operation'), __('Finish'));
-	},
 });
