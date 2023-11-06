@@ -17,7 +17,9 @@ class JobCard(Document):
 		self.validate_operation_id()
 
 	def validate_time_logs(self):
-		if cint(frappe.db.get_single_value("Manufacturing Settings", "disable_capacity_planning")):
+		if cint(frappe.get_cached_value("Manufacturing Settings", None, "disable_capacity_planning")):
+			self.time_logs = []
+			self.total_completed_qty = flt(self.for_quantity)
 			return
 
 		self.total_completed_qty = 0.0
@@ -95,7 +97,7 @@ class JobCard(Document):
 		self.set_transferred_qty()
 
 	def validate_job_card(self):
-		if not self.time_logs and not cint(frappe.db.get_single_value("Manufacturing Settings", "disable_capacity_planning")):
+		if not self.time_logs and not cint(frappe.get_cached_value("Manufacturing Settings", None, "disable_capacity_planning")):
 			frappe.throw(_("Time logs are required for {0} {1}")
 				.format(frappe.bold("Job Card"), get_link_to_form("Job Card", self.name)))
 
