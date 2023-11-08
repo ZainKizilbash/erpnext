@@ -190,6 +190,9 @@ def make_conversion_graph():
 
 @frappe.whitelist()
 def get_uom_conv_factor(from_uom, to_uom):
+	if from_uom == to_uom:
+		return 1
+
 	conversion_map = get_conversion_map()
 	conversion_factor = flt(conversion_map.get(from_uom, {}).get(to_uom))
 
