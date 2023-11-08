@@ -75,6 +75,10 @@ class SalarySlip(TransactionBase):
 	def before_print(self, print_settings=None):
 		self.company_address_doc = erpnext.get_company_address(self)
 
+		self.total_of_total_balance_amount = 0
+		for loan in self.loans:
+			self.total_of_total_balance_amount += loan.total_balance_amount
+
 	def on_submit(self):
 		if self.net_pay < 0:
 			frappe.throw(_("Net Pay cannot be less than 0"))
@@ -1021,6 +1025,11 @@ class SalarySlip(TransactionBase):
 				'interest_income_account': loan.interest_income_account,
 				'loan_repayment_detail': loan.loan_repayment_detail,
 				'loan_repayment_date': loan.payment_date,
+				'loan_type': loan.loan_type,
+				'disbursement_date': loan.disbursement_date,
+				'total_loan_amount': loan.total_loan_amount,
+				'total_amount_paid': flt(loan.total_amount_paid) + flt(loan.total_payment),
+				'total_balance_amount': flt(loan.total_loan_amount) - flt(loan.total_amount_paid) - flt(loan.total_payment),
 			})
 
 			self.total_loan_repayment += loan.total_payment
@@ -1031,8 +1040,8 @@ class SalarySlip(TransactionBase):
 		return frappe.db.sql("""
 			select loan.name, rps.name as loan_repayment_detail,
 				rps.principal_amount, rps.interest_amount, rps.total_payment,
-				rps.payment_date,
-				loan.loan_account, loan.interest_income_account
+				rps.payment_date, loan.loan_account, loan.interest_income_account,
+				loan_type, loan.disbursement_date, loan.total_payment as total_loan_amount, loan.total_amount_paid
 			from
 				`tabRepayment Schedule` as rps, `tabLoan` as loan
 			where

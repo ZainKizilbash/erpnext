@@ -1,14 +1,21 @@
 {
+ "actions": [],
  "creation": "2017-11-08 12:51:12.834479",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "loan_type",
+  "disbursement_date",
   "loan_repayment_date",
   "loan",
   "loan_account",
   "interest_income_account",
   "loan_repayment_detail",
+  "column_break_3",
+  "total_loan_amount",
+  "total_balance_amount",
+  "total_amount_paid",
   "column_break_4",
   "principal_amount",
   "interest_amount",
@@ -77,10 +84,41 @@
    "in_list_view": 1,
    "label": "Loan Repayment Date",
    "read_only": 1
+  },
+  {
+   "fieldname": "total_loan_amount",
+   "fieldtype": "Currency",
+   "label": "Total Loan Amount"
+  },
+  {
+   "fieldname": "total_balance_amount",
+   "fieldtype": "Currency",
+   "label": "Total Balance Amount"
+  },
+  {
+   "fieldname": "loan_type",
+   "fieldtype": "Link",
+   "label": "Loan Type",
+   "options": "Loan Type"
+  },
+  {
+   "fieldname": "disbursement_date",
+   "fieldtype": "Data",
+   "label": "Disbursement Date"
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_amount_paid",
+   "fieldtype": "Currency",
+   "label": "Total Amount Paid"
   }
  ],
  "istable": 1,
- "modified": "2022-04-05 14:01:46.257239",
+ "links": [],
+ "modified": "2023-11-06 19:01:04.960074",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Salary Slip Loan",
@@ -89,5 +127,6 @@
  "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }
