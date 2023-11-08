@@ -8,23 +8,25 @@
  "field_order": [
   "naming_series",
   "work_order",
-  "bom_no",
-  "workstation",
   "operation",
   "operation_row_number",
-  "column_break_4",
-  "posting_date",
-  "company",
+  "operation_id",
+  "workstation",
+  "column_break_voki1",
   "remarks",
+  "column_break_4",
+  "company",
+  "posting_date",
+  "employee",
+  "employee_name",
+  "status",
   "production_section",
   "production_item",
   "item_name",
   "for_quantity",
-  "wip_warehouse",
   "column_break_12",
-  "employee",
-  "employee_name",
-  "status",
+  "bom_no",
+  "wip_warehouse",
   "project",
   "timing_detail",
   "time_logs",
@@ -35,7 +37,6 @@
   "section_break_8",
   "items",
   "more_information",
-  "operation_id",
   "transferred_qty",
   "requested_qty",
   "column_break_20",
@@ -68,6 +69,7 @@
    "fieldname": "workstation",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Workstation",
    "options": "Workstation",
    "reqd": 1
@@ -76,6 +78,7 @@
    "fieldname": "operation",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Operation",
    "options": "Operation",
    "reqd": 1
@@ -88,7 +91,9 @@
    "default": "Today",
    "fieldname": "posting_date",
    "fieldtype": "Date",
-   "label": "Posting Date"
+   "in_standard_filter": 1,
+   "label": "Posting Date",
+   "reqd": 1
   },
   {
    "fieldname": "company",
@@ -101,14 +106,16 @@
    "fieldname": "for_quantity",
    "fieldtype": "Float",
    "in_list_view": 1,
-   "label": "Qty To Manufacture"
+   "label": "Qty To Produce",
+   "reqd": 1
   },
   {
+   "fetch_from": "work_order.wip_warehouse",
    "fieldname": "wip_warehouse",
    "fieldtype": "Link",
-   "label": "WIP Warehouse",
+   "label": "Work-in-Progress Warehouse",
    "options": "Warehouse",
-   "reqd": 1
+   "read_only": 1
   },
   {
    "depends_on": "eval: !cint(frappe.defaults.get_default('disable_capacity_planning'))",
@@ -244,19 +251,23 @@
    "read_only": 1
   },
   {
-   "default": "PO-JOB.#####",
+   "default": "JC-",
    "fieldname": "naming_series",
    "fieldtype": "Select",
-   "label": "Naming Series",
-   "options": "PO-JOB.#####",
-   "reqd": 1,
+   "hidden": 1,
+   "label": "Series",
+   "no_copy": 1,
+   "options": "JC-",
+   "print_hide": 1,
    "set_only_once": 1
   },
   {
+   "depends_on": "eval:doc.employee && doc.employee_name != doc.employee",
    "fetch_from": "employee.employee_name",
    "fieldname": "employee_name",
-   "fieldtype": "Read Only",
-   "label": "Employee Name"
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "read_only": 1
   },
   {
    "fieldname": "production_section",
@@ -270,8 +281,11 @@
   {
    "fetch_from": "work_order.production_item",
    "fieldname": "production_item",
-   "fieldtype": "Read Only",
-   "label": "Production Item"
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Production Item",
+   "options": "Item",
+   "read_only": 1
   },
   {
    "fieldname": "barcode",
@@ -298,12 +312,16 @@
    "fieldname": "operation_row_number",
    "fieldtype": "Select",
    "label": "Operation Row Number"
+  },
+  {
+   "fieldname": "column_break_voki1",
+   "fieldtype": "Column Break"
   }
  ],
  "is_calendar_and_gantt": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-11-06 13:22:49.824587",
+ "modified": "2023-11-07 17:28:14.362684",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Job Card",
@@ -320,45 +338,16 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "submit": 1,
-   "write": 1
-  },
-  {
-   "amend": 1,
-   "cancel": 1,
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
    "role": "Manufacturing User",
-   "share": 1,
-   "submit": 1,
-   "write": 1
-  },
-  {
-   "amend": 1,
-   "cancel": 1,
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Manufacturing Manager",
    "share": 1,
    "submit": 1,
    "write": 1
   }
  ],
- "sort_field": "modified",
+ "search_fields": "work_order,operation,workstation",
+ "sort_field": "posting_date",
  "sort_order": "DESC",
  "states": [],
- "title_field": "operation",
+ "title_field": "item_name",
  "track_changes": 1
 }

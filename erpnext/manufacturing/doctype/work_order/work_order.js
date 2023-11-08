@@ -94,6 +94,11 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 			};
 		});
 
+		this.frm.set_query("workstation", "operations", (doc, cdt, cdn) => {
+			let row = frappe.get_doc(cdt, cdn);
+			return erpnext.queries.workstation(row.operation);
+		});
+
 		// Warehouse Queries
 		this.frm.set_query("source_warehouse", () => {
 			return {

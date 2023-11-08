@@ -129,6 +129,10 @@ $.extend(erpnext.manufacturing, {
 						fieldtype: 'Link',
 						options: 'Workstation',
 						reqd: 1,
+						get_query: () => {
+							let operation = dialog.get_value('operation');
+							return erpnext.queries.workstation(operation);
+						}
 					},
 					{
 						label: __('Finish Qty'),

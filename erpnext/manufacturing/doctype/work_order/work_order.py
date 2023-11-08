@@ -1571,9 +1571,9 @@ def finish_work_order_operation(work_order, operation, workstation, finish_qty, 
 	if not operation_row:
 		frappe.throw(_("Operation {0} not in Work Order {1}").format(operation, work_order))
 
-	job_card_doc = create_job_card(pro_doc, operation_row[0], finish_qty)
+	job_card_doc = create_job_card(pro_doc, operation_row[0], flt(finish_qty))
 	job_card_doc.workstation = workstation
-	job_card_doc.total_completed_qty = finish_qty
+	job_card_doc.total_completed_qty = flt(finish_qty)
 
 	if auto_submit or frappe.db.get_single_value('Manufacturing Settings', 'auto_submit_job_card'):
 		job_card_doc.submit()

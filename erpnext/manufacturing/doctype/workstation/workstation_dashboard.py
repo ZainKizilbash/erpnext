@@ -5,8 +5,12 @@ def get_data():
 		'fieldname': 'workstation',
 		'transactions': [
 			{
-				'label': _('Manufacture'),
-				'items': ['BOM', 'Routing', 'Work Order', 'Job Card', 'Operation']
+				'label': _('Masters'),
+				'items': ['BOM', 'Routing', 'Operation']
+			},
+			{
+				'label': _('Transactions'),
+				'items': ['Work Order', 'Job Card']
 			}
 		]
 	}

@@ -194,9 +194,11 @@ def get_operation_details(work_order, operation):
 			}
 		)
 
+
 @frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
 def get_operations(doctype, txt, searchfield, start, page_len, filters):
-	if filters.get("work_order"):
+	if filters and filters.get("work_order"):
 		args = {"parent": filters.get("work_order")}
 		if txt:
 			args["operation"] = ("like", "%{0}%".format(txt))
@@ -207,6 +209,9 @@ def get_operations(doctype, txt, searchfield, start, page_len, filters):
 			limit_start = start,
 			limit_page_length = page_len,
 			order_by="idx asc", as_list=1)
+	else:
+		return []
+
 
 @frappe.whitelist()
 def make_material_request(source_name, target_doc=None):
