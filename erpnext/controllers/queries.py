@@ -422,6 +422,43 @@ def bom(doctype, txt, searchfield, start, page_len, filters):
 
 @frappe.whitelist()
 @frappe.validate_and_sanitize_search_inputs
+def workstation_query(doctype, txt, searchfield, start, page_len, filters):
+	fields = get_fields("Workstation", ["name"])
+
+	searchfields = frappe.get_meta("Workstation").get_search_fields()
+	searchfields = " or ".join([field + " like %(txt)s" for field in searchfields])
+
+	exists_cond = ""
+	operation = filters and filters.pop("operation", None)
+	if operation:
+		exists_cond = """ and exists(select wo.name from `tabWorkstation Operation` wo
+			WHERE wo.parent = `tabWorkstation`.name AND wo.operation = {0})""".format(frappe.db.escape(operation))
+
+	return frappe.db.sql("""
+		select {fields}
+		from `tabWorkstation`
+		where ({scond}) {fcond} {mcond} {exists_cond}
+		order by
+			if(locate(%(_txt)s, name), locate(%(_txt)s, name), 99999),
+			idx desc,
+			name
+		limit %(start)s, %(page_len)s
+	""".format(**{
+		"fields": ", ".join(fields),
+		"scond": searchfields,
+		"exists_cond": exists_cond,
+		"mcond": get_match_cond(doctype),
+		"fcond": get_filters_cond(doctype, filters, []).replace('%', '%%'),
+	}), {
+		'txt': "%%%s%%" % txt,
+		'_txt': txt.replace("%", ""),
+		'start': start,
+		'page_len': page_len
+	})
+
+
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
 def get_project_name(doctype, txt, searchfield, start, page_len, filters):
 	cond = ''
 	if filters.get('customer'):

@@ -13,12 +13,22 @@ class OverlapError(frappe.ValidationError): pass
 
 class Workstation(Document):
 	def validate(self):
-		self.hour_rate = (flt(self.hour_rate_labour) + flt(self.hour_rate_electricity) +
-			flt(self.hour_rate_consumable) + flt(self.hour_rate_rent))
+		self.validate_allowed_operations()
+		self.calculate_hour_rate()
 
 	def on_update(self):
 		self.validate_overlap_for_operation_timings()
 		self.update_bom_operation()
+
+	def validate_allowed_operations(self):
+		operations = set()
+		for d in self.allowed_operations:
+			if d.operation in operations or operations.add(d.operation):
+				frappe.throw(_("Row #{0}: Operation {1} is already allowed").format(d.idx, d.operation))
+
+	def calculate_hour_rate(self):
+		self.hour_rate = (flt(self.hour_rate_labour) + flt(self.hour_rate_electricity) +
+			flt(self.hour_rate_consumable) + flt(self.hour_rate_rent))
 
 	def validate_overlap_for_operation_timings(self):
 		"""Check if there is no overlap in setting Workstation Operating Hours"""

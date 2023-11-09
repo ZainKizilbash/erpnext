@@ -4,7 +4,7 @@
 
 import frappe
 from frappe import _
-from frappe.utils import flt, time_diff_in_hours, get_datetime, time_diff, get_link_to_form
+from frappe.utils import cint, flt, time_diff_in_hours, get_datetime, time_diff, get_link_to_form
 from frappe.model.mapper import get_mapped_doc
 from frappe.model.document import Document
 
@@ -17,6 +17,11 @@ class JobCard(Document):
 		self.validate_operation_id()
 
 	def validate_time_logs(self):
+		if cint(frappe.get_cached_value("Manufacturing Settings", None, "disable_capacity_planning")):
+			self.time_logs = []
+			self.total_completed_qty = flt(self.for_quantity)
+			return
+
 		self.total_completed_qty = 0.0
 		self.total_time_in_mins = 0.0
 
@@ -92,7 +97,7 @@ class JobCard(Document):
 		self.set_transferred_qty()
 
 	def validate_job_card(self):
-		if not self.time_logs:
+		if not self.time_logs and not cint(frappe.get_cached_value("Manufacturing Settings", None, "disable_capacity_planning")):
 			frappe.throw(_("Time logs are required for {0} {1}")
 				.format(frappe.bold("Job Card"), get_link_to_form("Job Card", self.name)))
 
@@ -189,9 +194,11 @@ def get_operation_details(work_order, operation):
 			}
 		)
 
+
 @frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
 def get_operations(doctype, txt, searchfield, start, page_len, filters):
-	if filters.get("work_order"):
+	if filters and filters.get("work_order"):
 		args = {"parent": filters.get("work_order")}
 		if txt:
 			args["operation"] = ("like", "%{0}%".format(txt))
@@ -202,6 +209,9 @@ def get_operations(doctype, txt, searchfield, start, page_len, filters):
 			limit_start = start,
 			limit_page_length = page_len,
 			order_by="idx asc", as_list=1)
+	else:
+		return []
+
 
 @frappe.whitelist()
 def make_material_request(source_name, target_doc=None):

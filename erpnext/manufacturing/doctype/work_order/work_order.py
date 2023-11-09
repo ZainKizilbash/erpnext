@@ -38,6 +38,7 @@ class WorkOrder(StatusUpdater):
 		ms = frappe.get_cached_doc("Manufacturing Settings", None)
 		self.set_onload("material_consumption", ms.material_consumption)
 		self.set_onload("backflush_raw_materials_based_on", ms.backflush_raw_materials_based_on)
+		self.set_onload("disable_capacity_planning", cint(ms.disable_capacity_planning))
 
 		self.set_available_qty()
 
@@ -330,7 +331,7 @@ class WorkOrder(StatusUpdater):
 
 		self.set('operations', [])
 
-		if not self.bom_no or cint(frappe.db.get_single_value("Manufacturing Settings", "disable_capacity_planning")):
+		if not self.bom_no:
 			return
 
 		if self.use_multi_level_bom:
@@ -1560,3 +1561,29 @@ def make_purchase_order(work_orders, target_doc=None, supplier=None):
 	target_doc.run_method("calculate_taxes_and_totals")
 
 	return target_doc
+
+
+@frappe.whitelist()
+def finish_work_order_operation(work_order, operation, workstation, finish_qty, auto_submit=False):
+	pro_doc = frappe.get_doc("Work Order", work_order)
+	operation_row = [d for d in pro_doc.operations if d.operation == operation]
+
+	if not operation_row:
+		frappe.throw(_("Operation {0} not in Work Order {1}").format(operation, work_order))
+
+	job_card_doc = create_job_card(pro_doc, operation_row[0], flt(finish_qty))
+	job_card_doc.workstation = workstation
+	job_card_doc.total_completed_qty = flt(finish_qty)
+
+	if auto_submit or frappe.db.get_single_value('Manufacturing Settings', 'auto_submit_job_card'):
+		job_card_doc.submit()
+
+		frappe.msgprint(_("{0} submitted successfully ({1} {2}): {3}").format(
+			frappe.get_desk_link("Job Card", job_card_doc.name),
+			job_card_doc.get_formatted("total_completed_qty"),
+			pro_doc.stock_uom,
+			job_card_doc.operation,
+		), indicator="green")
+
+	else:
+		return job_card_doc

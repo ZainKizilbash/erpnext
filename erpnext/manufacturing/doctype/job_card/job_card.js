@@ -2,7 +2,11 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Job Card', {
-	setup: function(frm) {
+	setup(frm) {
+		frm.events.setup_queries(frm);
+	},
+
+	setup_queries(frm) {
 		frm.set_query('operation', function() {
 			return {
 				query: 'erpnext.manufacturing.doctype.job_card.job_card.get_operations',
@@ -11,16 +15,34 @@ frappe.ui.form.on('Job Card', {
 				}
 			};
 		});
+
+		frm.set_query("workstation", () => {
+			return erpnext.queries.workstation(frm.doc.operation);
+		});
+
+		frm.set_query("work_order", () => {
+			return {
+				filters: {docstatus: 1}
+			};
+		});
 	},
 
-	refresh: function(frm) {
-
-		if(frm.doc.docstatus == 0) {
-			frm.set_df_property("operation", "read_only", frm.doc.operation_id ? 1 : 0);
+	validate(frm) {
+		if ((!frm.doc.time_logs || !frm.doc.time_logs.length) && frm.doc.started_time) {
+			frm.trigger("reset_timer");
 		}
+	},
+
+	refresh(frm) {
+		erpnext.hide_company();
+
 		frappe.flags.pause_job = 0;
 		frappe.flags.resume_job = 0;
 
+		frm.events.setup_buttons(frm);
+	},
+
+	setup_buttons(frm) {
 		if(!frm.doc.__islocal && frm.doc.items && frm.doc.items.length) {
 			if (frm.doc.for_quantity != frm.doc.transferred_qty) {
 				frm.add_custom_button(__("Material Request"), () => {
@@ -37,17 +59,32 @@ frappe.ui.form.on('Job Card', {
 
 		frm.trigger("toggle_operation_number");
 
-		if (frm.doc.docstatus == 0 && (frm.doc.for_quantity > frm.doc.total_completed_qty || !frm.doc.for_quantity)
-			&& (frm.doc.items || !frm.doc.items.length || frm.doc.for_quantity == frm.doc.transferred_qty)) {
-			frm.trigger("prepare_timer_buttons");
+		if (
+			!frm.is_new()
+			&& frm.doc.docstatus == 0
+			&& (frm.doc.total_completed_qty < frm.doc.for_quantity || !frm.doc.for_quantity)
+			&& !cint(frappe.defaults.get_default("disable_capacity_planning"))
+		) {
+			if (frm.doc.work_order) {
+				frappe.db.get_value('Work Order', frm.doc.work_order, ['skip_transfer', 'status'], (result) => {
+					if (result.skip_transfer === 1 || result.status == 'In Process' || frm.doc.transferred_qty > 0 || !frm.doc.items.length) {
+						frm.trigger("prepare_timer_buttons");
+					}
+				});
+			} else {
+				frm.trigger("prepare_timer_buttons");
+			}
 		}
 	},
 
-	operation: function(frm) {
-		frm.trigger("toggle_operation_number");
+	work_order(frm) {
+		frm.set_value("operation", null);
+		frm.set_value("workstation", null);
+	},
 
+	operation(frm) {
 		if (frm.doc.operation && frm.doc.work_order) {
-			frappe.call({
+			return frappe.call({
 				method: "erpnext.manufacturing.doctype.job_card.job_card.get_operation_details",
 				args: {
 					"work_order":frm.doc.work_order,
@@ -58,6 +95,8 @@ frappe.ui.form.on('Job Card', {
 						if (r.message.length == 1) {
 							frm.set_value("operation_id", r.message[0].name);
 						} else {
+							frm.set_value("operation_id", null);
+
 							let args = [];
 
 							r.message.forEach((row) => {
@@ -75,6 +114,9 @@ frappe.ui.form.on('Job Card', {
 					}
 				}
 			})
+		} else {
+			frm.set_value("operation_id", null);
+			frm.trigger("toggle_operation_number");
 		}
 	},
 
@@ -166,12 +208,6 @@ frappe.ui.form.on('Job Card', {
 				frm.save();
 			}
 		});
-	},
-
-	validate: function(frm) {
-		if ((!frm.doc.time_logs || !frm.doc.time_logs.length) && frm.doc.started_time) {
-			frm.trigger("reset_timer");
-		}
 	},
 
 	employee: function(frm) {

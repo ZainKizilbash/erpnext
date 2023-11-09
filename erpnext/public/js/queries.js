@@ -183,6 +183,15 @@ $.extend(erpnext.queries, {
 			filters: filters,
 		};
 	},
+
+	workstation: function (operation) {
+		return {
+			query: "erpnext.controllers.queries.workstation_query",
+			filters: {
+				operation: operation
+			},
+		};
+	},
 });
 
 erpnext.queries.setup_queries = function(frm, options, query_fn, do_not_override) {

@@ -94,6 +94,11 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 			};
 		});
 
+		this.frm.set_query("workstation", "operations", (doc, cdt, cdn) => {
+			let row = frappe.get_doc(cdt, cdn);
+			return erpnext.queries.workstation(row.operation);
+		});
+
 		// Warehouse Queries
 		this.frm.set_query("source_warehouse", () => {
 			return {
@@ -163,6 +168,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 			doc.docstatus === 1
 			&& doc.operations && doc.operations.length
 			&& flt(doc.completed_qty) < flt(doc.qty)
+			&& !doc.__onload?.disable_capacity_planning
 		) {
 			const not_completed = doc.operations.some(d => d.status != "Completed");
 			if (not_completed) {
@@ -251,7 +257,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 			this.frm.show_pick_list_btn = true;
 
 			let start_btn = this.frm.add_custom_button(__("Start"), () => {
-				erpnext.manufacturing.make_stock_entry(doc, "Material Transfer for Manufacture");
+				erpnext.manufacturing.process_work_order(doc, "Material Transfer for Manufacture");
 			});
 
 			if (start_btn_default) {
@@ -272,7 +278,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 
 		if (show_finish_button) {
 			let finish_btn = this.frm.add_custom_button(__("Finish"), () => {
-				erpnext.manufacturing.make_stock_entry(doc, "Manufacture");
+				erpnext.manufacturing.process_work_order(doc, "Manufacture");
 			});
 
 			if (finish_button_default) {
@@ -532,7 +538,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 	}
 
 	make_pick_list(purpose) {
-		return erpnext.manufacturing.show_prompt_for_qty_input(this.frm.doc, purpose).then((r) => {
+		return erpnext.manufacturing.show_qty_prompt_for_stock_entry(this.frm.doc, purpose).then((r) => {
 			return frappe.xcall("erpnext.manufacturing.doctype.work_order.work_order.create_pick_list", {
 				"source_name": this.frm.doc.name,
 				"for_qty": r.data.qty
