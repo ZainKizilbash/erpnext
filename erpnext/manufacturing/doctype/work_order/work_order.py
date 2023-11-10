@@ -6,7 +6,6 @@ from frappe import _
 from frappe.utils import flt, getdate, cint, nowdate, get_link_to_form, round_up
 from erpnext.manufacturing.doctype.bom.bom import validate_bom_no, get_bom_items_as_dict
 from erpnext.stock.doctype.item.item import validate_end_of_life
-from erpnext.stock.get_item_details import get_conversion_factor
 from erpnext.stock.stock_balance import get_planned_qty, update_bin_qty
 from erpnext.stock.utils import get_bin, validate_warehouse_company, get_latest_stock_qty
 from erpnext.utilities.transaction_base import validate_uom_is_integer
@@ -38,7 +37,6 @@ class WorkOrder(StatusUpdater):
 		ms = frappe.get_cached_doc("Manufacturing Settings", None)
 		self.set_onload("material_consumption", ms.material_consumption)
 		self.set_onload("backflush_raw_materials_based_on", ms.backflush_raw_materials_based_on)
-		self.set_onload("disable_capacity_planning", cint(ms.disable_capacity_planning))
 
 		self.set_available_qty()
 
@@ -449,9 +447,28 @@ class WorkOrder(StatusUpdater):
 
 	def validate_completed_qty_in_operations(self):
 		max_production_qty = flt(self.get_qty_with_allowance(self.producible_qty), self.precision("qty"))
+		transferred_qty = flt(self.material_transferred_for_manufacturing, self.precision("qty"))
+
 		for d in self.operations:
-			if flt(d.completed_qty) > max_production_qty:
-				frappe.throw(_("Completed Qty for Operation {0} can not be greater than 'Qty to Produce'").format(d.operation))
+			completed_qty = flt(d.completed_qty, self.precision("qty"))
+
+			if completed_qty > max_production_qty:
+				frappe.throw(_("Completed Qty {0} {1} for Operation {2} cannot be greater than maximum quantity {3} {1} in {4}").format(
+					frappe.bold(d.get_formatted("completed_qty")),
+					self.stock_uom,
+					frappe.bold(d.operation),
+					frappe.bold(frappe.format(max_production_qty)),
+					frappe.get_desk_link("Work Order", self.name)
+				))
+
+			if not self.skip_transfer and completed_qty > transferred_qty:
+				frappe.throw(_("Completed Qty {0} {1} for Operation {2} cannot be more than the Material Transferred for Manufacturing {3} {1} in {4}").format(
+					frappe.bold(d.get_formatted("completed_qty")),
+					self.stock_uom,
+					frappe.bold(d.operation),
+					frappe.bold(frappe.format(transferred_qty)),
+					frappe.get_desk_link("Work Order", self.name)
+				), StockOverProductionError)
 
 	def calculate_time(self):
 		bom_qty = frappe.db.get_value("BOM", self.bom_no, "quantity", cache=1)
@@ -760,21 +777,21 @@ class WorkOrder(StatusUpdater):
 		for fieldname in ["produced_qty", "scrap_qty", "material_transferred_for_manufacturing"]:
 			qty = flt(self.get(fieldname), self.precision("qty"))
 			if qty > max_production_qty:
-				frappe.throw(_("{0} {1} {3} cannot be greater than maximum quantity {2} {3} in {4}").format(
+				frappe.throw(_("{0} {1} {2} cannot be greater than maximum quantity {3} {2} in {4}").format(
 					self.meta.get_label(fieldname),
 					frappe.bold(self.get_formatted(fieldname)),
-					frappe.bold(frappe.format(max_production_qty)),
 					self.stock_uom,
+					frappe.bold(frappe.format(max_production_qty)),
 					frappe.get_desk_link("Work Order", self.name)
 				), StockOverProductionError)
 
 		produced_qty = flt(self.produced_qty, self.precision("qty"))
 		transferred_qty = flt(self.material_transferred_for_manufacturing, self.precision("qty"))
 		if not self.skip_transfer and produced_qty > transferred_qty:
-			frappe.throw(_("Produced Qty {0} {2} cannot more than the Material Transferred for Manufacturing {1} {2} in {3}").format(
+			frappe.throw(_("Produced Qty {0} {1} cannot be more than the Material Transferred for Manufacturing {2} {1} in {3}").format(
 				frappe.bold(self.get_formatted("produced_qty")),
-				frappe.bold(self.get_formatted("material_transferred_for_manufacturing")),
 				self.stock_uom,
+				frappe.bold(self.get_formatted("material_transferred_for_manufacturing")),
 				frappe.get_desk_link("Work Order", self.name)
 			), StockOverProductionError)
 
@@ -783,21 +800,21 @@ class WorkOrder(StatusUpdater):
 		for fieldname in ["packed_qty"]:
 			qty = flt(self.get(fieldname), self.precision("qty"))
 			if qty > max_qty:
-				frappe.throw(_("{0} {1} cannot be greater than maximum quantity {2} {3} in {4}").format(
+				frappe.throw(_("{0} {1} {2} cannot be greater than maximum quantity {3} {2} in {4}").format(
 					self.meta.get_label(fieldname),
 					frappe.bold(self.get_formatted(fieldname)),
-					frappe.bold(frappe.format(max_qty)),
 					self.stock_uom,
+					frappe.bold(frappe.format(max_qty)),
 					frappe.get_desk_link("Work Order", self.name)
 				))
 
 		completed_qty = flt(self.completed_qty, self.precision("qty"))
 		packed_qty = flt(self.packed_qty, self.precision("qty"))
 		if packed_qty > completed_qty:
-			frappe.throw(_("Packed Qty {0} {2} cannot be more than the Completed Qty {1} {2} in {3}").format(
+			frappe.throw(_("Packed Qty {0} {1} cannot be more than the Completed Qty {2} {1} in {3}").format(
 				frappe.bold(self.get_formatted("packed_qty")),
-				frappe.bold(self.get_formatted("completed_qty")),
 				self.stock_uom,
+				frappe.bold(self.get_formatted("completed_qty")),
 				frappe.get_desk_link("Work Order", self.name)
 			), StockOverProductionError)
 
@@ -921,14 +938,6 @@ class WorkOrder(StatusUpdater):
 			if d.source_warehouse:
 				stock_bin = get_bin(d.item_code, d.source_warehouse)
 				stock_bin.update_reserved_qty_for_production()
-
-	def create_job_card(self):
-		for row in self.operations:
-			if not row.workstation:
-				frappe.throw(_("Row {0}: Select the Workstation against the Operation {1}")
-					.format(row.idx, row.operation))
-
-			create_job_card(self, row, auto_create=True)
 
 	def delete_job_card(self):
 		for d in frappe.get_all("Job Card", ["name"], {"work_order": self.name}):
@@ -1331,14 +1340,17 @@ def stop_unstop(work_order, status):
 
 
 @frappe.whitelist()
-def make_job_card(work_order, operations):
+def create_job_cards(work_order, operations):
 	if isinstance(operations, str):
 		operations = json.loads(operations)
 
 	work_order = frappe.get_doc('Work Order', work_order)
 	for row in operations:
 		validate_operation_data(row)
-		create_job_card(work_order, row, row.get("qty"), auto_create=True)
+		doc = _make_job_card(work_order, row, row.get("qty"))
+		doc.flags.ignore_mandatory = True
+		doc.insert()
+		frappe.msgprint(_("Job card {0} created").format(get_link_to_form("Job Card", doc.name)))
 
 
 def validate_operation_data(row):
@@ -1353,14 +1365,41 @@ def validate_operation_data(row):
 		))
 
 
-def create_job_card(work_order, row, qty=0, auto_create=False):
+@frappe.whitelist()
+def make_job_card(work_order, operation, workstation, qty, auto_submit=False):
+	pro_doc = frappe.get_doc("Work Order", work_order)
+	qty = flt(qty)
+
+	operation_row = [d for d in pro_doc.operations if d.operation == operation]
+	if operation_row:
+		operation_row = operation_row[0]
+	else:
+		frappe.throw(_("Operation {0} not in Work Order {1}").format(operation, work_order))
+
+	job_card_doc = _make_job_card(pro_doc, operation_row, qty)
+	job_card_doc.workstation = workstation
+
+	if auto_submit or frappe.db.get_single_value('Manufacturing Settings', 'auto_submit_job_card'):
+		job_card_doc.submit()
+
+		frappe.msgprint(_("{0} submitted successfully for Operation {1} ({2} {3})").format(
+			frappe.get_desk_link("Job Card", job_card_doc.name),
+			frappe.bold(job_card_doc.operation),
+			job_card_doc.get_formatted("for_quantity"),
+			pro_doc.stock_uom,
+		), indicator="green")
+
+	return job_card_doc
+
+
+def _make_job_card(work_order, row, qty):
 	doc = frappe.new_doc("Job Card")
 	doc.update({
 		'work_order': work_order.name,
 		'operation': row.get("operation"),
 		'workstation': row.get("workstation"),
-		'posting_date': nowdate(),
-		'for_quantity': qty or work_order.get('qty', 0),
+		'posting_date': getdate(),
+		'for_quantity': flt(qty),
 		'operation_id': row.get("name"),
 		'bom_no': work_order.bom_no,
 		'project': work_order.project,
@@ -1371,18 +1410,7 @@ def create_job_card(work_order, row, qty=0, auto_create=False):
 	if work_order.transfer_material_against == 'Job Card' and not work_order.skip_transfer:
 		doc.get_required_items()
 
-	if auto_create:
-		doc.flags.ignore_mandatory = True
-		doc.insert()
-		frappe.msgprint(_("Job card {0} created").format(get_link_to_form("Job Card", doc.name)))
-
 	return doc
-
-
-def get_work_order_operation_data(work_order, operation, workstation):
-	for d in work_order.operations:
-		if d.operation == operation and d.workstation == workstation:
-			return d
 
 
 def get_subcontractable_qty(producible_qty, material_transferred_for_manufacturing, produced_qty, scrap_qty):
@@ -1561,29 +1589,3 @@ def make_purchase_order(work_orders, target_doc=None, supplier=None):
 	target_doc.run_method("calculate_taxes_and_totals")
 
 	return target_doc
-
-
-@frappe.whitelist()
-def finish_work_order_operation(work_order, operation, workstation, finish_qty, auto_submit=False):
-	pro_doc = frappe.get_doc("Work Order", work_order)
-	operation_row = [d for d in pro_doc.operations if d.operation == operation]
-
-	if not operation_row:
-		frappe.throw(_("Operation {0} not in Work Order {1}").format(operation, work_order))
-
-	job_card_doc = create_job_card(pro_doc, operation_row[0], flt(finish_qty))
-	job_card_doc.workstation = workstation
-	job_card_doc.total_completed_qty = flt(finish_qty)
-
-	if auto_submit or frappe.db.get_single_value('Manufacturing Settings', 'auto_submit_job_card'):
-		job_card_doc.submit()
-
-		frappe.msgprint(_("{0} submitted successfully ({1} {2}): {3}").format(
-			frappe.get_desk_link("Job Card", job_card_doc.name),
-			job_card_doc.get_formatted("total_completed_qty"),
-			pro_doc.stock_uom,
-			job_card_doc.operation,
-		), indicator="green")
-
-	else:
-		return job_card_doc

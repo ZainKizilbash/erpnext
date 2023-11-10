@@ -8,13 +8,24 @@ from frappe.utils import cint, flt, time_diff_in_hours, get_datetime, time_diff,
 from frappe.model.mapper import get_mapped_doc
 from frappe.model.document import Document
 
+
 class OperationMismatchError(frappe.ValidationError): pass
+
 
 class JobCard(Document):
 	def validate(self):
 		self.validate_time_logs()
-		self.set_status()
 		self.validate_operation_id()
+		self.set_status()
+
+	def on_submit(self):
+		self.validate_job_card()
+		self.update_work_order()
+		self.set_transferred_qty()
+
+	def on_cancel(self):
+		self.update_work_order()
+		self.set_transferred_qty()
 
 	def validate_time_logs(self):
 		if cint(frappe.get_cached_value("Manufacturing Settings", None, "disable_capacity_planning")):
@@ -63,6 +74,37 @@ class JobCard(Document):
 
 		return existing[0] if existing else None
 
+	def validate_operation_id(self):
+		if (self.get("operation_id") and self.get("operation_row_number") and self.operation and self.work_order and
+			frappe.get_cached_value("Work Order Operation", self.operation_row_number, "name") != self.operation_id):
+			work_order = frappe.bold(get_link_to_form("Work Order", self.work_order))
+			frappe.throw(_("Operation {0} does not belong to the work order {1}")
+				.format(frappe.bold(self.operation), work_order), OperationMismatchError)
+
+	def set_status(self, update_status=False):
+		if self.status == "On Hold":
+			return
+
+		self.status = {
+			0: "Open",
+			1: "Submitted",
+			2: "Cancelled"
+		}[self.docstatus or 0]
+
+		if self.time_logs:
+			self.status = 'Work In Progress'
+
+		if (self.docstatus == 1 and
+			(self.for_quantity == self.transferred_qty or not self.items)):
+			self.status = 'Completed'
+
+		if self.status != 'Completed':
+			if self.for_quantity == self.transferred_qty:
+				self.status = 'Material Transferred'
+
+		if update_status:
+			self.db_set('status', self.status)
+
 	@frappe.whitelist()
 	def get_required_items(self):
 		if not self.get('work_order'):
@@ -86,15 +128,6 @@ class JobCard(Document):
 					'description': d.description,
 					'required_qty': (d.required_qty * flt(self.for_quantity)) / doc.qty
 				})
-
-	def on_submit(self):
-		self.validate_job_card()
-		self.update_work_order()
-		self.set_transferred_qty()
-
-	def on_cancel(self):
-		self.update_work_order()
-		self.set_transferred_qty()
 
 	def validate_job_card(self):
 		if not self.time_logs and not cint(frappe.get_cached_value("Manufacturing Settings", None, "disable_capacity_planning")):
@@ -154,35 +187,6 @@ class JobCard(Document):
 
 		self.set_status(update_status)
 
-	def set_status(self, update_status=False):
-		if self.status == "On Hold": return
-
-		self.status = {
-			0: "Open",
-			1: "Submitted",
-			2: "Cancelled"
-		}[self.docstatus or 0]
-
-		if self.time_logs:
-			self.status = 'Work In Progress'
-
-		if (self.docstatus == 1 and
-			(self.for_quantity == self.transferred_qty or not self.items)):
-			self.status = 'Completed'
-
-		if self.status != 'Completed':
-			if self.for_quantity == self.transferred_qty:
-				self.status = 'Material Transferred'
-
-		if update_status:
-			self.db_set('status', self.status)
-
-	def validate_operation_id(self):
-		if (self.get("operation_id") and self.get("operation_row_number") and self.operation and self.work_order and
-			frappe.get_cached_value("Work Order Operation", self.operation_row_number, "name") != self.operation_id):
-			work_order = frappe.bold(get_link_to_form("Work Order", self.work_order))
-			frappe.throw(_("Operation {0} does not belong to the work order {1}")
-				.format(frappe.bold(self.operation), work_order), OperationMismatchError)
 
 @frappe.whitelist()
 def get_operation_details(work_order, operation):
@@ -240,6 +244,7 @@ def make_material_request(source_name, target_doc=None):
 
 	return doclist
 
+
 @frappe.whitelist()
 def make_stock_entry(source_name, target_doc=None):
 	def update_item(obj, target, source_parent, target_parent):
@@ -274,8 +279,6 @@ def make_stock_entry(source_name, target_doc=None):
 
 	return doclist
 
-def time_diff_in_minutes(string_ed_date, string_st_date):
-	return time_diff(string_ed_date, string_st_date).total_seconds() / 60
 
 @frappe.whitelist()
 def get_job_details(start, end, filters=None):

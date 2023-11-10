@@ -466,13 +466,18 @@ class StockEntry(TransactionController):
 			if total_completed_qty > flt(completed_qty):
 				job_card = frappe.db.get_value('Job Card', {'operation_id': d.name}, 'name')
 				if not job_card:
-					frappe.throw(_("Work Order {0}: Job Card not found for the operation {1}")
-						.format(self.work_order, d.operation))
+					frappe.throw(_("Work Order {0}: Job Card not found for Operation {1}").format(
+						self.work_order, frappe.bold(d.operation)
+					))
 
 				work_order_link = frappe.utils.get_link_to_form('Work Order', self.work_order)
 				job_card_link = frappe.utils.get_link_to_form('Job Card', job_card)
-				frappe.throw(_("Row #{0}: Operation {1} is not completed for {2} qty of finished goods in Work Order {3}. Please update operation status via Job Card {4}.")
-					.format(d.idx, frappe.bold(d.operation), frappe.bold(total_completed_qty), work_order_link, job_card_link), OperationsNotCompleteError)
+				frappe.throw(_("Operation {0} is not completed for {1} qty of finished goods in Work Order {2}. Please update operation status via Job Card {3}.").format(
+					frappe.bold(d.operation),
+					frappe.bold(total_completed_qty),
+					work_order_link,
+					job_card_link
+				), OperationsNotCompleteError)
 
 	def check_duplicate_entry_for_work_order(self):
 		other_ste = frappe.db.get_all("Stock Entry", {

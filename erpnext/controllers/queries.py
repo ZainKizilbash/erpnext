@@ -431,8 +431,15 @@ def workstation_query(doctype, txt, searchfield, start, page_len, filters):
 	exists_cond = ""
 	operation = filters and filters.pop("operation", None)
 	if operation:
-		exists_cond = """ and exists(select wo.name from `tabWorkstation Operation` wo
-			WHERE wo.parent = `tabWorkstation`.name AND wo.operation = {0})""".format(frappe.db.escape(operation))
+		exists_cond = """ and (exists(
+			select wop.name
+			from `tabWorkstation Operation` wop
+			where wop.parent = `tabWorkstation`.name and wop.operation = {0}
+		) or not exists(
+			select wop.name
+			from `tabWorkstation Operation` wop
+			where wop.parent = `tabWorkstation`.name
+		))""".format(frappe.db.escape(operation))
 
 	return frappe.db.sql("""
 		select {fields}

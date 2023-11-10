@@ -18,6 +18,7 @@
   "column_break_11",
   "hour_rate_rent",
   "hour_rate_labour",
+  "column_break_ig5wu",
   "hour_rate",
   "working_hours_section",
   "working_hours",
@@ -27,7 +28,6 @@
   {
    "fieldname": "workstation_name",
    "fieldtype": "Data",
-   "in_list_view": 1,
    "label": "Workstation Name",
    "oldfieldname": "workstation_name",
    "oldfieldtype": "Data",
@@ -84,6 +84,7 @@
   {
    "fieldname": "hour_rate",
    "fieldtype": "Currency",
+   "in_list_view": 1,
    "label": "Net Hour Rate (per hour)",
    "oldfieldname": "hour_rate",
    "oldfieldtype": "Currency",
@@ -115,12 +116,16 @@
   {
    "fieldname": "column_break_sacb9",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_ig5wu",
+   "fieldtype": "Column Break"
   }
  ],
  "icon": "icon-wrench",
  "idx": 1,
  "links": [],
- "modified": "2023-11-07 17:49:39.662974",
+ "modified": "2023-11-10 00:30:36.965473",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Workstation",

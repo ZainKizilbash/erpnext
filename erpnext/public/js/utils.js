@@ -595,6 +595,9 @@ $.extend(erpnext.utils, {
 		}
 
 		let total_qty = flt(args.total_qty) || 0;
+		if (!total_qty) {
+			return "";
+		}
 
 		for (let d of args.progress_bars) {
 			let title = d.title || "";

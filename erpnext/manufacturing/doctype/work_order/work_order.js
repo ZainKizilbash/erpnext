@@ -168,12 +168,12 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 			doc.docstatus === 1
 			&& doc.operations && doc.operations.length
 			&& flt(doc.completed_qty) < flt(doc.qty)
-			&& !doc.__onload?.disable_capacity_planning
+			&& !cint(frappe.defaults.get_default("disable_capacity_planning"))
 		) {
 			const not_completed = doc.operations.some(d => d.status != "Completed");
 			if (not_completed) {
 				this.frm.add_custom_button(__('Create Job Card'), () => {
-					this.make_job_card();
+					this.create_job_cards();
 				}).addClass('btn-primary');
 			}
 		}
@@ -257,7 +257,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 			this.frm.show_pick_list_btn = true;
 
 			let start_btn = this.frm.add_custom_button(__("Start"), () => {
-				erpnext.manufacturing.process_work_order(doc, "Material Transfer for Manufacture");
+				erpnext.manufacturing.start_work_order(doc);
 			});
 
 			if (start_btn_default) {
@@ -278,7 +278,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 
 		if (show_finish_button) {
 			let finish_btn = this.frm.add_custom_button(__("Finish"), () => {
-				erpnext.manufacturing.process_work_order(doc, "Manufacture");
+				erpnext.manufacturing.finish_work_order(doc);
 			});
 
 			if (finish_button_default) {
@@ -321,39 +321,10 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 	}
 
 	show_progress_for_operations() {
-		if (this.frm.doc.operations && this.frm.doc.operations.length) {
-			let progress_class = {
-				"Work in Progress": "progress-bar-warning",
-				"Completed": "progress-bar-success"
-			};
-
-			let bars = [];
-			let message = '';
-			let title = '';
-			let status_wise_oprtation_data = {};
-			let total_completed_qty = this.frm.doc.qty * this.frm.doc.operations.length;
-
-			this.frm.doc.operations.forEach(d => {
-				if (!status_wise_oprtation_data[d.status]) {
-					status_wise_oprtation_data[d.status] = [d.completed_qty, d.operation];
-				} else {
-					status_wise_oprtation_data[d.status][0] += d.completed_qty;
-					status_wise_oprtation_data[d.status][1] += ', ' + d.operation;
-				}
-			});
-
-			for (let key in status_wise_oprtation_data) {
-				title = __("{0} Operations: {1}", [key, status_wise_oprtation_data[key][1].bold()]);
-				bars.push({
-					'title': title,
-					'width': status_wise_oprtation_data[key][0] / total_completed_qty * 100  + '%',
-					'progress_class': progress_class[key]
-				});
-
-				message += title + '. ';
+		if (this.frm.doc.producible_qty && this.frm.doc.operations && this.frm.doc.operations.length) {
+			for (let row of this.frm.doc.operations) {
+				erpnext.manufacturing.show_progress_for_operation(this.frm.doc, row, this.frm);
 			}
-
-			this.frm.dashboard.add_progress(__('Operation Status'), bars, message);
 		}
 	}
 
@@ -576,7 +547,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 		});
 	}
 
-	make_job_card() {
+	create_job_cards() {
 		let operations_data = [];
 
 		const dialog = frappe.prompt({
@@ -621,7 +592,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 			}
 		}, (data) => {
 			return frappe.call({
-				method: "erpnext.manufacturing.doctype.work_order.work_order.make_job_card",
+				method: "erpnext.manufacturing.doctype.work_order.work_order.create_job_cards",
 				args: {
 					work_order: this.frm.doc.name,
 					operations: data.operations,

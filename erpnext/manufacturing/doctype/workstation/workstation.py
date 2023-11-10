@@ -5,11 +5,12 @@ import frappe
 from frappe import _
 from frappe.utils import flt, cint, getdate, formatdate, comma_and, time_diff_in_seconds, to_timedelta
 from frappe.model.document import Document
-from dateutil.parser import parse
+
 
 class WorkstationHolidayError(frappe.ValidationError): pass
 class NotInWorkingHoursError(frappe.ValidationError): pass
 class OverlapError(frappe.ValidationError): pass
+
 
 class Workstation(Document):
 	def validate(self):
@@ -24,7 +25,7 @@ class Workstation(Document):
 		operations = set()
 		for d in self.allowed_operations:
 			if d.operation in operations or operations.add(d.operation):
-				frappe.throw(_("Row #{0}: Operation {1} is already allowed").format(d.idx, d.operation))
+				frappe.throw(_("Row #{0}: Operation {1} is entrered twice").format(d.idx, frappe.bold(d.operation)))
 
 	def calculate_hour_rate(self):
 		self.hour_rate = (flt(self.hour_rate_labour) + flt(self.hour_rate_electricity) +
@@ -52,10 +53,12 @@ class Workstation(Document):
 				where parent = %s and workstation = %s""",
 				(self.hour_rate, bom_no[0], self.name))
 
+
 @frappe.whitelist()
 def get_default_holiday_list():
 	from erpnext.hr.doctype.holiday_list.holiday_list import get_default_holiday_list
 	return get_default_holiday_list(frappe.defaults.get_user_default("Company"))
+
 
 def check_if_within_operating_hours(workstation, operation, from_datetime, to_datetime):
 	if from_datetime and to_datetime:
@@ -64,6 +67,7 @@ def check_if_within_operating_hours(workstation, operation, from_datetime, to_da
 
 		if not cint(frappe.db.get_value("Manufacturing Settings", None, "allow_overtime")):
 			is_within_operating_hours(workstation, operation, from_datetime, to_datetime)
+
 
 def is_within_operating_hours(workstation, operation, from_datetime, to_datetime):
 	operation_length = time_diff_in_seconds(to_datetime, from_datetime)
@@ -79,6 +83,7 @@ def is_within_operating_hours(workstation, operation, from_datetime, to_datetime
 				return
 
 	frappe.throw(_("Operation {0} longer than any available working hours in workstation {1}, break down the operation into multiple operations").format(operation, workstation.name), NotInWorkingHoursError)
+
 
 def check_workstation_for_holiday(workstation, from_datetime, to_datetime):
 	holiday_list = frappe.db.get_value("Workstation", workstation, "holiday_list")

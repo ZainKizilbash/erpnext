@@ -91,6 +91,7 @@
    "default": "Today",
    "fieldname": "posting_date",
    "fieldtype": "Date",
+   "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Posting Date",
    "reqd": 1
@@ -321,7 +322,7 @@
  "is_calendar_and_gantt": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-11-07 17:28:14.362684",
+ "modified": "2023-11-10 00:21:53.961347",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Job Card",

@@ -38,7 +38,7 @@
   },
   {
    "default": "0",
-   "description": "Disables creation of time logs against Work Orders. Operations shall not be tracked against Work Order",
+   "description": "Disables creation of time logs against Work Orders and Job Cards",
    "fieldname": "disable_capacity_planning",
    "fieldtype": "Check",
    "label": "Disable Capacity Planning and Time Tracking"
@@ -176,7 +176,7 @@
  "icon": "icon-wrench",
  "issingle": 1,
  "links": [],
- "modified": "2023-11-03 17:46:13.317602",
+ "modified": "2023-11-09 12:35:43.536481",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Manufacturing Settings",
