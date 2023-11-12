@@ -461,6 +461,15 @@ class WorkOrder(StatusUpdater):
 					frappe.get_desk_link("Work Order", self.name)
 				))
 
+			if completed_qty < self.produced_qty:
+				frappe.throw(_("New Completed Qty {0} {1} for Operation {2} cannot be less than the Produced Qty {3} {1} in {4}").format(
+					frappe.bold(d.get_formatted("completed_qty")),
+					self.stock_uom,
+					frappe.bold(d.operation),
+					frappe.bold(frappe.format(self.produced_qty)),
+					frappe.get_desk_link("Work Order", self.name)
+				))
+
 			if not self.skip_transfer and completed_qty > transferred_qty:
 				frappe.throw(_("Completed Qty {0} {1} for Operation {2} cannot be more than the Material Transferred for Manufacturing {3} {1} in {4}").format(
 					frappe.bold(d.get_formatted("completed_qty")),
