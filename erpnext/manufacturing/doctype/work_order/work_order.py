@@ -1407,6 +1407,8 @@ def _make_job_card(work_order, row, qty):
 		'wip_warehouse': work_order.wip_warehouse
 	})
 
+	frappe.utils.call_hook_method("update_job_card_on_create", doc)
+
 	if work_order.transfer_material_against == 'Job Card' and not work_order.skip_transfer:
 		doc.get_required_items()
 
