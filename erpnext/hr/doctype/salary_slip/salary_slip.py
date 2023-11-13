@@ -456,6 +456,14 @@ class SalarySlip(TransactionBase):
 		self.set_loan_repayment()
 
 		self.net_pay = flt(self.gross_pay) - (flt(self.total_deduction) + flt(self.total_loan_repayment))
+		if self.advances:
+			for d in self.advances:
+				d.allocated_amount = min(d.balance_amount, self.net_pay) if self.net_pay > 0 else 0
+				d.balance_amount = flt(d.advance_amount) - flt(d.allocated_amount)
+				self.net_pay -= d.allocated_amount
+
+		self.total_advance_amount = sum([d.allocated_amount for d in self.advances])
+
 
 		self.rounded_total = rounded(self.net_pay)
 
@@ -1146,26 +1154,16 @@ class SalarySlip(TransactionBase):
 		self.calculate_net_pay()
 
 	def get_pending_advances(self):
-		self.advances = []
-
-		for data in self.get_advance_details():
-			data.allocated_amount = min(data.balance_amount, self.net_pay) if self.net_pay > 0 else 0
-			self.net_pay -= data.allocated_amount
-			data.balance_amount = flt(data.advance_amount) - flt(data.allocated_amount)
-
-
-			self.append('advances', data)
-
-		self.total_advance_amount = sum([d.allocated_amount for d in self.advances])
-
-	def get_advance_details(self):
-		return frappe.db.sql("""
+		advances_details =  frappe.db.sql("""
 			select name as employee_advance, paid_amount as total_advance, balance_amount,
 					posting_date, advance_account, advance_amount
 			from `tabEmployee Advance`
 			where docstatus=1 and employee=%s and posting_date <= %s and deduct_from_salary = 1 and balance_amount > 0
 			order by posting_date
 		""", [self.employee, self.end_date], as_dict=1)
+
+		for data in advances_details:
+			self.append('advances', data)
 
 	@frappe.whitelist()
 	def calculate_mode_of_payment(self):
