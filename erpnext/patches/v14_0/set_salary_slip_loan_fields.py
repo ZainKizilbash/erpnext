@@ -11,5 +11,5 @@ def execute():
 			cssl.disbursement_date = loan.disbursement_date,
 			cssl.total_loan_amount = loan.total_payment,
 			cssl.total_amount_paid = loan.total_payment - rps.balance_loan_amount,
-			cssl.total_balance_amount = loan.total_loan_amount - loan.total_payment - rps.balance_loan_amount - loan.total_payment
+			cssl.total_balance_amount = rps.balance_loan_amount
 	""")
