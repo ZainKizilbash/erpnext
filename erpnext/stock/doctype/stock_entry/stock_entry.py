@@ -443,64 +443,12 @@ class StockEntry(TransactionController):
 				d.allow_zero_valuation_rate = 1
 
 	def validate_work_order(self):
-		if self.purpose in ("Manufacture", "Material Transfer for Manufacture", "Material Consumption for Manufacture"):
-			# check if work order is entered
-
-			if self.purpose in ("Manufacture", "Material Consumption for Manufacture") and self.work_order:
-				if not self.fg_completed_qty:
-					frappe.throw(_("Production Qty is mandatory"))
-
-				self.check_if_operations_completed()
-				self.check_duplicate_entry_for_work_order()
-
-		elif self.purpose != "Material Transfer":
+		if self.purpose not in ("Material Transfer", "Material Transfer for Manufacture", "Material Consumption for Manufacture", "Manufacture"):
 			self.work_order = None
 
-	def check_if_operations_completed(self):
-		"""Check if Time Sheets are completed against before manufacturing to capture operating costs."""
-		self.get_work_order()
-
-		for d in self.pro_doc.get("operations"):
-			total_completed_qty = flt(self.fg_completed_qty) + flt(self.pro_doc.produced_qty)
-			completed_qty = self.pro_doc.get_qty_with_allowance(d.completed_qty)
-			if total_completed_qty > flt(completed_qty):
-				job_card = frappe.db.get_value('Job Card', {'operation_id': d.name}, 'name')
-				if not job_card:
-					frappe.throw(_("Work Order {0}: Job Card not found for Operation {1}").format(
-						self.work_order, frappe.bold(d.operation)
-					))
-
-				work_order_link = frappe.utils.get_link_to_form('Work Order', self.work_order)
-				job_card_link = frappe.utils.get_link_to_form('Job Card', job_card)
-				frappe.throw(_("Operation {0} is not completed for {1} qty of finished goods in Work Order {2}. Please update operation status via Job Card {3}.").format(
-					frappe.bold(d.operation),
-					frappe.bold(total_completed_qty),
-					work_order_link,
-					job_card_link
-				), OperationsNotCompleteError)
-
-	def check_duplicate_entry_for_work_order(self):
-		other_ste = frappe.db.get_all("Stock Entry", {
-			"work_order": self.work_order,
-			"purpose": self.purpose,
-			"docstatus": ["!=", 2],
-			"name": ["!=", self.name]
-		}, pluck="name")
-
-		if other_ste:
-			self.get_work_order()
-
-			allowed_qty = get_qty_with_allowance(self.pro_doc.qty, self.pro_doc.qty, self.pro_doc.max_qty)
-
-			fg_qty_already_entered = flt(frappe.db.sql("""
-				select sum(stock_qty)
-				from `tabStock Entry Detail`
-				where parent in %(stes)s and item_code = %(item_code)s and ifnull(s_warehouse,'') = ''
-			""", {"stes": other_ste, "item_code": self.pro_doc.production_item})[0][0])
-
-			if flt(fg_qty_already_entered, self.precision("fg_completed_qty")) >= flt(allowed_qty, self.precision("fg_completed_qty")):
-				frappe.throw(_("Stock Entries already created for Work Order ")
-					+ self.work_order + ":" + ", ".join(other_ste), DuplicateEntryForWorkOrderError)
+		if self.purpose in ("Manufacture", "Material Consumption for Manufacture"):
+			if not self.fg_completed_qty:
+				frappe.throw(_("Production Qty is mandatory"))
 
 	def set_incoming_rate(self):
 		for d in self.items:
