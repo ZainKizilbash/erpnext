@@ -75,7 +75,10 @@ class SalarySlip(TransactionBase):
 	def before_print(self, print_settings=None):
 		self.company_address_doc = erpnext.get_company_address(self)
 
+		self.total_loan_repayment = sum([flt(d.total_payment) for d in self.loans])
 		self.total_loan_balance = sum([flt(d.total_balance_amount) for d in self.loans])
+
+		self.total_advance_repayment = sum([flt(d.allocated_amount	) for d in self.advances])
 		self.total_advance_balance = sum([flt(d.balance_amount) for d in self.advances])
 
 	def on_submit(self):
