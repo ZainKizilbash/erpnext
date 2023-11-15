@@ -810,8 +810,7 @@ erpnext.patches.v14_0.refactor_subcontracting
 erpnext.patches.v14_0.set_work_order_subcontracting_fields
 erpnext.patches.v14_0.rename_ste_transfer_qty_stock_qty
 erpnext.patches.v14_0.set_salary_slip_loan_fields
-erpnext.patches.v14_0.rename_field_balance_amount_salary_slip_employee_advance
-erpnext.patches.v14_0.set_salary_slip_advance_fields
+erpnext.patches.v14_0.set_advance_amount_in_salary_slip_advance
 
 
 [post_model_sync]

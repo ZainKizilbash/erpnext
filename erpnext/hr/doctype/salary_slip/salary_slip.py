@@ -1031,7 +1031,7 @@ class SalarySlip(TransactionBase):
 				'loan_type': loan.loan_type,
 				'disbursement_date': loan.disbursement_date,
 				'total_loan_amount': loan.total_loan_amount,
-				'total_amount_paid': flt(loan.total_amount_paid) + flt(loan.total_payment),
+				'pending_loan_amount': flt(loan.total_loan_amount) - flt(loan.total_amount_paid),
 				'total_balance_amount': flt(loan.total_loan_amount) - flt(loan.total_amount_paid) - flt(loan.total_payment),
 			})
 

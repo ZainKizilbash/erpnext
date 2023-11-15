@@ -14,12 +14,12 @@
   "loan_repayment_detail",
   "column_break_3",
   "total_loan_amount",
-  "total_balance_amount",
-  "total_amount_paid",
-  "column_break_4",
+  "pending_loan_amount",
   "principal_amount",
+  "column_break_4",
   "interest_amount",
-  "total_payment"
+  "total_payment",
+  "total_balance_amount"
  ],
  "fields": [
   {
@@ -111,14 +111,14 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "total_amount_paid",
+   "fieldname": "pending_loan_amount",
    "fieldtype": "Currency",
-   "label": "Total Amount Paid"
+   "label": "Pending Loan Amount"
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2023-11-06 19:01:04.960074",
+ "modified": "2023-11-15 18:05:27.711067",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Salary Slip Loan",
