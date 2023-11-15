@@ -445,7 +445,7 @@ class WorkOrder(StatusUpdater):
 				'total_operating_cost': self.total_operating_cost,
 			}, update_modified=update_modified)
 
-	def validate_completed_qty_in_operations(self):
+	def validate_completed_qty_in_operations(self, from_doctype=None):
 		max_production_qty = flt(self.get_qty_with_allowance(self.producible_qty), self.precision("qty"))
 		transferred_qty = flt(self.material_transferred_for_manufacturing, self.precision("qty"))
 
@@ -461,12 +461,12 @@ class WorkOrder(StatusUpdater):
 					frappe.get_desk_link("Work Order", self.name)
 				))
 
-			if completed_qty < self.produced_qty:
-				frappe.throw(_("New Completed Qty {0} {1} for Operation {2} cannot be less than the Produced Qty {3} {1} in {4}").format(
-					frappe.bold(d.get_formatted("completed_qty")),
+			if self.produced_qty > completed_qty:
+				frappe.throw(_("Produced Qty {0} {1} cannot be greater than {2} Operation Completed Qty {3} {1} in {4}").format(
+					frappe.bold(frappe.format(self.produced_qty)),
 					self.stock_uom,
 					frappe.bold(d.operation),
-					frappe.bold(frappe.format(self.produced_qty)),
+					frappe.bold(d.get_formatted("completed_qty")),
 					frappe.get_desk_link("Work Order", self.name)
 				))
 
@@ -541,6 +541,7 @@ class WorkOrder(StatusUpdater):
 		self.set_required_items_status(update=True)
 
 		self.validate_overproduction(from_doctype)
+		self.validate_completed_qty_in_operations(from_doctype)
 		self.validate_overpacking(from_doctype)
 
 		self.set_status(status=status, update=True)

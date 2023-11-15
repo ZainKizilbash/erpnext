@@ -145,7 +145,7 @@ class JobCard(Document):
 		if self.work_order:
 			doc = frappe.get_doc("Work Order", self.work_order)
 			doc.set_operation_status(update=True)
-			doc.validate_completed_qty_in_operations()
+			doc.validate_completed_qty_in_operations(from_doctype=self.doctype)
 			doc.set_actual_dates(update=True)
 			doc.notify_update()
 

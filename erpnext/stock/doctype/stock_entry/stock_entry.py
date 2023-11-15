@@ -446,7 +446,7 @@ class StockEntry(TransactionController):
 		if self.purpose not in ("Material Transfer", "Material Transfer for Manufacture", "Material Consumption for Manufacture", "Manufacture"):
 			self.work_order = None
 
-		if self.purpose in ("Manufacture", "Material Consumption for Manufacture"):
+		if self.purpose in ("Manufacture", "Material Consumption for Manufacture", "Material Transfer for Manufacture"):
 			if not self.fg_completed_qty:
 				frappe.throw(_("Production Qty is mandatory"))
 
