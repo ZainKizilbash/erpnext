@@ -11,40 +11,45 @@
   "operation",
   "operation_row_number",
   "operation_id",
-  "workstation",
   "column_break_voki1",
-  "remarks",
+  "workstation",
+  "employee",
+  "employee_name",
+  "project",
   "column_break_4",
   "company",
   "posting_date",
-  "employee",
-  "employee_name",
-  "status",
+  "amended_from",
+  "remarks_section",
+  "remarks",
   "production_section",
   "production_item",
   "item_name",
-  "for_quantity",
   "column_break_12",
   "bom_no",
-  "wip_warehouse",
-  "project",
+  "column_break_4yye7",
+  "for_quantity",
+  "stock_uom",
   "timing_detail",
   "time_logs",
   "section_break_13",
   "total_completed_qty",
-  "total_time_in_mins",
   "column_break_15",
+  "total_time_in_mins",
   "section_break_8",
   "items",
-  "more_information",
-  "transferred_qty",
-  "requested_qty",
-  "column_break_20",
-  "barcode",
+  "more_information_tab",
+  "status_section",
+  "status",
   "job_started",
   "started_time",
   "current_time",
-  "amended_from"
+  "column_break_20",
+  "transferred_qty",
+  "requested_qty",
+  "barcode",
+  "settings_section",
+  "wip_warehouse"
  ],
  "fields": [
   {
@@ -172,12 +177,6 @@
    "read_only": 1
   },
   {
-   "collapsible": 1,
-   "fieldname": "more_information",
-   "fieldtype": "Section Break",
-   "label": "More Information"
-  },
-  {
    "fieldname": "operation_id",
    "fieldtype": "Data",
    "hidden": 1,
@@ -199,10 +198,12 @@
    "read_only": 1
   },
   {
+   "fetch_from": "work_order.project",
    "fieldname": "project",
    "fieldtype": "Link",
    "label": "Project",
-   "options": "Project"
+   "options": "Project",
+   "read_only": 1
   },
   {
    "fieldname": "remarks",
@@ -317,12 +318,46 @@
   {
    "fieldname": "column_break_voki1",
    "fieldtype": "Column Break"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "more_information_tab",
+   "fieldtype": "Tab Break",
+   "label": "More Information"
+  },
+  {
+   "fieldname": "status_section",
+   "fieldtype": "Section Break",
+   "label": "Status"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "remarks_section",
+   "fieldtype": "Section Break",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "settings_section",
+   "fieldtype": "Section Break",
+   "label": "Settings"
+  },
+  {
+   "fetch_from": "work_order.stock_uom",
+   "fieldname": "stock_uom",
+   "fieldtype": "Link",
+   "label": "Stock UOM",
+   "options": "UOM",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_4yye7",
+   "fieldtype": "Column Break"
   }
  ],
  "is_calendar_and_gantt": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-11-10 00:21:53.961347",
+ "modified": "2023-11-15 23:09:58.367020",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Job Card",
