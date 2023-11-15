@@ -103,7 +103,6 @@ class StockEntry(TransactionController):
 
 	def on_cancel(self):
 		self.update_purchase_order_supplied_items()
-		self.validate_work_order_on_cancel()
 		self.update_stock_ledger()
 		self.make_gl_entries_on_cancel()
 		self.update_work_order()
@@ -227,12 +226,6 @@ class StockEntry(TransactionController):
 			self.from_bom = 1
 			self.bom_no = data.bom_no
 
-	def validate_work_order_on_cancel(self):
-		if self.work_order and self.purpose == "Material Consumption for Manufacture":
-			status = frappe.db.get_value("Work Order", self.work_order, 'status')
-			if status == 'Completed':
-				frappe.throw(_("Cannot cancel transaction for Completed Work Order."))
-
 	def validate_stock_entry_type(self):
 		ste_type_doc = frappe.get_cached_doc("Stock Entry Type", self.stock_entry_type)
 		self.purpose = ste_type_doc.purpose
@@ -269,6 +262,9 @@ class StockEntry(TransactionController):
 		if self.job_card and self.purpose != 'Material Transfer for Manufacture':
 			frappe.throw(_("For job card {0}, you can only make the 'Material Transfer for Manufacture' type stock entry")
 				.format(self.job_card))
+
+		if self.purpose != "Manufacture":
+			self.consumed_materials = []
 
 	def set_stock_qty(self):
 		for item in self.get("items"):
@@ -560,17 +556,13 @@ class StockEntry(TransactionController):
 		if not total_fg_stock_qty or not total_fg_items:
 			return
 
-		# Use raw material cost from BOM if allow_multiple_material_consumption
-		allow_multiple_material_consumption = frappe.get_cached_value("Manufacturing Settings", None, "material_consumption")
-		if self.purpose == "Manufacture" and self.work_order and total_fg_stock_qty and allow_multiple_material_consumption:
-			bom_items = self.get_bom_raw_materials(total_fg_stock_qty)
-			raw_material_cost = sum([flt(row.qty) * flt(row.rate) for row in bom_items.values()])
-
 		# set fg rate
+		consumed_material_cost = sum(flt(d.amount) for d in self.get("consumed_materials"))
+		total_cost = raw_material_cost + consumed_material_cost - scrap_material_cost
 		if self.purpose == "Manufacture":
-			basic_rate = (raw_material_cost - scrap_material_cost) / total_fg_stock_qty if total_fg_stock_qty else 0
+			basic_rate = total_cost / total_fg_stock_qty if total_fg_stock_qty else 0
 		else:
-			basic_rate = (raw_material_cost - scrap_material_cost) / total_fg_qty if total_fg_qty else 0
+			basic_rate = total_cost / total_fg_qty if total_fg_qty else 0
 
 		for d in self.get("items"):
 			if self.is_finished_good_item(d) and not d.set_basic_rate_manually:
@@ -744,6 +736,15 @@ class StockEntry(TransactionController):
 									"dependency_type": "Amount",
 									"dependency_percentage": d.cost_percentage
 								})
+
+						for dep_row in self.get("consumed_materials"):
+							sle.dependencies.append({
+								"dependent_voucher_type": "Stock Entry",
+								"dependent_voucher_no": dep_row.stock_entry,
+								"dependent_voucher_detail_no": dep_row.ste_detail,
+								"dependency_type": "Amount",
+								"dependency_percentage": d.cost_percentage * dep_row.cost_percentage / 100
+							})
 
 				sl_entries.append(sle)
 
@@ -970,8 +971,11 @@ class StockEntry(TransactionController):
 	def add_raw_material_items(self, auto_select_batches=False):
 		self.get_work_order()
 
-		backflush_based_on = frappe.db.get_single_value("Manufacturing Settings", "backflush_raw_materials_based_on")
-		allow_multiple_consumption = frappe.db.get_single_value("Manufacturing Settings", "material_consumption")
+		backflush_based_on = frappe.get_cached_value("Manufacturing Settings", None,
+			"backflush_raw_materials_based_on")
+
+		if self.work_order and self.purpose == "Manufacture":
+			self.set_raw_materials_consumed_for_manufacture()
 
 		if self.work_order and self.purpose == "Material Transfer for Manufacture":
 			items_dict = self.get_raw_materials_to_transfer()
@@ -986,20 +990,74 @@ class StockEntry(TransactionController):
 			self.get_raw_materials_to_backflush_based_on_transfer()
 			auto_select_batches = False
 
-		elif (
-			self.work_order
-			and self.purpose in ("Manufacture", "Material Consumption for Manufacture")
-			and backflush_based_on == "BOM"
-			and allow_multiple_consumption == 1
-		):
-			self.get_unconsumed_raw_materials()
-
 		else:
 			items_dict = self.get_raw_materials_to_backflush_based_on_bom()
 			self.add_to_stock_entry_detail(items_dict)
 
 		if auto_select_batches:
 			self.auto_select_batches(postprocess=False)
+
+	def set_raw_materials_consumed_for_manufacture(self):
+		self.consumed_materials = []
+
+		if not self.work_order or self.purpose != "Manufacture":
+			return
+
+		consumption_data = frappe.db.sql("""
+			select ste.name as stock_entry, i.name as ste_detail, ste.fg_completed_qty,
+				i.item_code as material_item_code, i.item_name as material_item_name,
+				i.qty as total_qty, i.uom, i.amount, i.valuation_rate
+			from `tabStock Entry Detail` i
+			inner join `tabStock Entry` ste on ste.name = i.parent
+			where ste.docstatus = 1 and ste.purpose = 'Material Consumption for Manufacture' and ste.work_order = %s
+				and ifnull(i.s_warehouse, '') != ''
+			order by ste.posting_date, ste.posting_time, i.idx
+		""", self.work_order, as_dict=1)
+
+		if not consumption_data:
+			return
+
+		consumption_by_ste = {}
+		for d in consumption_data:
+			consumption_by_ste.setdefault(d.stock_entry, []).append(d)
+
+		backflushed_map = dict(frappe.db.sql("""
+			select cm.ste_detail, sum(cm.qty)
+			from `tabStock Entry Consumed Material` cm
+			inner join `tabStock Entry` ste on ste.name = cm.parent
+			where ste.docstatus = 1 and ste.work_order = %s
+			group by cm.ste_detail
+		""", self.work_order))
+
+		to_consume = []
+
+		remaining_fg_completed_qty = self.fg_completed_qty
+		for consumed in consumption_by_ste.values():
+			current_fg_completed_qty = 0
+			for d in consumed:
+				remaining_qty = d.total_qty - flt(backflushed_map.get(d.ste_detail))
+				remaining_qty = flt(remaining_qty, 6)
+
+				consumption_qty = d.total_qty * (remaining_fg_completed_qty / d.fg_completed_qty)
+				consumption_qty = flt(consumption_qty, 6)
+
+				consumption_qty = min(consumption_qty, remaining_qty)
+				if consumption_qty <= 0:
+					continue
+
+				d.qty = consumption_qty
+
+				d.cost_percentage = d.qty / d.total_qty * 100
+				d.amount = flt(d.amount * d.cost_percentage / 100, self.precision("amount", "items"))
+
+				to_consume.append(d)
+
+				current_fg_completed_qty = d.fg_completed_qty * d.cost_percentage / 100
+
+			remaining_fg_completed_qty -= current_fg_completed_qty
+
+		for d in to_consume:
+			self.append("consumed_materials", d)
 
 	def get_raw_materials_to_backflush_based_on_transfer(self):
 		self.get_work_order()
@@ -1047,9 +1105,10 @@ class StockEntry(TransactionController):
 		pending_materials = {}
 		for d in transferred_materials_data:
 			d.pending_qty = d.transferred_qty
+			d.consumed_qty = 0
 
 			pending_item_dict = pending_materials.setdefault(d.item_code, frappe._dict({
-				"total_transferred_qty": 0, "total_pending_qty": 0, "warehouse_batch_map": {}
+				"total_transferred_qty": 0, "total_pending_qty": 0, "total_consumed_qty": 0, "warehouse_batch_map": {}
 			}))
 
 			pending_item_dict.total_transferred_qty += d.transferred_qty
@@ -1060,10 +1119,12 @@ class StockEntry(TransactionController):
 		for d in backflushed_materials_data:
 			pending_item_dict = pending_materials.get(d.item_code)
 			if pending_item_dict:
+				pending_item_dict.total_consumed_qty += d.qty
 				pending_item_dict.total_pending_qty -= d.qty
 
 				pending_iwb = pending_item_dict.warehouse_batch_map.get((d.warehouse, d.batch_no))
 				if pending_iwb:
+					pending_iwb.consumed_qty += d.qty
 					pending_iwb.pending_qty -= d.qty
 
 		# calculate to consume qty
@@ -1078,6 +1139,15 @@ class StockEntry(TransactionController):
 			total_required_qty = flt(total_required_qty, qty_precision)
 
 			total_to_consume = min(total_required_qty, total_pending_qty)
+
+			# adjust for material consumptions
+			if self.purpose == "Manufacture" and pending_item_dict.total_consumed_qty:
+				material_per_fg = flt(total_required_qty / completed_qty)
+				expected_consumed_qty = flt(self.pro_doc.produced_qty) * material_per_fg
+				excess_consumption = flt(pending_item_dict.total_consumed_qty) - expected_consumed_qty
+				if flt(excess_consumption, qty_precision) > 0:
+					total_to_consume -= excess_consumption
+
 			total_remaining = total_to_consume
 
 			for pending_iwb in pending_item_dict.warehouse_batch_map.values():
@@ -1122,7 +1192,8 @@ class StockEntry(TransactionController):
 
 		self.get_work_order()
 
-		items_dict = self.get_bom_raw_materials(flt(self.fg_completed_qty) + flt(self.scrap_qty))
+		fg_total_qty = flt(self.fg_completed_qty) + flt(self.scrap_qty)
+		items_dict = self.get_bom_raw_materials(fg_total_qty)
 		required_items_dict = self.pro_doc.get_required_items_dict() if self.pro_doc else frappe._dict()
 
 		for item in items_dict.values():
@@ -1140,6 +1211,15 @@ class StockEntry(TransactionController):
 					item["from_warehouse"] = self.pro_doc.wip_warehouse
 				else:
 					item["from_warehouse"] = source_row.get('source_warehouse') or None
+
+				# adjust for material consumptions
+				if self.purpose == 'Manufacture' and required_item_row and flt(required_item_row.consumed_qty):
+					material_per_fg = flt(item.get("qty")) / fg_total_qty
+					expected_consumed_qty = flt(self.pro_doc.produced_qty) * material_per_fg
+					to_consume_qty = flt(item.get("qty"))
+					excess_consumption = flt(required_item_row.consumed_qty) - expected_consumed_qty
+					if flt(excess_consumption, self.precision("qty", "items")) > 0:
+						item["qty"] = to_consume_qty - excess_consumption
 
 			# Set Warehouse from Purchase Order
 			if self.purchase_order and self.purpose == "Send to Subcontractor":
@@ -1246,42 +1326,6 @@ class StockEntry(TransactionController):
 
 		return item_dict
 
-	def get_unconsumed_raw_materials(self):
-		self.get_work_order()
-
-		wo = self.pro_doc
-		wo_items = self.pro_doc.required_items
-
-		for item in wo_items:
-			qty = item.required_qty
-
-			# Take into account consumption if there are any.
-			if self.purpose == 'Manufacture':
-				req_qty_each = flt(item.required_qty / wo.qty)
-				if (flt(item.consumed_qty) != 0):
-					remaining_qty = flt(item.consumed_qty) - (flt(wo.produced_qty) * req_qty_each)
-					exhaust_qty = req_qty_each * wo.produced_qty
-					if remaining_qty > exhaust_qty :
-						if (remaining_qty/(req_qty_each * flt(self.fg_completed_qty))) >= 1:
-							qty =0
-						else:
-							qty = (req_qty_each * flt(self.fg_completed_qty)) - remaining_qty
-				else:
-					qty = req_qty_each * flt(self.fg_completed_qty)
-
-			if qty > 0:
-				self.add_to_stock_entry_detail({
-					item.item_code: {
-						"from_warehouse": wo.wip_warehouse,
-						"to_warehouse": "",
-						"qty": qty,
-						"uom": item.uom,
-						"item_name": item.item_name,
-						"description": item.description,
-						"stock_uom": item.stock_uom,
-					}
-				})
-
 	def get_raw_materials_to_transfer(self):
 		"""
 			issue (item quantity) that is pending to issue or desire to transfer,
@@ -1354,6 +1398,9 @@ class StockEntry(TransactionController):
 
 	def add_to_stock_entry_detail(self, item_dict, bom_no=None):
 		for item_code, item in item_dict.items():
+			if flt(item["qty"], self.precision("qty", "items")) <= 0:
+				continue
+
 			stock_uom = item.get("stock_uom") or frappe.get_cached_value("Item", item_code, "stock_uom")
 
 			row = self.append('items')

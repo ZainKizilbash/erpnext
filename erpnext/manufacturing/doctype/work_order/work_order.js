@@ -288,17 +288,15 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 
 		// If "Material Consumption is check in Manufacturing Settings, allow Material Consumption
 		let show_consumption_button = (
-			!doc.skip_transfer &&
-			doc.__onload && doc.__onload.material_consumption &&
-			flt(doc.produced_qty) < flt(doc.material_transferred_for_manufacturing) &&
-			(doc.required_items || []).some(d => flt(d.required_qty) > flt(d.consumed_qty))
+			!doc.skip_transfer
+			&& flt(doc.produced_qty) < flt(doc.material_transferred_for_manufacturing)
+			&& (doc.required_items || []).some(d => flt(d.consumed_qty) < flt(d.required_qty))
 		)
 
 		if (show_consumption_button) {
-			let consumption_btn = this.frm.add_custom_button(__('Material Consumption'), () => {
-				this.make_material_consumption_entry(doc.__onload.backflush_raw_materials_based_on);
-			});
-			consumption_btn.removeClass("btn-default").addClass('btn-primary');
+			this.frm.add_custom_button(__('Material Consumption Entry'), () => {
+				return erpnext.manufacturing.make_stock_entry_from_work_order(this.frm.doc, "Material Consumption for Manufacture");
+			}, __("Create"));
 		}
 	}
 
@@ -517,33 +515,6 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 		}).then((pick_list) => {
 			frappe.model.sync(pick_list);
 			frappe.set_route('Form', pick_list.doctype, pick_list.name);
-		});
-	}
-
-	make_material_consumption_entry(backflush_raw_materials_based_on) {
-		let doc = this.frm.doc;
-
-		let max;
-		if (!doc.skip_transfer) {
-			max = (backflush_raw_materials_based_on === "Material Transferred for Manufacture") ?
-				flt(doc.material_transferred_for_manufacturing) - flt(doc.produced_qty) :
-				flt(doc.producible_qty) - flt(doc.produced_qty);
-				// flt(doc.qty) - flt(doc.material_transferred_for_manufacturing);
-		} else {
-			max = flt(doc.producible_qty) - flt(doc.produced_qty);
-		}
-
-		return frappe.call({
-			method: "erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry",
-			args: {
-				"work_order_id": doc.name,
-				"purpose": "Material Consumption for Manufacture",
-				"qty": max
-			},
-			callback: (r) => {
-				let doclist = frappe.model.sync(r.message);
-				frappe.set_route("Form", doclist[0].doctype, doclist[0].name);
-			}
 		});
 	}
 

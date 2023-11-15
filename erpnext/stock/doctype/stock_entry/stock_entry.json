@@ -65,6 +65,8 @@
   "total_incoming_value",
   "column_break_61",
   "value_difference",
+  "consumed_materials_section",
+  "consumed_materials",
   "additional_costs_section",
   "additional_costs",
   "total_additional_costs",
@@ -681,13 +683,28 @@
   {
    "fieldname": "column_break_7nzxf",
    "fieldtype": "Column Break"
+  },
+  {
+   "collapsible": 1,
+   "depends_on": "consumed_materials",
+   "fieldname": "consumed_materials_section",
+   "fieldtype": "Section Break",
+   "label": "Consumed Materials"
+  },
+  {
+   "fieldname": "consumed_materials",
+   "fieldtype": "Table",
+   "label": "Consumed Materials",
+   "no_copy": 1,
+   "options": "Stock Entry Consumed Material",
+   "read_only": 1
   }
  ],
  "icon": "fa fa-file-text",
  "idx": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-09-28 16:39:54.169579",
+ "modified": "2023-11-11 16:02:41.481346",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Stock Entry",

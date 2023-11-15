@@ -563,17 +563,17 @@ $.extend(erpnext.manufacturing, {
 			pending_qty = flt(doc.producible_qty) - flt(doc.produced_qty);
 			pending_qty_with_allowance = producible_qty_with_allowance - flt(doc.produced_qty);
 		} else {
-			if (purpose === 'Manufacture') {
+			if (purpose == "Material Transfer for Manufacture") {
+				pending_qty = flt(doc.producible_qty) - flt(doc.material_transferred_for_manufacturing);
+				pending_qty_with_allowance = producible_qty_with_allowance - flt(doc.material_transferred_for_manufacturing);
+			} else {
 				let qty_to_produce = Math.min(flt(doc.material_transferred_for_manufacturing), flt(doc.qty));
 				pending_qty = qty_to_produce - flt(doc.produced_qty);
 				pending_qty_with_allowance = flt(doc.material_transferred_for_manufacturing) - flt(doc.produced_qty);
-			} else {
-				pending_qty = flt(doc.producible_qty) - flt(doc.material_transferred_for_manufacturing);
-				pending_qty_with_allowance = producible_qty_with_allowance - flt(doc.material_transferred_for_manufacturing);
 			}
 		}
 
-		if (purpose === 'Manufacture' && doc.operations && doc.operations.length) {
+		if (["Manufacture", "Material Consumption for Manufacture"].includes(purpose) && doc.operations && doc.operations.length) {
 			let min_operation_completed_qty = Math.min(...doc.operations.map(d => flt(d.completed_qty)));
 			pending_qty = Math.min(pending_qty, min_operation_completed_qty - flt(doc.produced_qty));
 		}

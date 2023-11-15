@@ -10,7 +10,6 @@
   "overproduction_percentage_for_work_order",
   "under_production_allowance",
   "backflush_raw_materials_based_on",
-  "material_consumption",
   "update_bom_costs_automatically",
   "column_break_11",
   "default_wip_warehouse",
@@ -97,13 +96,6 @@
   },
   {
    "default": "0",
-   "description": "Allow multiple Material Consumption against a Work Order",
-   "fieldname": "material_consumption",
-   "fieldtype": "Check",
-   "label": "Allow Multiple Material Consumption"
-  },
-  {
-   "default": "0",
    "description": "Update BOM cost automatically via Scheduler, based on latest valuation rate / price list rate / last purchase rate of raw materials.",
    "fieldname": "update_bom_costs_automatically",
    "fieldtype": "Check",
@@ -176,7 +168,7 @@
  "icon": "icon-wrench",
  "issingle": 1,
  "links": [],
- "modified": "2023-11-09 12:35:43.536481",
+ "modified": "2023-11-11 00:09:01.740827",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Manufacturing Settings",

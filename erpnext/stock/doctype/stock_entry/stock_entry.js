@@ -137,7 +137,6 @@ frappe.ui.form.on('Stock Entry', {
 
 	refresh: function(frm) {
 		if(!frm.doc.docstatus) {
-			frm.trigger('validate_purpose_consumption');
 			frm.add_custom_button(__('Create Material Request'), function() {
 				frappe.model.with_doctype('Material Request', function() {
 					var mr = frappe.model.get_new_doc('Material Request');
@@ -276,7 +275,6 @@ frappe.ui.form.on('Stock Entry', {
 	},
 
 	purpose: function(frm) {
-		frm.trigger('validate_purpose_consumption');
 		frm.fields_dict.items.grid.refresh();
 		frm.cscript.toggle_related_fields(frm.doc);
 		frm.cscript.show_hide_select_batch_button();
@@ -284,18 +282,6 @@ frappe.ui.form.on('Stock Entry', {
 
 	customer_provided: function(frm) {
 		frm.cscript.toggle_related_fields(frm.doc);
-	},
-
-	validate_purpose_consumption: function(frm) {
-		frappe.call({
-			method: "erpnext.manufacturing.doctype.manufacturing_settings.manufacturing_settings.is_material_consumption_enabled",
-		}).then(r => {
-			if (cint(r.message) == 0
-				&& frm.doc.purpose=="Material Consumption for Manufacture") {
-				frm.set_value("purpose", 'Manufacture');
-				frappe.throw(__('Material Consumption is not set in Manufacturing Settings.'));
-			}
-		});
 	},
 
 	company: function(frm) {

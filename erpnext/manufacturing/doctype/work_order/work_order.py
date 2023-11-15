@@ -35,7 +35,6 @@ class WorkOrder(StatusUpdater):
 
 	def onload(self):
 		ms = frappe.get_cached_doc("Manufacturing Settings", None)
-		self.set_onload("material_consumption", ms.material_consumption)
 		self.set_onload("backflush_raw_materials_based_on", ms.backflush_raw_materials_based_on)
 
 		self.set_available_qty()
@@ -431,7 +430,6 @@ class WorkOrder(StatusUpdater):
 					'planned_operating_cost': row.planned_operating_cost,
 					'status': row.status,
 				}, update_modified=update_modified)
-
 
 			for row in self.get('additional_costs'):
 				row.db_set({
@@ -1311,8 +1309,11 @@ def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False, au
 		if purpose == "Material Transfer for Manufacture":
 			if auto_submit or settings.auto_submit_material_transfer_entry:
 				stock_entry = submit_stock_entry(stock_entry)
-		else:
+		elif purpose == "Manufacture":
 			if auto_submit or settings.auto_submit_manufacture_entry:
+				stock_entry = submit_stock_entry(stock_entry)
+		else:
+			if auto_submit:
 				stock_entry = submit_stock_entry(stock_entry)
 	except StockOverProductionError:
 		raise
