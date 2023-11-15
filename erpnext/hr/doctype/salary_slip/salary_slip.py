@@ -459,7 +459,7 @@ class SalarySlip(TransactionBase):
 
 		if self.advances:
 			for d in self.advances:
-				d.allocated_amount = min(d.balance_amount, self.net_pay) if self.net_pay > 0 else 0
+				d.allocated_amount = min(d.advance_amount, self.net_pay) if self.net_pay > 0 else 0
 				d.balance_amount = flt(d.advance_amount) - flt(d.allocated_amount)
 				self.net_pay -= d.allocated_amount
 
@@ -1157,17 +1157,15 @@ class SalarySlip(TransactionBase):
 		self.advances = []
 
 		pending_advances = frappe.db.sql("""
-			select name as employee_advance, paid_amount as total_advance, balance_amount,
-					posting_date, advance_account, advance_amount
+			select name as employee_advance, paid_amount, balance_amount as advance_amount,
+					posting_date, advance_account
 			from `tabEmployee Advance`
 			where docstatus=1 and employee=%s and posting_date <= %s and deduct_from_salary = 1 and balance_amount > 0
 			order by posting_date
 		""", [self.employee, self.end_date], as_dict=1)
 
-		total_pending_advance = 0
 		for data in pending_advances:
 			self.append('advances', data)
-			total_pending_advance += data.total_advance
 
 	@frappe.whitelist()
 	def calculate_mode_of_payment(self):
