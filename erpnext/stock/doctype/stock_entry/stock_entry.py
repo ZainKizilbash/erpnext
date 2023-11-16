@@ -441,7 +441,7 @@ class StockEntry(TransactionController):
 		if self.purpose not in ("Material Transfer", "Material Transfer for Manufacture", "Material Consumption for Manufacture", "Manufacture"):
 			self.work_order = None
 
-		if self.purpose in ("Manufacture", "Material Consumption for Manufacture", "Material Transfer for Manufacture"):
+		if self.purpose in ("Manufacture", "Material Consumption for Manufacture") or (self.purpose == "Material Transfer for Manufacture" and self.from_bom):
 			if not self.fg_completed_qty:
 				frappe.throw(_("Production Qty is mandatory"))
 
@@ -1187,7 +1187,7 @@ class StockEntry(TransactionController):
 
 	def get_raw_materials_to_backflush_based_on_bom(self):
 		if not self.fg_completed_qty:
-			frappe.throw(_("Production Quantity is mandatory"))
+			frappe.throw(_("Production Qty is mandatory"))
 
 		self.get_work_order()
 
