@@ -75,8 +75,8 @@ class SalarySlip(TransactionBase):
 	def before_print(self, print_settings=None):
 		self.company_address_doc = erpnext.get_company_address(self)
 
-		self.total_loan_repayment = sum([flt(d.total_payment) for d in self.loans])
-		self.total_loan_balance = sum([flt(d.total_balance_amount) for d in self.loans])
+		self.total_loan_repayment = sum([flt(d.repayment_amount) for d in self.loans])
+		self.total_loan_balance = sum([flt(d.balance_amount) for d in self.loans])
 
 		self.total_advance_repayment = sum([flt(d.allocated_amount	) for d in self.advances])
 		self.total_advance_balance = sum([flt(d.balance_amount) for d in self.advances])
@@ -1021,7 +1021,7 @@ class SalarySlip(TransactionBase):
 		for loan in self.get_loan_details():
 			self.append('loans', {
 				'loan': loan.name,
-				'total_payment': loan.total_payment,
+				'repayment_amount': loan.total_payment,
 				'interest_amount': loan.interest_amount,
 				'principal_amount': loan.principal_amount,
 				'loan_account': loan.loan_account,
@@ -1032,7 +1032,7 @@ class SalarySlip(TransactionBase):
 				'disbursement_date': loan.disbursement_date,
 				'total_loan_amount': loan.total_loan_amount,
 				'pending_loan_amount': flt(loan.total_loan_amount) - flt(loan.total_amount_paid),
-				'total_balance_amount': flt(loan.total_loan_amount) - flt(loan.total_amount_paid) - flt(loan.total_payment),
+				'balance_amount': flt(loan.total_loan_amount) - flt(loan.total_amount_paid) - flt(loan.total_payment),
 			})
 
 			self.total_loan_repayment += loan.total_payment
