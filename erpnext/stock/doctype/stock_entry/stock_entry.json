@@ -33,6 +33,7 @@
   "production_section",
   "work_order",
   "column_break_26",
+  "job_card",
   "bom_no",
   "use_multi_level_bom",
   "column_break_qp2v9",
@@ -87,7 +88,6 @@
   "per_transferred",
   "col5",
   "total_amount",
-  "job_card",
   "credit_note"
  ],
  "fields": [
@@ -704,7 +704,7 @@
  "idx": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-11-11 16:02:41.481346",
+ "modified": "2023-11-16 01:56:34.485249",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Stock Entry",

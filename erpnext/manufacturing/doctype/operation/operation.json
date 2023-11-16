@@ -9,6 +9,9 @@
  "engine": "InnoDB",
  "field_order": [
   "workstation",
+  "column_break_vyjno",
+  "material_consumption_required",
+  "section_break_yhimi",
   "description"
  ],
  "fields": [
@@ -24,11 +27,25 @@
    "fieldname": "description",
    "fieldtype": "Text",
    "label": "Description"
+  },
+  {
+   "fieldname": "column_break_vyjno",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "material_consumption_required",
+   "fieldtype": "Check",
+   "label": "Consume Materials against Job Card"
+  },
+  {
+   "fieldname": "section_break_yhimi",
+   "fieldtype": "Section Break"
   }
  ],
  "icon": "fa fa-wrench",
  "links": [],
- "modified": "2023-10-13 12:31:33.886146",
+ "modified": "2023-11-16 01:34:11.602746",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Operation",

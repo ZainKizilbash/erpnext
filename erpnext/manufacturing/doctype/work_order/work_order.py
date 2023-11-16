@@ -1237,7 +1237,7 @@ def make_stock_entry_against_multiple_work_orders(work_orders, args=None):
 
 
 @frappe.whitelist()
-def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False, auto_submit=False, args=None):
+def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False, job_card=None, auto_submit=False, args=None):
 	if args and isinstance(args, str):
 		args = json.loads(args)
 
@@ -1265,6 +1265,8 @@ def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False, au
 	stock_entry.company = work_order.company
 	stock_entry.from_bom = 1
 	stock_entry.bom_no = work_order.bom_no
+	stock_entry.job_card = job_card
+	stock_entry.project = work_order.project
 	stock_entry.use_multi_level_bom = work_order.use_multi_level_bom
 
 	if flt(qty):
@@ -1282,11 +1284,11 @@ def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False, au
 
 	if purpose == "Material Transfer for Manufacture":
 		stock_entry.to_warehouse = wip_warehouse
-		stock_entry.project = work_order.project
 	else:
 		stock_entry.from_warehouse = wip_warehouse
+
+	if purpose == "Manufacture":
 		stock_entry.to_warehouse = work_order.fg_warehouse
-		stock_entry.project = work_order.project
 
 	stock_entry.set_stock_entry_type()
 	stock_entry.get_items(auto_select_batches=settings.auto_select_batches_in_stock_entry)
@@ -1419,9 +1421,7 @@ def _make_job_card(work_order, row, qty):
 	})
 
 	frappe.utils.call_hook_method("update_job_card_on_create", doc)
-
-	if work_order.transfer_material_against == 'Job Card' and not work_order.skip_transfer:
-		doc.get_required_items()
+	doc.run_method("set_missing_values")
 
 	return doc
 
