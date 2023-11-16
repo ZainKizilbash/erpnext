@@ -78,7 +78,7 @@ class SalarySlip(TransactionBase):
 		self.total_loan_repayment = sum([flt(d.repayment_amount) for d in self.loans])
 		self.total_loan_balance = sum([flt(d.balance_amount) for d in self.loans])
 
-		self.total_advance_repayment = sum([flt(d.allocated_amount	) for d in self.advances])
+		self.total_advance_repayment = sum([flt(d.allocated_amount) for d in self.advances])
 		self.total_advance_balance = sum([flt(d.balance_amount) for d in self.advances])
 
 	def on_submit(self):
@@ -1160,8 +1160,7 @@ class SalarySlip(TransactionBase):
 		self.advances = []
 
 		pending_advances = frappe.db.sql("""
-			select name as employee_advance, paid_amount, balance_amount as advance_amount,
-					posting_date, advance_account
+			select name as employee_advance, posting_date, advance_account, balance_amount as advance_amount
 			from `tabEmployee Advance`
 			where docstatus=1 and employee=%s and posting_date <= %s and deduct_from_salary = 1 and balance_amount > 0
 			order by posting_date
