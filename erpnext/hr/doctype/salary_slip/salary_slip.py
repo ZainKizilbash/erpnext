@@ -1044,7 +1044,7 @@ class SalarySlip(TransactionBase):
 			select loan.name, rps.name as loan_repayment_detail,
 				rps.principal_amount, rps.interest_amount, rps.total_payment,
 				rps.payment_date, loan.loan_account, loan.interest_income_account,
-				loan_type, loan.disbursement_date, loan.total_payment as total_loan_amount, loan.total_amount_paid
+				loan.loan_type, loan.disbursement_date, loan.total_payment as total_loan_amount, loan.total_amount_paid
 			from
 				`tabRepayment Schedule` as rps, `tabLoan` as loan
 			where
