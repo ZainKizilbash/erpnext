@@ -22,8 +22,10 @@ def execute():
 
 	frappe.db.sql("""
 		UPDATE `tabSalary Slip Employee Advance` advance
+		INNER JOIN `tabLoan` loan ON loan.name = advance.parent
 		SET advance.balance_amount = advance.advance_amount - advance.allocated_amount
 	""")
+
 
 	for d in frappe.get_all('Salary Slip', filters={'docstatus': 0}):
 		frappe.get_doc('Salary Slip', d.name).save()
