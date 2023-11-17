@@ -57,14 +57,14 @@ erpnext.vehicles.VehicleInvoiceMovementController = class VehicleInvoiceMovement
 		}
 	}
 
-	set_fields_read_only(doc, cdt, cdn) {
-		var reqd = cint(this.frm.doc.purpose == "Receive");
-		var read_only = cint(!reqd);
-		this.frm.set_df_property('bill_no', 'read_only', read_only, cdn, 'invoices');
-		this.frm.set_df_property('bill_no', 'reqd', reqd, cdn, 'invoices');
-		this.frm.set_df_property('bill_date', 'read_only', read_only, cdn, 'invoices');
-		this.frm.set_df_property('bill_date', 'reqd', reqd, cdn, 'invoices');
-		this.frm.refresh_field('invoices');
+	set_fields_read_only() {
+		let reqd = cint(this.frm.doc.purpose == "Receive");
+		let read_only = cint(!reqd);
+
+		for (let fn in ['bill_no', 'bill_date']) {
+			this.frm.fields_dict.invoices.grid.toggle_reqd(fn, reqd);
+			this.frm.fields_dict.invoices.grid.toggle_enable(fn, read_only);
+		}
 	}
 };
 
