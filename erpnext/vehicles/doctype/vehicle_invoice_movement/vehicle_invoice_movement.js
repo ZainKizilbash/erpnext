@@ -58,12 +58,11 @@ erpnext.vehicles.VehicleInvoiceMovementController = class VehicleInvoiceMovement
 	}
 
 	set_fields_read_only() {
-		let reqd = cint(this.frm.doc.purpose == "Receive");
-		let read_only = cint(!reqd);
+		let enabled = reqd = cint(this.frm.doc.purpose == "Receive");
 
-		for (let fn in ['bill_no', 'bill_date']) {
+		for (let fn of ['bill_no', 'bill_date']) {
 			this.frm.fields_dict.invoices.grid.toggle_reqd(fn, reqd);
-			this.frm.fields_dict.invoices.grid.toggle_enable(fn, read_only);
+			this.frm.fields_dict.invoices.grid.toggle_enable(fn, enabled);
 		}
 	}
 };
