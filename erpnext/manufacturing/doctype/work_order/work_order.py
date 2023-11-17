@@ -92,8 +92,8 @@ class WorkOrder(StatusUpdater):
 
 	def validate_operation_time(self):
 		for d in self.operations:
-			if d.time_in_mins <= 0:
-				frappe.throw(_("Operation Time must be greater than 0 for Operation {0}".format(d.operation)))
+			if d.time_in_mins < 0:
+				frappe.throw(_("Operation Time cannot be a negative number for Operation {0}".format(d.operation)))
 
 	def validate_production_item(self):
 		if self.production_item:
