@@ -459,23 +459,29 @@ $.extend(erpnext.item, {
 	},
 
 	show_multiple_variants_dialog: function(frm) {
-		var me = this;
+		let me = this;
 
 		let promises = [];
 		let attr_val_fields = {};
 
 		function make_fields_from_attribute_values(attr_dict) {
 			let fields = [];
-			Object.keys(attr_dict).forEach((name, i) => {
-				if(i % 3 === 0){
+			for (let [i, attribute_name] of Object.keys(attr_dict).entries()) {
+				// Section Break after 3 columns
+				if (i % 3 === 0) {
 					fields.push({fieldtype: 'Section Break'});
 				}
-				fields.push({fieldtype: 'Column Break', label: name});
-				attr_dict[name].forEach(value => {
+
+				// Column Label
+				fields.push({fieldtype: 'Column Break', label: attribute_name});
+
+				for (let attribute_value of attr_dict[attribute_name]) {
 					fields.push({
 						fieldtype: 'Check',
-						label: value,
-						fieldname: value,
+						label: attribute_value,
+						fieldname: attribute_value,
+						attribute_name: attribute_name,
+						attribute_value: attribute_value,
 						default: 0,
 						onchange: function() {
 							let selected_attributes = get_selected_attributes();
@@ -483,7 +489,7 @@ $.extend(erpnext.item, {
 							Object.keys(selected_attributes).map(key => {
 								lengths.push(selected_attributes[key].length);
 							});
-							if(lengths.includes(0)) {
+							if (lengths.includes(0)) {
 								me.multiple_variant_dialog.get_primary_btn().html(__('Create Variants'));
 								me.multiple_variant_dialog.disable_primary_action();
 							} else {
@@ -496,8 +502,8 @@ $.extend(erpnext.item, {
 							}
 						}
 					});
-				});
-			});
+				}
+			}
 			return fields;
 		}
 
@@ -551,17 +557,19 @@ $.extend(erpnext.item, {
 
 		function get_selected_attributes() {
 			let selected_attributes = {};
-			me.multiple_variant_dialog.$wrapper.find('.form-column').each((i, col) => {
-				if(i===0) return;
-				let attribute_name = $(col).find('label').html();
-				selected_attributes[attribute_name] = [];
-				let checked_opts = $(col).find('.checkbox input');
-				checked_opts.each((i, opt) => {
-					if($(opt).is(':checked')) {
-						selected_attributes[attribute_name].push($(opt).attr('data-fieldname'));
-					}
-				});
-			});
+
+			let value_fields = me.multiple_variant_dialog.fields.filter(f => f.attribute_name && f.attribute_value);
+			for (let df of value_fields) {
+				if (!me.multiple_variant_dialog.get_value(df.fieldname)) {
+					continue;
+				}
+
+				if (!selected_attributes[df.attribute_name]) {
+					selected_attributes[df.attribute_name] = [];
+				}
+
+				selected_attributes[df.attribute_name].push(df.attribute_value);
+			}
 
 			return selected_attributes;
 		}
@@ -735,42 +743,9 @@ $.extend(erpnext.item, {
 	},
 
 	toggle_attributes: function(frm) {
-		if((frm.doc.has_variants || frm.doc.variant_of)
-			&& frm.doc.variant_based_on==='Item Attribute') {
-			frm.toggle_display("attributes", true);
-
-			var grid = frm.fields_dict.attributes.grid;
-
-			if(frm.doc.variant_of) {
-				// variant
-
-				// value column is displayed but not editable
-				grid.set_column_disp("attribute_value", true);
-				grid.toggle_enable("attribute_value", false);
-
-				grid.toggle_enable("attribute", false);
-
-				// can't change attributes since they are
-				// saved when the variant was created
-				frm.toggle_enable("attributes", false);
-			} else {
-				// template - values not required!
-
-				// make the grid editable
-				frm.toggle_enable("attributes", true);
-
-				// value column is hidden
-				grid.set_column_disp("attribute_value", false);
-
-				// enable the grid so you can add more attributes
-				grid.toggle_enable("attribute", true);
-			}
-
-		} else {
-			// nothing to do with attributes, hide it
-			frm.toggle_display("attributes", false);
-		}
-		frm.layout.refresh_sections();
+		let grid = frm.fields_dict.attributes.grid;
+		grid.update_docfield_property("attribute_value", "in_list_view", cint(!!frm.doc.variant_of));
+		grid.reset_grid();
 	},
 
 	change_uom: function (frm) {
