@@ -24,11 +24,10 @@ web_include_css = "erpnext-web.bundle.css"
 email_css = "email_erpnext.bundle.css"
 
 doctype_js = {
-	"Communication": "public/js/communication.js",
-	"Event": "public/js/event.js",
-	"Contact": "public/js/contact.js",
-	"Website Theme": "public/js/website_theme.js",
-	"Newsletter": "public/js/newsletter.js"
+	"Communication": "overrides/communication_hooks.js",
+	"Event": "overrides/event_hooks.js",
+	"Contact": "overrides/contact_hooks.js",
+	"Website Theme": "overrides/website_theme_hooks.js",
 }
 
 welcome_email = "erpnext.setup.utils.welcome_email"

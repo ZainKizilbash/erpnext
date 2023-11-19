@@ -12,10 +12,6 @@ frappe.ui.form.on("Event", {
 			};
 		});
 
-		frm.add_custom_button(__('Add Leads'), function() {
-			new frappe.desk.eventParticipants(frm, "Lead");
-		}, __("Add Participants"));
-
 		frm.add_custom_button(__('Add Customers'), function() {
 			new frappe.desk.eventParticipants(frm, "Customer");
 		}, __("Add Participants"));
