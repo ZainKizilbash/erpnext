@@ -76,7 +76,6 @@ erpnext.patches.v4_0.create_price_list_if_missing
 execute:frappe.db.sql("update `tabItem` set end_of_life=null where end_of_life='0000-00-00'") #2014-06-16
 erpnext.patches.v4_0.update_users_report_view_settings
 erpnext.patches.v4_0.set_pricing_rule_for_buying_or_selling
-erpnext.patches.v4_1.set_outgoing_email_footer
 erpnext.patches.v4_1.fix_sales_order_delivered_status
 erpnext.patches.v4_1.fix_delivery_and_billing_status
 execute:frappe.db.sql("update `tabAccount` set root_type='Liability' where root_type='Income' and report_type='Balance Sheet'")
