@@ -2,7 +2,6 @@ import "./conf.js"
 import "./utils.js"
 import "./queries.js"
 import "./help_links.js"
-import "./call_popup/call_popup.js"
 import "./utils/dimension_tree_filter.js"
 import "./templates/lcv_manual_distribution.html"
 
