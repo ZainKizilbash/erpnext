@@ -71,15 +71,6 @@ def get_data():
 			"description": "Updates, Timesheets and Activities."
 		},
 		{
-			"module_name": "CRM",
-			"category": "Modules",
-			"label": _("CRM"),
-			"color": "#EF4DB6",
-			"icon": "octicon octicon-broadcast",
-			"type": "module",
-			"description": "Sales pipeline, leads, opportunities and customers."
-		},
-		{
 			"module_name": "Support",
 			"category": "Modules",
 			"label": _("Support"),
