@@ -392,12 +392,9 @@ class WorkOrder(StatusUpdater):
 		min_production_qty = flt(self.get_min_qty(self.producible_qty), self.precision("qty"))
 
 		for d in self.operations:
-			d.completed_qty = flt(operation_data_map.get(d.name, {}).get('completed_qty'))
-			d.actual_operation_time = flt(operation_data_map.get(d.name, {}).get('time_in_mins'))
-			d.actual_start_time = operation_data_map.get(d.name, {}).get('start_time')
-			d.actual_end_time = operation_data_map.get(d.name, {}).get('end_time')
-
 			# set operation status
+			d.completed_qty = flt(operation_data_map.get(d.name, {}).get('completed_qty'))
+
 			if self.status == "Stopped" and d.completed_qty > 0:
 				d.status = "Completed"
 			elif not d.completed_qty:
@@ -406,6 +403,10 @@ class WorkOrder(StatusUpdater):
 				d.status = "Work in Progress"
 			else:
 				d.status = "Completed"
+
+			d.actual_operation_time = flt(operation_data_map.get(d.name, {}).get('time_in_mins'))
+			d.actual_start_time = operation_data_map.get(d.name, {}).get('start_time')
+			d.actual_end_time = operation_data_map.get(d.name, {}).get('end_time') if d.status == "Completed" else None
 
 		self.calculate_operating_cost()
 
@@ -637,10 +638,13 @@ class WorkOrder(StatusUpdater):
 	def set_actual_dates(self, update=False, update_modified=True, ste_qty_map=None):
 		if self.get("operations"):
 			actual_start_dates = [getdate(d.actual_start_time) for d in self.get("operations") if d.actual_start_time]
-			actual_end_dates = [getdate(d.actual_end_time) for d in self.get("operations") if d.actual_end_time]
-
 			self.actual_start_date = min(actual_start_dates) if actual_start_dates else None
-			self.actual_end_date = max(actual_end_dates) if actual_end_dates else None
+
+			actual_end_dates = [getdate(d.actual_end_time) for d in self.get("operations") if d.actual_end_time]
+			if actual_end_dates and len(actual_end_dates) == len(self.operations):
+				self.actual_end_date = max(actual_end_dates)
+			else:
+				self.actual_end_date = None
 		else:
 			if not ste_qty_map:
 				ste_qty_map = self.get_ste_qty_map()
