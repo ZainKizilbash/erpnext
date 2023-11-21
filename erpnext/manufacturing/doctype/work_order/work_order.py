@@ -378,26 +378,16 @@ class WorkOrder(StatusUpdater):
 			operation_data = frappe.db.sql("""
 				SELECT operation_id,
 					sum(total_time_in_mins) as time_in_mins,
-					sum(total_completed_qty) as completed_qty
+					sum(total_completed_qty) as completed_qty,
+					min(actual_start_dt) as start_time,
+					max(actual_end_dt) as end_time
 				FROM `tabJob Card`
 				WHERE docstatus = 1 AND work_order = %s
 				GROUP BY operation_id
 			""", self.name, as_dict=1)
 
-			operation_time_data = frappe.db.sql("""
-				SELECT jc.operation_id,
-					min(from_time) as start_time,
-					max(to_time) as end_time
-				FROM `tabJob Card Time Log` jctl
-				INNER JOIN `tabJob Card` jc ON jc.name = jctl.parent
-				WHERE jc.docstatus = 1 AND jc.work_order = %s
-				GROUP BY operation_id
-			""", self.name, as_dict=1)
-
 			for d in operation_data:
 				operation_data_map.setdefault(d.operation_id, d)
-			for d in operation_time_data:
-				operation_data_map.setdefault(d.operation_id, {}).update(d)
 
 		min_production_qty = flt(self.get_min_qty(self.producible_qty), self.precision("qty"))
 

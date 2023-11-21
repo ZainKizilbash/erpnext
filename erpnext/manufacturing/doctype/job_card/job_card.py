@@ -19,6 +19,9 @@ class JobCard(Document):
 		self.validate_operation_id()
 		self.set_status()
 
+	def before_submit(self):
+		self.set_actual_dates()
+
 	def on_submit(self):
 		self.validate_job_card()
 		self.update_work_order()
@@ -227,6 +230,12 @@ class JobCard(Document):
 		if stock_entry:
 			frappe.get_doc("Stock Entry", stock_entry).cancel()
 
+	def set_actual_dates(self):
+		if self.time_logs:
+			self.actual_start_dt = min(get_datetime(d.from_time) for d in self.time_logs)
+			self.actual_end_dt = max(get_datetime(d.to_time) for d in self.time_logs)
+		else:
+			self.actual_start_dt = self.actual_end_dt = get_datetime()
 
 @frappe.whitelist()
 def get_operation_details(work_order, operation):

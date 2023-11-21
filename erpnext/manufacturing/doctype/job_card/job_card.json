@@ -53,7 +53,13 @@
   "wip_warehouse",
   "column_break_sd2ta",
   "material_consumption_required",
-  "material_transfer_required"
+  "material_transfer_required",
+  "section_break_rwkxt",
+  "planned_start_dt",
+  "actual_start_dt",
+  "column_break_p41ok",
+  "planned_end_dt",
+  "actual_end_dt"
  ],
  "fields": [
   {
@@ -379,12 +385,45 @@
    "fieldtype": "Check",
    "label": "Transfer Materials against Job Card",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_break_rwkxt",
+   "fieldtype": "Section Break",
+   "label": "Planning"
+  },
+  {
+   "fieldname": "planned_start_dt",
+   "fieldtype": "Datetime",
+   "label": "Planned Start Date/Time"
+  },
+  {
+   "fieldname": "actual_start_dt",
+   "fieldtype": "Datetime",
+   "label": "Actual Start Date/Time",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_p41ok",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "planned_end_dt",
+   "fieldtype": "Datetime",
+   "label": "Planned End Date/Time"
+  },
+  {
+   "fieldname": "actual_end_dt",
+   "fieldtype": "Datetime",
+   "label": "Actual End Date/Time",
+   "no_copy": 1,
+   "read_only": 1
   }
  ],
  "is_calendar_and_gantt": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-11-16 01:40:22.568424",
+ "modified": "2023-11-20 18:03:46.538166",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Job Card",
