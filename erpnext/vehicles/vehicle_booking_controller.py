@@ -9,7 +9,7 @@ from frappe.model.utils import get_fetch_values
 from erpnext.accounts.party import get_address_display
 from frappe.contacts.doctype.address.address import get_default_address
 from frappe.contacts.doctype.contact.contact import get_contact_details, get_default_contact
-from erpnext.crm.doctype.lead.lead import get_lead_contact_details
+from crm.crm.doctype.lead.lead import get_lead_contact_details
 from erpnext.stock.get_item_details import get_default_warehouse, get_item_price, get_default_supplier, get_default_terms
 from erpnext.setup.doctype.item_default_rule.item_default_rule import get_item_default_values
 from erpnext.vehicles.doctype.vehicle_allocation_period.vehicle_allocation_period import get_delivery_period
@@ -17,7 +17,6 @@ from erpnext.vehicles.doctype.vehicle_withholding_tax_rule.vehicle_withholding_t
 from erpnext.vehicles.utils import validate_vehicle_item
 from erpnext.setup.doctype.terms_and_conditions.terms_and_conditions import get_terms_and_conditions
 from erpnext.controllers.accounts_controller import AccountsController
-from six import string_types
 import json
 
 
@@ -259,7 +258,7 @@ class VehicleBookingController(AccountsController):
 
 @frappe.whitelist()
 def get_customer_details(args, get_withholding_tax=True):
-	if isinstance(args, string_types):
+	if isinstance(args, str):
 		args = json.loads(args)
 
 	args = frappe._dict(args)
@@ -416,7 +415,7 @@ def get_party_tax_status(args, party, financer):
 
 @frappe.whitelist()
 def get_customer_contact_details(args, customer_contact=None, financer_contact=None):
-	if isinstance(args, string_types):
+	if isinstance(args, str):
 		args = json.loads(args)
 
 	args = frappe._dict(args)
@@ -442,9 +441,10 @@ def get_customer_contact_details(args, customer_contact=None, financer_contact=N
 
 	return out
 
+
 @frappe.whitelist()
 def get_address_details(address, lead=None):
-	from erpnext.crm.doctype.lead.lead import get_lead_address_details
+	from crm.crm.doctype.lead.lead import get_lead_address_details
 
 	out = frappe._dict()
 
@@ -464,7 +464,7 @@ def get_address_details(address, lead=None):
 
 @frappe.whitelist()
 def get_item_details(args):
-	if isinstance(args, string_types):
+	if isinstance(args, str):
 		args = json.loads(args)
 
 	args = frappe._dict(args)

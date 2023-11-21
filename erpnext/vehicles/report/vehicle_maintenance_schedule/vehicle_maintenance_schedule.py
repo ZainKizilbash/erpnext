@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 import frappe
 from frappe import _
-from frappe.utils import cint, getdate, today, add_days
+from frappe.utils import today, add_days
 from dateutil.relativedelta import relativedelta
 from frappe.contacts.doctype.contact.contact import get_default_contact
 from erpnext.maintenance.doctype.maintenance_schedule.maintenance_schedule  import automated_maintenance_reminder_enabled, \
@@ -412,7 +412,7 @@ class VehicleMaintenanceSchedule:
 @frappe.whitelist()
 def submit_communication_with_action(remarks, action, opportunity=None, follow_up_date=None, lost_reason=None,
 		maintenance_schedule=None, maintenance_schedule_row=None, filters=None):
-	from erpnext.crm.doctype.opportunity.opportunity import submit_communication_with_action
+	from crm.crm.doctype.opportunity.opportunity import submit_communication_with_action
 
 	out = submit_communication_with_action(remarks, action,
 		opportunity=opportunity, follow_up_date=follow_up_date, lost_reason=lost_reason,

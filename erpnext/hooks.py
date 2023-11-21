@@ -54,7 +54,7 @@ on_session_creation = [
 ]
 on_logout = "erpnext.shopping_cart.utils.clear_cart_count"
 
-treeviews = ['Account', 'Cost Center', 'Warehouse', 'Item Group', 'Customer Group', 'Sales Person', 'Assessment Group', 'Department']
+treeviews = ['Account', 'Cost Center', 'Warehouse', 'Item Group', 'Customer Group', 'Assessment Group', 'Department']
 
 # website
 update_website_context = ["erpnext.shopping_cart.utils.update_website_context", "erpnext.education.doctype.education_settings.education_settings.update_website_context"]
@@ -217,6 +217,10 @@ before_tests = "erpnext.setup.utils.before_tests"
 standard_queries = {
 	"Customer": "erpnext.controllers.queries.customer_query",
 	"Healthcare Practitioner": "erpnext.healthcare.doctype.healthcare_practitioner.healthcare_practitioner.get_practitioner_list"
+}
+
+override_doctype_class = {
+	"Lead": "erpnext.overrides.lead.lead_hooks.LeadERP",
 }
 
 doc_events = {

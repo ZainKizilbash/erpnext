@@ -6,6 +6,7 @@ import erpnext
 from frappe import _, scrub
 from frappe.core.doctype.user_permission.user_permission import get_permitted_documents
 from frappe.model.utils import get_fetch_values
+from frappe.regional.pakistan import validate_ntn_cnic_strn, validate_mobile_pakistan
 from frappe.utils import add_days, getdate, add_years, get_timestamp, nowdate, flt, cstr, cint
 from frappe.contacts.doctype.address.address import get_default_address, get_company_address
 from frappe.contacts.doctype.contact.contact import get_default_contact
@@ -284,7 +285,7 @@ def set_contact_details(party_details, party, party_type, contact_person=None, p
 @frappe.whitelist()
 def get_contact_details(contact, project=None, lead=None, get_contact_no_list=False, link_doctype=None, link_name=None):
 	from frappe.contacts.doctype.contact.contact import get_contact_details
-	from erpnext.crm.doctype.lead.lead import _get_lead_contact_details
+	from crm.crm.doctype.lead.lead import _get_lead_contact_details
 
 	if project and isinstance(project, str):
 		project = frappe.db.get_value("Project", project,
@@ -312,7 +313,7 @@ def get_contact_details(contact, project=None, lead=None, get_contact_no_list=Fa
 @frappe.whitelist()
 def get_address_display(address, lead=None):
 	from frappe.contacts.doctype.address.address import get_address_display
-	from erpnext.crm.doctype.lead.lead import get_lead_address_details
+	from crm.crm.doctype.lead.lead import get_lead_address_details
 
 	out = None
 
@@ -721,24 +722,6 @@ def validate_party_frozen_disabled(party_type, party_name):
 				frappe.msgprint(_("{0} is not active").format(frappe.get_desk_link(party_type, party_name)), alert=True)
 
 
-def validate_ntn_cnic_strn(ntn=None, cnic=None, strn=None):
-	import re
-
-	if frappe.db.get_default("country") != 'Pakistan':
-		return
-
-	cnic_regex = re.compile(r'^.....-.......-.$')
-	ntn_regex = re.compile(r'^.......-.$')
-	strn_regex = re.compile(r'^..-..-....-...-..$')
-
-	if ntn and not ntn_regex.match(ntn):
-		frappe.throw(_("Invalid NTN. NTN must be in the format #######-#"))
-	if cnic and not cnic_regex.match(cnic):
-		frappe.throw(_("Invalid CNIC. CNIC must be in the format #####-#######-#"))
-	if strn and not strn_regex.match(strn):
-		frappe.throw(_("Invalid STRN. STRN must be in the format ##-##-####-###-##"))
-
-
 def validate_mobile_pakistan_in_contact(doc, method):
 	if doc.get('mobile_no'):
 		validate_mobile_pakistan(doc.mobile_no)
@@ -754,30 +737,6 @@ def validate_mobile_pakistan_in_contact(doc, method):
 def validate_cnic_in_contact(doc, method):
 	if doc.get('tax_cnic'):
 		validate_ntn_cnic_strn(cnic=doc.tax_cnic)
-
-
-def validate_mobile_pakistan(mobile_no, throw=True):
-	import re
-
-	if frappe.db.get_default("country") != 'Pakistan':
-		return
-
-	if not mobile_no:
-		return
-
-	# do not check mobile number validity for international numbers
-	if mobile_no[:1] == "+" or mobile_no[:2] == "00":
-		return
-
-	mobile_regex = re.compile(r'^03\d\d-\d\d\d\d\d\d\d$')
-
-	if not mobile_regex.match(mobile_no):
-		if throw:
-			frappe.throw(_("Invalid Mobile No. Pakistani Mobile Nos must be in the format 03##-#######"))
-
-		return False
-
-	return True
 
 
 @frappe.whitelist()
