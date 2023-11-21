@@ -809,6 +809,7 @@ erpnext.patches.v14_0.clean_ledger_indexes #1
 erpnext.patches.v14_0.refactor_subcontracting
 erpnext.patches.v14_0.set_work_order_subcontracting_fields
 erpnext.patches.v14_0.rename_ste_transfer_qty_stock_qty
+erpnext.patches.v14_0.set_new_fields_in_salary_slip_loan_and_employee_advance
 
 [post_model_sync]
 erpnext.patches.v12_0.update_salary_slip_leave_with_pay
