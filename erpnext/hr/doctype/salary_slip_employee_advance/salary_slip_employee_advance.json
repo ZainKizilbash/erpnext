@@ -5,12 +5,17 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "posting_date",
   "employee_advance",
+  "column_break_lxqjv",
+  "posting_date",
+  "section_break_tvhzi",
   "advance_amount",
-  "advance_account",
+  "column_break_lkf6e",
   "allocated_amount",
-  "balance_amount"
+  "column_break_dpqto",
+  "balance_amount",
+  "section_break_lbp8s",
+  "advance_account"
  ],
  "fields": [
   {
@@ -61,11 +66,31 @@
    "label": "Advance Amount",
    "options": "Company:company:default_currency",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_lxqjv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_tvhzi",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_lkf6e",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_dpqto",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_lbp8s",
+   "fieldtype": "Section Break"
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2023-11-16 14:33:43.614214",
+ "modified": "2023-11-21 13:18:50.535056",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Salary Slip Employee Advance",
