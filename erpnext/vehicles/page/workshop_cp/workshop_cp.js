@@ -330,6 +330,22 @@ class WorkshopCP {
 
 			this.tabs.vehicles.find(".vehicle-table tbody").append(rows_html);
 		}
+
+		let have_action =  false;
+		for(let row of this.data.projects || []) {
+			if (have_action) break;
+
+			for (let action of Object.values(row?.actions || {})) {
+				if (action) {
+					have_action = true;
+					break;
+				}
+			}
+		}
+
+		if (!have_action) {
+			$('.actions-button-column-vehicles').hide();
+		}
 	}
 
 	render_tasks_tab() {
@@ -343,6 +359,22 @@ class WorkshopCP {
 			}).join("");
 
 			this.tabs.tasks.find(".task-table tbody").append(rows_html);
+		}
+
+		let have_action =  false;
+		for(let row of this.data.tasks || []) {
+			if (have_action) break;
+
+			for (let action of Object.values(row?.actions || {})) {
+				if (action) {
+					have_action = true;
+					break;
+				}
+			}
+		}
+
+		if (!have_action) {
+			$('.actions-button-column-tasks').hide();
 		}
 	}
 
