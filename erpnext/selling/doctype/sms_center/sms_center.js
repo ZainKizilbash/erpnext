@@ -13,11 +13,13 @@ extend_cscript(cur_frm.cscript, {
 	},
 
 	send_sms() {
-		return this.frm.call({
-			method: "send_sms",
-			doc: this.frm.doc,
-			freeze: 1,
-			freeze_message: __("Sending SMS"),
+		frappe.confirm(__("Are you sure you want to send this SMS?"), () => {
+			return this.frm.call({
+				method: "send_sms",
+				doc: this.frm.doc,
+				freeze: 1,
+				freeze_message: __("Sending SMS"),
+			});
 		});
 	},
 
