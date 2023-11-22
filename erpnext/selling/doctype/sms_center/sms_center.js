@@ -9,7 +9,7 @@ extend_cscript(cur_frm.cscript, {
 		});
 
 		this.frm.fields_dict.receiver_list.$input.css("height", "500px");
-		this.frm.fields_dict.message.$input.css("height", "425px");
+		this.frm.fields_dict.message.$input.css("height", "477px");
 	},
 
 	send_sms() {

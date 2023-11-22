@@ -3,7 +3,7 @@
 
 import frappe
 from frappe import _
-from frappe.utils import cstr, cint
+from frappe.utils import cstr, cint, get_datetime, now_datetime
 from frappe.model.document import Document
 from frappe.core.doctype.sms_settings.sms_settings import send_sms, clean_receiver_number
 
@@ -109,9 +109,6 @@ class SMSCenter(Document):
 				if receiver_no:
 					receiver_nos.append(receiver_no)
 
-		if not receiver_nos:
-			frappe.throw(_("Receiver List is empty. Please create Receiver List"))
-
 		return receiver_nos
 
 	@frappe.whitelist()
@@ -120,5 +117,22 @@ class SMSCenter(Document):
 			frappe.throw(_("Please enter message before sending"))
 
 		receiver_list = self.get_receiver_nos()
-		if receiver_list:
-			send_sms(receiver_list, cstr(self.message), is_promotional=cint(self.is_promotional))
+		if not receiver_list:
+			frappe.throw(_("Receiver List is empty. Please create Receiver List"))
+
+		if self.send_after and get_datetime(self.send_after) < now_datetime():
+			frappe.throw(_("Schedule Send Time cannot be in the past"))
+
+		enqeueue = bool(self.send_after or len(receiver_list) > 10)
+		send_sms(
+			receiver_list,
+			message=cstr(self.message),
+			is_promotional=cint(self.is_promotional),
+			reference_doctype="SMS Center",
+			reference_name="SMS Center",
+			enqueue=enqeueue,
+			send_after=self.send_after,
+		)
+
+		if enqeueue:
+			frappe.msgprint(_("SMS has been scheduled to send"), indicator="green")

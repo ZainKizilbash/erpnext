@@ -6,20 +6,24 @@
  "engine": "InnoDB",
  "field_order": [
   "send_to",
+  "create_receiver_list",
+  "column_break_gslfy",
   "customer",
   "supplier",
   "sales_partner",
   "department",
   "branch",
-  "create_receiver_list",
+  "column_break_y6hgl",
+  "send_after",
+  "is_promotional",
+  "section_break_uuy2l",
   "receiver_list",
   "total_receivers",
+  "total_messages",
   "column_break9",
   "message",
-  "is_promotional",
   "total_characters",
-  "total_messages_per_receiver",
-  "total_messages"
+  "total_messages_per_receiver"
  ],
  "fields": [
   {
@@ -84,7 +88,7 @@
    "width": "50%"
   },
   {
-   "description": "Messages greater than 160 characters will be split into multiple messages",
+   "description": "Messages greater than 160 characters will count as multiple messages",
    "fieldname": "message",
    "fieldtype": "Text",
    "label": "Message",
@@ -119,13 +123,30 @@
    "fieldtype": "Int",
    "label": "Total Message(s) Per Receiver",
    "read_only": 1
+  },
+  {
+   "fieldname": "send_after",
+   "fieldtype": "Datetime",
+   "label": "Schedule Send Time"
+  },
+  {
+   "fieldname": "section_break_uuy2l",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_gslfy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_y6hgl",
+   "fieldtype": "Column Break"
   }
  ],
  "icon": "fa fa-mobile-phone",
  "idx": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-11-22 13:34:51.738795",
+ "modified": "2023-11-22 14:34:37.434601",
  "modified_by": "Administrator",
  "module": "Selling",
  "name": "SMS Center",
