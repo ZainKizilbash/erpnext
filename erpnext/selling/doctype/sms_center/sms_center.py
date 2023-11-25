@@ -123,16 +123,17 @@ class SMSCenter(Document):
 		if self.send_after and get_datetime(self.send_after) < now_datetime():
 			frappe.throw(_("Schedule Send Time cannot be in the past"))
 
-		enqeueue = bool(self.send_after or len(receiver_list) > 10)
+		queue = bool(self.send_after or len(receiver_list) > 10)
 		send_sms(
 			receiver_list,
 			message=cstr(self.message),
 			is_promotional=cint(self.is_promotional),
 			reference_doctype="SMS Center",
 			reference_name="SMS Center",
-			enqueue=enqeueue,
+			queue=queue,
+			queue_separately=True,
 			send_after=self.send_after,
 		)
 
-		if enqeueue:
+		if queue:
 			frappe.msgprint(_("SMS has been scheduled to send"), indicator="green")
