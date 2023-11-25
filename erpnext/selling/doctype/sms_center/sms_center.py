@@ -133,6 +133,7 @@ class SMSCenter(Document):
 			queue=queue,
 			queue_separately=True,
 			send_after=self.send_after,
+			priority=0
 		)
 
 		if queue:
