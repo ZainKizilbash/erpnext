@@ -88,7 +88,7 @@ class SMSCenter(Document):
 				continue
 
 			if name:
-				receiver_list.append(f"{name} - {number}")
+				receiver_list.append(f"{name} | {number}")
 			else:
 				receiver_list.append(number)
 
@@ -102,8 +102,8 @@ class SMSCenter(Document):
 		if self.receiver_list:
 			for d in self.receiver_list.split('\n'):
 				receiver_no = cstr(d)
-				if '-' in d:
-					receiver_no = receiver_no.split('-')[1]
+				if '|' in d:
+					receiver_no = receiver_no.split('|')[-1]
 
 				receiver_no = cstr(receiver_no).strip()
 				if receiver_no:
