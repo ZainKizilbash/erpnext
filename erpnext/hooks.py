@@ -28,7 +28,9 @@ doctype_js = {
 	"Event": "overrides/event_hooks.js",
 	"Contact": "overrides/contact_hooks.js",
 	"Website Theme": "overrides/website_theme_hooks.js",
+
 	"Sales Person": "overrides/sales_person/sales_person_hooks.js",
+	"Territory": "overrides/territory/territory_hooks.js",
 }
 
 doctype_tree_js = {
@@ -37,6 +39,7 @@ doctype_tree_js = {
 
 override_doctype_class = {
 	"Sales Person": "erpnext.overrides.sales_person.sales_person_hooks.SalesPersonERP",
+	"Territory": "erpnext.overrides.territory.territory_hooks.TerritoryERP",
 	"Lead": "erpnext.overrides.lead.lead_hooks.LeadERP",
 }
 
@@ -56,6 +59,9 @@ fixtures = [
 				"Sales Person-sales_commission_category",
 				"Sales Person-targets_section",
 				"Sales Person-targets",
+
+				"Territory-targets_section",
+				"Territory-targets",
 			]]
 		}
 	},
