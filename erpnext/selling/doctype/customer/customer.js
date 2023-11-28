@@ -171,32 +171,32 @@ frappe.ui.form.on("Customer", {
 	validate: function(frm) {
 		if(frm.doc.lead_name) frappe.model.clear_doc("Lead", frm.doc.lead_name);
 
-		erpnext.utils.format_ntn(frm, "tax_id");
-		erpnext.utils.format_cnic(frm, "tax_cnic");
-		erpnext.utils.format_strn(frm, "tax_strn");
+		frappe.regional.pakistan.format_ntn(frm, "tax_id");
+		frappe.regional.pakistan.format_cnic(frm, "tax_cnic");
+		frappe.regional.pakistan.format_strn(frm, "tax_strn");
 
-		erpnext.utils.format_mobile_pakistan(frm, "mobile_no");
-		erpnext.utils.format_mobile_pakistan(frm, "mobile_no_2");
+		frappe.regional.pakistan.format_mobile_no(frm, "mobile_no");
+		frappe.regional.pakistan.format_mobile_no(frm, "mobile_no_2");
 	},
 
 	tax_id: function(frm) {
-		erpnext.utils.format_ntn(frm, "tax_id");
+		frappe.regional.pakistan.format_ntn(frm, "tax_id");
 		erpnext.utils.validate_duplicate_tax_id(frm.doc, "tax_id");
 	},
 	tax_cnic: function(frm) {
-		erpnext.utils.format_cnic(frm, "tax_cnic");
+		frappe.regional.pakistan.format_cnic(frm, "tax_cnic");
 		erpnext.utils.validate_duplicate_tax_id(frm.doc, "tax_cnic");
 	},
 	tax_strn: function(frm) {
-		erpnext.utils.format_strn(frm, "tax_strn");
+		frappe.regional.pakistan.format_strn(frm, "tax_strn");
 		erpnext.utils.validate_duplicate_tax_id(frm.doc, "tax_strn");
 	},
 
 	mobile_no: function (frm) {
-		erpnext.utils.format_mobile_pakistan(frm, "mobile_no");
+		frappe.regional.pakistan.format_mobile_no(frm, "mobile_no");
 	},
 	mobile_no_2: function (frm) {
-		erpnext.utils.format_mobile_pakistan(frm, "mobile_no_2");
+		frappe.regional.pakistan.format_mobile_no(frm, "mobile_no_2");
 	},
 
 	make_customer_vehicle_selector: function (frm) {

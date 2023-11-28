@@ -19,7 +19,7 @@ frappe.ui.form.LeadQuickEntryForm = class LeadQuickEntryForm extends frappe.ui.f
 
 		me.dialog.fields_dict["tax_id"].df.onchange = () => {
 			var value = me.dialog.get_value('tax_id');
-			value = erpnext.utils.get_formatted_ntn(value);
+			value = frappe.regional.pakistan.get_formatted_ntn(value);
 			me.dialog.doc.tax_id = value;
 			me.dialog.get_field('tax_id').refresh();
 			erpnext.utils.validate_duplicate_tax_id(me.dialog.doc, "tax_id");
@@ -27,28 +27,28 @@ frappe.ui.form.LeadQuickEntryForm = class LeadQuickEntryForm extends frappe.ui.f
 
 		me.dialog.fields_dict["tax_cnic"].df.onchange = () => {
 			var value = me.dialog.get_value('tax_cnic');
-			value = erpnext.utils.get_formatted_cnic(value);
+			value = frappe.regional.pakistan.get_formatted_cnic(value);
 			me.dialog.doc.tax_cnic = value;
 			me.dialog.get_field('tax_cnic').refresh();
 		};
 
 		me.dialog.fields_dict["tax_strn"].df.onchange = () => {
 			var value = me.dialog.get_value('tax_strn');
-			value = erpnext.utils.get_formatted_strn(value);
+			value = frappe.regional.pakistan.get_formatted_strn(value);
 			me.dialog.doc.tax_strn = value;
 			me.dialog.get_field('tax_strn').refresh();
 		};
 
 		me.dialog.fields_dict["mobile_no"].df.onchange = () => {
 			var value = me.dialog.get_value('mobile_no');
-			value = erpnext.utils.get_formatted_mobile_pakistan(value);
+			value = frappe.regional.pakistan.get_formatted_mobile_no(value);
 			me.dialog.doc.mobile_no = value;
 			me.dialog.get_field('mobile_no').refresh();
 		};
 
 		me.dialog.fields_dict["mobile_no_2"].df.onchange = () => {
 			var value = me.dialog.get_value('mobile_no_2');
-			value = erpnext.utils.get_formatted_mobile_pakistan(value);
+			value = frappe.regional.pakistan.get_formatted_mobile_no(value);
 			me.dialog.doc.mobile_no_2 = value;
 			me.dialog.get_field('mobile_no_2').refresh();
 		};

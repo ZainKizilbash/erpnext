@@ -26,7 +26,6 @@ email_css = "email_erpnext.bundle.css"
 doctype_js = {
 	"Communication": "overrides/communication_hooks.js",
 	"Event": "overrides/event_hooks.js",
-	"Contact": "overrides/contact_hooks.js",
 	"Website Theme": "overrides/website_theme_hooks.js",
 
 	"Sales Person": "overrides/sales_person/sales_person_hooks.js",
@@ -289,8 +288,6 @@ doc_events = {
 	},
 	"Contact": {
 		"on_trash": "erpnext.support.doctype.issue.issue.update_issue",
-		"validate": "erpnext.accounts.party.validate_cnic_in_contact",
-		"before_validate": "erpnext.accounts.party.validate_mobile_pakistan_in_contact",
 	},
 }
 

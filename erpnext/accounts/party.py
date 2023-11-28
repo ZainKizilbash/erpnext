@@ -6,7 +6,6 @@ import erpnext
 from frappe import _, scrub
 from frappe.core.doctype.user_permission.user_permission import get_permitted_documents
 from frappe.model.utils import get_fetch_values
-from frappe.regional.pakistan import validate_ntn_cnic_strn, validate_mobile_pakistan
 from frappe.utils import add_days, getdate, add_years, get_timestamp, nowdate, flt, cstr, cint
 from frappe.contacts.doctype.address.address import get_default_address, get_company_address
 from frappe.contacts.doctype.contact.contact import get_default_contact
@@ -720,23 +719,6 @@ def validate_party_frozen_disabled(party_type, party_name):
 		elif party_type == "Employee":
 			if frappe.db.get_value("Employee", party_name, "status") == "Left":
 				frappe.msgprint(_("{0} is not active").format(frappe.get_desk_link(party_type, party_name)), alert=True)
-
-
-def validate_mobile_pakistan_in_contact(doc, method):
-	if doc.get('mobile_no'):
-		validate_mobile_pakistan(doc.mobile_no)
-	if doc.get('mobile_no_2'):
-		validate_mobile_pakistan(doc.mobile_no_2)
-
-	for d in doc.phone_nos:
-		if d.is_primary_mobile_no:
-			if not validate_mobile_pakistan(d.phone, throw=False):
-				d.is_primary_mobile_no = 0
-
-
-def validate_cnic_in_contact(doc, method):
-	if doc.get('tax_cnic'):
-		validate_ntn_cnic_strn(cnic=doc.tax_cnic)
 
 
 @frappe.whitelist()
