@@ -6,7 +6,7 @@ import erpnext
 from frappe import _, scrub
 from frappe.core.doctype.user_permission.user_permission import get_permitted_documents
 from frappe.model.utils import get_fetch_values
-from frappe.utils import add_days, getdate, add_years, get_timestamp, nowdate, flt, cstr, cint
+from frappe.utils import getdate, add_years, get_timestamp, nowdate, flt, cstr, cint
 from frappe.contacts.doctype.address.address import get_default_address, get_company_address
 from frappe.contacts.doctype.contact.contact import get_default_contact
 from erpnext.exceptions import PartyFrozen, PartyDisabled, InvalidAccountCurrency
@@ -719,29 +719,6 @@ def validate_party_frozen_disabled(party_type, party_name):
 		elif party_type == "Employee":
 			if frappe.db.get_value("Employee", party_name, "status") == "Left":
 				frappe.msgprint(_("{0} is not active").format(frappe.get_desk_link(party_type, party_name)), alert=True)
-
-
-@frappe.whitelist()
-def validate_duplicate_tax_id(doctype, fieldname, value, exclude=None, throw=False):
-	if not value:
-		return
-
-	meta = frappe.get_meta(doctype)
-	if not fieldname or not meta.has_field(fieldname):
-		frappe.throw(_("Invalid fieldname {0}").format(fieldname))
-
-	label = _(meta.get_field(fieldname).label)
-
-	filters = {fieldname: value}
-	if exclude:
-		filters['name'] = ['!=', exclude]
-
-	duplicates = frappe.db.get_all(doctype, filters=filters)
-	duplicate_names = [d.name for d in duplicates]
-	if duplicates:
-		frappe.msgprint(_("{0} {1} is already set in {2}: {3}").format(label, frappe.bold(value), doctype,
-			", ".join([frappe.utils.get_link_to_form(doctype, name) for name in duplicate_names])),
-			raise_exception=throw, indicator='red' if throw else 'orange')
 
 
 @frappe.whitelist()

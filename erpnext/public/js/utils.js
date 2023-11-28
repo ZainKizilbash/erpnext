@@ -350,21 +350,6 @@ $.extend(erpnext.utils, {
 		}
 	},
 
-	validate_duplicate_tax_id: function (doc, fieldname) {
-		let value = doc[fieldname];
-		if (value) {
-			frappe.call({
-				method: "erpnext.accounts.party.validate_duplicate_tax_id",
-				args: {
-					doctype: doc.doctype,
-					fieldname: fieldname,
-					value: value,
-					exclude: doc.__islocal ? null : doc.name
-				}
-			});
-		}
-	},
-
 	set_item_naming_series_options: function(frm) {
 		frappe.model.with_doctype("Item", function() {
 			var item_series = cstr(frappe.meta.get_docfield("Item", "naming_series").options).split("\n");
