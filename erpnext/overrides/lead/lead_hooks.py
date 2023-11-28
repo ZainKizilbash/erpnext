@@ -1,24 +1,10 @@
 import frappe
 from frappe import _
 from crm.crm.doctype.lead.lead import Lead
-from erpnext.controllers.status_updater import StatusUpdater
 from frappe.model.mapper import get_mapped_doc
 
 
-class LeadERP(Lead, StatusUpdater):
-	def __init__(self, *args, **kwargs):
-		super(Lead, self).__init__(*args, **kwargs)
-		self.status_map = [
-			["Lost Quotation", "has_lost_quotation"],
-			["Opportunity", "has_opportunity"],
-			["Quotation", "has_quotation"],
-			["Converted", "eval:self.customer"],
-		]
-
-	def validate(self):
-		super().validate()
-		self.set_status()
-
+class LeadERP(Lead):
 	def on_trash(self):
 		frappe.db.sql("update `tabIssue` set `lead` = '' where `lead` = %s", self.name)
 
@@ -34,8 +20,11 @@ class LeadERP(Lead, StatusUpdater):
 		if status:
 			self.set_status(status=status, update=True, update_modified=update_modified)
 
-	def has_opportunity(self):
-		return frappe.db.get_value("Opportunity", {"party_name": self.name, "status": ["!=", "Lost"]})
+	def is_opportunity(self):
+		if super().is_opportunity():
+			return True
+		else:
+			return self.has_quotation()
 
 	def has_quotation(self):
 		quotation = frappe.db.get_value("Quotation", {
@@ -54,6 +43,12 @@ class LeadERP(Lead, StatusUpdater):
 
 		return quotation or vehicle_quotation
 
+	def is_lost_opportunity(self):
+		if super().is_lost_opportunity():
+			return True
+		else:
+			return self.has_lost_quotation()
+
 	def has_lost_quotation(self):
 		quotation = frappe.db.get_value("Quotation", {
 			"quotation_to": "Lead",
@@ -70,6 +65,12 @@ class LeadERP(Lead, StatusUpdater):
 		})
 
 		return quotation or vehicle_quotation
+
+	def is_converted(self):
+		if self.get("customer"):
+			return True
+		else:
+			return super().is_converted()
 
 
 def get_customer_from_lead(lead, throw=False):
@@ -174,3 +175,17 @@ def add_sales_person_from_source(source, target):
 			'sales_person': source.sales_person,
 			'allocated_percentage': 100,
 		})
+
+
+def override_lead_dashboard(data):
+	data.setdefault("non_standard_fieldnames", {}).update({
+		'Quotation': 'party_name',
+		'Vehicle Quotation': 'party_name',
+	})
+
+	data["transactions"].append({
+		"label": _("Quotation"),
+		"items": ["Vehicle Quotation", "Quotation"]
+	})
+
+	return data

@@ -45,7 +45,7 @@ class Quotation(SellingController):
 
 		# update enquiry status
 		self.update_opportunity()
-		self.update_lead()
+		self.update_lead_status()
 
 	def on_cancel(self):
 		if self.lost_reasons:
@@ -54,7 +54,7 @@ class Quotation(SellingController):
 		# update enquiry status
 		self.update_status_on_cancel()
 		self.update_opportunity()
-		self.update_lead()
+		self.update_lead_status(status="Interested")
 
 	def onload(self):
 		super(Quotation, self).onload()
@@ -111,10 +111,10 @@ class Quotation(SellingController):
 
 		return ordered_qty_map
 
-	def update_lead(self):
+	def update_lead_status(self, status=None):
 		if self.quotation_to == "Lead" and self.party_name:
 			doc = frappe.get_doc("Lead", self.party_name)
-			doc.set_status(update=True)
+			doc.set_status(update=True, status=status)
 			doc.notify_update()
 
 	def update_opportunity(self):
@@ -151,7 +151,7 @@ class Quotation(SellingController):
 			opp = frappe.get_doc("Opportunity", self.opportunity)
 			opp.set_is_lost(is_lost, lost_reasons_list, detailed_reason)
 
-		self.update_lead()
+		self.update_lead_status()
 		self.notify_update()
 
 	def set_customer_name(self):
