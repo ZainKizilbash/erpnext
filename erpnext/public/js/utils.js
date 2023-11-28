@@ -559,17 +559,6 @@ $.extend(erpnext.utils, {
 		});
 	},
 
-	get_sales_person_from_user: function (callback) {
-		return frappe.call({
-			method: "erpnext.setup.doctype.sales_person.sales_person.get_sales_person_from_user",
-			callback: function (r) {
-				if (!r.exc && callback) {
-					callback(r.message);
-				}
-			}
-		});
-	},
-
 	setup_remove_zero_qty_rows(frm) {
 		if (frm.doc.docstatus === 0) {
 			frm.fields_dict.items.grid.add_custom_button(__("Remove 0 Qty Rows"), function () {

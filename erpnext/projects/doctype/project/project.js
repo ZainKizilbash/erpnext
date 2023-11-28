@@ -656,7 +656,7 @@ erpnext.projects.ProjectController = class ProjectController extends erpnext.con
 			return;
 		}
 
-		erpnext.utils.get_sales_person_from_user(sales_person => {
+		crm.utils.get_sales_person_from_user(sales_person => {
 			if (sales_person) {
 				this.frm.set_value('service_advisor', sales_person);
 			}

@@ -60,7 +60,7 @@ frappe.ui.form.LeadQuickEntryForm = class LeadQuickEntryForm extends frappe.ui.f
 			return;
 		}
 
-		erpnext.utils.get_sales_person_from_user(sales_person => {
+		crm.utils.get_sales_person_from_user(sales_person => {
 			if (sales_person) {
 				me.dialog.doc.sales_person = sales_person;
 				me.dialog.get_field('sales_person').refresh();

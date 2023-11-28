@@ -28,7 +28,38 @@ doctype_js = {
 	"Event": "overrides/event_hooks.js",
 	"Contact": "overrides/contact_hooks.js",
 	"Website Theme": "overrides/website_theme_hooks.js",
+	"Sales Person": "overrides/sales_person/sales_person_hooks.js",
 }
+
+doctype_tree_js = {
+	"Sales Person": "overrides/sales_person/sales_person_tree_hooks.js",
+}
+
+override_doctype_class = {
+	"Sales Person": "erpnext.overrides.sales_person.sales_person_hooks.SalesPersonERP",
+	"Lead": "erpnext.overrides.lead.lead_hooks.LeadERP",
+}
+
+override_doctype_dashboards = {
+	"Sales Person": "erpnext.overrides.sales_person.sales_person_hooks.override_sales_person_dashboard",
+}
+
+fixtures = [
+	{
+		"doctype": "Custom Field",
+		"filters": {
+			"name": ["in", [
+				"Sales Person-employee",
+				"Sales Person-employee_name",
+				"Sales Person-department",
+				"Sales Person-designation",
+				"Sales Person-sales_commission_category",
+				"Sales Person-targets_section",
+				"Sales Person-targets",
+			]]
+		}
+	},
+]
 
 welcome_email = "erpnext.setup.utils.welcome_email"
 
@@ -217,10 +248,6 @@ before_tests = "erpnext.setup.utils.before_tests"
 standard_queries = {
 	"Customer": "erpnext.controllers.queries.customer_query",
 	"Healthcare Practitioner": "erpnext.healthcare.doctype.healthcare_practitioner.healthcare_practitioner.get_practitioner_list"
-}
-
-override_doctype_class = {
-	"Lead": "erpnext.overrides.lead.lead_hooks.LeadERP",
 }
 
 doc_events = {

@@ -2,19 +2,17 @@
 # License: GNU General Public License v3. See license.txt
 
 import frappe
-
+from frappe import throw, _, scrub
 from frappe.utils import getdate, validate_email_address, today, add_years, format_date, cstr, clean_whitespace, cint
 from frappe.model.naming import set_name_by_naming_series
-from frappe import throw, _, scrub
-from frappe.permissions import add_user_permission, remove_user_permission, \
-	set_user_permission_if_allowed, has_permission
-from frappe.model.document import Document
+from frappe.permissions import add_user_permission, remove_user_permission, set_user_permission_if_allowed, has_permission
 from erpnext.utilities.transaction_base import delete_events
 from frappe.utils.nestedset import NestedSet
-from erpnext.hr.doctype.job_offer.job_offer import get_staffing_plan_detail
+
 
 class EmployeeUserDisabledError(frappe.ValidationError): pass
 class EmployeeLeftValidationError(frappe.ValidationError): pass
+
 
 class Employee(NestedSet):
 	nsm_parent_field = 'reports_to'
@@ -83,6 +81,7 @@ class Employee(NestedSet):
 		self.update_user()
 		self.update_user_permissions()
 		self.update_employee_checkins()
+		self.update_sales_person()
 		self.reset_employee_emails_cache()
 
 	def update_user_permissions(self):
@@ -164,6 +163,15 @@ class Employee(NestedSet):
 			update_employee_for_attendance_device_id(self.previous_attendance_device_id, None)
 		if self.attendance_device_id:
 			update_employee_for_attendance_device_id(self.attendance_device_id, self.name)
+
+	def update_sales_person(self):
+		sales_person_name = frappe.db.get_value("Sales Person", {"Employee": self.name})
+		if not sales_person_name:
+			return
+
+		sales_person_doc = frappe.get_doc("Sales Person", sales_person_name)
+		sales_person_doc.set_employee_details(update=True)
+		sales_person_doc.notify_update()
 
 	def validate_date(self):
 		date_of_joining = self.date_of_joining if self.date_of_joining else getdate(self.creation)
@@ -250,6 +258,7 @@ class Employee(NestedSet):
 			frappe.cache().hdel('employees_with_number', cell_number)
 			frappe.cache().hdel('employees_with_number', prev_number)
 
+
 def get_timeline_data(doctype, name):
 	'''Return timeline for attendance'''
 	return dict(frappe.db.sql('''
@@ -261,6 +270,7 @@ def get_timeline_data(doctype, name):
 			and docstatus = 1
 		group by attendance_date
 	''', name))
+
 
 @frappe.whitelist()
 def get_retirement_date(date_of_birth=None):
@@ -276,12 +286,14 @@ def get_retirement_date(date_of_birth=None):
 
 	return ret
 
+
 def validate_employee_role(doc, method):
 	# called via User hook
 	if "Employee" in [d.role for d in doc.get("roles")]:
 		if not frappe.db.get_value("Employee", {"user_id": doc.name}):
 			frappe.msgprint(_("Please set User ID field in an Employee record to set Employee Role"))
 			doc.get("roles").remove(doc.get("roles", {"role": "Employee"})[0])
+
 
 def update_user_permissions(doc, method):
 	# called via User hook
@@ -308,6 +320,7 @@ def get_holiday_list_for_employee(employee, raise_exception=True):
 
 	return holiday_list
 
+
 def is_holiday(employee, date=None, raise_exception=True):
 	'''Returns True if given Employee has an holiday on the given date
 	:param employee: Employee `name`
@@ -320,12 +333,6 @@ def is_holiday(employee, date=None, raise_exception=True):
 	if holiday_list:
 		return frappe.get_all('Holiday List', dict(name=holiday_list, holiday_date=date)) and True or False
 
-@frappe.whitelist()
-def deactivate_sales_person(status = None, employee = None):
-	if status == "Left":
-		sales_person = frappe.db.get_value("Sales Person", {"Employee": employee})
-		if sales_person:
-			frappe.db.set_value("Sales Person", sales_person, "enabled", 0)
 
 @frappe.whitelist()
 def create_user(employee, user = None, email=None):
@@ -361,6 +368,7 @@ def create_user(employee, user = None, email=None):
 	user.insert()
 	return user.name
 
+
 def get_employee_emails(employee_list):
 	'''Returns list of employee emails either based on user_id or company_email'''
 	employee_emails = []
@@ -373,6 +381,7 @@ def get_employee_emails(employee_list):
 		if email:
 			employee_emails.append(email)
 	return employee_emails
+
 
 @frappe.whitelist()
 def get_children(doctype, parent=None, company=None, is_root=False, is_tree=False):

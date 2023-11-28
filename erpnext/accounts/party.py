@@ -13,7 +13,7 @@ from frappe.contacts.doctype.contact.contact import get_default_contact
 from erpnext.exceptions import PartyFrozen, PartyDisabled, InvalidAccountCurrency
 from erpnext.accounts.utils import get_fiscal_year
 from erpnext import get_company_currency
-from erpnext.setup.doctype.sales_person.sales_person import get_sales_person_commission_details
+from erpnext.overrides.sales_person.sales_person_hooks import get_sales_person_commission_details
 from erpnext.accounts.doctype.payment_terms_template.payment_terms_template import get_due_date_from_template
 
 

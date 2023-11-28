@@ -390,7 +390,7 @@ erpnext.selling.SellingController = class SellingController extends erpnext.Tran
 		}
 
 		return frappe.call({
-			method: 'erpnext.setup.doctype.sales_person.sales_person.get_sales_person_commission_details',
+			method: 'erpnext.overrides.sales_person.sales_person_hooks.get_sales_person_commission_details',
 			args: {
 				sales_person: row.sales_person
 			},
