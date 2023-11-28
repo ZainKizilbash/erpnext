@@ -9,7 +9,7 @@ from erpnext.stock.doctype.item.item import validate_end_of_life
 from erpnext.stock.stock_balance import get_planned_qty, update_bin_qty
 from erpnext.stock.utils import get_bin, validate_warehouse_company, get_latest_stock_qty
 from erpnext.utilities.transaction_base import validate_uom_is_integer
-from erpnext.controllers.status_updater import StatusUpdater
+from erpnext.controllers.status_updater import StatusUpdaterERP
 from frappe.model.mapper import get_mapped_doc
 import json
 import math
@@ -27,7 +27,7 @@ form_grid_templates = {
 }
 
 
-class WorkOrder(StatusUpdater):
+class WorkOrder(StatusUpdaterERP):
 	def get_feed(self):
 		return "{0} {1} of {2}".format(
 			frappe.format(self.get_formatted('qty')), self.get('stock_uom'), self.get('item_name') or self.get('production_item')

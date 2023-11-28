@@ -17,7 +17,7 @@ from frappe.model.utils import get_fetch_values
 from frappe.contacts.doctype.address.address import get_default_address
 from frappe.contacts.doctype.contact.contact import get_default_contact, get_all_contact_nos
 from erpnext.accounts.party import get_contact_details, get_address_display
-from erpnext.controllers.status_updater import StatusUpdater
+from erpnext.controllers.status_updater import StatusUpdaterERP
 from erpnext.projects.doctype.project_status.project_status import get_auto_project_status, set_manual_project_status,\
 	get_valid_manual_project_status_names, is_manual_project_status, validate_project_status_for_transaction
 from erpnext.projects.doctype.project_workshop.project_workshop import get_project_workshop_details
@@ -45,7 +45,7 @@ vehicle_change_fields = [
 ]
 
 
-class Project(StatusUpdater):
+class Project(StatusUpdaterERP):
 	def __init__(self, *args, **kwargs):
 		super(Project, self).__init__(*args, **kwargs)
 		self.sales_data = frappe._dict()

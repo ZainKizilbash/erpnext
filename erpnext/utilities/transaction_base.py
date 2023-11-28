@@ -5,13 +5,13 @@ import frappe
 import frappe.share
 from frappe import _
 from frappe.utils import cstr, now_datetime, cint, flt, get_time, get_link_to_form, date_diff, add_days, getdate
-from erpnext.controllers.status_updater import StatusUpdater
+from erpnext.controllers.status_updater import StatusUpdaterERP
 
 
 class UOMMustBeIntegerError(frappe.ValidationError): pass
 
 
-class TransactionBase(StatusUpdater):
+class TransactionBase(StatusUpdaterERP):
 	def validate_posting_time(self):
 		# set Edit Posting Date and Time to 1 while data import
 		if frappe.flags.in_import and self.posting_date:

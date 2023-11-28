@@ -6,7 +6,7 @@ import frappe
 import erpnext
 from frappe import _
 from frappe.utils import flt, nowdate, cint
-from erpnext.controllers.status_updater import StatusUpdater
+from erpnext.controllers.status_updater import StatusUpdaterERP
 from six import string_types
 import json
 
@@ -15,7 +15,7 @@ class EmployeeAdvanceOverPayment(frappe.ValidationError):
 	pass
 
 
-class EmployeeAdvance(StatusUpdater):
+class EmployeeAdvance(StatusUpdaterERP):
 	def __init__(self, *args, **kwargs):
 		super(EmployeeAdvance, self).__init__(*args, **kwargs)
 		self.status_map = [

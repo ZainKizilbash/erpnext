@@ -15,7 +15,7 @@ from erpnext.stock.doctype.material_request.test_material_request import make_ma
 from erpnext.stock.doctype.material_request.material_request import make_purchase_order
 from erpnext.stock.doctype.stock_entry.test_stock_entry import make_stock_entry
 from erpnext.controllers.accounts_controller import update_child_qty_rate
-from erpnext.controllers.status_updater import OverAllowanceError
+from frappe.utils.status_updater import OverAllowanceError
 from erpnext.stock.doctype.batch.test_batch import make_new_batch
 from erpnext.controllers.buying_controller import get_backflushed_subcontracted_raw_materials
 
