@@ -37,7 +37,7 @@ class Attendance(Document):
 		leave_record = frappe.db.sql("""
 			select name, leave_type, half_day, half_day_date
 			from `tabLeave Application`
-			where employee = %s and %s between from_date and to_date and status = 'Approved' and docstatus = 1
+			where employee = %s and %s between from_date and to_date and status = 'Approved' and late_deduction = 0 and docstatus = 1
 		""", (self.employee, self.attendance_date), as_dict=True)
 
 		if leave_record:
