@@ -68,6 +68,20 @@ fixtures = [
 				"Territory-targets",
 
 				"Lead-customer",
+
+				"Opportunity-company",
+				"Opportunity-maintenance_schedule",
+				"Opportunity-maintenance_schedule_row",
+				"Opportunity-applies_to_variant_of",
+				"Opportunity-applies_to_variant_of_name",
+				"Opportunity-applies_to_serial_no",
+				"Opportunity-applies_to_item",
+				"Opportunity-applies_to_item_name",
+
+				"Opportunity Item-item_code",
+				"Opportunity Item-uom",
+				"Opportunity Item-item_group",
+				"Opportunity Item-brand",
 			]]
 		}
 	},
