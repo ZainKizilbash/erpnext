@@ -67,6 +67,9 @@ fixtures = [
 				"Territory-targets_section",
 				"Territory-targets",
 
+				"Campaign-claim_customer",
+				"Campaign-claim_customer_name",
+
 				"Lead-customer",
 
 				"Opportunity-company",
