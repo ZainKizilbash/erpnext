@@ -8,10 +8,6 @@ $.extend(erpnext.queries, {
 		return { query: "frappe.core.doctype.user.user.user_query" };
 	},
 
-	lead: function() {
-		return { query: "erpnext.controllers.queries.lead_query" };
-	},
-
 	customer: function() {
 		return { query: "erpnext.controllers.queries.customer_query" };
 	},
@@ -68,37 +64,11 @@ $.extend(erpnext.queries, {
 	},
 
 	contact_query: function(doc) {
-		if(frappe.dynamic_link) {
-			if(!doc[frappe.dynamic_link.fieldname]) {
-				frappe.throw(__("Please set {0}",
-					[__(frappe.meta.get_label(doc.doctype, frappe.dynamic_link.fieldname, doc.name))]));
-			}
-
-			return {
-				query: 'frappe.contacts.doctype.contact.contact.contact_query',
-				filters: {
-					link_doctype: frappe.dynamic_link.doctype,
-					link_name: doc[frappe.dynamic_link.fieldname]
-				}
-			};
-		}
+		return frappe.contacts.contact_query(doc);
 	},
 
 	address_query: function(doc) {
-		if(frappe.dynamic_link) {
-			if(!doc[frappe.dynamic_link.fieldname]) {
-				frappe.throw(__("Please set {0}",
-					[__(frappe.meta.get_label(doc.doctype, frappe.dynamic_link.fieldname, doc.name))]));
-			}
-
-			return {
-				query: 'frappe.contacts.doctype.address.address.address_query',
-				filters: {
-					link_doctype: frappe.dynamic_link.doctype,
-					link_name: doc[frappe.dynamic_link.fieldname]
-				}
-			};
-		}
+		return frappe.contacts.address_query(doc);
 	},
 
 	company_address_query: function(doc) {

@@ -282,47 +282,31 @@ def set_contact_details(party_details, party, party_type, contact_person=None, p
 
 
 @frappe.whitelist()
-def get_contact_details(contact, project=None, lead=None, get_contact_no_list=False, link_doctype=None, link_name=None):
-	from frappe.contacts.doctype.contact.contact import get_contact_details
-	from crm.crm.doctype.lead.lead import _get_lead_contact_details
+def get_contact_details(contact=None, project=None, lead=None, get_contact_no_list=False, link_doctype=None, link_name=None):
+	from crm.crm.utils import get_contact_details
 
-	if project and isinstance(project, str):
-		project = frappe.db.get_value("Project", project,
-			['contact_person', 'contact_mobile', 'contact_phone', 'contact_email'], as_dict=1)
-	if lead and isinstance(lead, str):
-		lead = frappe.get_doc("Lead", lead)
+	out = get_contact_details(contact, lead=lead,
+		get_contact_no_list=get_contact_no_list, link_doctype=link_doctype, link_name=link_name)
+	out = out or frappe._dict()
 
-	out = frappe._dict()
+	if project and contact:
+		if isinstance(project, str):
+			project = frappe.db.get_value("Project", project, [
+				'contact_person', 'contact_mobile', 'contact_phone', 'contact_email'
+			], as_dict=1)
 
-	if contact:
-		out = get_contact_details(contact, get_contact_no_list=get_contact_no_list, link_doctype=link_doctype, link_name=link_name)
-	elif lead:
-		out = _get_lead_contact_details(lead)
-	else:
-		out = get_contact_details(None)
-
-	if project and cstr(contact) == cstr(project.get('contact_person')):
-		out.contact_mobile = project.contact_mobile
-		out.contact_phone = project.contact_phone
-		out.contact_email = project.contact_email
+		if cstr(contact) == cstr(project.get('contact_person')):
+			out.contact_mobile = project.contact_mobile
+			out.contact_phone = project.contact_phone
+			out.contact_email = project.contact_email
 
 	return out
 
 
 @frappe.whitelist()
-def get_address_display(address, lead=None):
-	from frappe.contacts.doctype.address.address import get_address_display
-	from crm.crm.doctype.lead.lead import get_lead_address_details
-
-	out = None
-
-	if address:
-		out = get_address_display(address)
-	elif lead:
-		lead_address_details = get_lead_address_details(lead)
-		out = get_address_display(lead_address_details)
-
-	return out
+def get_address_display(address=None, lead=None):
+	from crm.crm.utils import get_address_display
+	return get_address_display(address, lead=lead)
 
 
 def get_default_price_list(party):
