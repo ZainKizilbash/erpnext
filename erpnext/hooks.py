@@ -66,6 +66,8 @@ fixtures = [
 
 				"Territory-targets_section",
 				"Territory-targets",
+
+				"Lead-customer",
 			]]
 		}
 	},

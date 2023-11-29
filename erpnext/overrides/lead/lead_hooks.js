@@ -1,6 +1,15 @@
 frappe.provide("crm");
 
 crm.LeadControllerERP = class LeadControllerERP extends crm.LeadController {
+	setup() {
+		super.setup();
+		Object.assign(this.frm.custom_make_buttons, {
+			'Customer': 'Customer',
+			'Quotation': 'Quotation',
+			'Vehicle Quotation': 'Vehicle Quotation',
+		});
+	}
+
 	setup_buttons() {
 		if (!this.frm.doc.__islocal) {
 			if (!this.frm.doc.customer) {
