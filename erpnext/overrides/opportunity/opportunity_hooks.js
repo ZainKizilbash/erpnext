@@ -1,7 +1,5 @@
 frappe.provide("crm");
 
-{% include 'erpnext/selling/quotation_common.js' %}
-
 crm.OpportunityERP = class OpportunityERP extends crm.Opportunity {
 	setup() {
 		super.setup();

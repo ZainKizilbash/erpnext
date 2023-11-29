@@ -88,7 +88,7 @@ erpnext.selling.QuotationController = class QuotationController extends erpnext.
 		if(me.frm.doc.docstatus == 1 && me.frm.doc.status !== 'Lost') {
 			if (me.frm.doc.status !== "Ordered") {
 				me.frm.add_custom_button(__('Mark As Lost'), () => {
-					me.frm.events.set_as_lost_dialog(me.frm);
+					crm.utils.set_as_lost_dialog(me.frm);
 				}, __("Status"));
 			}
 
@@ -116,7 +116,7 @@ erpnext.selling.QuotationController = class QuotationController extends erpnext.
 
 		if (me.frm.doc.status == "Lost") {
 			me.frm.add_custom_button(__("Reopen"), () => {
-				me.frm.events.update_lost_status(me.frm, false);
+				crm.utils.update_lost_status(me.frm, false);
 			}, __("Status"));
 		}
 
