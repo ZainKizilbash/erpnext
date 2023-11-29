@@ -413,10 +413,18 @@ class VehicleMaintenanceSchedule:
 def submit_communication_with_action(remarks, action, opportunity=None, follow_up_date=None, lost_reason=None,
 		maintenance_schedule=None, maintenance_schedule_row=None, filters=None):
 	from crm.crm.doctype.opportunity.opportunity import submit_communication_with_action
+	from erpnext.maintenance.doctype.maintenance_schedule.maintenance_schedule import get_maintenance_schedule_opportunity
+
+	opp = None
+	if opportunity and frappe.db.exists('Opportunity', opportunity):
+		opp = frappe.get_doc('Opportunity', opportunity)
+	elif maintenance_schedule and maintenance_schedule_row:
+		opp = get_maintenance_schedule_opportunity(maintenance_schedule, maintenance_schedule_row)
+	else:
+		frappe.throw(_('Opportunity/Maintenance Schedule not provided'))
 
 	out = submit_communication_with_action(remarks, action,
-		opportunity=opportunity, follow_up_date=follow_up_date, lost_reason=lost_reason,
-		maintenance_schedule=maintenance_schedule, maintenance_schedule_row=maintenance_schedule_row)
+		opportunity=opp, follow_up_date=follow_up_date, lost_reason=lost_reason)
 
 	if filters is not None:
 		if isinstance(filters, str):

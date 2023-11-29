@@ -31,6 +31,7 @@ doctype_js = {
 	"Sales Person": "overrides/sales_person/sales_person_hooks.js",
 	"Territory": "overrides/territory/territory_hooks.js",
 	"Lead": "overrides/lead/lead_hooks.js",
+	"Opportunity": "overrides/opportunity/opportunity_hooks.js",
 }
 
 doctype_tree_js = {
@@ -41,11 +42,13 @@ override_doctype_class = {
 	"Sales Person": "erpnext.overrides.sales_person.sales_person_hooks.SalesPersonERP",
 	"Territory": "erpnext.overrides.territory.territory_hooks.TerritoryERP",
 	"Lead": "erpnext.overrides.lead.lead_hooks.LeadERP",
+	"Opportunity": "erpnext.overrides.opportunity.opportunity_hooks.OpportunityERP",
 }
 
 override_doctype_dashboards = {
 	"Sales Person": "erpnext.overrides.sales_person.sales_person_hooks.override_sales_person_dashboard",
 	"Lead": "erpnext.overrides.lead.lead_hooks.override_lead_dashboard",
+	"Opportunity": "erpnext.overrides.opportunity.opportunity_hooks.override_opportunity_dashboard",
 }
 
 fixtures = [

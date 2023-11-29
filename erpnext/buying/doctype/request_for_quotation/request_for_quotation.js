@@ -279,7 +279,7 @@ erpnext.buying.RequestforQuotationController = class RequestforQuotationControll
             this.frm.add_custom_button(__('Opportunity'),
 				function() {
 					erpnext.utils.map_current_doc({
-						method: "erpnext.crm.doctype.opportunity.opportunity.make_request_for_quotation",
+						method: "erpnext.overrides.opportunity.opportunity_hooks.make_request_for_quotation",
 						source_doctype: "Opportunity",
 						target: me.frm,
 						setters: {

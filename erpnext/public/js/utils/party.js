@@ -414,7 +414,7 @@ erpnext.utils.make_customer_from_lead = function (frm, lead) {
 		var existing_customer = dialog.get_value('customer');
 		if (existing_customer) {
 			return frappe.call({
-				method: "erpnext.crm.doctype.lead.lead.set_customer_for_lead",
+				method: "erpnext.overrides.lead.lead_hooks.set_customer_for_lead",
 				args: {
 					lead: lead,
 					customer: existing_customer,
@@ -432,7 +432,7 @@ erpnext.utils.make_customer_from_lead = function (frm, lead) {
 		} else {
 			dialog.hide();
 			return frappe.model.open_mapped_doc({
-				method: "erpnext.crm.doctype.lead.lead.make_customer",
+				method: "erpnext.overrides.lead.lead_hooks.make_customer",
 				frm: frm,
 				source_name: lead
 			});

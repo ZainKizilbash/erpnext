@@ -36,7 +36,7 @@ erpnext.vehicles.VehicleQuotation = class VehicleQuotation extends erpnext.vehic
 			if (me.frm.doc.quotation_to === "Customer") {
 				return erpnext.queries.customer();
 			} else if (me.frm.doc.quotation_to === "Lead") {
-				return erpnext.queries.lead();
+				return crm.queries.lead({"status": ["!=", "Converted"]});
 			}
 		});
 	}

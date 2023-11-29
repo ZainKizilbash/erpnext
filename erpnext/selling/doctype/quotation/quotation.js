@@ -53,7 +53,7 @@ erpnext.selling.QuotationController = class QuotationController extends erpnext.
 
 		me.frm.set_query('party_name', function () {
 			if (me.frm.doc.quotation_to == "Lead") {
-				return erpnext.queries.lead();
+				return crm.queries.lead({"status": ["!=", "Converted"]});
 			} else {
 				return erpnext.queries.customer();
 			}
@@ -124,7 +124,7 @@ erpnext.selling.QuotationController = class QuotationController extends erpnext.
 			me.frm.add_custom_button(__('Opportunity'),
 				function() {
 					erpnext.utils.map_current_doc({
-						method: "erpnext.crm.doctype.opportunity.opportunity.make_quotation",
+						method: "erpnext.overrides.opportunity.opportunity_hooks.make_quotation",
 						source_doctype: "Opportunity",
 						target: me.frm,
 						setters: [
@@ -203,31 +203,6 @@ erpnext.selling.QuotationController = class QuotationController extends erpnext.
 		} else {
 			return super.validate_company_and_party(party_field);
 		}
-	}
-
-	get_lead_details() {
-		var me = this;
-		if(!this.frm.doc.quotation_to === "Lead") {
-			return;
-		}
-
-		frappe.call({
-			method: "erpnext.crm.doctype.lead.lead.get_lead_details",
-			args: {
-				'lead': this.frm.doc.party_name,
-				'posting_date': this.frm.doc.transaction_date,
-				'company': this.frm.doc.company,
-			},
-			callback: function(r) {
-				if(r.message) {
-					me.frm.updating_party_details = true;
-					me.frm.set_value(r.message);
-					me.frm.refresh();
-					me.frm.updating_party_details = false;
-
-				}
-			}
-		})
 	}
 
 	make_sales_order() {
