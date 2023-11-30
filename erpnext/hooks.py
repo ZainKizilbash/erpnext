@@ -34,6 +34,7 @@ doctype_js = {
 	"Opportunity": "overrides/opportunity/opportunity_hooks.js",
 	"Appointment Type": "overrides/appointment_type/appointment_type_hooks.js",
 	"Appointment": "overrides/appointment/appointment_hooks.js",
+	"Customer Feedback": "overrides/customer_feedback/customer_feedback_hooks.js",
 }
 
 doctype_list_js = {
@@ -51,6 +52,7 @@ override_doctype_class = {
 	"Opportunity": "erpnext.overrides.opportunity.opportunity_hooks.OpportunityERP",
 	"Appointment Type": "erpnext.overrides.appointment_type.appointment_type_hooks.AppointmentTypeERP",
 	"Appointment": "erpnext.overrides.appointment.appointment_hooks.AppointmentERP",
+	"Customer Feedback": "erpnext.overrides.customer_feedback.customer_feedback_hooks.CustomerFeedbackERP",
 }
 
 override_doctype_dashboards = {
@@ -103,6 +105,12 @@ fixtures = [
 				"Appointment-applies_to_serial_no",
 				"Appointment-applies_to_item",
 				"Appointment-applies_to_item_name",
+
+				"Customer Feedback-applies_to_variant_of",
+				"Customer Feedback-applies_to_variant_of_name",
+				"Customer Feedback-applies_to_serial_no",
+				"Customer Feedback-applies_to_item",
+				"Customer Feedback-applies_to_item_name",
 			]]
 		}
 	},
