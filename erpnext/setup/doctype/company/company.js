@@ -151,7 +151,7 @@ frappe.ui.form.on("Company", {
 			},
 			__("Delete all the Transactions for this Company"), __("Delete")
 			);
-			d.get_primary_btn().addClass("btn-danger");
+			d.get_primary_btn().removeClass("btn-primary").addClass("btn-danger");
 		});
 	}
 });
