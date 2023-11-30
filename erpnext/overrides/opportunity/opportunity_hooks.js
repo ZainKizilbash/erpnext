@@ -24,12 +24,6 @@ crm.OpportunityERP = class OpportunityERP extends crm.Opportunity {
 		this.frm.get_field("items").grid.set_multiple_add("item_code", "qty");
 	}
 
-	get_allowed_party_types() {
-		let party_types = super.get_allowed_party_types();
-		party_types.push("Customer");
-		return party_types;
-	}
-
 	setup_queries() {
 		super.setup_queries();
 

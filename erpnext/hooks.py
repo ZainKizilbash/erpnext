@@ -32,6 +32,12 @@ doctype_js = {
 	"Territory": "overrides/territory/territory_hooks.js",
 	"Lead": "overrides/lead/lead_hooks.js",
 	"Opportunity": "overrides/opportunity/opportunity_hooks.js",
+	"Appointment Type": "overrides/appointment_type/appointment_type_hooks.js",
+	"Appointment": "overrides/appointment/appointment_hooks.js",
+}
+
+doctype_list_js = {
+	"Appointment": "overrides/appointment/appointment_list_hooks.js",
 }
 
 doctype_tree_js = {
@@ -43,12 +49,14 @@ override_doctype_class = {
 	"Territory": "erpnext.overrides.territory.territory_hooks.TerritoryERP",
 	"Lead": "erpnext.overrides.lead.lead_hooks.LeadERP",
 	"Opportunity": "erpnext.overrides.opportunity.opportunity_hooks.OpportunityERP",
+	"Appointment Type": "erpnext.overrides.appointment_type.appointment_type_hooks.AppointmentTypeERP",
+	"Appointment": "erpnext.overrides.appointment.appointment_hooks.AppointmentERP",
 }
 
 override_doctype_dashboards = {
 	"Sales Person": "erpnext.overrides.sales_person.sales_person_hooks.override_sales_person_dashboard",
 	"Lead": "erpnext.overrides.lead.lead_hooks.override_lead_dashboard",
-	"Opportunity": "erpnext.overrides.opportunity.opportunity_hooks.override_opportunity_dashboard",
+	"Appointment": "erpnext.overrides.appointment.appointment_hooks.override_appointment_dashboard",
 }
 
 fixtures = [
@@ -85,6 +93,16 @@ fixtures = [
 				"Opportunity Item-uom",
 				"Opportunity Item-item_group",
 				"Opportunity Item-brand",
+
+				"Appointment Type-company",
+				"Appointment Type-holiday_list",
+
+				"Appointment-company",
+				"Appointment-applies_to_variant_of",
+				"Appointment-applies_to_variant_of_name",
+				"Appointment-applies_to_serial_no",
+				"Appointment-applies_to_item",
+				"Appointment-applies_to_item_name",
 			]]
 		}
 	},
@@ -122,7 +140,7 @@ my_account_context = "erpnext.shopping_cart.utils.update_my_account_context"
 
 email_append_to = ["Job Applicant", "Issue"]
 
-calendars = ["Task", "Work Order", "Leave Application", "Sales Order", "Holiday List", "Course Schedule", "Appointment"]
+calendars = ["Task", "Work Order", "Leave Application", "Sales Order", "Holiday List", "Course Schedule"]
 
 domains = {
 	'Agriculture': 'erpnext.domains.agriculture',

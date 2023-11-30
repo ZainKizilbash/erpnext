@@ -32,14 +32,14 @@ class OpportunityERP(Opportunity):
 		self.validate_financer()
 		self.validate_maintenance_schedule()
 
+	@classmethod
+	def get_allowed_party_types(cls):
+		return super().get_allowed_party_types() + ["Customer"]
+
 	def set_missing_values(self):
 		super().set_missing_values()
 		self.set_item_details()
 		self.set_applies_to_details()
-
-	@classmethod
-	def get_allowed_party_types(cls):
-		return super().get_allowed_party_types() + ["Customer"]
 
 	def validate_financer(self):
 		if self.get('financer'):

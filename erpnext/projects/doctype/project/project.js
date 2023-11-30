@@ -5,9 +5,8 @@ frappe.provide('erpnext.projects');
 
 {% include 'erpnext/vehicles/vehicle_checklist.js' %};
 {% include 'erpnext/vehicles/customer_vehicle_selector.js' %};
-{% include 'erpnext/public/js/controllers/quick_contacts.js' %};
 
-erpnext.projects.ProjectController = class ProjectController extends erpnext.contacts.QuickContacts {
+erpnext.projects.ProjectController = class ProjectController extends crm.QuickContacts {
 	setup() {
 		this.setup_make_methods();
 		erpnext.setup_applies_to_fields(this.frm);
@@ -715,7 +714,7 @@ erpnext.projects.ProjectController = class ProjectController extends erpnext.con
 
 		if (appointment) {
 			return frappe.call({
-				method: "erpnext.crm.doctype.appointment.appointment.get_project",
+				method: "erpnext.overrides.appointment.appointment_hooks.get_project",
 				args: {
 					source_name: appointment,
 					target_doc: me.frm.doc,
