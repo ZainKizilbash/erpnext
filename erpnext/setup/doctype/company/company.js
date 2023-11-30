@@ -113,7 +113,7 @@ frappe.ui.form.on("Company", {
 
 	onload_post_render: function(frm) {
 		if(frm.get_field("delete_company_transactions").$input)
-			frm.get_field("delete_company_transactions").$input.addClass("btn-danger");
+			frm.get_field("delete_company_transactions").$input.removeClass("btn-default").addClass("btn-danger");
 	},
 
 	country: function(frm) {
