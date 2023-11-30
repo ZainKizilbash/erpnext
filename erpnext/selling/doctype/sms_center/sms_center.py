@@ -2,82 +2,139 @@
 # License: GNU General Public License v3. See license.txt
 
 import frappe
-
-from frappe.utils import cstr
-from frappe import msgprint, _
-
+from frappe import _
+from frappe.utils import cstr, cint, get_datetime, now_datetime
 from frappe.model.document import Document
+from frappe.core.doctype.sms_settings.sms_settings import send_sms, clean_receiver_number
 
-from frappe.core.doctype.sms_settings.sms_settings import send_sms
 
 class SMSCenter(Document):
+	@frappe.whitelist()
 	def create_receiver_list(self):
-		rec, where_clause = '', ''
-		if self.send_to == 'All Customer Contact':
-			where_clause = " and dl.link_doctype = 'Customer'"
-			if self.customer:
-				where_clause += " and dl.link_name = '%s'" % \
-					self.customer.replace("'", "\'") or " and ifnull(dl.link_name, '') != ''"
-		if self.send_to == 'All Supplier Contact':
-			where_clause = " and dl.link_doctype = 'Supplier'"
-			if self.supplier:
-				where_clause += " and dl.link_name = '%s'" % \
-					self.supplier.replace("'", "\'") or " and ifnull(dl.link_name, '') != ''"
-		if self.send_to == 'All Sales Partner Contact':
-			where_clause = " and dl.link_doctype = 'Sales Partner'"
-			if self.sales_partner:
-				where_clause += "and dl.link_name = '%s'" % \
-					self.sales_partner.replace("'", "\'") or " and ifnull(dl.link_name, '') != ''"
+		receivers = []
+
 		if self.send_to in ['All Contact', 'All Customer Contact', 'All Supplier Contact', 'All Sales Partner Contact']:
-			rec = frappe.db.sql("""select CONCAT(ifnull(c.first_name,''), ' ', ifnull(c.last_name,'')),
-				c.mobile_no from `tabContact` c, `tabDynamic Link` dl  where ifnull(c.mobile_no,'')!='' and
-				c.docstatus != 2 and dl.parent = c.name%s""" % where_clause)
+			self.is_promotional = 1
+
+			conditions = []
+			join = "inner join `tabDynamic Link` dl on dl.parent = c.name and dl.parenttype = 'Contact'"
+
+			if self.send_to == "All Customer Contact":
+				conditions.append("dl.link_doctype = 'Customer'")
+				if self.customer:
+					conditions.append("dl.link_name = {0}".format(frappe.db.escape(self.customer)))
+			elif self.send_to == 'All Supplier Contact':
+				conditions.append("dl.link_doctype = 'Supplier'")
+				if self.supplier:
+					conditions.append("dl.link_name = {0}".format(frappe.db.escape(self.supplier)))
+			elif self.send_to == 'All Sales Partner Contact':
+				conditions.append("dl.link_doctype = 'Sales Partner'")
+				if self.sales_partner:
+					conditions.append("dl.link_name = {0}".format(frappe.db.escape(self.sales_partner)))
+			else:
+				join = ""
+
+			conditions = " and {0}".format(" and ".join(conditions)) if conditions else ""
+			receivers = frappe.db.sql("""
+				select distinct c.full_name, c.mobile_no
+				from `tabContact` c
+				{0}
+				where ifnull(c.mobile_no,'') != '' {1}
+				order by c.full_name
+			""".format(join, conditions))
 
 		elif self.send_to == 'All Lead (Open)':
-			rec = frappe.db.sql("""select lead_name, mobile_no from `tabLead` where
-				ifnull(mobile_no,'')!='' and docstatus != 2 and status='Open'""")
+			self.is_promotional = 1
+
+			receivers = frappe.db.sql("""
+				select lead_name, mobile_no
+				from `tabLead`
+				where ifnull(mobile_no, '') != '' and status = 'Open'
+				order by lead_name
+			""")
 
 		elif self.send_to == 'All Employee (Active)':
-			where_clause = self.department and " and department = '%s'" % \
-				self.department.replace("'", "\'") or ""
-			where_clause += self.branch and " and branch = '%s'" % \
-				self.branch.replace("'", "\'") or ""
+			conditions = []
+			if self.department:
+				conditions.append("department = {0}".format(frappe.db.escape(self.department)))
+			if self.branch:
+				conditions.append("branch = {0}".format(frappe.db.escape(self.branch)))
 
-			rec = frappe.db.sql("""select employee_name, cell_number from
-				`tabEmployee` where status = 'Active' and docstatus < 2 and
-				ifnull(cell_number,'')!='' %s""" % where_clause)
+			conditions = " and {0}".format(" and ".join(conditions)) if conditions else ""
+
+			receivers = frappe.db.sql("""
+				select employee_name, cell_number
+				from `tabEmployee`
+				where status = 'Active' and ifnull(cell_number, '') != '' {0}
+				order by employee_name
+			""".format(conditions))
 
 		elif self.send_to == 'All Sales Person':
-			rec = frappe.db.sql("""select sales_person_name,
-				tabEmployee.cell_number from `tabSales Person` left join tabEmployee
-				on `tabSales Person`.employee = tabEmployee.name
-				where ifnull(tabEmployee.cell_number,'')!=''""")
+			receivers = frappe.db.sql("""
+				select sp.sales_person_name, emp.cell_number
+				from `tabSales Person` sp
+				inner join tabEmployee emp on sp.employee = emp.name
+				where ifnull(emp.cell_number,'') != ''
+				order by sp.sales_person_name
+			""")
 
-		rec_list = ''
-		for d in rec:
-			rec_list += d[0] + ' - ' + d[1] + '\n'
-		self.receiver_list = rec_list
+		numbers_visited = set()
+		receiver_list = []
+		for r in receivers:
+			name, number = r
+			number = clean_receiver_number(number)
+
+			if not number or number in numbers_visited:
+				continue
+
+			if name:
+				receiver_list.append(f"{name} | {number}")
+			else:
+				receiver_list.append(number)
+
+			numbers_visited.add(number)
+
+		self.receiver_list = "\n".join(receiver_list)
+		self.total_receivers = len(receiver_list)
 
 	def get_receiver_nos(self):
 		receiver_nos = []
 		if self.receiver_list:
 			for d in self.receiver_list.split('\n'):
-				receiver_no = d
-				if '-' in d:
-					receiver_no = receiver_no.split('-')[1]
-				if receiver_no.strip():
-					receiver_nos.append(cstr(receiver_no).strip())
-		else:
-			msgprint(_("Receiver List is empty. Please create Receiver List"))
+				receiver_no = cstr(d)
+				if '|' in d:
+					receiver_no = receiver_no.split('|')[-1]
+
+				receiver_no = cstr(receiver_no).strip()
+				if receiver_no:
+					receiver_nos.append(receiver_no)
 
 		return receiver_nos
 
+	@frappe.whitelist()
 	def send_sms(self):
-		receiver_list = []
 		if not self.message:
-			msgprint(_("Please enter message before sending"))
-		else:
-			receiver_list = self.get_receiver_nos()
-		if receiver_list:
-			send_sms(receiver_list, cstr(self.message))
+			frappe.throw(_("Please enter message before sending"))
 
+		receiver_list = self.get_receiver_nos()
+		if not receiver_list:
+			frappe.throw(_("Receiver List is empty. Please create Receiver List"))
+
+		if self.send_after and get_datetime(self.send_after) < now_datetime():
+			frappe.throw(_("Schedule Send Time cannot be in the past"))
+
+		queue = bool(self.send_after or len(receiver_list) > 10)
+		send_sms(
+			receiver_list,
+			message=cstr(self.message),
+			is_promotional=cint(self.is_promotional),
+			reference_doctype="SMS Center",
+			reference_name="SMS Center",
+			queue=queue,
+			queue_separately=True,
+			send_after=self.send_after,
+			priority=0
+		)
+
+		if queue:
+			frappe.msgprint(_("SMS has been scheduled to send"), indicator="green")

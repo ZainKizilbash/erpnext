@@ -292,7 +292,7 @@ class PayrollEntry(Document):
 		conditions = self.get_filter_condition()
 		return frappe.db.sql("""
 			select ss.employee, eld.loan, eld.loan_account, eld.interest_income_account,
-				eld.principal_amount, eld.interest_amount, eld.total_payment
+				eld.principal_amount, eld.interest_amount, eld.repayment_amount
 			from `tabSalary Slip` ss, `tabSalary Slip Loan` eld
 			where ss.name = eld.parent and ss.docstatus = 1 and ss.start_date >= %s and ss.end_date <= %s {0}
 		""".format(conditions), (self.start_date, self.end_date), as_dict=True) or []
@@ -454,7 +454,7 @@ class PayrollEntry(Document):
 						"party_type": "Employee",
 						"party": data.employee
 					})
-				payable_amount -= flt(data.total_payment, precision)
+				payable_amount -= flt(data.repayment_amount, precision)
 
 			for data in advance_details:
 				allocated_amount = flt(data.allocated_amount, precision)

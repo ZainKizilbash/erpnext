@@ -378,36 +378,23 @@ class WorkOrder(StatusUpdaterERP):
 			operation_data = frappe.db.sql("""
 				SELECT operation_id,
 					sum(total_time_in_mins) as time_in_mins,
-					sum(total_completed_qty) as completed_qty
+					sum(total_completed_qty) as completed_qty,
+					min(actual_start_dt) as start_time,
+					max(actual_end_dt) as end_time
 				FROM `tabJob Card`
 				WHERE docstatus = 1 AND work_order = %s
 				GROUP BY operation_id
 			""", self.name, as_dict=1)
 
-			operation_time_data = frappe.db.sql("""
-				SELECT jc.operation_id,
-					min(from_time) as start_time,
-					max(to_time) as end_time
-				FROM `tabJob Card Time Log` jctl
-				INNER JOIN `tabJob Card` jc ON jc.name = jctl.parent
-				WHERE jc.docstatus = 1 AND jc.work_order = %s
-				GROUP BY operation_id
-			""", self.name, as_dict=1)
-
 			for d in operation_data:
 				operation_data_map.setdefault(d.operation_id, d)
-			for d in operation_time_data:
-				operation_data_map.setdefault(d.operation_id, {}).update(d)
 
 		min_production_qty = flt(self.get_min_qty(self.producible_qty), self.precision("qty"))
 
 		for d in self.operations:
-			d.completed_qty = flt(operation_data_map.get(d.name, {}).get('completed_qty'))
-			d.actual_operation_time = flt(operation_data_map.get(d.name, {}).get('time_in_mins'))
-			d.actual_start_time = operation_data_map.get(d.name, {}).get('start_time')
-			d.actual_end_time = operation_data_map.get(d.name, {}).get('end_time')
-
 			# set operation status
+			d.completed_qty = flt(operation_data_map.get(d.name, {}).get('completed_qty'))
+
 			if self.status == "Stopped" and d.completed_qty > 0:
 				d.status = "Completed"
 			elif not d.completed_qty:
@@ -416,6 +403,10 @@ class WorkOrder(StatusUpdaterERP):
 				d.status = "Work in Progress"
 			else:
 				d.status = "Completed"
+
+			d.actual_operation_time = flt(operation_data_map.get(d.name, {}).get('time_in_mins'))
+			d.actual_start_time = operation_data_map.get(d.name, {}).get('start_time')
+			d.actual_end_time = operation_data_map.get(d.name, {}).get('end_time') if d.status == "Completed" else None
 
 		self.calculate_operating_cost()
 
@@ -647,10 +638,13 @@ class WorkOrder(StatusUpdaterERP):
 	def set_actual_dates(self, update=False, update_modified=True, ste_qty_map=None):
 		if self.get("operations"):
 			actual_start_dates = [getdate(d.actual_start_time) for d in self.get("operations") if d.actual_start_time]
-			actual_end_dates = [getdate(d.actual_end_time) for d in self.get("operations") if d.actual_end_time]
-
 			self.actual_start_date = min(actual_start_dates) if actual_start_dates else None
-			self.actual_end_date = max(actual_end_dates) if actual_end_dates else None
+
+			actual_end_dates = [getdate(d.actual_end_time) for d in self.get("operations") if d.actual_end_time]
+			if actual_end_dates and len(actual_end_dates) == len(self.operations):
+				self.actual_end_date = max(actual_end_dates)
+			else:
+				self.actual_end_date = None
 		else:
 			if not ste_qty_map:
 				ste_qty_map = self.get_ste_qty_map()
