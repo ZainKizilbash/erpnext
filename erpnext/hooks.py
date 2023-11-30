@@ -68,6 +68,7 @@ fixtures = [
 			"name": ["in", [
 				"Sales Person-employee",
 				"Sales Person-employee_name",
+				"Sales Person-cb_employee",
 				"Sales Person-department",
 				"Sales Person-designation",
 				"Sales Person-sales_commission_category",
