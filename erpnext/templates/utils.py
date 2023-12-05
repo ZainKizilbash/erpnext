@@ -38,7 +38,8 @@ def send_message(subject="Website Query", message="", sender="", phone_no="", mo
 			if country:
 				new_lead.country = country
 
-			new_lead.insert(ignore_permissions=True, ignore_mandatory=True)
+			new_lead.flags.ignore_mandatory = True
+			new_lead.insert(ignore_permissions=True)
 		else:
 			old_lead = frappe.get_doc("Lead", lead)
 			old_lead_changed = False
@@ -59,7 +60,8 @@ def send_message(subject="Website Query", message="", sender="", phone_no="", mo
 				old_lead_changed = True
 
 			if old_lead_changed:
-				old_lead.save(ignore_permissions=True, ignore_mandatory=True)
+				old_lead.flags.ignore_mandatory = 1
+				old_lead.save(ignore_permissions=True)
 
 	opportunity = frappe.new_doc("Opportunity")
 	opportunity.update({
@@ -82,7 +84,8 @@ def send_message(subject="Website Query", message="", sender="", phone_no="", mo
 	else:
 		opportunity.party_name = new_lead.name
 
-	opportunity.insert(ignore_permissions=True, ignore_mandatory=True)
+	opportunity.flags.ignore_mandatory = 1
+	opportunity.insert(ignore_permissions=True)
 
 	comm = frappe.get_doc({
 		"doctype": "Communication",
