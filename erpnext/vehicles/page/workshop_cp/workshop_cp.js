@@ -331,7 +331,7 @@ class WorkshopCP {
 			this.tabs.vehicles.find(".vehicle-table tbody").append(rows_html);
 		}
 
-		let has_action = (this.data.projects || []).some((row) => !$.isEmptyObject(row.projects));
+		let has_action = (this.data.projects || []).some((row) => Object.values(row?.actions).some(d => d));
 		$(".action-buttons-column", this.tabs.projects).toggle(has_action);
 	}
 
@@ -348,7 +348,7 @@ class WorkshopCP {
 			this.tabs.tasks.find(".task-table tbody").append(rows_html);
 		}
 
-		let has_action = (this.data.tasks || []).some((row) => !$.isEmptyObject(row.actions));
+		let has_action = (this.data.tasks || []).some((row) => Object.values(row?.actions).some(d => d));
 		$(".action-buttons-column", this.tabs.tasks).toggle(has_action);
 	}
 
