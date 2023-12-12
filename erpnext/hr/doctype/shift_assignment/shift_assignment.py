@@ -159,7 +159,7 @@ def get_shift_type_timing(shift_types):
 	return shift_timing_map
 
 
-def get_employee_shift(employee, for_date=nowdate(), consider_default_shift=False, next_shift_direction=None):
+def get_employee_shift(employee, for_date=nowdate(), consider_default_shift=False, next_shift_direction=None, ignore_holidays=False):
 	"""Returns a Shift Type for the given employee on the given date. (excluding the holidays)
 
 	:param employee: Employee for which shift is required.
@@ -178,7 +178,7 @@ def get_employee_shift(employee, for_date=nowdate(), consider_default_shift=Fals
 	if not shift_type_name and consider_default_shift:
 		shift_type_name = default_shift
 
-	if shift_type_name:
+	if shift_type_name and not ignore_holidays:
 		holiday_list_name = frappe.db.get_value('Shift Type', shift_type_name, 'holiday_list', cache=1)
 		if not holiday_list_name:
 			holiday_list_name = get_holiday_list_for_employee(employee, False)
@@ -256,17 +256,17 @@ def get_employee_shift_assignment(employee, for_date, consider_global_shift=Fals
 	return assigned_shift
 
 
-def get_employee_shift_timings(employee, for_timestamp=now_datetime(), consider_default_shift=False):
+def get_employee_shift_timings(employee, for_timestamp=now_datetime(), consider_default_shift=False, ignore_holidays=False):
 	"""Returns previous shift, current/upcoming shift, next_shift for the given timestamp and employee
 	"""
 	for_timestamp = get_datetime(for_timestamp)
 
 	# write and verify a test case for midnight shift.
 	prev_shift = curr_shift = next_shift = None
-	curr_shift = get_employee_shift(employee, for_timestamp.date(), consider_default_shift, 'forward')
+	curr_shift = get_employee_shift(employee, for_timestamp.date(), consider_default_shift, 'forward', ignore_holidays)
 	if curr_shift:
-		next_shift = get_employee_shift(employee, curr_shift.start_datetime.date()+timedelta(days=1), consider_default_shift, 'forward')
-	prev_shift = get_employee_shift(employee, for_timestamp.date()+timedelta(days=-1), consider_default_shift, 'reverse')
+		next_shift = get_employee_shift(employee, curr_shift.start_datetime.date()+timedelta(days=1), consider_default_shift, 'forward', ignore_holidays)
+	prev_shift = get_employee_shift(employee, for_timestamp.date()+timedelta(days=-1), consider_default_shift, 'reverse', ignore_holidays)
 
 	if curr_shift:
 		if prev_shift:
@@ -310,7 +310,7 @@ def get_shift_details(shift_type_name, for_date=nowdate()):
 	})
 
 
-def get_actual_start_end_datetime_of_shift(employee, for_datetime, consider_default_shift=False):
+def get_actual_start_end_datetime_of_shift(employee, for_datetime, consider_default_shift=False, ignore_holidays=False):
 	"""Takes a datetime and returns the 'actual' start datetime and end datetime of the shift in which the timestamp belongs.
 		Here 'actual' means - taking in to account the "begin_check_in_before_shift_start_time" and "allow_check_out_after_shift_end_time".
 		None is returned if the timestamp is outside any actual shift timings.
@@ -319,7 +319,7 @@ def get_actual_start_end_datetime_of_shift(employee, for_datetime, consider_defa
 	for_datetime = get_datetime(for_datetime)
 
 	actual_shift_start = actual_shift_end = shift_details = None
-	shift_timings_as_per_timestamp = get_employee_shift_timings(employee, for_datetime, consider_default_shift)
+	shift_timings_as_per_timestamp = get_employee_shift_timings(employee, for_datetime, consider_default_shift, ignore_holidays)
 	timestamp_list = []
 	for shift in shift_timings_as_per_timestamp:
 		if shift:
