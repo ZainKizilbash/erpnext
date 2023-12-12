@@ -265,8 +265,8 @@ def get_employee_shift_timings(employee, for_timestamp=now_datetime(), consider_
 	prev_shift = curr_shift = next_shift = None
 	curr_shift = get_employee_shift(employee, for_timestamp.date(), consider_default_shift, 'forward', ignore_holidays)
 	if curr_shift:
-		next_shift = get_employee_shift(employee, curr_shift.start_datetime.date()+timedelta(days=1), consider_default_shift, 'forward', ignore_holidays)
-	prev_shift = get_employee_shift(employee, for_timestamp.date()+timedelta(days=-1), consider_default_shift, 'reverse', ignore_holidays)
+		next_shift = get_employee_shift(employee, curr_shift.start_datetime.date()+timedelta(days=1), consider_default_shift, 'forward')
+	prev_shift = get_employee_shift(employee, for_timestamp.date()+timedelta(days=-1), consider_default_shift, 'reverse')
 
 	if curr_shift:
 		if prev_shift:
