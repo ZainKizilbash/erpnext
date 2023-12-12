@@ -27,7 +27,6 @@ import "./templates/item_quick_entry.html"
 import "./utils/customer_quick_entry.js"
 import "./utils/lead_quick_entry.js"
 import "./utils/insurance_surveyor_quick_entry.js"
-import "./utils/contact_quick_entry_erpnext.js"
 import "./utils/vehicle_quick_entry.js"
 
 // HR
