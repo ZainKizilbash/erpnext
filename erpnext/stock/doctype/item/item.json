@@ -1362,7 +1362,7 @@
  "idx": 2,
  "image_field": "image",
  "links": [],
- "modified": "2023-11-18 13:23:58.476971",
+ "modified": "2023-12-12 17:26:59.849828",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Item",
@@ -1449,6 +1449,14 @@
   {
    "read": 1,
    "role": "Packing User"
+  },
+  {
+   "read": 1,
+   "role": "Projects User"
+  },
+  {
+   "read": 1,
+   "role": "Projects User (Read Only)"
   }
  ],
  "search_fields": "item_name,item_group,brand,item_source,customer_code",

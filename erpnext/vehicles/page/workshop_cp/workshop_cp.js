@@ -331,21 +331,8 @@ class WorkshopCP {
 			this.tabs.vehicles.find(".vehicle-table tbody").append(rows_html);
 		}
 
-		let have_action =  false;
-		for(let row of this.data.projects || []) {
-			if (have_action) break;
-
-			for (let action of Object.values(row?.actions || {})) {
-				if (action) {
-					have_action = true;
-					break;
-				}
-			}
-		}
-
-		if (!have_action) {
-			$('.actions-button-column-vehicles').hide();
-		}
+		let has_action = (this.data.projects || []).some((row) => !$.isEmptyObject(row.projects));
+		$(".action-buttons-column", this.tabs.projects).toggle(has_action);
 	}
 
 	render_tasks_tab() {
@@ -361,21 +348,8 @@ class WorkshopCP {
 			this.tabs.tasks.find(".task-table tbody").append(rows_html);
 		}
 
-		let have_action =  false;
-		for(let row of this.data.tasks || []) {
-			if (have_action) break;
-
-			for (let action of Object.values(row?.actions || {})) {
-				if (action) {
-					have_action = true;
-					break;
-				}
-			}
-		}
-
-		if (!have_action) {
-			$('.actions-button-column-tasks').hide();
-		}
+		let has_action = (this.data.tasks || []).some((row) => !$.isEmptyObject(row.actions));
+		$(".action-buttons-column", this.tabs.tasks).toggle(has_action);
 	}
 
 	get_vehicle_row_html(doc) {
