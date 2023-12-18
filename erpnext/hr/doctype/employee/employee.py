@@ -299,7 +299,8 @@ def get_holiday_list_for_employee(employee, raise_exception=True):
 	from erpnext.hr.doctype.holiday_list.holiday_list import get_default_holiday_list
 
 	if employee:
-		holiday_list, company = frappe.db.get_value("Employee", employee, ["holiday_list", "company"], cache=1)
+		holiday_list = frappe.db.get_value("Employee", employee, "holiday_list", cache=1)
+		company = frappe.db.get_value("Employee", employee, "company", cache=1)
 	else:
 		holiday_list = ''
 		company = frappe.db.get_single_value("Global Defaults", "default_company")
