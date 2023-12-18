@@ -62,6 +62,7 @@
   "secondary_contact_mobile",
   "details_section",
   "voice_of_customer",
+  "project_template",
   "description",
   "appointment_remarks_section",
   "remarks",
@@ -528,12 +529,18 @@
    "in_standard_filter": 1,
    "label": "Appointment Source",
    "options": "Appointment Source"
+  },
+  {
+   "fieldname": "project_template",
+   "fieldtype": "Link",
+   "label": "Project Template",
+   "options": "Project Template"
   }
  ],
  "is_calendar_and_gantt": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-05-30 13:10:06.906244",
+ "modified": "2023-12-18 13:13:29.512837",
  "modified_by": "Administrator",
  "module": "CRM",
  "name": "Appointment",
