@@ -21,12 +21,17 @@ crm.AppointmentERP = class AppointmentERP extends crm.Appointment {
 
 	setup_queries() {
 		super.setup_queries();
+
 		this.frm.set_query("party_name", () => {
 			if (this.frm.doc.appointment_for === "Customer") {
 				return erpnext.queries.customer();
 			} else if (this.frm.doc.appointment_for === "Lead") {
 				return crm.queries.lead({"status": ["!=", "Converted"]});
 			}
+		});
+
+		this.frm.set_query("project_template", () => {
+			return erpnext.queries.project_template(this.frm.doc.applies_to_item);
 		});
 	}
 
