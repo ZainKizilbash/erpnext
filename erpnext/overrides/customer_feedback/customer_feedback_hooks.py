@@ -22,3 +22,5 @@ class CustomerFeedbackERP(CustomerFeedback):
 					"link_doctype": "Vehicle",
 					"link_name": self.applies_to_vehicle,
 				})
+
+		return communication_doc
