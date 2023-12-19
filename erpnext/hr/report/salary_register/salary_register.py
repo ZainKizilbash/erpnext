@@ -49,6 +49,7 @@ def execute(filters=None):
 			"cheque_amount": ss.cheque_amount or None,
 			"cash_amount": ss.cash_amount or None,
 			"no_mode_amount": ss.no_mode_amount or None,
+			"payroll_entry": ss.payroll_entry or None,
 		})
 
 		if ss.salary_mode == "Bank":
@@ -116,6 +117,10 @@ def get_columns(salary_slips, filters):
 		{
 			"label": _("Salary Slip"), "fieldtype": "Link", "fieldname": "salary_slip_id","options": "Salary Slip",
 			"width": 80
+		},
+		{
+			"label": _("Payroll Entry"), "fieldtype": "Link", "fieldname": "payroll_entry", "options": "Payroll Entry",
+			"width": 80 if filters.show_employee_name else 140
 		},
 		{
 			"label": _("Employee"), "fieldtype": "Link", "fieldname": "employee", "options": "Employee",
@@ -270,6 +275,7 @@ def get_conditions(filters):
 	if filters.get("to_date"): conditions += " and end_date <= %(to_date)s"
 	if filters.get("company"): conditions += " and company = %(company)s"
 	if filters.get("employee"): conditions += " and employee = %(employee)s"
+	if filters.get("payroll_entry"): conditions += " and payroll_entry = %(payroll_entry)s"
 
 	return conditions, filters
 

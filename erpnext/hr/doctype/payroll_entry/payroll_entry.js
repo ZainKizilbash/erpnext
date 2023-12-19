@@ -20,6 +20,7 @@ frappe.ui.form.on('Payroll Entry', {
 	},
 
 	refresh: function(frm) {
+
 		erpnext.hide_company();
 		if (frm.doc.docstatus == 0) {
 			if(!frm.is_new()) {
@@ -42,6 +43,7 @@ frappe.ui.form.on('Payroll Entry', {
 		}
 		if (frm.doc.docstatus == 1) {
 			if (frm.custom_buttons) frm.clear_custom_buttons();
+			frm.events.show_salary_register(frm);
 			frm.events.add_context_buttons(frm);
 		}
 	},
@@ -196,6 +198,20 @@ frappe.ui.form.on('Payroll Entry', {
 			frm.add_custom_button("Make Payment Voucher", function() {
 				frm.trigger("make_disbursement_entry");
 			}).addClass("btn-primary");
+		}
+	},
+
+	show_salary_register: (frm) => {
+		if(frm.doc.docstatus===1) {
+			cur_frm.add_custom_button(__('Salary Register'), function() {
+				frappe.route_options = {
+					payroll_entry: frm.doc.name,
+					from_date: frm.doc.start_date,
+					to_date: frm.doc.end_date,
+					company: frm.doc.company,
+				};
+				frappe.set_route("query-report", "Salary Register");
+			}, __("View"));
 		}
 	},
 

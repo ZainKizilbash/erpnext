@@ -25,6 +25,12 @@ frappe.query_reports["Salary Register"] = {
 			"reqd": 1
 		},
 		{
+			"fieldname": "payroll_entry",
+			"label": __("Payroll Entry"),
+			"fieldtype": "Link",
+			"options": 'Payroll Entry'
+		},
+		{
 			"fieldname":"employee",
 			"label": __("Employee"),
 			"fieldtype": "Link",
