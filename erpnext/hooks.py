@@ -107,6 +107,7 @@ fixtures = [
 				"Appointment-applies_to_item",
 				"Appointment-applies_to_item_name",
 				"Appointment-project_template",
+				"Appointment-project_template_name",
 
 				"Customer Feedback-applies_to_variant_of",
 				"Customer Feedback-applies_to_variant_of_name",

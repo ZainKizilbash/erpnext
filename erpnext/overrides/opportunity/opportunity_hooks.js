@@ -43,7 +43,7 @@ crm.OpportunityERP = class OpportunityERP extends crm.Opportunity {
 		});
 
 		if (this.frm.fields_dict.delivery_period) {
-			this.frm.set_query("delivery_period", function () {
+			this.frm.set_query("delivery_period", () => {
 				if (this.frm.doc.transaction_date) {
 					return {
 						filters: {to_date: [">=", this.frm.doc.transaction_date]}
