@@ -1263,11 +1263,11 @@ def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False, jo
 	stock_entry.project = work_order.project
 	stock_entry.use_multi_level_bom = work_order.use_multi_level_bom
 
-	if flt(qty):
-		stock_entry.fg_completed_qty = flt(qty)
-	else:
+	if qty is None:
 		stock_entry.fg_completed_qty = work_order.get_balance_qty(purpose)
 		stock_entry.fg_completed_qty = max(0.0, stock_entry.fg_completed_qty)
+	else:
+		stock_entry.fg_completed_qty = flt(qty)
 
 	scrap_remaining = cint(scrap_remaining)
 	stock_entry.scrap_qty = flt(work_order.qty) - flt(work_order.produced_qty) - flt(qty) if scrap_remaining and qty else 0

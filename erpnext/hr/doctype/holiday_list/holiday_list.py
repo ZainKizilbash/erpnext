@@ -92,15 +92,14 @@ def get_events(start, end, filters=None):
 def is_holiday(holiday_list, date=None):
 	"""Returns true if the given date is a holiday in the given holiday list
 	"""
-	if not date:
-		date = today()
+	def generator():
+		return frappe.db.get_value("Holiday", filters={"parent": holiday_list, "holiday_date": date}, fieldname='description')
+
+	if not holiday_list:
+		return False
 
 	date = getdate(date)
-
-	if holiday_list:
-		return frappe.db.get_value("Holiday", filters={"parent": holiday_list, "holiday_date": date}, fieldname='description')
-	else:
-		return False
+	return frappe.local_cache("is_holiday", (holiday_list, date), generator)
 
 
 def get_default_holiday_list(company):

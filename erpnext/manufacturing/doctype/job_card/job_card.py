@@ -15,6 +15,7 @@ class OperationMismatchError(frappe.ValidationError): pass
 class JobCard(Document):
 	def validate(self):
 		self.set_missing_values()
+		self.validate_qty()
 		self.validate_time_logs()
 		self.validate_operation_id()
 		self.set_status()
@@ -41,6 +42,10 @@ class JobCard(Document):
 
 		if not self.get("items"):
 			self.set_required_items()
+
+	def validate_qty(self):
+		if flt(self.for_quantity) <= 0:
+			frappe.throw(_("Qty to Produce must be greater than 0"))
 
 	def validate_time_logs(self):
 		if cint(frappe.get_cached_value("Manufacturing Settings", None, "disable_capacity_planning")):

@@ -12,6 +12,7 @@ from erpnext.hr.doctype.shift_assignment.shift_assignment import get_actual_star
 from erpnext.hr.doctype.employee_checkin.employee_checkin import mark_attendance_and_link_log, calculate_working_hours
 from erpnext.hr.doctype.attendance.attendance import mark_absent
 from erpnext.hr.doctype.employee.employee import get_holiday_list_for_employee
+from erpnext.hr.doctype.holiday_list.holiday_list import is_holiday
 from collections import OrderedDict
 
 
@@ -113,52 +114,57 @@ class ShiftType(Document):
 	def get_attendance(self, logs, ignore_working_hour_threshold=False):
 		"""Return attendance_status, working_hours for a set of logs belonging to a single shift.
 		Assumptions:
-			1. These logs belong to a single shift, single employee and is not in a holiday date.
+			1. These logs belong to a single shift, single employee.
 			2. Logs are in chronological order
 		"""
 		status = 'Present'
 		late_entry = early_exit = False
 		total_working_hours, in_time, out_time = calculate_working_hours(logs, self.determine_check_in_and_check_out, self.working_hours_calculation_based_on)
 
-		missing_checkin_no_absent = not out_time and self.missing_checkin_no_absent
-		missing_checkin_no_half_day = not out_time and self.missing_checkin_no_half_day
-		missing_checkin_no_late_entry = not out_time and self.missing_checkin_no_late_entry
+		employee = logs[0].employee
+		shift_date = logs[0].shift_start.date()
+		holiday_list = self.holiday_list or get_holiday_list_for_employee(employee, False)
 
-		# Late Entry
-		if cint(self.enable_entry_grace_period) and in_time and not missing_checkin_no_late_entry\
-				and in_time > logs[0].shift_start + timedelta(minutes=cint(self.late_entry_grace_period)):
-			late_entry = True
+		if not is_holiday(holiday_list, shift_date):
+			missing_checkin_no_absent = not out_time and self.missing_checkin_no_absent
+			missing_checkin_no_half_day = not out_time and self.missing_checkin_no_half_day
+			missing_checkin_no_late_entry = not out_time and self.missing_checkin_no_late_entry
 
-		# Early Exit
-		if cint(self.enable_exit_grace_period) and out_time\
-				and out_time < logs[0].shift_end - timedelta(minutes=cint(self.early_exit_grace_period)):
-			early_exit = True
+			# Late Entry
+			if cint(self.enable_entry_grace_period) and in_time and not missing_checkin_no_late_entry\
+					and in_time > logs[0].shift_start + timedelta(minutes=cint(self.late_entry_grace_period)):
+				late_entry = True
 
-		# Half Day if Late Minutes
-		if cint(self.half_day_if_late_minutes) and in_time and not missing_checkin_no_half_day\
-				and in_time > logs[0].shift_start + timedelta(minutes=cint(self.half_day_if_late_minutes)):
-			status = 'Half Day'
+			# Early Exit
+			if cint(self.enable_exit_grace_period) and out_time\
+					and out_time < logs[0].shift_end - timedelta(minutes=cint(self.early_exit_grace_period)):
+				early_exit = True
 
-		# Half Day if Early Exit Minutes
-		if cint(self.half_day_if_exit_minutes) and out_time\
-				and out_time < logs[0].shift_end - timedelta(minutes=cint(self.half_day_if_exit_minutes)):
-			if cint(self.half_day_if_monthly_early_exit_count) > 0:
-				if self.is_half_day_on_multiple_early_exit_applicable(logs[0].employee, logs[0].shift_start):
+			# Half Day if Late Minutes
+			if cint(self.half_day_if_late_minutes) and in_time and not missing_checkin_no_half_day\
+					and in_time > logs[0].shift_start + timedelta(minutes=cint(self.half_day_if_late_minutes)):
+				status = 'Half Day'
+
+			# Half Day if Early Exit Minutes
+			if cint(self.half_day_if_exit_minutes) and out_time\
+					and out_time < logs[0].shift_end - timedelta(minutes=cint(self.half_day_if_exit_minutes)):
+				if cint(self.half_day_if_monthly_early_exit_count) > 0:
+					if self.is_half_day_on_multiple_early_exit_applicable(employee, logs[0].shift_start):
+						status = 'Half Day'
+				else:
 					status = 'Half Day'
-			else:
-				status = 'Half Day'
 
-		# Half Day / Absent if working hours less than
-		if not ignore_working_hour_threshold:
-			if self.working_hours_threshold_for_half_day\
-					and total_working_hours < self.working_hours_threshold_for_half_day\
-					and not missing_checkin_no_half_day:
-				status = 'Half Day'
+			# Half Day / Absent if working hours less than
+			if not ignore_working_hour_threshold:
+				if self.working_hours_threshold_for_half_day\
+						and total_working_hours < self.working_hours_threshold_for_half_day\
+						and not missing_checkin_no_half_day:
+					status = 'Half Day'
 
-			if self.working_hours_threshold_for_absent\
-					and total_working_hours < self.working_hours_threshold_for_absent\
-					and not missing_checkin_no_absent:
-				status = 'Absent'
+				if self.working_hours_threshold_for_absent\
+						and total_working_hours < self.working_hours_threshold_for_absent\
+						and not missing_checkin_no_absent:
+					status = 'Absent'
 
 		return status, total_working_hours, late_entry, early_exit
 

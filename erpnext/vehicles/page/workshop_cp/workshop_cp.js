@@ -140,6 +140,13 @@ class WorkshopCP {
 				options: ['', 'No Tasks', 'Not Started', 'In Progress', 'On Hold', 'Completed', 'Ready']
 
 			},
+			{
+				label: "Service Advisor",
+				fieldname: "service_advisor",
+				fieldtype: "Link",
+				options: "Sales Person",
+
+			},
 		];
 
 		for (let field of filter_fields) {
@@ -323,6 +330,9 @@ class WorkshopCP {
 
 			this.tabs.vehicles.find(".vehicle-table tbody").append(rows_html);
 		}
+
+		let has_action = (this.data.projects || []).some((row) => Object.values(row?.actions).some(d => d));
+		$(".action-buttons-column", this.tabs.projects).toggle(has_action);
 	}
 
 	render_tasks_tab() {
@@ -337,6 +347,9 @@ class WorkshopCP {
 
 			this.tabs.tasks.find(".task-table tbody").append(rows_html);
 		}
+
+		let has_action = (this.data.tasks || []).some((row) => Object.values(row?.actions).some(d => d));
+		$(".action-buttons-column", this.tabs.tasks).toggle(has_action);
 	}
 
 	get_vehicle_row_html(doc) {
