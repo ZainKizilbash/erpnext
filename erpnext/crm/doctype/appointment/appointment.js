@@ -147,6 +147,10 @@ erpnext.crm.AppointmentController = class AppointmentController extends erpnext.
 		me.frm.set_query('secondary_contact_person', () => {
 			return erpnext.queries.contact_query(me.frm.doc);
 		});
+
+		me.frm.set_query('project_template', () => {
+			return erpnext.queries.project_template(me.frm.doc.applies_to_item);
+		});
 	}
 
 	setup_dashboard() {
