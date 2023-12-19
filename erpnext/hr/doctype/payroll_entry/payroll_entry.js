@@ -202,16 +202,18 @@ frappe.ui.form.on('Payroll Entry', {
 	},
 
 	show_salary_register: (frm) => {
-		if(frm.doc.docstatus===1) {
-			cur_frm.add_custom_button(__('Salary Register'), function() {
+		if (frm.doc.salary_slips_created && frm.doc.docstatus != 2) {
+			frm.add_custom_button(__('Salary Register'), function() {
 				frappe.route_options = {
-					payroll_entry: frm.doc.name,
+					company: frm.doc.company,
 					from_date: frm.doc.start_date,
 					to_date: frm.doc.end_date,
-					company: frm.doc.company,
+					branch: frm.doc.branch,
+					department: frm.doc.department,
+					designation: frm.doc.designation,
 				};
 				frappe.set_route("query-report", "Salary Register");
-			}, __("View"));
+			});
 		}
 	},
 
