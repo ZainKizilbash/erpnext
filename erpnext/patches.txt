@@ -339,10 +339,10 @@ execute:frappe.delete_doc_if_exists("Custom Field", "Packing Slip-packed_items")
 erpnext.patches.v14_0.rename_late_deduction_policy_option
 erpnext.patches.v14_0.clean_up_tax_rules
 erpnext.patches.v14_0.rename_item_taxes_field
-erpnext.patches.v14_0.set_item_taxes_before_discount_values
 erpnext.patches.v14_0.set_sales_order_item_skip_delivery_note
 erpnext.patches.v14_0.clean_ledger_indexes #1
 erpnext.patches.v14_0.refactor_subcontracting
+erpnext.patches.v14_0.set_item_taxes_before_discount_values
 erpnext.patches.v14_0.set_work_order_subcontracting_fields
 erpnext.patches.v14_0.rename_ste_transfer_qty_stock_qty
 erpnext.patches.v14_0.set_new_fields_in_salary_slip_loan_and_employee_advance
