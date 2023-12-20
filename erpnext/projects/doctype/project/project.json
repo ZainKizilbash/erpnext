@@ -24,13 +24,13 @@
   "copied_from",
   "priority",
   "more_info",
-  "department",
+  "appointment",
   "more_info_cb_1",
   "appointment_dt",
   "more_info_cb_2",
   "sales_order",
   "more_info_cb_3",
-  "appointment",
+  "department",
   "sec_applies_to",
   "applies_to_variant_of",
   "applies_to_variant_of_name",
@@ -587,10 +587,10 @@
   {
    "depends_on": "eval:doc.applies_to_item && doc.applies_to_item != doc.applies_to_item_name",
    "fetch_from": "applies_to_item.item_name",
+   "fetch_if_empty": 1,
    "fieldname": "applies_to_item_name",
    "fieldtype": "Data",
-   "label": "Applies to Item Name",
-   "read_only": 1
+   "label": "Applies to Item Name"
   },
   {
    "fieldname": "applies_to_item",
@@ -1389,7 +1389,7 @@
  "idx": 29,
  "image_field": "image",
  "links": [],
- "modified": "2023-11-28 12:30:28.197087",
+ "modified": "2023-12-20 13:06:29.669479",
  "modified_by": "Administrator",
  "module": "Projects",
  "name": "Project",
