@@ -976,32 +976,32 @@ def make_pdi_repair_order(source):
 
 @frappe.whitelist()
 def get_vbos_for_sales_invoice(from_date, to_date, item_code=None):
-    if not from_date or not to_date:
-        frappe.throw(_("From Date and To Date is mandatory"))
+	if not from_date or not to_date:
+		frappe.throw(_("From Date and To Date is mandatory"))
 
-    item_condition = ""
+	item_condition = ""
 
-    if item_code:
-        if cint(frappe.db.get_value("Item", item_code, 'has_variants')):
-            item_condition = "AND i.variant_of = %(item_code)s"
-        else:
-            item_condition = "AND i.item_code = %(item_code)s"
+	if item_code:
+		if cint(frappe.db.get_value("Item", item_code, 'has_variants')):
+			item_condition = "AND i.variant_of = %(item_code)s"
+		else:
+			item_condition = "AND i.item_code = %(item_code)s"
 
-    vbo_names = frappe.db.sql_list("""
-        SELECT vbo.name
-        FROM `tabVehicle Booking Order` vbo
-        INNER JOIN `tabItem` i ON i.item_code = vbo.item_code
-        WHERE vbo.delivery_status = 'Delivered'
-            AND vbo.vehicle_delivered_date >= %(from_date)s
-            AND vbo.vehicle_delivered_date <= %(to_date)s
-            AND vbo.docstatus = 1
-            {item_condition}
-        """.format(item_condition=item_condition), {'item_code': item_code, 'from_date': from_date, 'to_date': to_date}, as_dict=1)
+	vbo_names = frappe.db.sql_list("""
+		SELECT vbo.name
+		FROM `tabVehicle Booking Order` vbo
+		INNER JOIN `tabItem` i ON i.item_code = vbo.item_code
+		WHERE vbo.delivery_status = 'Delivered'
+			AND vbo.vehicle_delivered_date >= %(from_date)s
+			AND vbo.vehicle_delivered_date <= %(to_date)s
+			AND vbo.docstatus = 1
+			{item_condition}
+		""".format(item_condition=item_condition), {'item_code': item_code, 'from_date': from_date, 'to_date': to_date}, as_dict=1)
 
-    if not vbo_names:
-        frappe.throw(_("No Vehicle Booking Orders found"))
+	if not vbo_names:
+		frappe.throw(_("No Vehicle Booking Orders found"))
 
-    return vbo_names
+	return vbo_names
 
 
 def check_if_doc_exists(doctype, vehicle_booking_order, filters=None):
