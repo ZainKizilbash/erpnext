@@ -822,8 +822,8 @@ class Project(StatusUpdaterERP):
 		if not self.get('applies_to_item'):
 			format_vehicle_fields(self)
 
-		if self.get('applies_to_item') and not self.get('project_workshop'):
-			frappe.throw(_("Project Workshop is mandatory when Applies to Item is set"))
+		if self.get('applies_to_vehicle') and not self.get('project_workshop'):
+			frappe.throw(_("Project Workshop is mandatory when Applies to Vehicle is set"))
 
 	def set_project_in_sales_order_and_quotation(self):
 		if self.sales_order:
