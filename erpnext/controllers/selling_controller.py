@@ -8,7 +8,7 @@ from erpnext.stock.get_item_details import get_bin_details
 from erpnext.stock.utils import get_incoming_rate, has_valuation_read_permission
 from erpnext.stock.get_item_details import get_target_warehouse_validation, item_has_product_bundle
 from erpnext.stock.doctype.batch.batch import get_batch_qty, auto_select_and_split_batches
-from erpnext.setup.doctype.sales_person.sales_person import get_sales_person_commission_details
+from erpnext.overrides.sales_person.sales_person_hooks import get_sales_person_commission_details
 from erpnext.controllers.transaction_controller import TransactionController
 
 

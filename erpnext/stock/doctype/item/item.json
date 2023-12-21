@@ -66,11 +66,11 @@
   "sb_barcodes",
   "barcodes",
   "variants_section",
+  "variant_based_on",
   "variant_item_code_format",
   "variant_item_name_format",
   "has_variants",
   "column_break_78",
-  "variant_based_on",
   "attributes",
   "units_of_measure_section",
   "sales_uom",
@@ -556,10 +556,10 @@
    "depends_on": "eval:(doc.has_variants || doc.variant_of) && doc.variant_based_on==='Item Attribute'",
    "fieldname": "attributes",
    "fieldtype": "Table",
-   "hidden": 1,
    "label": "Attributes",
    "no_copy": 1,
-   "options": "Item Variant Attribute"
+   "options": "Item Variant Attribute",
+   "read_only_depends_on": "variant_of"
   },
   {
    "default": "1",
@@ -1362,7 +1362,7 @@
  "idx": 2,
  "image_field": "image",
  "links": [],
- "modified": "2023-10-26 17:16:40.063924",
+ "modified": "2023-12-12 17:26:59.849838",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Item",
@@ -1449,6 +1449,14 @@
   {
    "read": 1,
    "role": "Packing User"
+  },
+  {
+   "read": 1,
+   "role": "Projects User"
+  },
+  {
+   "read": 1,
+   "role": "Projects User (Read Only)"
   }
  ],
  "search_fields": "item_name,item_group,brand,item_source,customer_code",

@@ -84,7 +84,7 @@ def make_quotation(domain):
 	opportunity = get_random("Opportunity", {"status": "Open", "with_items": 1})
 
 	if opportunity:
-		from erpnext.crm.doctype.opportunity.opportunity import make_quotation
+		from erpnext.overrides.opportunity.opportunity_hooks import make_quotation
 		qtn = frappe.get_doc(make_quotation(opportunity))
 		qtn.insert()
 		frappe.db.commit()

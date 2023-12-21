@@ -62,7 +62,11 @@ def create_leave_ledger_entry(ref_doc, args, submit=True):
 def delete_ledger_entry(ledger):
 	''' Delete ledger entry on cancel of leave application/allocation/encashment '''
 	if ledger.transaction_type == "Leave Allocation":
-		validate_leave_allocation_against_leave_application(ledger)
+		allow_leave_allocation_cancellation = frappe.db.get_single_value("HR Settings", "allow_leave_allocation_cancellation")
+		allowed_role = frappe.db.get_single_value("HR Settings", "allow_leave_allocation_cancellation_role")
+
+		if not allow_leave_allocation_cancellation or (allowed_role and allowed_role not in frappe.get_roles()):
+			validate_leave_allocation_against_leave_application(ledger)
 
 	expired_entry = get_previous_expiry_ledger_entry(ledger)
 	frappe.db.sql("""DELETE

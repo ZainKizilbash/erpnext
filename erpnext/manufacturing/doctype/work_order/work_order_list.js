@@ -56,9 +56,9 @@ frappe.listview_settings['Work Order'] = {
 		action(doc) {
 			let method;
 			if (erpnext.manufacturing.can_finish_work_order(doc)) {
-				method = () => erpnext.manufacturing.make_stock_entry(doc, "Manufacture");
+				method = () => erpnext.manufacturing.finish_work_order(doc, true);
 			} else if (erpnext.manufacturing.can_start_work_order(doc)) {
-				method = () => erpnext.manufacturing.make_stock_entry(doc, 'Material Transfer for Manufacture');
+				method = () => erpnext.manufacturing.start_work_order(doc);
 			}
 
 			if (method) {

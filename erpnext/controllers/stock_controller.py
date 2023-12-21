@@ -38,7 +38,7 @@ class StockController(AccountsController):
 					gl_entries = self.get_gl_entries()
 				make_gl_entries(gl_entries, from_repost=from_repost)
 
-			if (repost_future_gle or self.flags.repost_future_gle):
+			if repost_future_gle or self.flags.repost_future_gle:
 				update_gl_entries_for_reposted_stock_vouchers((self.doctype, self.name))
 
 		elif self.doctype in ['Purchase Receipt', 'Purchase Invoice'] and self.docstatus == 1:
@@ -539,6 +539,8 @@ def update_gl_entries_for_reposted_stock_vouchers(excluded_vouchers=None, only_i
 
 		update_gl_entries_for_stock_voucher(vouchers, excluded_vouchers=excluded_vouchers, verbose=verbose)
 
+		frappe.flags.stock_ledger_vouchers_reposted = None
+
 
 def update_gl_entries_after(posting_date, posting_time, for_warehouses=None, for_items=None, item_warehouse_list=None):
 	future_stock_vouchers = get_future_stock_vouchers(posting_date, posting_time,
@@ -621,7 +623,7 @@ def get_future_stock_vouchers(posting_date, posting_time, for_warehouses=None, f
 		"posting_date": posting_date,
 		"posting_time": posting_time,
 		"item_codes": for_items,
-		"warehouses": for_items,
+		"warehouses": for_warehouses,
 		"item_warehouse_list": item_warehouse_list
 	}, as_dict=True)
 

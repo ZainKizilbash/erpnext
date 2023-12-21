@@ -5,9 +5,8 @@ frappe.provide('erpnext.projects');
 
 {% include 'erpnext/vehicles/vehicle_checklist.js' %};
 {% include 'erpnext/vehicles/customer_vehicle_selector.js' %};
-{% include 'erpnext/public/js/controllers/quick_contacts.js' %};
 
-erpnext.projects.ProjectController = class ProjectController extends erpnext.contacts.QuickContacts {
+erpnext.projects.ProjectController = class ProjectController extends crm.QuickContacts {
 	setup() {
 		this.setup_make_methods();
 		erpnext.setup_applies_to_fields(this.frm);
@@ -235,7 +234,7 @@ erpnext.projects.ProjectController = class ProjectController extends erpnext.con
 
 			if (frappe.model.can_create("Sales Order")) {
 				me.frm.add_custom_button(__("Sales Order (Services)"), () => me.make_sales_order("service"), __("Create"));
-				me.frm.add_custom_button(__("Sales Order (Meterials)"), () => me.make_sales_order("stock"), __("Create"));
+				me.frm.add_custom_button(__("Sales Order (Materials)"), () => me.make_sales_order("stock"), __("Create"));
 				me.frm.add_custom_button(__("Sales Order (All)"), () => me.make_sales_order(), __("Create"));
 			}
 		}
@@ -656,7 +655,7 @@ erpnext.projects.ProjectController = class ProjectController extends erpnext.con
 			return;
 		}
 
-		erpnext.utils.get_sales_person_from_user(sales_person => {
+		crm.utils.get_sales_person_from_user(sales_person => {
 			if (sales_person) {
 				this.frm.set_value('service_advisor', sales_person);
 			}
@@ -715,7 +714,7 @@ erpnext.projects.ProjectController = class ProjectController extends erpnext.con
 
 		if (appointment) {
 			return frappe.call({
-				method: "erpnext.crm.doctype.appointment.appointment.get_project",
+				method: "erpnext.overrides.appointment.appointment_hooks.get_project",
 				args: {
 					source_name: appointment,
 					target_doc: me.frm.doc,

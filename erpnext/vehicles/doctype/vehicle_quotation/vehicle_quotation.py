@@ -4,10 +4,10 @@
 
 import frappe
 from frappe import _
-from frappe.utils import getdate, nowdate, add_days, cint, date_diff
+from frappe.utils import getdate, nowdate, cint
 from frappe.model.mapper import get_mapped_doc
 from erpnext.vehicles.vehicle_booking_controller import VehicleBookingController
-from erpnext.crm.doctype.lead.lead import get_customer_from_lead
+from erpnext.overrides.lead.lead_hooks import get_customer_from_lead
 
 
 class VehicleQuotation(VehicleBookingController):
@@ -39,12 +39,12 @@ class VehicleQuotation(VehicleBookingController):
 
 	def on_submit(self):
 		self.update_opportunity()
-		self.update_lead()
+		self.update_lead_status()
 
 	def on_cancel(self):
 		self.db_set('status', 'Cancelled')
 		self.update_opportunity()
-		self.update_lead()
+		self.update_lead_status(status="Interested")
 
 	def onload(self):
 		super(VehicleQuotation, self).onload()
@@ -83,10 +83,10 @@ class VehicleQuotation(VehicleBookingController):
 			opp.set_status(update=True)
 			opp.notify_update()
 
-	def update_lead(self):
+	def update_lead_status(self, status=None):
 		if self.quotation_to == "Lead" and self.party_name:
 			doc = frappe.get_doc("Lead", self.party_name)
-			doc.set_status(update=True)
+			doc.set_status(update=True, status=status)
 			doc.notify_update()
 
 	@frappe.whitelist()
@@ -113,7 +113,7 @@ class VehicleQuotation(VehicleBookingController):
 			opp = frappe.get_doc("Opportunity", self.opportunity)
 			opp.set_is_lost(is_lost, lost_reasons_list, detailed_reason)
 
-		self.update_lead()
+		self.update_lead_status()
 		self.notify_update()
 
 

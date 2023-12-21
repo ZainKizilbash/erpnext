@@ -686,7 +686,7 @@
  "idx": 363,
  "image_field": "image",
  "links": [],
- "modified": "2023-09-07 14:04:47.901999",
+ "modified": "2023-12-12 17:24:19.000039",
  "modified_by": "Administrator",
  "module": "Selling",
  "name": "Customer",
@@ -790,6 +790,10 @@
   },
   {
    "role": "Packing User",
+   "select": 1
+  },
+  {
+   "role": "Projects User (Read Only)",
    "select": 1
   }
  ],

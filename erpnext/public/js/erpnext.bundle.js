@@ -2,7 +2,6 @@ import "./conf.js"
 import "./utils.js"
 import "./queries.js"
 import "./help_links.js"
-import "./call_popup/call_popup.js"
 import "./utils/dimension_tree_filter.js"
 import "./templates/lcv_manual_distribution.html"
 
@@ -25,9 +24,7 @@ import "./utils/serial_batch_selector.js"
 import "./utils/item_quick_entry.js"
 import "./templates/item_quick_entry.html"
 import "./utils/customer_quick_entry.js"
-import "./utils/lead_quick_entry.js"
 import "./utils/insurance_surveyor_quick_entry.js"
-import "./utils/contact_quick_entry_erpnext.js"
 import "./utils/vehicle_quick_entry.js"
 
 // HR

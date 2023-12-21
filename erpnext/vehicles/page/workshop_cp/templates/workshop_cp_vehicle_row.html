@@ -30,6 +30,8 @@
 
 	<td>{{ doc.project_name }}</td>
 
+	<td>{{ doc.service_advisor }}</td>
+
 	<td class="text-nowrap">
 		<div class="indicator {{ doc.project_status_color }}">{{ doc.tasks_status }}</div>
 		<div>
@@ -48,7 +50,7 @@
 		{% endif %}
 	</td>
 
-	<td class="text-center text-nowrap actions-button-column">
+	<td class="text-center text-nowrap action-buttons-column">
 		<div class="inner-group-button show">
 			<button type="button" class="btn btn-default btn-sm" data-toggle="dropdown">Actions
 				<svg class="icon icon-xs">
@@ -56,23 +58,27 @@
 				</svg>
 			</button>
 			<div role="menu" class="dropdown-menu dropdown-menu-right">
-				{% if !doc.ready_to_close %}
-					{% if doc.total_tasks && doc.completed_tasks == doc.total_tasks %}
-						<button class="dropdown-item mark_as_ready" data-project="{{ doc.project }}">
-							{{ __("Mark as Ready") }}
-						</button>
-					{% endif %}
+				{% if doc.actions.mark_as_ready %}
+					<button class="dropdown-item mark_as_ready" data-project="{{ doc.project }}">
+						{{ __("Mark as Ready") }}
+					</button>
+				{% endif %}
 
-					<div class="dropdown-divider"></div>
+				<div class="dropdown-divider"></div>
 
+				{% if doc.actions.create_task %}
 					<button class="dropdown-item create_task" data-project="{{ doc.project }}">
 						{{ __("Create Task") }}
 					</button>
+				{% endif %}
 
+				{% if doc.actions.create_template_tasks %}
 					<button class="dropdown-item create_template_tasks" data-project="{{ doc.project }}">
 						{%= __("Create Template Task") %}
 					</button>
-				{% else %}
+				{% endif %}
+
+				{% if doc.actions.reopen %}
 					<button class="dropdown-item reopen" data-project="{{ doc.project }}">
 						{{ __("Re-Open") }}
 					</button>

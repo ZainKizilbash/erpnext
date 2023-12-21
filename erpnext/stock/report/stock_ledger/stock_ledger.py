@@ -8,7 +8,6 @@ from erpnext.stock.utils import update_included_uom_in_dict_report, has_valuatio
 from erpnext.accounts.party import set_party_name_in_list
 from frappe.desk.query_report import group_report_data
 from frappe.desk.reportview import build_match_conditions
-from six import iteritems
 
 
 def execute(filters=None):
@@ -321,7 +320,7 @@ def get_grouped_data(filters, data):
 		if 'party' in grouped_by:
 			group_object.party_name = group_object.rows[0].get('party_name')
 
-		for f, g in iteritems(grouped_by):
+		for f, g in grouped_by.items():
 			group_header[f] = g
 
 		group_header._bold = True

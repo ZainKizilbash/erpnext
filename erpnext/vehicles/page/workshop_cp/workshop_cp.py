@@ -4,6 +4,7 @@ from frappe.utils import get_url_to_form, get_datetime, now_datetime, flt, cint,
 import json
 
 
+
 allowed_sorting_fields = [
 	"project",
 	"vehicle_received_date",
@@ -72,6 +73,9 @@ def get_workshop_cp_data(filters, sort_by=None, sort_order=None):
 	postprocess_projects_data(out.tasks, project_task_count)
 	postprocess_tasks_data(out.tasks, timesheet_data_map)
 
+	set_project_action_conditions(out.projects)
+	set_task_action_conditions(out.tasks)
+
 	out.projects = sorted(out.projects, key=lambda d: d[sort_by], reverse=sort_order == "desc")
 	out.tasks = sorted(out.tasks, key=lambda d: (d[sort_by], d.project, d.creation), reverse=sort_order == "desc")
 
@@ -97,6 +101,34 @@ def postprocess_tasks_data(data, timesheet_data_map):
 		d.update(timesheet_data_map.get(d.task, {}))
 
 
+def set_project_action_conditions(data):
+	has_task_create = frappe.has_permission("Task", "create")
+	has_project_write = frappe.has_permission("Project", "write")
+	for d in data:
+		d.actions = {
+			"mark_as_ready": has_project_write and not d.ready_to_close and d.total_tasks and d.completed_tasks == d.total_tasks,
+			"reopen": has_project_write and d.ready_to_close,
+			"create_task": has_task_create and not d.ready_to_close,
+			"create_template_tasks": has_task_create and not d.ready_to_close,
+		}
+
+
+def set_task_action_conditions(data):
+	has_task_write = frappe.has_permission("Task", "write")
+
+	for d in data:
+		d.actions = {
+			"start_task": has_task_write and d.assigned_to and d.status == "Open",
+			"complete_task": has_task_write and d.status in ("On Hold", "Working", "Pending Review"),
+			"pause_task": has_task_write and d.status == "Working",
+			"resume_task": has_task_write and d.status in ("On Hold", "Completed") and not d.ready_to_close,
+			"assign_technician": has_task_write and not d.assigned_to,
+			"reassign_technician": has_task_write and d.assigned_to and d.status not in ("Completed", "Cancelled"),
+			"edit_task":  has_task_write and d.status != "Completed",
+			"cancel_task": has_task_write and d.status == "Open",
+		}
+
+
 def get_projects_data(filters):
 	conditions = get_project_conditions(filters)
 
@@ -104,7 +136,7 @@ def get_projects_data(filters):
 		SELECT
 			p.name as project, p.project_name, p.project_workshop, p.tasks_status,
 			p.applies_to_variant_of, p.applies_to_variant_of_name, p.ready_to_close,
-			p.applies_to_item, p.applies_to_item_name,
+			p.applies_to_item, p.applies_to_item_name, p.service_advisor,
 			p.applies_to_vehicle, p.vehicle_chassis_no, p.vehicle_license_plate,
 			p.customer, p.customer_name,
 			p.expected_delivery_date, p.expected_delivery_time, p.vehicle_received_date, p.vehicle_delivered_date
@@ -218,11 +250,16 @@ def get_project_conditions(filters):
 			conditions.append("p.tasks_status = %(status)s")
 			conditions.append("p.ready_to_close = 0")
 
+	if filters.get("service_advisor"):
+		conditions.append("p.service_advisor = %(service_advisor)s")
+
 	return " and ".join(conditions)
 
 
 @frappe.whitelist()
 def create_template_tasks(project):
+	frappe.has_permission("Task", "create", throw=True)
+
 	doc = frappe.get_doc("Project", project)
 
 	if not doc.project_templates:
@@ -261,6 +298,8 @@ def create_template_tasks(project):
 
 @frappe.whitelist()
 def create_task(project, subject=None, standard_time=None, project_template=None):
+	frappe.has_permission("Task", "create", throw=True)
+
 	task_doc = frappe.new_doc("Task")
 	task_doc.project = project
 
@@ -298,6 +337,8 @@ def get_standard_working_hours(project_template):
 
 @frappe.whitelist()
 def assign_technician_task(task, technician):
+	frappe.has_permission("Task", "write", throw=True)
+
 	task_doc = frappe.get_doc("Task", task)
 	validate_project_set_in_task(task_doc)
 
@@ -321,6 +362,8 @@ def assign_technician_task(task, technician):
 
 @frappe.whitelist()
 def reassign_technician_task(task, technician):
+	frappe.has_permission("Task", "write", throw=True)
+
 	task_doc = frappe.get_doc("Task", task)
 	validate_project_set_in_task(task_doc)
 
@@ -363,6 +406,8 @@ def reassign_technician_task(task, technician):
 
 @frappe.whitelist()
 def edit_task(task, subject, standard_time=None):
+	frappe.has_permission("Task", "write", throw=True)
+
 	task_doc = frappe.get_doc("Task", task)
 	validate_project_set_in_task(task_doc)
 
@@ -390,6 +435,8 @@ def edit_task(task, subject, standard_time=None):
 
 @frappe.whitelist()
 def cancel_task(task):
+	frappe.has_permission("Task", "write", throw=True)
+
 	task_doc = frappe.get_doc("Task", task)
 	validate_project_set_in_task(task_doc)
 
@@ -411,6 +458,8 @@ def cancel_task(task):
 
 @frappe.whitelist()
 def start_task(task):
+	frappe.has_permission("Task", "write", throw=True)
+
 	task_doc = frappe.get_doc("Task", task)
 	validate_project_set_in_task(task_doc)
 
@@ -437,6 +486,8 @@ def start_task(task):
 
 @frappe.whitelist()
 def resume_task(task):
+	frappe.has_permission("Task", "write", throw=True)
+
 	task_doc = frappe.get_doc("Task", task)
 	validate_project_set_in_task(task_doc)
 
@@ -462,6 +513,8 @@ def resume_task(task):
 
 @frappe.whitelist()
 def pause_task(task):
+	frappe.has_permission("Task", "write", throw=True)
+
 	task_doc = frappe.get_doc("Task", task)
 	validate_project_set_in_task(task_doc)
 
@@ -483,6 +536,8 @@ def pause_task(task):
 
 @frappe.whitelist()
 def complete_task(task):
+	frappe.has_permission("Task", "write", throw=True)
+
 	task_doc = frappe.get_doc("Task", task)
 
 	if task_doc.status not in ("Working", "Pending Review", "On Hold"):
@@ -538,7 +593,7 @@ def add_timesheet_log(task, project, assigned_to):
 		"to_time": None,
 	})
 
-	ts_doc.save()
+	ts_doc.save(ignore_permissions=True)
 
 
 def stop_timesheet_log(task, assigned_to, completed):
@@ -560,7 +615,7 @@ def stop_timesheet_log(task, assigned_to, completed):
 		time_log = [d for d in ts_doc.time_logs if not d.to_time][0]
 		time_log.to_time = now_datetime()
 		time_log.completed = cint(completed)
-		ts_doc.save()
+		ts_doc.save(ignore_permissions=True)
 
 
 def validate_project_not_ready_to_close(task_doc, action_label):

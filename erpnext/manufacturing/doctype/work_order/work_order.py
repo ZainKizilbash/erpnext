@@ -6,11 +6,10 @@ from frappe import _
 from frappe.utils import flt, getdate, cint, nowdate, get_link_to_form, round_up
 from erpnext.manufacturing.doctype.bom.bom import validate_bom_no, get_bom_items_as_dict
 from erpnext.stock.doctype.item.item import validate_end_of_life
-from erpnext.stock.get_item_details import get_conversion_factor
 from erpnext.stock.stock_balance import get_planned_qty, update_bin_qty
 from erpnext.stock.utils import get_bin, validate_warehouse_company, get_latest_stock_qty
 from erpnext.utilities.transaction_base import validate_uom_is_integer
-from erpnext.controllers.status_updater import StatusUpdater
+from erpnext.controllers.status_updater import StatusUpdaterERP
 from frappe.model.mapper import get_mapped_doc
 import json
 import math
@@ -28,7 +27,7 @@ form_grid_templates = {
 }
 
 
-class WorkOrder(StatusUpdater):
+class WorkOrder(StatusUpdaterERP):
 	def get_feed(self):
 		return "{0} {1} of {2}".format(
 			frappe.format(self.get_formatted('qty')), self.get('stock_uom'), self.get('item_name') or self.get('production_item')
@@ -36,7 +35,6 @@ class WorkOrder(StatusUpdater):
 
 	def onload(self):
 		ms = frappe.get_cached_doc("Manufacturing Settings", None)
-		self.set_onload("material_consumption", ms.material_consumption)
 		self.set_onload("backflush_raw_materials_based_on", ms.backflush_raw_materials_based_on)
 
 		self.set_available_qty()
@@ -94,8 +92,8 @@ class WorkOrder(StatusUpdater):
 
 	def validate_operation_time(self):
 		for d in self.operations:
-			if d.time_in_mins <= 0:
-				frappe.throw(_("Operation Time must be greater than 0 for Operation {0}".format(d.operation)))
+			if d.time_in_mins < 0:
+				frappe.throw(_("Operation Time cannot be a negative number for Operation {0}".format(d.operation)))
 
 	def validate_production_item(self):
 		if self.production_item:
@@ -330,7 +328,7 @@ class WorkOrder(StatusUpdater):
 
 		self.set('operations', [])
 
-		if not self.bom_no or cint(frappe.db.get_single_value("Manufacturing Settings", "disable_capacity_planning")):
+		if not self.bom_no:
 			return
 
 		if self.use_multi_level_bom:
@@ -380,36 +378,23 @@ class WorkOrder(StatusUpdater):
 			operation_data = frappe.db.sql("""
 				SELECT operation_id,
 					sum(total_time_in_mins) as time_in_mins,
-					sum(total_completed_qty) as completed_qty
+					sum(total_completed_qty) as completed_qty,
+					min(actual_start_dt) as start_time,
+					max(actual_end_dt) as end_time
 				FROM `tabJob Card`
 				WHERE docstatus = 1 AND work_order = %s
 				GROUP BY operation_id
 			""", self.name, as_dict=1)
 
-			operation_time_data = frappe.db.sql("""
-				SELECT jc.operation_id,
-					min(from_time) as start_time,
-					max(to_time) as end_time
-				FROM `tabJob Card Time Log` jctl
-				INNER JOIN `tabJob Card` jc ON jc.name = jctl.parent
-				WHERE jc.docstatus = 1 AND jc.work_order = %s
-				GROUP BY operation_id
-			""", self.name, as_dict=1)
-
 			for d in operation_data:
 				operation_data_map.setdefault(d.operation_id, d)
-			for d in operation_time_data:
-				operation_data_map.setdefault(d.operation_id, {}).update(d)
 
 		min_production_qty = flt(self.get_min_qty(self.producible_qty), self.precision("qty"))
 
 		for d in self.operations:
-			d.completed_qty = flt(operation_data_map.get(d.name, {}).get('completed_qty'))
-			d.actual_operation_time = flt(operation_data_map.get(d.name, {}).get('time_in_mins'))
-			d.actual_start_time = operation_data_map.get(d.name, {}).get('start_time')
-			d.actual_end_time = operation_data_map.get(d.name, {}).get('end_time')
-
 			# set operation status
+			d.completed_qty = flt(operation_data_map.get(d.name, {}).get('completed_qty'))
+
 			if self.status == "Stopped" and d.completed_qty > 0:
 				d.status = "Completed"
 			elif not d.completed_qty:
@@ -418,6 +403,10 @@ class WorkOrder(StatusUpdater):
 				d.status = "Work in Progress"
 			else:
 				d.status = "Completed"
+
+			d.actual_operation_time = flt(operation_data_map.get(d.name, {}).get('time_in_mins'))
+			d.actual_start_time = operation_data_map.get(d.name, {}).get('start_time')
+			d.actual_end_time = operation_data_map.get(d.name, {}).get('end_time') if d.status == "Completed" else None
 
 		self.calculate_operating_cost()
 
@@ -433,7 +422,6 @@ class WorkOrder(StatusUpdater):
 					'status': row.status,
 				}, update_modified=update_modified)
 
-
 			for row in self.get('additional_costs'):
 				row.db_set({
 					'amount': row.amount
@@ -446,11 +434,39 @@ class WorkOrder(StatusUpdater):
 				'total_operating_cost': self.total_operating_cost,
 			}, update_modified=update_modified)
 
-	def validate_completed_qty_in_operations(self):
+	def validate_completed_qty_in_operations(self, from_doctype=None):
 		max_production_qty = flt(self.get_qty_with_allowance(self.producible_qty), self.precision("qty"))
+		transferred_qty = flt(self.material_transferred_for_manufacturing, self.precision("qty"))
+
 		for d in self.operations:
-			if flt(d.completed_qty) > max_production_qty:
-				frappe.throw(_("Completed Qty for Operation {0} can not be greater than 'Qty to Produce'").format(d.operation))
+			completed_qty = flt(d.completed_qty, self.precision("qty"))
+
+			if completed_qty > max_production_qty:
+				frappe.throw(_("Completed Qty {0} {1} for Operation {2} cannot be greater than maximum quantity {3} {1} in {4}").format(
+					frappe.bold(d.get_formatted("completed_qty")),
+					self.stock_uom,
+					frappe.bold(d.operation),
+					frappe.bold(frappe.format(max_production_qty)),
+					frappe.get_desk_link("Work Order", self.name)
+				))
+
+			if self.produced_qty > completed_qty:
+				frappe.throw(_("Produced Qty {0} {1} cannot be greater than {2} Operation Completed Qty {3} {1} in {4}").format(
+					frappe.bold(frappe.format(self.produced_qty)),
+					self.stock_uom,
+					frappe.bold(d.operation),
+					frappe.bold(d.get_formatted("completed_qty")),
+					frappe.get_desk_link("Work Order", self.name)
+				))
+
+			if not self.skip_transfer and completed_qty > transferred_qty:
+				frappe.throw(_("Completed Qty {0} {1} for Operation {2} cannot be more than the Material Transferred for Manufacturing {3} {1} in {4}").format(
+					frappe.bold(d.get_formatted("completed_qty")),
+					self.stock_uom,
+					frappe.bold(d.operation),
+					frappe.bold(frappe.format(transferred_qty)),
+					frappe.get_desk_link("Work Order", self.name)
+				), StockOverProductionError)
 
 	def calculate_time(self):
 		bom_qty = frappe.db.get_value("BOM", self.bom_no, "quantity", cache=1)
@@ -514,6 +530,7 @@ class WorkOrder(StatusUpdater):
 		self.set_required_items_status(update=True)
 
 		self.validate_overproduction(from_doctype)
+		self.validate_completed_qty_in_operations(from_doctype)
 		self.validate_overpacking(from_doctype)
 
 		self.set_status(status=status, update=True)
@@ -621,10 +638,13 @@ class WorkOrder(StatusUpdater):
 	def set_actual_dates(self, update=False, update_modified=True, ste_qty_map=None):
 		if self.get("operations"):
 			actual_start_dates = [getdate(d.actual_start_time) for d in self.get("operations") if d.actual_start_time]
-			actual_end_dates = [getdate(d.actual_end_time) for d in self.get("operations") if d.actual_end_time]
-
 			self.actual_start_date = min(actual_start_dates) if actual_start_dates else None
-			self.actual_end_date = max(actual_end_dates) if actual_end_dates else None
+
+			actual_end_dates = [getdate(d.actual_end_time) for d in self.get("operations") if d.actual_end_time]
+			if actual_end_dates and len(actual_end_dates) == len(self.operations):
+				self.actual_end_date = max(actual_end_dates)
+			else:
+				self.actual_end_date = None
 		else:
 			if not ste_qty_map:
 				ste_qty_map = self.get_ste_qty_map()
@@ -759,21 +779,21 @@ class WorkOrder(StatusUpdater):
 		for fieldname in ["produced_qty", "scrap_qty", "material_transferred_for_manufacturing"]:
 			qty = flt(self.get(fieldname), self.precision("qty"))
 			if qty > max_production_qty:
-				frappe.throw(_("{0} {1} {3} cannot be greater than maximum quantity {2} {3} in {4}").format(
+				frappe.throw(_("{0} {1} {2} cannot be greater than maximum quantity {3} {2} in {4}").format(
 					self.meta.get_label(fieldname),
 					frappe.bold(self.get_formatted(fieldname)),
-					frappe.bold(frappe.format(max_production_qty)),
 					self.stock_uom,
+					frappe.bold(frappe.format(max_production_qty)),
 					frappe.get_desk_link("Work Order", self.name)
 				), StockOverProductionError)
 
 		produced_qty = flt(self.produced_qty, self.precision("qty"))
 		transferred_qty = flt(self.material_transferred_for_manufacturing, self.precision("qty"))
 		if not self.skip_transfer and produced_qty > transferred_qty:
-			frappe.throw(_("Produced Qty {0} {2} cannot more than the Material Transferred for Manufacturing {1} {2} in {3}").format(
+			frappe.throw(_("Produced Qty {0} {1} cannot be more than the Material Transferred for Manufacturing {2} {1} in {3}").format(
 				frappe.bold(self.get_formatted("produced_qty")),
-				frappe.bold(self.get_formatted("material_transferred_for_manufacturing")),
 				self.stock_uom,
+				frappe.bold(self.get_formatted("material_transferred_for_manufacturing")),
 				frappe.get_desk_link("Work Order", self.name)
 			), StockOverProductionError)
 
@@ -782,21 +802,21 @@ class WorkOrder(StatusUpdater):
 		for fieldname in ["packed_qty"]:
 			qty = flt(self.get(fieldname), self.precision("qty"))
 			if qty > max_qty:
-				frappe.throw(_("{0} {1} cannot be greater than maximum quantity {2} {3} in {4}").format(
+				frappe.throw(_("{0} {1} {2} cannot be greater than maximum quantity {3} {2} in {4}").format(
 					self.meta.get_label(fieldname),
 					frappe.bold(self.get_formatted(fieldname)),
-					frappe.bold(frappe.format(max_qty)),
 					self.stock_uom,
+					frappe.bold(frappe.format(max_qty)),
 					frappe.get_desk_link("Work Order", self.name)
 				))
 
 		completed_qty = flt(self.completed_qty, self.precision("qty"))
 		packed_qty = flt(self.packed_qty, self.precision("qty"))
 		if packed_qty > completed_qty:
-			frappe.throw(_("Packed Qty {0} {2} cannot be more than the Completed Qty {1} {2} in {3}").format(
+			frappe.throw(_("Packed Qty {0} {1} cannot be more than the Completed Qty {2} {1} in {3}").format(
 				frappe.bold(self.get_formatted("packed_qty")),
-				frappe.bold(self.get_formatted("completed_qty")),
 				self.stock_uom,
+				frappe.bold(self.get_formatted("completed_qty")),
 				frappe.get_desk_link("Work Order", self.name)
 			), StockOverProductionError)
 
@@ -920,14 +940,6 @@ class WorkOrder(StatusUpdater):
 			if d.source_warehouse:
 				stock_bin = get_bin(d.item_code, d.source_warehouse)
 				stock_bin.update_reserved_qty_for_production()
-
-	def create_job_card(self):
-		for row in self.operations:
-			if not row.workstation:
-				frappe.throw(_("Row {0}: Select the Workstation against the Operation {1}")
-					.format(row.idx, row.operation))
-
-			create_job_card(self, row, auto_create=True)
 
 	def delete_job_card(self):
 		for d in frappe.get_all("Job Card", ["name"], {"work_order": self.name}):
@@ -1219,7 +1231,7 @@ def make_stock_entry_against_multiple_work_orders(work_orders, args=None):
 
 
 @frappe.whitelist()
-def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False, auto_submit=False, args=None):
+def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False, job_card=None, auto_submit=False, args=None):
 	if args and isinstance(args, str):
 		args = json.loads(args)
 
@@ -1247,13 +1259,15 @@ def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False, au
 	stock_entry.company = work_order.company
 	stock_entry.from_bom = 1
 	stock_entry.bom_no = work_order.bom_no
+	stock_entry.job_card = job_card
+	stock_entry.project = work_order.project
 	stock_entry.use_multi_level_bom = work_order.use_multi_level_bom
 
-	if flt(qty):
-		stock_entry.fg_completed_qty = flt(qty)
-	else:
+	if qty is None:
 		stock_entry.fg_completed_qty = work_order.get_balance_qty(purpose)
 		stock_entry.fg_completed_qty = max(0.0, stock_entry.fg_completed_qty)
+	else:
+		stock_entry.fg_completed_qty = flt(qty)
 
 	scrap_remaining = cint(scrap_remaining)
 	stock_entry.scrap_qty = flt(work_order.qty) - flt(work_order.produced_qty) - flt(qty) if scrap_remaining and qty else 0
@@ -1264,11 +1278,11 @@ def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False, au
 
 	if purpose == "Material Transfer for Manufacture":
 		stock_entry.to_warehouse = wip_warehouse
-		stock_entry.project = work_order.project
 	else:
 		stock_entry.from_warehouse = wip_warehouse
+
+	if purpose == "Manufacture":
 		stock_entry.to_warehouse = work_order.fg_warehouse
-		stock_entry.project = work_order.project
 
 	stock_entry.set_stock_entry_type()
 	stock_entry.get_items(auto_select_batches=settings.auto_select_batches_in_stock_entry)
@@ -1291,8 +1305,11 @@ def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False, au
 		if purpose == "Material Transfer for Manufacture":
 			if auto_submit or settings.auto_submit_material_transfer_entry:
 				stock_entry = submit_stock_entry(stock_entry)
-		else:
+		elif purpose == "Manufacture":
 			if auto_submit or settings.auto_submit_manufacture_entry:
+				stock_entry = submit_stock_entry(stock_entry)
+		else:
+			if auto_submit:
 				stock_entry = submit_stock_entry(stock_entry)
 	except StockOverProductionError:
 		raise
@@ -1330,14 +1347,17 @@ def stop_unstop(work_order, status):
 
 
 @frappe.whitelist()
-def make_job_card(work_order, operations):
+def create_job_cards(work_order, operations):
 	if isinstance(operations, str):
 		operations = json.loads(operations)
 
 	work_order = frappe.get_doc('Work Order', work_order)
 	for row in operations:
 		validate_operation_data(row)
-		create_job_card(work_order, row, row.get("qty"), auto_create=True)
+		doc = _make_job_card(work_order, row, row.get("qty"))
+		doc.flags.ignore_mandatory = True
+		doc.insert()
+		frappe.msgprint(_("Job card {0} created").format(get_link_to_form("Job Card", doc.name)))
 
 
 def validate_operation_data(row):
@@ -1352,14 +1372,41 @@ def validate_operation_data(row):
 		))
 
 
-def create_job_card(work_order, row, qty=0, auto_create=False):
+@frappe.whitelist()
+def make_job_card(work_order, operation, workstation, qty, auto_submit=False):
+	pro_doc = frappe.get_doc("Work Order", work_order)
+	qty = flt(qty)
+
+	operation_row = [d for d in pro_doc.operations if d.operation == operation]
+	if operation_row:
+		operation_row = operation_row[0]
+	else:
+		frappe.throw(_("Operation {0} not in Work Order {1}").format(operation, work_order))
+
+	job_card_doc = _make_job_card(pro_doc, operation_row, qty)
+	job_card_doc.workstation = workstation
+
+	if auto_submit or frappe.db.get_single_value('Manufacturing Settings', 'auto_submit_job_card'):
+		job_card_doc.submit()
+
+		frappe.msgprint(_("{0} submitted successfully for Operation {1} ({2} {3})").format(
+			frappe.get_desk_link("Job Card", job_card_doc.name),
+			frappe.bold(job_card_doc.operation),
+			job_card_doc.get_formatted("for_quantity"),
+			pro_doc.stock_uom,
+		), indicator="green")
+
+	return job_card_doc
+
+
+def _make_job_card(work_order, row, qty):
 	doc = frappe.new_doc("Job Card")
 	doc.update({
 		'work_order': work_order.name,
 		'operation': row.get("operation"),
 		'workstation': row.get("workstation"),
-		'posting_date': nowdate(),
-		'for_quantity': qty or work_order.get('qty', 0),
+		'posting_date': getdate(),
+		'for_quantity': flt(qty),
 		'operation_id': row.get("name"),
 		'bom_no': work_order.bom_no,
 		'project': work_order.project,
@@ -1367,21 +1414,10 @@ def create_job_card(work_order, row, qty=0, auto_create=False):
 		'wip_warehouse': work_order.wip_warehouse
 	})
 
-	if work_order.transfer_material_against == 'Job Card' and not work_order.skip_transfer:
-		doc.get_required_items()
-
-	if auto_create:
-		doc.flags.ignore_mandatory = True
-		doc.insert()
-		frappe.msgprint(_("Job card {0} created").format(get_link_to_form("Job Card", doc.name)))
+	frappe.utils.call_hook_method("update_job_card_on_create", doc)
+	doc.run_method("set_missing_values")
 
 	return doc
-
-
-def get_work_order_operation_data(work_order, operation, workstation):
-	for d in work_order.operations:
-		if d.operation == operation and d.workstation == workstation:
-			return d
 
 
 def get_subcontractable_qty(producible_qty, material_transferred_for_manufacturing, produced_qty, scrap_qty):

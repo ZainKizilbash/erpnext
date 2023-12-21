@@ -44,39 +44,6 @@ def employee_query(doctype, txt, searchfield, start, page_len, filters):
 		})
 
 
-# searches for leads which are not converted
-@frappe.whitelist()
-@frappe.validate_and_sanitize_search_inputs
-def lead_query(doctype, txt, searchfield, start, page_len, filters):
-	fields = get_fields("Lead", ["name", "lead_name", "company_name"])
-
-	searchfields = frappe.get_meta("Lead").get_search_fields()
-	searchfields = " or ".join([field + " like %(txt)s" for field in searchfields])
-
-	return frappe.db.sql("""select {fields} from `tabLead`
-		where docstatus < 2
-			and ifnull(status, '') != 'Converted'
-			and ({scond})
-			{mcond}
-		order by
-			if(locate(%(_txt)s, name), locate(%(_txt)s, name), 99999),
-			if(locate(%(_txt)s, lead_name), locate(%(_txt)s, lead_name), 99999),
-			if(locate(%(_txt)s, company_name), locate(%(_txt)s, company_name), 99999),
-			modified desc,
-			name, lead_name
-		limit %(start)s, %(page_len)s""".format(**{
-			'fields': ", ".join(fields),
-			"scond": searchfields,
-			'key': searchfield,
-			'mcond': get_match_cond(doctype)
-		}), {
-			'txt': "%%%s%%" % txt,
-			'_txt': txt.replace("%", ""),
-			'start': start,
-			'page_len': page_len
-		})
-
-
 # searches for customer
 @frappe.whitelist()
 @frappe.validate_and_sanitize_search_inputs
@@ -418,6 +385,50 @@ def bom(doctype, txt, searchfield, start, page_len, filters):
 			'start': start or 0,
 			'page_len': page_len or 20
 		})
+
+
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def workstation_query(doctype, txt, searchfield, start, page_len, filters):
+	fields = get_fields("Workstation", ["name"])
+
+	searchfields = frappe.get_meta("Workstation").get_search_fields()
+	searchfields = " or ".join([field + " like %(txt)s" for field in searchfields])
+
+	exists_cond = ""
+	operation = filters and filters.pop("operation", None)
+	if operation:
+		exists_cond = """ and (exists(
+			select wop.name
+			from `tabWorkstation Operation` wop
+			where wop.parent = `tabWorkstation`.name and wop.operation = {0}
+		) or not exists(
+			select wop.name
+			from `tabWorkstation Operation` wop
+			where wop.parent = `tabWorkstation`.name
+		))""".format(frappe.db.escape(operation))
+
+	return frappe.db.sql("""
+		select {fields}
+		from `tabWorkstation`
+		where ({scond}) {fcond} {mcond} {exists_cond}
+		order by
+			if(locate(%(_txt)s, name), locate(%(_txt)s, name), 99999),
+			idx desc,
+			name
+		limit %(start)s, %(page_len)s
+	""".format(**{
+		"fields": ", ".join(fields),
+		"scond": searchfields,
+		"exists_cond": exists_cond,
+		"mcond": get_match_cond(doctype),
+		"fcond": get_filters_cond(doctype, filters, []).replace('%', '%%'),
+	}), {
+		'txt': "%%%s%%" % txt,
+		'_txt': txt.replace("%", ""),
+		'start': start,
+		'page_len': page_len
+	})
 
 
 @frappe.whitelist()

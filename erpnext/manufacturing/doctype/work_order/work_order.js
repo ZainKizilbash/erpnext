@@ -94,6 +94,11 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 			};
 		});
 
+		this.frm.set_query("workstation", "operations", (doc, cdt, cdn) => {
+			let row = frappe.get_doc(cdt, cdn);
+			return erpnext.queries.workstation(row.operation);
+		});
+
 		// Warehouse Queries
 		this.frm.set_query("source_warehouse", () => {
 			return {
@@ -163,11 +168,12 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 			doc.docstatus === 1
 			&& doc.operations && doc.operations.length
 			&& flt(doc.completed_qty) < flt(doc.qty)
+			&& !cint(frappe.defaults.get_default("disable_capacity_planning"))
 		) {
 			const not_completed = doc.operations.some(d => d.status != "Completed");
 			if (not_completed) {
 				this.frm.add_custom_button(__('Create Job Card'), () => {
-					this.make_job_card();
+					this.create_job_cards();
 				}).addClass('btn-primary');
 			}
 		}
@@ -251,7 +257,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 			this.frm.show_pick_list_btn = true;
 
 			let start_btn = this.frm.add_custom_button(__("Start"), () => {
-				erpnext.manufacturing.make_stock_entry(doc, "Material Transfer for Manufacture");
+				erpnext.manufacturing.start_work_order(doc);
 			});
 
 			if (start_btn_default) {
@@ -272,7 +278,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 
 		if (show_finish_button) {
 			let finish_btn = this.frm.add_custom_button(__("Finish"), () => {
-				erpnext.manufacturing.make_stock_entry(doc, "Manufacture");
+				erpnext.manufacturing.finish_work_order(doc);
 			});
 
 			if (finish_button_default) {
@@ -282,17 +288,15 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 
 		// If "Material Consumption is check in Manufacturing Settings, allow Material Consumption
 		let show_consumption_button = (
-			!doc.skip_transfer &&
-			doc.__onload && doc.__onload.material_consumption &&
-			flt(doc.produced_qty) < flt(doc.material_transferred_for_manufacturing) &&
-			(doc.required_items || []).some(d => flt(d.required_qty) > flt(d.consumed_qty))
+			!doc.skip_transfer
+			&& flt(doc.produced_qty) < flt(doc.material_transferred_for_manufacturing)
+			&& (doc.required_items || []).some(d => flt(d.consumed_qty) < flt(d.required_qty))
 		)
 
 		if (show_consumption_button) {
-			let consumption_btn = this.frm.add_custom_button(__('Material Consumption'), () => {
-				this.make_material_consumption_entry(doc.__onload.backflush_raw_materials_based_on);
-			});
-			consumption_btn.removeClass("btn-default").addClass('btn-primary');
+			this.frm.add_custom_button(__('Material Consumption Entry'), () => {
+				return erpnext.manufacturing.make_stock_entry_from_work_order(this.frm.doc, "Material Consumption for Manufacture");
+			}, __("Create"));
 		}
 	}
 
@@ -315,39 +319,10 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 	}
 
 	show_progress_for_operations() {
-		if (this.frm.doc.operations && this.frm.doc.operations.length) {
-			let progress_class = {
-				"Work in Progress": "progress-bar-warning",
-				"Completed": "progress-bar-success"
-			};
-
-			let bars = [];
-			let message = '';
-			let title = '';
-			let status_wise_oprtation_data = {};
-			let total_completed_qty = this.frm.doc.qty * this.frm.doc.operations.length;
-
-			this.frm.doc.operations.forEach(d => {
-				if (!status_wise_oprtation_data[d.status]) {
-					status_wise_oprtation_data[d.status] = [d.completed_qty, d.operation];
-				} else {
-					status_wise_oprtation_data[d.status][0] += d.completed_qty;
-					status_wise_oprtation_data[d.status][1] += ', ' + d.operation;
-				}
-			});
-
-			for (let key in status_wise_oprtation_data) {
-				title = __("{0} Operations: {1}", [key, status_wise_oprtation_data[key][1].bold()]);
-				bars.push({
-					'title': title,
-					'width': status_wise_oprtation_data[key][0] / total_completed_qty * 100  + '%',
-					'progress_class': progress_class[key]
-				});
-
-				message += title + '. ';
+		if (this.frm.doc.producible_qty && this.frm.doc.operations && this.frm.doc.operations.length) {
+			for (let row of this.frm.doc.operations) {
+				erpnext.manufacturing.show_progress_for_operation(this.frm.doc, row, this.frm);
 			}
-
-			this.frm.dashboard.add_progress(__('Operation Status'), bars, message);
 		}
 	}
 
@@ -532,7 +507,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 	}
 
 	make_pick_list(purpose) {
-		return erpnext.manufacturing.show_prompt_for_qty_input(this.frm.doc, purpose).then((r) => {
+		return erpnext.manufacturing.show_qty_prompt_for_stock_entry(this.frm.doc, purpose).then((r) => {
 			return frappe.xcall("erpnext.manufacturing.doctype.work_order.work_order.create_pick_list", {
 				"source_name": this.frm.doc.name,
 				"for_qty": r.data.qty
@@ -543,34 +518,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 		});
 	}
 
-	make_material_consumption_entry(backflush_raw_materials_based_on) {
-		let doc = this.frm.doc;
-
-		let max;
-		if (!doc.skip_transfer) {
-			max = (backflush_raw_materials_based_on === "Material Transferred for Manufacture") ?
-				flt(doc.material_transferred_for_manufacturing) - flt(doc.produced_qty) :
-				flt(doc.producible_qty) - flt(doc.produced_qty);
-				// flt(doc.qty) - flt(doc.material_transferred_for_manufacturing);
-		} else {
-			max = flt(doc.producible_qty) - flt(doc.produced_qty);
-		}
-
-		return frappe.call({
-			method: "erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry",
-			args: {
-				"work_order_id": doc.name,
-				"purpose": "Material Consumption for Manufacture",
-				"qty": max
-			},
-			callback: (r) => {
-				let doclist = frappe.model.sync(r.message);
-				frappe.set_route("Form", doclist[0].doctype, doclist[0].name);
-			}
-		});
-	}
-
-	make_job_card() {
+	create_job_cards() {
 		let operations_data = [];
 
 		const dialog = frappe.prompt({
@@ -615,7 +563,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 			}
 		}, (data) => {
 			return frappe.call({
-				method: "erpnext.manufacturing.doctype.work_order.work_order.make_job_card",
+				method: "erpnext.manufacturing.doctype.work_order.work_order.create_job_cards",
 				args: {
 					work_order: this.frm.doc.name,
 					operations: data.operations,

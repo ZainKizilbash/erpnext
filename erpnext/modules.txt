@@ -1,5 +1,4 @@
 Accounts
-CRM
 Buying
 Projects
 Selling
@@ -22,5 +21,4 @@ ERPNext Integrations
 Non Profit
 Hotels
 Quality Management
-Communication
 Vehicles

@@ -6,7 +6,6 @@ data = {
 		'Customer',
 		'Sales Order',
 		'Sales Invoice',
-		'CRM',
 		'Task',
 		'Expense Claim',
 		'Employee',

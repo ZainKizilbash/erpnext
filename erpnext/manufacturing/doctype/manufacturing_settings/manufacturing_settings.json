@@ -10,7 +10,6 @@
   "overproduction_percentage_for_work_order",
   "under_production_allowance",
   "backflush_raw_materials_based_on",
-  "material_consumption",
   "update_bom_costs_automatically",
   "column_break_11",
   "default_wip_warehouse",
@@ -18,6 +17,7 @@
   "default_rm_warehouse",
   "auto_submit_work_order",
   "auto_submit_material_transfer_entry",
+  "auto_submit_job_card",
   "auto_submit_manufacture_entry",
   "auto_select_batches_in_stock_entry",
   "scrap_remaining_by_default",
@@ -37,7 +37,7 @@
   },
   {
    "default": "0",
-   "description": "Disables creation of time logs against Work Orders. Operations shall not be tracked against Work Order",
+   "description": "Disables creation of time logs against Work Orders and Job Cards",
    "fieldname": "disable_capacity_planning",
    "fieldtype": "Check",
    "label": "Disable Capacity Planning and Time Tracking"
@@ -93,13 +93,6 @@
    "fieldtype": "Select",
    "label": "Backflush Raw Materials Based On",
    "options": "BOM\nMaterial Transferred for Manufacture"
-  },
-  {
-   "default": "0",
-   "description": "Allow multiple Material Consumption against a Work Order",
-   "fieldname": "material_consumption",
-   "fieldtype": "Check",
-   "label": "Allow Multiple Material Consumption"
   },
   {
    "default": "0",
@@ -164,12 +157,18 @@
    "fieldname": "auto_select_batches_in_stock_entry",
    "fieldtype": "Check",
    "label": "Auto Select Batches in Stock Entry"
+  },
+  {
+   "default": "0",
+   "fieldname": "auto_submit_job_card",
+   "fieldtype": "Check",
+   "label": "Auto Submit Job Card"
   }
  ],
  "icon": "icon-wrench",
  "issingle": 1,
  "links": [],
- "modified": "2023-09-06 22:44:53.779733",
+ "modified": "2023-11-11 00:09:01.740827",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Manufacturing Settings",

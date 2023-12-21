@@ -9,8 +9,6 @@ from erpnext.stock.get_item_details import get_reserved_qty_for_so
 from frappe import _, ValidationError
 from erpnext.controllers.stock_controller import StockController
 from erpnext.maintenance.doctype.maintenance_schedule.maintenance_schedule import get_maintenance_schedule_from_serial_no
-from six.moves import map
-from six import string_types
 
 
 class SerialNoCannotCreateDirectError(ValidationError): pass
@@ -476,7 +474,7 @@ def validate_serial_no_ledger(serial_nos, item_code, voucher_type, voucher_no, c
 		frappe.throw(_("{0} is not available in any Warehouse{1}{2}")
 			.format(serial_no_link, issuing_voucher_msg, last_available_msg), title=_("Not In Stock"))
 
-	if isinstance(serial_nos, string_types):
+	if isinstance(serial_nos, str):
 		serial_nos = get_serial_nos(serial_nos)
 
 	if not serial_nos:

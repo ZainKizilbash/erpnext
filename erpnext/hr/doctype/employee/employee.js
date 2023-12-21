@@ -130,15 +130,6 @@ frappe.ui.form.on('Employee',{
 		frm.set_value("prefered_email",
 			frm.fields_dict[prefered_email_fieldname].value)
 	},
-	status: function(frm) {
-		return frm.call({
-			method: "deactivate_sales_person",
-			args: {
-				employee: frm.doc.employee,
-				status: frm.doc.status
-			}
-		});
-	},
 	create_user: function(frm) {
 		if (!frm.doc.prefered_email)
 		{
@@ -154,10 +145,10 @@ frappe.ui.form.on('Employee',{
 		});
 	},
 	tax_id: function(frm) {
-		erpnext.utils.format_ntn(frm, "tax_id");
+		frappe.regional.pakistan.format_ntn(frm, "tax_id");
 	},
 	tax_cnic: function(frm) {
-		erpnext.utils.format_cnic(frm, "tax_cnic");
+		frappe.regional.pakistan.format_cnic(frm, "tax_cnic");
 	},
 });
 

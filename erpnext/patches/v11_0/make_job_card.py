@@ -2,7 +2,7 @@
 # License: GNU General Public License v3. See license.txt
 
 import frappe
-from erpnext.manufacturing.doctype.work_order.work_order import create_job_card
+from erpnext.manufacturing.doctype.work_order.work_order import _make_job_card
 
 def execute():
 	frappe.reload_doc('manufacturing', 'doctype', 'work_order')
@@ -21,5 +21,5 @@ def execute():
 		if d[fieldname]:
 			doc = frappe.get_doc('Work Order', d[fieldname])
 			for row in doc.operations:
-				create_job_card(doc, row, auto_create=True)
+				_make_job_card(doc, row, auto_create=True)
 			frappe.delete_doc('Timesheet', d.name)

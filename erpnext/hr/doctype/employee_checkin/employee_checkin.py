@@ -54,7 +54,7 @@ class EmployeeCheckin(Document):
 
 		has_shift = False
 		if self.employee:
-			shift_actual_timings = get_actual_start_end_datetime_of_shift(self.employee, get_datetime(self.time), True)
+			shift_actual_timings = get_actual_start_end_datetime_of_shift(self.employee, get_datetime(self.time), True, True)
 			has_shift = shift_actual_timings[0] and shift_actual_timings[1]
 
 		# Log Type validation

@@ -1,10 +1,10 @@
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
-import frappe, erpnext
+import frappe
+import erpnext
 from frappe import _
 from frappe.utils import cint, flt, now, cstr
 from erpnext.stock.utils import get_valuation_method
-from six import iteritems
 import json
 import datetime
 
@@ -34,7 +34,7 @@ def make_sl_entries(sl_entries, is_amended=None, allow_negative_stock=False, via
 
 			sle_allow_negative_stock = cint(sle.get('allow_negative_stock'))
 
-			if sle.get("actual_qty") or sle.get("voucher_type")=="Stock Reconciliation":
+			if sle.get("actual_qty") or sle.get("voucher_type") == "Stock Reconciliation":
 				sle_doc = make_entry(sle, sle_allow_negative_stock or allow_negative_stock, via_landed_cost_voucher)
 				sle_id = sle_doc.get('name')
 				creation = sle_doc.get('creation')
@@ -127,7 +127,7 @@ class update_entries_after(object):
 			self.allow_negative_stock = get_allow_negative_stock()
 
 		self.args = args
-		for key, value in iteritems(args):
+		for key, value in args.items():
 			setattr(self, key, value)
 
 		self.previous_sle = self.get_sle_before_datetime()

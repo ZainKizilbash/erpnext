@@ -41,6 +41,7 @@ class SalarySlip(TransactionBase):
 
 	def before_validate_links(self):
 		self.loans = []
+		self.advances = []
 
 	def validate(self):
 		self.status = self.get_status()
@@ -73,6 +74,12 @@ class SalarySlip(TransactionBase):
 
 	def before_print(self, print_settings=None):
 		self.company_address_doc = erpnext.get_company_address(self)
+
+		self.total_loan_repayment = sum([flt(d.repayment_amount) for d in self.loans])
+		self.total_loan_balance = sum([flt(d.balance_amount) for d in self.loans])
+
+		self.total_advance_repayment = sum([flt(d.allocated_amount) for d in self.advances])
+		self.total_advance_balance = sum([flt(d.balance_amount) for d in self.advances])
 
 	def on_submit(self):
 		if self.net_pay < 0:
@@ -455,7 +462,8 @@ class SalarySlip(TransactionBase):
 
 		if self.advances:
 			for d in self.advances:
-				d.allocated_amount = min(d.balance_amount, self.net_pay) if self.net_pay > 0 else 0
+				d.allocated_amount = min(d.advance_amount, self.net_pay) if self.net_pay > 0 else 0
+				d.balance_amount = flt(d.advance_amount) - flt(d.allocated_amount)
 				self.net_pay -= d.allocated_amount
 
 		self.total_advance_amount = sum([d.allocated_amount for d in self.advances])
@@ -1013,13 +1021,18 @@ class SalarySlip(TransactionBase):
 		for loan in self.get_loan_details():
 			self.append('loans', {
 				'loan': loan.name,
-				'total_payment': loan.total_payment,
+				'repayment_amount': loan.total_payment,
 				'interest_amount': loan.interest_amount,
 				'principal_amount': loan.principal_amount,
 				'loan_account': loan.loan_account,
 				'interest_income_account': loan.interest_income_account,
 				'loan_repayment_detail': loan.loan_repayment_detail,
 				'loan_repayment_date': loan.payment_date,
+				'loan_type': loan.loan_type,
+				'disbursement_date': loan.disbursement_date,
+				'total_loan_amount': loan.total_loan_amount,
+				'pending_loan_amount': flt(loan.total_loan_amount) - flt(loan.total_amount_paid),
+				'balance_amount': flt(loan.total_loan_amount) - flt(loan.total_amount_paid) - flt(loan.total_payment),
 			})
 
 			self.total_loan_repayment += loan.total_payment
@@ -1030,8 +1043,8 @@ class SalarySlip(TransactionBase):
 		return frappe.db.sql("""
 			select loan.name, rps.name as loan_repayment_detail,
 				rps.principal_amount, rps.interest_amount, rps.total_payment,
-				rps.payment_date,
-				loan.loan_account, loan.interest_income_account
+				rps.payment_date, loan.loan_account, loan.interest_income_account,
+				loan.loan_type, loan.disbursement_date, loan.total_payment as total_loan_amount, loan.total_amount_paid
 			from
 				`tabRepayment Schedule` as rps, `tabLoan` as loan
 			where
@@ -1147,16 +1160,14 @@ class SalarySlip(TransactionBase):
 		self.advances = []
 
 		pending_advances = frappe.db.sql("""
-			select name as employee_advance, paid_amount as total_advance, balance_amount, posting_date, advance_account
+			select name as employee_advance, posting_date, advance_account, balance_amount as advance_amount
 			from `tabEmployee Advance`
 			where docstatus=1 and employee=%s and posting_date <= %s and deduct_from_salary = 1 and balance_amount > 0
 			order by posting_date
 		""", [self.employee, self.end_date], as_dict=1)
 
-		total_pending_advance = 0
 		for data in pending_advances:
 			self.append('advances', data)
-			total_pending_advance += data.total_advance
 
 	@frappe.whitelist()
 	def calculate_mode_of_payment(self):

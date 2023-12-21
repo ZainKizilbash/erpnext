@@ -17,7 +17,7 @@ from frappe.model.utils import get_fetch_values
 from frappe.contacts.doctype.address.address import get_default_address
 from frappe.contacts.doctype.contact.contact import get_default_contact, get_all_contact_nos
 from erpnext.accounts.party import get_contact_details, get_address_display
-from erpnext.controllers.status_updater import StatusUpdater
+from erpnext.controllers.status_updater import StatusUpdaterERP
 from erpnext.projects.doctype.project_status.project_status import get_auto_project_status, set_manual_project_status,\
 	get_valid_manual_project_status_names, is_manual_project_status, validate_project_status_for_transaction
 from erpnext.projects.doctype.project_workshop.project_workshop import get_project_workshop_details
@@ -45,7 +45,7 @@ vehicle_change_fields = [
 ]
 
 
-class Project(StatusUpdater):
+class Project(StatusUpdaterERP):
 	def __init__(self, *args, **kwargs):
 		super(Project, self).__init__(*args, **kwargs)
 		self.sales_data = frappe._dict()
@@ -822,8 +822,8 @@ class Project(StatusUpdater):
 		if not self.get('applies_to_item'):
 			format_vehicle_fields(self)
 
-		if self.get('applies_to_item') and not self.get('project_workshop'):
-			frappe.throw(_("Project Workshop is mandatory when Applies to Item is set"))
+		if self.get('applies_to_vehicle') and not self.get('project_workshop'):
+			frappe.throw(_("Project Workshop is mandatory when Applies to Vehicle is set"))
 
 	def set_project_in_sales_order_and_quotation(self):
 		if self.sales_order:
@@ -2110,6 +2110,7 @@ def make_sales_invoice(project_name, target_doc=None, depreciation_type=None, cl
 		set_cash_or_credit()
 		unset_different_customer_details()
 		set_fetch_values()
+		set_sales_person_in_target_doc(target_doc, project)
 
 		target_doc.run_method("set_missing_values")
 
@@ -2179,6 +2180,8 @@ def get_delivery_note(project_name):
 		if target_doc.meta.has_field(k):
 			target_doc.set(k, v)
 
+	set_sales_person_in_target_doc(target_doc, project)
+
 	# Missing Values and Forced Values
 	target_doc.run_method("set_missing_values")
 	target_doc.run_method("reset_taxes_and_charges")
@@ -2219,6 +2222,8 @@ def get_sales_order(project_name, items_type=None):
 			target_doc = add_project_template_items(target_doc, d.project_template, project.applies_to_item,
 				check_duplicate=False, project_template_detail=d, items_type=items_type)
 
+	set_sales_person_in_target_doc(target_doc, project)
+
 	# Remove already ordered items
 	project_template_ordered_set = get_project_template_ordered_set(project)
 	to_remove = []
@@ -2241,6 +2246,15 @@ def get_sales_order(project_name, items_type=None):
 	target_doc.run_method("calculate_taxes_and_totals")
 
 	return target_doc
+
+
+def set_sales_person_in_target_doc(target_doc, project):
+	if project.service_advisor:
+		target_doc.sales_team = []
+		target_doc.append("sales_team", {
+			"sales_person": project.service_advisor,
+			"allocated_percentage": 100
+		})
 
 
 def get_project_template_ordered_set(project):

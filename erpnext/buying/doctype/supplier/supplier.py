@@ -50,7 +50,7 @@ class Supplier(TransactionBase):
 
 		self.supplier_name = clean_whitespace(self.supplier_name)
 
-		from erpnext.accounts.party import validate_ntn_cnic_strn
+		from frappe.regional.pakistan import validate_ntn_cnic_strn
 		validate_ntn_cnic_strn(self.tax_id, self.tax_cnic, self.tax_strn)
 
 		validate_party_accounts(self)

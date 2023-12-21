@@ -6,13 +6,13 @@ import erpnext
 from frappe import _, scrub
 from frappe.core.doctype.user_permission.user_permission import get_permitted_documents
 from frappe.model.utils import get_fetch_values
-from frappe.utils import add_days, getdate, add_years, get_timestamp, nowdate, flt, cstr, cint
+from frappe.utils import getdate, add_years, get_timestamp, nowdate, flt, cstr, cint
 from frappe.contacts.doctype.address.address import get_default_address, get_company_address
 from frappe.contacts.doctype.contact.contact import get_default_contact
 from erpnext.exceptions import PartyFrozen, PartyDisabled, InvalidAccountCurrency
 from erpnext.accounts.utils import get_fiscal_year
 from erpnext import get_company_currency
-from erpnext.setup.doctype.sales_person.sales_person import get_sales_person_commission_details
+from erpnext.overrides.sales_person.sales_person_hooks import get_sales_person_commission_details
 from erpnext.accounts.doctype.payment_terms_template.payment_terms_template import get_due_date_from_template
 
 
@@ -282,47 +282,31 @@ def set_contact_details(party_details, party, party_type, contact_person=None, p
 
 
 @frappe.whitelist()
-def get_contact_details(contact, project=None, lead=None, get_contact_no_list=False, link_doctype=None, link_name=None):
-	from frappe.contacts.doctype.contact.contact import get_contact_details
-	from erpnext.crm.doctype.lead.lead import _get_lead_contact_details
+def get_contact_details(contact=None, project=None, lead=None, get_contact_no_list=False, link_doctype=None, link_name=None):
+	from crm.crm.utils import get_contact_details
 
-	if project and isinstance(project, str):
-		project = frappe.db.get_value("Project", project,
-			['contact_person', 'contact_mobile', 'contact_phone', 'contact_email'], as_dict=1)
-	if lead and isinstance(lead, str):
-		lead = frappe.get_doc("Lead", lead)
+	out = get_contact_details(contact, lead=lead,
+		get_contact_no_list=get_contact_no_list, link_doctype=link_doctype, link_name=link_name)
+	out = out or frappe._dict()
 
-	out = frappe._dict()
+	if project and contact:
+		if isinstance(project, str):
+			project = frappe.db.get_value("Project", project, [
+				'contact_person', 'contact_mobile', 'contact_phone', 'contact_email'
+			], as_dict=1)
 
-	if contact:
-		out = get_contact_details(contact, get_contact_no_list=get_contact_no_list, link_doctype=link_doctype, link_name=link_name)
-	elif lead:
-		out = _get_lead_contact_details(lead)
-	else:
-		out = get_contact_details(None)
-
-	if project and cstr(contact) == cstr(project.get('contact_person')):
-		out.contact_mobile = project.contact_mobile
-		out.contact_phone = project.contact_phone
-		out.contact_email = project.contact_email
+		if cstr(contact) == cstr(project.get('contact_person')):
+			out.contact_mobile = project.contact_mobile
+			out.contact_phone = project.contact_phone
+			out.contact_email = project.contact_email
 
 	return out
 
 
 @frappe.whitelist()
-def get_address_display(address, lead=None):
-	from frappe.contacts.doctype.address.address import get_address_display
-	from erpnext.crm.doctype.lead.lead import get_lead_address_details
-
-	out = None
-
-	if address:
-		out = get_address_display(address)
-	elif lead:
-		lead_address_details = get_lead_address_details(lead)
-		out = get_address_display(lead_address_details)
-
-	return out
+def get_address_display(address=None, lead=None):
+	from crm.crm.utils import get_address_display
+	return get_address_display(address, lead=lead)
 
 
 def get_default_price_list(party):
@@ -719,88 +703,6 @@ def validate_party_frozen_disabled(party_type, party_name):
 		elif party_type == "Employee":
 			if frappe.db.get_value("Employee", party_name, "status") == "Left":
 				frappe.msgprint(_("{0} is not active").format(frappe.get_desk_link(party_type, party_name)), alert=True)
-
-
-def validate_ntn_cnic_strn(ntn=None, cnic=None, strn=None):
-	import re
-
-	if frappe.db.get_default("country") != 'Pakistan':
-		return
-
-	cnic_regex = re.compile(r'^.....-.......-.$')
-	ntn_regex = re.compile(r'^.......-.$')
-	strn_regex = re.compile(r'^..-..-....-...-..$')
-
-	if ntn and not ntn_regex.match(ntn):
-		frappe.throw(_("Invalid NTN. NTN must be in the format #######-#"))
-	if cnic and not cnic_regex.match(cnic):
-		frappe.throw(_("Invalid CNIC. CNIC must be in the format #####-#######-#"))
-	if strn and not strn_regex.match(strn):
-		frappe.throw(_("Invalid STRN. STRN must be in the format ##-##-####-###-##"))
-
-
-def validate_mobile_pakistan_in_contact(doc, method):
-	if doc.get('mobile_no'):
-		validate_mobile_pakistan(doc.mobile_no)
-	if doc.get('mobile_no_2'):
-		validate_mobile_pakistan(doc.mobile_no_2)
-
-	for d in doc.phone_nos:
-		if d.is_primary_mobile_no:
-			if not validate_mobile_pakistan(d.phone, throw=False):
-				d.is_primary_mobile_no = 0
-
-
-def validate_cnic_in_contact(doc, method):
-	if doc.get('tax_cnic'):
-		validate_ntn_cnic_strn(cnic=doc.tax_cnic)
-
-
-def validate_mobile_pakistan(mobile_no, throw=True):
-	import re
-
-	if frappe.db.get_default("country") != 'Pakistan':
-		return
-
-	if not mobile_no:
-		return
-
-	# do not check mobile number validity for international numbers
-	if mobile_no[:1] == "+" or mobile_no[:2] == "00":
-		return
-
-	mobile_regex = re.compile(r'^03\d\d-\d\d\d\d\d\d\d$')
-
-	if not mobile_regex.match(mobile_no):
-		if throw:
-			frappe.throw(_("Invalid Mobile No. Pakistani Mobile Nos must be in the format 03##-#######"))
-
-		return False
-
-	return True
-
-
-@frappe.whitelist()
-def validate_duplicate_tax_id(doctype, fieldname, value, exclude=None, throw=False):
-	if not value:
-		return
-
-	meta = frappe.get_meta(doctype)
-	if not fieldname or not meta.has_field(fieldname):
-		frappe.throw(_("Invalid fieldname {0}").format(fieldname))
-
-	label = _(meta.get_field(fieldname).label)
-
-	filters = {fieldname: value}
-	if exclude:
-		filters['name'] = ['!=', exclude]
-
-	duplicates = frappe.db.get_all(doctype, filters=filters)
-	duplicate_names = [d.name for d in duplicates]
-	if duplicates:
-		frappe.msgprint(_("{0} {1} is already set in {2}: {3}").format(label, frappe.bold(value), doctype,
-			", ".join([frappe.utils.get_link_to_form(doctype, name) for name in duplicate_names])),
-			raise_exception=throw, indicator='red' if throw else 'orange')
 
 
 @frappe.whitelist()

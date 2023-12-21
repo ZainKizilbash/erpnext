@@ -58,6 +58,12 @@ frappe.ui.form.on("BOM", {
 				}
 			};
 		});
+
+		frm.set_query("workstation", "operations", (doc, cdt, cdn) => {
+			let row = frappe.get_doc(cdt, cdn);
+			return erpnext.queries.workstation(row.operation);
+		});
+
 	},
 
 	onload_post_render: function(frm) {

@@ -323,136 +323,6 @@ $.extend(erpnext.utils, {
 		refresh_field(table_fieldname);
 	},
 
-	get_formatted_ntn: function (value) {
-		value = cstr(value).toUpperCase();
-		value = value.replace(/[^a-zA-Z0-9]+/g, "");
-
-		//0000000-0
-		if (value.length >= 7) {
-			value = value.slice(0, 7) + "-" + value.slice(7);
-		}
-
-		return value;
-	},
-
-	format_ntn: function(frm, fieldname) {
-		if (frappe.sys_defaults.country != "Pakistan") {
-			return;
-		}
-
-		let value = frm.doc[fieldname];
-		if (value) {
-			value = erpnext.utils.get_formatted_ntn(value);
-			frm.doc[fieldname] = value;
-			frm.refresh_field(fieldname);
-		}
-	},
-
-	get_formatted_cnic: function (value) {
-		value = cstr(value).toUpperCase();
-		value = value.replace(/[^0-9]+/g, "");
-
-		// 00000-0000000-0
-		if (value.length >= 12) {
-			value = value.slice(0, 12) + "-" + value.slice(12);
-		}
-		if (value.length >= 5) {
-			value = value.slice(0, 5) + "-" + value.slice(5);
-		}
-
-		return value;
-	},
-
-	format_cnic: function(frm, fieldname) {
-		if (frappe.sys_defaults.country != "Pakistan") {
-			return;
-		}
-
-		let value = frm.doc[fieldname];
-		if (value) {
-			value = erpnext.utils.get_formatted_cnic(value);
-			frm.doc[fieldname] = value;
-			frm.refresh_field(fieldname);
-		}
-	},
-
-	get_formatted_strn: function (value) {
-		value = cstr(value).toUpperCase();
-		value = value.replace(/[^a-zA-Z0-9]+/g, "");
-
-		// 00-00-0000-000-00
-		if (value.length >= 11) {
-			value = value.slice(0, 11) + "-" + value.slice(11);
-		}
-		if (value.length >= 8) {
-			value = value.slice(0, 8) + "-" + value.slice(8);
-		}
-		if (value.length >= 4) {
-			value = value.slice(0, 4) + "-" + value.slice(4);
-		}
-		if (value.length >= 2) {
-			value = value.slice(0, 2) + "-" + value.slice(2);
-		}
-
-		return value;
-	},
-
-	format_strn: function(frm, fieldname) {
-		if (frappe.sys_defaults.country != "Pakistan") {
-			return;
-		}
-
-		let value = frm.doc[fieldname];
-		if (value) {
-			value = erpnext.utils.get_formatted_strn(value);
-			frm.doc[fieldname] = value;
-			frm.refresh_field(fieldname);
-		}
-	},
-
-	get_formatted_mobile_pakistan: function (value) {
-		value = value.replace(/[^0-9+]+/g, "");
-
-		// do not format international numbers
-		if (value.slice(0, 1) === '+' || value.slice(0, 2) === '00') {
-			return value;
-		}
-
-		// 0000-0000000
-		if (value.length >= 4) {
-			value = value.slice(0, 4) + "-" + value.slice(4);
-			return value;
-		}
-
-		return value;
-	},
-
-	format_mobile_pakistan: function (frm, fieldname) {
-		if (frappe.sys_defaults.country != "Pakistan") {
-			return;
-		}
-
-		let value = frm.doc[fieldname];
-		if (value) {
-			value = erpnext.utils.get_formatted_mobile_pakistan(value);
-			frm.doc[fieldname] = value;
-			frm.refresh_field(fieldname);
-		}
-	},
-
-	format_mobile_pakistan_in_contact: function (frm) {
-		if (frappe.sys_defaults.country != "Pakistan") {
-			return;
-		}
-
-		$.each(frm.doc.phone_nos || [], function (i, d) {
-			if (d.is_primary_mobile_no) {
-				d.phone = erpnext.utils.get_formatted_mobile_pakistan(d.phone);
-				refresh_field('phone', d.name, 'phone_nos');
-			}
-		});
-	},
-
 	get_formatted_vehicle_id(value) {
 		return cstr(value).replace(/\s+/g, "").toUpperCase();
 	},
@@ -472,21 +342,6 @@ $.extend(erpnext.utils, {
 			frappe.call({
 				method: "erpnext.vehicles.doctype.vehicle.vehicle.validate_duplicate_vehicle",
 				args: {
-					fieldname: fieldname,
-					value: value,
-					exclude: doc.__islocal ? null : doc.name
-				}
-			});
-		}
-	},
-
-	validate_duplicate_tax_id: function (doc, fieldname) {
-		let value = doc[fieldname];
-		if (value) {
-			frappe.call({
-				method: "erpnext.accounts.party.validate_duplicate_tax_id",
-				args: {
-					doctype: doc.doctype,
 					fieldname: fieldname,
 					value: value,
 					exclude: doc.__islocal ? null : doc.name
@@ -559,17 +414,6 @@ $.extend(erpnext.utils, {
 		});
 	},
 
-	get_sales_person_from_user: function (callback) {
-		return frappe.call({
-			method: "erpnext.setup.doctype.sales_person.sales_person.get_sales_person_from_user",
-			callback: function (r) {
-				if (!r.exc && callback) {
-					callback(r.message);
-				}
-			}
-		});
-	},
-
 	setup_remove_zero_qty_rows(frm) {
 		if (frm.doc.docstatus === 0) {
 			frm.fields_dict.items.grid.add_custom_button(__("Remove 0 Qty Rows"), function () {
@@ -595,6 +439,9 @@ $.extend(erpnext.utils, {
 		}
 
 		let total_qty = flt(args.total_qty) || 0;
+		if (!total_qty) {
+			return "";
+		}
 
 		for (let d of args.progress_bars) {
 			let title = d.title || "";

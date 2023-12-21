@@ -189,7 +189,7 @@ class VehicleGatePass(VehicleTransactionController):
 	def validate_opportunity(self):
 		if self.get("opportunity"):
 			opportunity = frappe.db.get_value("Opportunity", self.opportunity, [
-				'opportunity_from', 'party_name', 'applies_to_item', 'applies_to_vehicle',
+				'opportunity_from', 'party_name',
 			], as_dict=1)
 
 			if not opportunity:
@@ -205,14 +205,6 @@ class VehicleGatePass(VehicleTransactionController):
 					frappe.throw(_("Lead does not match in {0}").format(
 						frappe.get_desk_link("Opportunity", self.opportunity))
 					)
-
-			if opportunity.applies_to_item and self.item_code != opportunity.applies_to_item:
-				frappe.throw(_("Variant Item Code does not match in {0}")
-					.format(frappe.get_desk_link("Opportunity", self.opportunity)))
-
-			if opportunity.applies_to_vehicle and self.vehicle != opportunity.applies_to_vehicle:
-				frappe.throw(_("Vehicle does not match in {0}")
-					.format(frappe.get_desk_link("Opportunity", self.opportunity)))
 
 	def validate_sales_invoice(self):
 		if self.get('sales_invoice'):

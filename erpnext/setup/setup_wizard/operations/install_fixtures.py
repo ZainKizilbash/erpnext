@@ -10,12 +10,9 @@ from frappe.utils import cstr, getdate
 from erpnext.accounts.doctype.account.account import RootNotEditable
 from frappe.desk.doctype.global_search_settings.global_search_settings import update_global_search_doctypes
 
-default_lead_sources = ["Existing Customer", "Reference", "Advertisement",
-	"Cold Calling", "Exhibition", "Supplier Reference", "Mass Mailing",
-	"Customer's Vendor", "Campaign", "Walk In"]
-
 default_sales_partner_type = ["Channel Partner", "Distributor", "Dealer", "Agent",
 	"Retailer", "Implementation Partner", "Reseller"]
+
 
 def install(country=None):
 	records = [
@@ -113,11 +110,6 @@ def install(country=None):
 		{'doctype': 'Designation', 'designation_name': _('Designer')},
 		{'doctype': 'Designation', 'designation_name': _('Researcher')},
 
-		# territory: with two default territories, one for home country and one named Rest of the World
-		{'doctype': 'Territory', 'territory_name': _('All Territories'), 'is_group': 1, 'name': _('All Territories'), 'parent_territory': ''},
-		{'doctype': 'Territory', 'territory_name': country.replace("'", ""), 'is_group': 0, 'parent_territory': _('All Territories')},
-		{'doctype': 'Territory', 'territory_name': _("Rest Of The World"), 'is_group': 0, 'parent_territory': _('All Territories')},
-
 		# customer group
 		{'doctype': 'Customer Group', 'customer_group_name': _('All Customer Groups'), 'is_group': 1, 	'name': _('All Customer Groups'), 'parent_customer_group': ''},
 		{'doctype': 'Customer Group', 'customer_group_name': _('Individual'), 'is_group': 0, 'parent_customer_group': _('All Customer Groups')},
@@ -134,9 +126,6 @@ def install(country=None):
 		{'doctype': 'Supplier Group', 'supplier_group_name': _('Hardware'), 'is_group': 0, 'parent_supplier_group': _('All Supplier Groups')},
 		{'doctype': 'Supplier Group', 'supplier_group_name': _('Pharmaceutical'), 'is_group': 0, 'parent_supplier_group': _('All Supplier Groups')},
 		{'doctype': 'Supplier Group', 'supplier_group_name': _('Distributor'), 'is_group': 0, 'parent_supplier_group': _('All Supplier Groups')},
-
-		# Sales Person
-		{'doctype': 'Sales Person', 'sales_person_name': _('Sales Team'), 'is_group': 1, "parent_sales_person": ""},
 
 		# Mode of Payment
 		{'doctype': 'Mode of Payment',
@@ -197,10 +186,6 @@ def install(country=None):
 		{'doctype': "Party Type", "party_type": "Shareholder", "account_type": "Payable"},
 		{'doctype': "Party Type", "party_type": "Student", "account_type": "Receivable"},
 
-		{'doctype': "Opportunity Type", "name": _("Sales")},
-		{'doctype': "Opportunity Type", "name": _("Support")},
-		{'doctype': "Opportunity Type", "name": _("Maintenance")},
-
 		{'doctype': "Project Type", "project_type": "Internal"},
 		{'doctype': "Project Type", "project_type": "External"},
 		{'doctype': "Project Type", "project_type": "Other"},
@@ -228,27 +213,9 @@ def install(country=None):
 		# Share Management
 		{"doctype": "Share Type", "title": _("Equity")},
 		{"doctype": "Share Type", "title": _("Preference")},
-
-		# Market Segments
-		{"doctype": "Market Segment", "market_segment": _("Lower Income")},
-		{"doctype": "Market Segment", "market_segment": _("Middle Income")},
-		{"doctype": "Market Segment", "market_segment": _("Upper Income")},
-
-		# Sales Stages
-		{"doctype": "Sales Stage", "stage_name": _("Prospecting")},
-		{"doctype": "Sales Stage", "stage_name": _("Qualification")},
-		{"doctype": "Sales Stage", "stage_name": _("Needs Analysis")},
-		{"doctype": "Sales Stage", "stage_name": _("Value Proposition")},
-		{"doctype": "Sales Stage", "stage_name": _("Identifying Decision Makers")},
-		{"doctype": "Sales Stage", "stage_name": _("Perception Analysis")},
-		{"doctype": "Sales Stage", "stage_name": _("Proposal/Price Quote")},
-		{"doctype": "Sales Stage", "stage_name": _("Negotiation/Review")}
 	]
 
-	from erpnext.setup.setup_wizard.data.industry_type import get_industry_types
-	records += [{"doctype":"Industry Type", "industry": d} for d in get_industry_types()]
 	# records += [{"doctype":"Operation", "operation": d} for d in get_operations()]
-	records += [{'doctype': 'Lead Source', 'source_name': _(d)} for d in default_lead_sources]
 
 	records += [{'doctype': 'Sales Partner Type', 'sales_partner_type': _(d)} for d in default_sales_partner_type]
 
@@ -314,6 +281,7 @@ def set_more_defaults():
 	hr_settings.leave_status_notification_template = _("Leave Status Notification")
 	hr_settings.save()
 
+
 def add_uom_data():
 	# add UOMs
 	uoms = json.loads(open(frappe.get_app_path("erpnext", "setup", "setup_wizard", "data", "uom_data.json")).read())
@@ -351,6 +319,7 @@ def add_uom_data():
 				"value": d.get("value")
 			}).insert(ignore_permissions=True)
 
+
 def create_missing_uom_category(category):
 	if not frappe.db.exists("UOM Category", _(category)):
 		frappe.get_doc({
@@ -358,30 +327,6 @@ def create_missing_uom_category(category):
 			"category_name": _(category),
 		}).insert(ignore_permissions=True)
 
-def add_market_segments():
-	records = [
-		# Market Segments
-		{"doctype": "Market Segment", "market_segment": _("Lower Income")},
-		{"doctype": "Market Segment", "market_segment": _("Middle Income")},
-		{"doctype": "Market Segment", "market_segment": _("Upper Income")}
-	]
-
-	make_records(records)
-
-def add_sale_stages():
-	# Sale Stages
-	records = [
-		{"doctype": "Sales Stage", "stage_name": _("Prospecting")},
-		{"doctype": "Sales Stage", "stage_name": _("Qualification")},
-		{"doctype": "Sales Stage", "stage_name": _("Needs Analysis")},
-		{"doctype": "Sales Stage", "stage_name": _("Value Proposition")},
-		{"doctype": "Sales Stage", "stage_name": _("Identifying Decision Makers")},
-		{"doctype": "Sales Stage", "stage_name": _("Perception Analysis")},
-		{"doctype": "Sales Stage", "stage_name": _("Proposal/Price Quote")},
-		{"doctype": "Sales Stage", "stage_name": _("Negotiation/Review")}
-	]
-
-	make_records(records)
 
 def install_company(args):
 	records = [
