@@ -162,6 +162,12 @@ erpnext.accounts.SalesInvoiceController = class SalesInvoiceController extends e
 
 			this.add_get_applicable_items_button();
 			this.add_get_project_template_items_button();
+
+			if (frappe.boot.active_domains.includes("Vehicles")) {
+				me.frm.add_custom_button(__('Vehicle Booking Order'), function() {
+					me.get_items_from_vehicle_booking_order();
+				}, __("Get Items From"));
+			}
 		}
 
 		this.set_default_print_format();
@@ -426,6 +432,135 @@ erpnext.accounts.SalesInvoiceController = class SalesInvoiceController extends e
 				only_items: cint(me.frm.doc.claim_billing)
 			}
 		});
+	}
+
+	get_items_from_vehicle_booking_order() {
+		let me = this;
+		let doc = {orders: []};
+
+		var dialog = new frappe.ui.Dialog({
+			title: __("Get Vehicle Booking Orders"),
+			doc: doc,
+			fields: [
+				{
+					label: __('From Date'),
+					fieldname: 'from_date',
+					fieldtype: 'Date',
+				},
+				{
+					label: __('To Date'),
+					fieldname: 'to_date',
+					fieldtype: 'Date',
+				},
+				{
+					fieldtype: "Column Break",
+				},
+				{
+					fieldtype: "Link",
+					label: __("Vehicle Item Code"),
+					fieldname: "item_code",
+					options: "Item",
+					onchange: function () {
+						let item_code = dialog.get_value('item_code');
+						if (item_code) {
+							frappe.db.get_value("Item", item_code, 'item_name', function (r) {
+								if (r) {
+									dialog.set_value('item_name', r.item_name);
+								}
+							});
+						} else {
+							dialog.set_value("item_name", "");
+						}
+					},
+					get_query: function () {
+						return erpnext.queries.item({ 'is_vehicle': 1, 'include_in_vehicle_booking': 1, "include_templates": 1 });
+					}
+				},
+				{
+					fieldtype: "Data",
+					label: __("Vehicle Item Name"),
+					fieldname: "item_name",
+					read_only: 1,
+				},
+				{
+					fieldtype: "Button",
+					label: __("Get Vehicle Booking Orders"),
+					fieldname: "get_vbos",
+					click: function () {
+						let item_code = dialog.get_value('item_code');
+						let from_date = dialog.get_value('from_date');
+						let to_date = dialog.get_value('to_date');
+						if (!from_date || !to_date) {
+							frappe.throw(__("From Date and To Date is mandatory"));
+						}
+
+						return frappe.call({
+							method: "erpnext.vehicles.doctype.vehicle_booking_order.vehicle_booking_order.get_vbos_for_sales_invoice",
+							args: {
+								item_code: item_code,
+								from_date: from_date,
+								to_date: to_date,
+							},
+							callback: function (r) {
+								if (r.message) {
+									doc.orders = [];
+									for (let vbo of r.message) {
+										doc.orders.push({
+											"vehicle_booking_order": vbo
+										});
+									}
+									dialog.fields_dict.orders.refresh();
+								}
+							}
+						});
+					}
+				},
+				{
+					fieldtype: "Section Break",
+				},
+				{
+					label: __("Vehicle Booking Orders"),
+					fieldname: "orders",
+					fieldtype: "Table",
+					reqd: 1,
+					fields: [
+						{
+							label: __("Vehicle Booking Order"),
+							fieldname: "vehicle_booking_order",
+							fieldtype: "Link",
+							options: "Vehicle Booking Order",
+							reqd: 1,
+							in_list_view: 1,
+							get_query: function () {
+								return {
+									filters: {docstatus: 1}
+								};
+							}
+						},
+					],
+					get_data: function() {
+						return doc.orders;
+					}
+				},
+			],
+			primary_action: function () {
+				let values = dialog.get_values();
+				let vbos = values.orders.map(row => row.vehicle_booking_order);
+				return me.frm.call({
+					doc: me.frm.doc,
+					method: "add_vehicle_booking_commission_items",
+					args: {
+						vehicle_booking_orders: vbos,
+					},
+					callback: function(r) {
+						dialog.hide();
+					}
+				});
+			},
+			primary_action_label: __('Get Commission Items')
+		});
+
+		dialog.show();
 	}
 
 	get_items_from_project() {
