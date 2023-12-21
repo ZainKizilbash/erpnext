@@ -438,7 +438,7 @@ erpnext.accounts.SalesInvoiceController = class SalesInvoiceController extends e
 		let me = this;
 		let doc = {orders: []};
 
-		var dialog = new frappe.ui.Dialog({
+		let dialog = new frappe.ui.Dialog({
 			title: __("Get Vehicle Booking Orders"),
 			doc: doc,
 			fields: [
@@ -538,9 +538,7 @@ erpnext.accounts.SalesInvoiceController = class SalesInvoiceController extends e
 							}
 						},
 					],
-					get_data: function() {
-						return doc.orders;
-					}
+					data: doc.orders,
 				},
 			],
 			primary_action: function () {
