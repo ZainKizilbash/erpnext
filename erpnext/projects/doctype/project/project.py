@@ -1189,6 +1189,7 @@ def get_stock_items(project, get_sales_invoice=True):
 			i.base_net_amount as net_amount,
 			i.base_net_rate as net_rate,
 			i.base_taxable_amount as taxable_amount,
+			i.base_total_discount as total_discount,
 			i.item_tax_detail, i.claim_customer, p.conversion_rate
 		from `tabDelivery Note Item` i
 		inner join `tabDelivery Note` p on p.name = i.parent
@@ -1208,6 +1209,7 @@ def get_stock_items(project, get_sales_invoice=True):
 			if(i.is_stock_item = 1, i.base_net_amount * (i.qty - i.delivered_qty) / i.qty, i.base_net_amount) as net_amount,
 			i.base_net_rate as net_rate,
 			if(i.is_stock_item = 1, i.base_taxable_amount * (i.qty - i.delivered_qty) / i.qty, i.base_taxable_amount) as taxable_amount,
+			if(i.is_stock_item = 1, i.base_total_discount * (i.qty - i.delivered_qty) / i.qty, i.base_total_discount) as total_discount,
 			i.item_tax_detail, i.claim_customer, p.conversion_rate
 		from `tabSales Order Item` i
 		inner join `tabSales Order` p on p.name = i.parent
@@ -1231,6 +1233,7 @@ def get_stock_items(project, get_sales_invoice=True):
 			i.base_net_amount as net_amount,
 			i.base_net_rate as net_rate,
 			i.base_taxable_amount as taxable_amount,
+			i.base_total_discount as total_discount,
 			i.item_tax_detail, p.conversion_rate
 		from `tabSales Invoice Item` i
 		inner join `tabSales Invoice` p on p.name = i.parent
@@ -1283,6 +1286,7 @@ def get_service_items(project, get_sales_invoice=True):
 			i.base_net_amount as net_amount,
 			i.base_net_rate as net_rate,
 			i.base_taxable_amount as taxable_amount,
+			i.base_total_discount as total_discount,
 			i.item_tax_detail, i.claim_customer, p.conversion_rate
 		from `tabSales Order Item` i
 		inner join `tabSales Order` p on p.name = i.parent
@@ -1307,6 +1311,7 @@ def get_service_items(project, get_sales_invoice=True):
 				i.base_net_amount as net_amount,
 				i.base_net_rate as net_rate,
 				i.base_taxable_amount as taxable_amount,
+				i.base_total_discount as total_discount,
 				i.item_tax_detail, p.conversion_rate
 			from `tabSales Invoice Item` i
 			inner join `tabSales Invoice` p on p.name = i.parent
@@ -1376,8 +1381,15 @@ def set_sales_data_customer_amounts(data, project):
 
 		if d.get('claim_customer') and project.customer and d.get('claim_customer') != project.customer:
 			d.is_claim_item = 1
-			d.customer_net_amount = 0
-			d.customer_net_rate = 0
+
+			if d.total_discount:
+				d.customer_net_amount = d.net_amount
+				d.customer_net_rate = d.net_rate
+				d.net_amount = d.customer_net_amount + d.total_discount
+				d.net_rate = d.net_amount / d.qty if d.qty else d.net_amount
+			else:
+				d.customer_net_amount = 0
+				d.customer_net_rate = 0
 		else:
 			d.is_claim_item = 0
 
@@ -1425,7 +1437,7 @@ def get_item_taxes(project, data, company):
 					tax_amount = flt(amount)
 					tax_amount *= conversion_rate
 
-					customer_tax_amount = 0 if d.get('is_claim_item') else flt(amount)
+					customer_tax_amount = 0 if d.get('is_claim_item') and not d.get('total_discount') else flt(amount)
 					if d.has_customer_depreciation:
 						customer_tax_amount *= d.cumulative_depreciation_percentage / 100
 
