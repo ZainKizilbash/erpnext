@@ -497,40 +497,32 @@ def update_directly_billed_qty_for_dn(delivery_note, delivery_note_item, update_
 	else:
 		is_delivery_return = delivery_note.get('is_return')
 
-	claim_customer = frappe.db.get_value("Delivery Note Item", delivery_note_item, "claim_customer")
-	claim_customer_cond = ""
-	if claim_customer:
-		claim_customer_cond = " and (inv.bill_to = {0} or i.amount != 0)"\
-			.format(frappe.db.escape(claim_customer))
-
 	billed = frappe.db.sql("""
-		select i.qty, i.amount, inv.is_return, inv.update_stock, inv.reopen_order, inv.depreciation_type
+		select i.qty, i.amount, inv.is_return, inv.update_stock, inv.reopen_order,
+			inv.depreciation_type, inv.bill_to
 		from `tabSales Invoice Item` i
 		inner join `tabSales Invoice` inv on inv.name = i.parent
-		where i.delivery_note_item=%s and inv.docstatus = 1 {0}
-	""".format(claim_customer_cond), delivery_note_item, as_dict=1)
+		where i.delivery_note_item=%s and inv.docstatus = 1
+	""", delivery_note_item, as_dict=1)
 
-	billed_qty, billed_amt = calculate_billed_qty_and_amount(billed, for_delivery_return=is_delivery_return)
+	billed_qty, billed_amt = calculate_billed_qty_and_amount(billed,
+		delivery_note_item=delivery_note_item, for_delivery_return=is_delivery_return)
 	frappe.db.set_value("Delivery Note Item", delivery_note_item, {"billed_qty": billed_qty, "billed_amt": billed_amt},
 		None, update_modified=update_modified)
 
 
 def update_indirectly_billed_qty_for_dn_against_so(sales_order_item, update_modified=True):
-	claim_customer = frappe.db.get_value("Sales Order Item", sales_order_item, "claim_customer")
-	claim_customer_cond = ""
-	if claim_customer:
-		claim_customer_cond = " and (inv.bill_to = {0} or item.amount != 0)" \
-			.format(frappe.db.escape(claim_customer))
-
 	# Billed against Sales Order directly
 	billed_against_so = frappe.db.sql("""
-		select item.qty, item.amount, inv.is_return, inv.update_stock, inv.reopen_order, inv.depreciation_type
+		select item.qty, item.amount, inv.is_return, inv.update_stock, inv.reopen_order,
+			inv.depreciation_type, inv.bill_to
 		from `tabSales Invoice Item` item, `tabSales Invoice` inv
 		where inv.name = item.parent and inv.docstatus = 1
-			and item.sales_order_item=%s and (item.delivery_note_item is null or item.delivery_note_item = '') {0}
-	""".format(claim_customer_cond), sales_order_item, as_dict=1)
+			and item.sales_order_item=%s and (item.delivery_note_item is null or item.delivery_note_item = '')
+	""", sales_order_item, as_dict=1)
 
-	billed_qty_against_so, billed_amt_against_so = calculate_billed_qty_and_amount(billed_against_so)
+	billed_qty_against_so, billed_amt_against_so = calculate_billed_qty_and_amount(billed_against_so,
+		sales_order_item=sales_order_item)
 
 	# Get all Delivery Note Item rows against the Sales Order Item row
 	dn_details = frappe.db.sql("""
@@ -556,12 +548,14 @@ def update_indirectly_billed_qty_for_dn_against_so(sales_order_item, update_modi
 		else:
 			# Get billed qty directly against Delivery Note
 			billed_against_dn = frappe.db.sql("""
-				select item.qty, item.amount, inv.is_return, inv.update_stock, inv.reopen_order, inv.depreciation_type
+				select item.qty, item.amount, inv.is_return, inv.update_stock, inv.reopen_order,
+					inv.depreciation_type, inv.bill_to
 				from `tabSales Invoice Item` item, `tabSales Invoice` inv
-				where inv.name=item.parent and item.delivery_note_item=%s and item.docstatus=1 {0}
-			""".format(claim_customer_cond), dnd.name, as_dict=1)
+				where inv.name=item.parent and item.delivery_note_item=%s and item.docstatus=1
+			""", dnd.name, as_dict=1)
 
-			billed_qty_against_dn, billed_amt_against_dn = calculate_billed_qty_and_amount(billed_against_dn)
+			billed_qty_against_dn, billed_amt_against_dn = calculate_billed_qty_and_amount(billed_against_dn,
+				delivery_note_item=dnd.name)
 
 		# Distribute billed qty and amt directly against SO between DNs based on FIFO
 		pending_qty_to_bill = flt(dnd.qty) - flt(dnd.returned_qty) - billed_qty_against_dn
@@ -584,11 +578,17 @@ def update_indirectly_billed_qty_for_dn_against_so(sales_order_item, update_modi
 	return updated_dn
 
 
-def calculate_billed_qty_and_amount(billed_data, for_delivery_return=False):
+def calculate_billed_qty_and_amount(billed_data, for_delivery_return=False, delivery_note_item=None, sales_order_item=None):
 	billed_qty = 0
 	billed_amt = 0
 
 	depreciation_type_qty = {}
+
+	claim_customer = None
+	if delivery_note_item:
+		claim_customer = frappe.db.get_value("Delivery Note Item", delivery_note_item, "claim_customer", cache=1)
+	elif sales_order_item:
+		claim_customer = frappe.db.get_value("Sales Order Item", sales_order_item, "claim_customer", cache=1)
 
 	for d in billed_data:
 		if for_delivery_return or not d.is_return or (d.reopen_order and not d.update_stock):
@@ -598,7 +598,7 @@ def calculate_billed_qty_and_amount(billed_data, for_delivery_return=False):
 			depreciation_type_qty.setdefault(depreciation_type, 0)
 			depreciation_type_qty[depreciation_type] += d.qty
 
-			if d.depreciation_type != 'Depreciation Amount Only':
+			if d.depreciation_type != 'Depreciation Amount Only' and (not claim_customer or d.bill_to == claim_customer):
 				billed_qty += d.qty
 
 	if 'No Depreciation' not in depreciation_type_qty:
@@ -643,7 +643,7 @@ def make_sales_invoice(source_name, target_doc=None, only_items=None, skip_postp
 		target.depreciation_percentage = None
 
 		if target_parent:
-			target_parent.set_rate_zero_for_claim_item(source, target)
+			target_parent.adjust_rate_for_claim_item(source, target)
 
 		if source.serial_no and source_parent.per_billed > 0:
 			target.serial_no = get_delivery_note_serial_no(source.item_code,

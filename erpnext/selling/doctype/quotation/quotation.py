@@ -288,7 +288,7 @@ def _make_sales_invoice(source_name, target_doc=None, ignore_permissions=False):
 		target.depreciation_percentage = None
 
 		if target_parent:
-			target_parent.set_rate_zero_for_claim_item(source, target)
+			target_parent.adjust_rate_for_claim_item(source, target)
 
 	doclist = get_mapped_doc("Quotation", source_name, {
 			"Quotation": {

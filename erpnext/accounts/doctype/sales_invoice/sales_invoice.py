@@ -1579,13 +1579,25 @@ class SalesInvoice(SellingController):
 			vro.set_status(update=True)
 			vro.notify_update()
 
-	def set_rate_zero_for_claim_item(self, source_row, target_row):
+	def adjust_rate_for_claim_item(self, source_row, target_row):
+		if not source_row.get('claim_customer'):
+			return
+
 		bill_to = self.get('bill_to') or self.get('customer')
-		if bill_to and source_row.get('claim_customer') and bill_to != source_row.claim_customer:
-			target_row.price_list_rate = 0
-			target_row.rate = 0
-			target_row.margin_rate_or_amount = 0
-			target_row.discount_percentage = 0
+		if source_row.discount_amount:
+			if bill_to == source_row.claim_customer:
+				target_row.price_list_rate = source_row.discount_amount
+				target_row.rate = source_row.discount_amount
+				target_row.margin_rate_or_amount = 0
+				target_row.discount_percentage = 0
+				target_row.discount_amount = 0
+		else:
+			if bill_to and bill_to != source_row.claim_customer:
+				target_row.price_list_rate = 0
+				target_row.rate = 0
+				target_row.margin_rate_or_amount = 0
+				target_row.discount_percentage = 0
+				target_row.discount_amount = 0
 
 	def set_can_make_vehicle_gate_pass(self):
 		if 'Vehicles' not in frappe.get_active_domains():

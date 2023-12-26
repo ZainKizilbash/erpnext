@@ -481,8 +481,6 @@ class SalesOrder(SellingController):
 					bill_to = d.bill_to or d.customer
 					so_row = self.getone('items', {'name': d.sales_order_item})
 					claim_customer = so_row.claim_customer if so_row else None
-					if not d.amount and claim_customer and bill_to != claim_customer:
-						continue
 
 					out.billed_amount_map.setdefault(d.sales_order_item, 0)
 					out.billed_amount_map[d.sales_order_item] += d.amount
@@ -491,7 +489,7 @@ class SalesOrder(SellingController):
 					out.depreciation_type_qty.setdefault(d.sales_order_item, {}).setdefault(depreciation_type, 0)
 					out.depreciation_type_qty[d.sales_order_item][depreciation_type] += d.qty
 
-					if d.depreciation_type != 'Depreciation Amount Only':
+					if d.depreciation_type != 'Depreciation Amount Only' and (not claim_customer or bill_to == claim_customer):
 						out.billed_qty_map.setdefault(d.sales_order_item, 0)
 						out.billed_qty_map[d.sales_order_item] += d.qty
 
@@ -1367,7 +1365,7 @@ def get_item_mapper_for_invoice(sales_order, allow_duplicate=False):
 		target.depreciation_percentage = None
 
 		if target_parent:
-			target_parent.set_rate_zero_for_claim_item(source, target)
+			target_parent.adjust_rate_for_claim_item(source, target)
 
 	return {
 		"doctype": "Sales Invoice Item",

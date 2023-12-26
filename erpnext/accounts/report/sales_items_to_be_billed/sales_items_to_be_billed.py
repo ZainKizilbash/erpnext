@@ -72,7 +72,8 @@ class ItemsToBeBilled:
 			i.{qty_field} as qty, i.uom, i.stock_uom, i.alt_uom,
 			i.conversion_factor, i.alt_uom_size,
 			i.billed_qty, i.returned_qty, i.billed_amt,
-			i.rate, i.amount, im.item_group, im.brand
+			i.rate, i.amount, im.item_group, im.brand,
+			i.discount_percentage, i.amount_before_discount
 			{sales_person_field} {project_fields} {claim_customer_field}
 		""".format(
 			party_field=fieldnames.party,
@@ -283,6 +284,9 @@ class ItemsToBeBilled:
 				d.uom = d.stock_uom
 				d.billed_qty = d.billed_qty * d.conversion_factor
 				d.returned_qty = d.returned_qty * d.conversion_factor
+
+			if d.get("claim_customer") and d.get("discount_percentage"):
+				d.amount = d.amount_before_discount
 
 			d['rate'] = d['amount'] / d['qty'] if d['qty'] else d['rate']
 			d["remaining_qty"] = d["qty"] - d["billed_qty"] - d['returned_qty']

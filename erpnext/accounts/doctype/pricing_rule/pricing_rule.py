@@ -258,6 +258,9 @@ def get_pricing_rule_for_item(args, price_list_rate=0, doc=None, for_validate=Fa
 			item_details.validate_applied_rule = pricing_rule.get("validate_applied_rule", 0)
 			item_details.price_or_product_discount = pricing_rule.get("price_or_product_discount")
 
+			if pricing_rule.get("claim_customer"):
+				item_details.claim_customer = pricing_rule.get("claim_customer")
+
 			rules.append(get_pricing_rule_details(args, pricing_rule))
 
 			if pricing_rule.mixed_conditions or pricing_rule.apply_rule_on_other:
@@ -322,7 +325,8 @@ def get_pricing_rule_details(args, pricing_rule):
 		'rate_or_discount': pricing_rule.rate_or_discount,
 		'margin_type': pricing_rule.margin_type,
 		'item_code': args.get("item_code"),
-		'child_docname': args.get('child_docname')
+		'child_docname': args.get('child_docname'),
+		'claim_customer': pricing_rule.claim_customer,
 	})
 
 def apply_price_discount_rule(pricing_rule, item_details, args):
