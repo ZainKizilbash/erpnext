@@ -264,8 +264,6 @@ frappe.query_reports["Vehicle Maintenance Schedule"] = {
 				},
 			],
 			primary_action: (dialog_data) => {
-				dialog.hide();
-
 				return frappe.call({
 					method: "erpnext.vehicles.report.vehicle_maintenance_schedule.vehicle_maintenance_schedule.submit_communication_with_action",
 					args: {
@@ -280,6 +278,7 @@ frappe.query_reports["Vehicle Maintenance Schedule"] = {
 					},
 					callback: function(r) {
 						if (r.message && !r.exc) {
+							dialog.hide();
 							if (r.message.updated_row) {
 								frappe.query_report.datatable.datamanager.data[rowIndex] = r.message.updated_row;
 								erpnext.utils.query_report_local_refresh();

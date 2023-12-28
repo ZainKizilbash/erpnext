@@ -87,6 +87,9 @@ class OpportunityERP(Opportunity):
 				self.set(k, v)
 
 	def is_converted(self):
+		if self.is_new():
+			return super().is_converted()
+
 		if self.has_ordered_quotation():
 			return True
 
@@ -122,6 +125,9 @@ class OpportunityERP(Opportunity):
 				return True
 
 	def has_ordered_quotation(self):
+		if self.is_new():
+			return None
+
 		quotation = frappe.db.get_value("Quotation", {
 			"opportunity": self.name,
 			"docstatus": 1,
@@ -131,6 +137,9 @@ class OpportunityERP(Opportunity):
 		return quotation
 
 	def get_lost_quotations(self):
+		if self.is_new():
+			return []
+
 		lost_quotations = frappe.get_all("Quotation", {
 			"opportunity": self.name,
 			"docstatus": 1,
@@ -140,6 +149,9 @@ class OpportunityERP(Opportunity):
 		return [d.name for d in lost_quotations]
 
 	def get_lost_vehicle_quotations(self):
+		if self.is_new():
+			return []
+
 		lost_vehicle_quotations = frappe.get_all("Vehicle Quotation", {
 			"opportunity": self.name,
 			"docstatus": 1,
