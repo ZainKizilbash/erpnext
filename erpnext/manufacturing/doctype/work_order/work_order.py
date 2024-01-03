@@ -1157,6 +1157,9 @@ def create_work_orders(items, company, ignore_version=True, ignore_feed=False):
 			"expected_delivery_date": delivery_date,
 		})
 
+		if work_order.meta.has_field("cost_center") and d.get("cost_center"):
+			work_order.cost_center = d.get("cost_center")
+
 		frappe.utils.call_hook_method("update_work_order_on_create", work_order, d)
 
 		work_order.set_work_order_operations()
@@ -1275,6 +1278,9 @@ def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False, jo
 
 	if work_order.bom_no:
 		stock_entry.inspection_required = frappe.db.get_value('BOM', work_order.bom_no, 'inspection_required')
+
+	if work_order.meta.has_field("cost_center") and work_order.get("cost_center"):
+		stock_entry.cost_center = work_order.cost_center
 
 	if purpose == "Material Transfer for Manufacture":
 		stock_entry.to_warehouse = wip_warehouse

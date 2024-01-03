@@ -754,6 +754,7 @@ class SalesOrder(SellingController):
 					"sales_order_item": d.name,
 					"order_line_no": d.idx,
 					"project": self.project,
+					"cost_center": self.get("cost_center") or d.get("cost_center")
 				}
 
 				if for_raw_material_request:
