@@ -1040,6 +1040,32 @@ class SalarySlip(TransactionBase):
 			self.total_principal_amount += loan.principal_amount
 
 	def get_loan_details(self):
+		if frappe.db.get_single_value("HR Settings", "show_upcoming_loans_in_salary_slips"):
+			return frappe.db.sql("""
+				WITH loan_repayment_details AS (
+					SELECT loan.name, loan.total_payment as total_loan_amount, loan.creation,
+						loan.loan_type, loan.disbursement_date, loan.total_amount_paid,
+						rps.name as loan_repayment_detail, rps.principal_amount, rps.interest_amount,
+						rps.total_payment, rps.payment_date, loan.loan_account, loan.interest_income_account,
+						RANK() OVER (PARTITION BY loan.name ORDER BY rps.payment_date ASC) AS r
+					FROM
+						`tabRepayment Schedule` as rps, `tabLoan` as loan
+					WHERE
+						loan.name = rps.parent
+						and loan.docstatus = 1
+						and rps.paid = 0
+						and loan.repay_from_salary = 1
+						and loan.applicant_type = 'Employee'
+						and loan.applicant = %s
+					)
+				SELECT name, total_loan_amount, loan_type, disbursement_date, total_amount_paid,
+					loan_repayment_detail, principal_amount, interest_amount, payment_date, total_payment,
+					CASE WHEN payment_date between %s and %s THEN total_payment ELSE 0 END AS total_payment
+				FROM loan_repayment_details lrd
+				WHERE r = 1
+				order by payment_date, creation
+			""", (self.employee, self.start_date, self.end_date), as_dict=1)
+
 		return frappe.db.sql("""
 			select loan.name, rps.name as loan_repayment_detail,
 				rps.principal_amount, rps.interest_amount, rps.total_payment,
@@ -1099,13 +1125,16 @@ class SalarySlip(TransactionBase):
 				timesheet.save()
 
 	def update_loans(self):
+		loans = set()
+		is_paid = 1 if self.docstatus == 1 else 0
+
 		for loan in self.loans:
-			# setting repayment schedule and updating total amount to pay
-			is_paid = 1 if self.docstatus == 1 else 0
-			if loan.loan_repayment_detail:
+			if loan.loan_repayment_detail and loan.repayment_amount > 0:
+				loans.add(loan.loan)
 				frappe.db.set_value("Repayment Schedule", loan.loan_repayment_detail, "paid", is_paid)
 
-			doc = frappe.get_doc("Loan", loan.loan)
+		for loan in loans:
+			doc = frappe.get_doc("Loan", loan)
 			doc.update_total_amount_paid()
 			doc.set_status(update=True)
 

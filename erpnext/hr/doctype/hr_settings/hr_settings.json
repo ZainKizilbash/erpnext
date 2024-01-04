@@ -20,6 +20,7 @@
   "email_salary_slip_to_employee",
   "encrypt_salary_slips_in_emails",
   "consider_lwp_as_deduction",
+  "show_upcoming_loans_in_salary_slips",
   "password_policy",
   "employee_notifications",
   "send_birthday_notification",
@@ -247,13 +248,19 @@
    "fieldtype": "Link",
    "label": "Restrict Leave Allocation Cancellation to Role",
    "options": "Role"
+  },
+  {
+   "default": "0",
+   "fieldname": "show_upcoming_loans_in_salary_slips",
+   "fieldtype": "Check",
+   "label": "Show Upcoming Loans in Salary Slips"
   }
  ],
  "icon": "fa fa-cog",
  "idx": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-11-03 15:26:14.042250",
+ "modified": "2024-01-04 13:34:51.930690",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "HR Settings",
