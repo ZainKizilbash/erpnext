@@ -503,7 +503,7 @@ erpnext.accounts.SalesInvoiceController = class SalesInvoiceController extends e
 							},
 							callback: function (r) {
 								if (r.message) {
-									doc.orders = [];
+									doc.orders.length = 0;
 									for (let vbo of r.message) {
 										doc.orders.push({
 											"vehicle_booking_order": vbo
