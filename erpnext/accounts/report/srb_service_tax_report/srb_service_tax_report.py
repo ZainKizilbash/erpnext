@@ -202,7 +202,7 @@ class FBRInvoiceWiseTaxes(object):
 			d.buyer_type = "End_Consumer"
 			d.sale_type = "Services"
 			d.document_type = "SI"
-			d.hscode = "98201000"
+			# d.hscode = "98201000"
 			self.invoices_map[d.invoice] = frappe._dict({
 				'invoice': d, 'items': [], 'taxes': []
 			})
