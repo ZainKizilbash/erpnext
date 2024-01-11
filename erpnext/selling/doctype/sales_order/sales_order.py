@@ -829,8 +829,13 @@ def get_list_context(context=None):
 
 @frappe.whitelist()
 def update_status(status, name):
+	if not frappe.has_permission("Sales Order", "write"):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+
 	so = frappe.get_doc("Sales Order", name)
 	so.run_method("update_status", status)
+
+	frappe.msgprint(_("{0} is {1}").format(frappe.get_desk_link("Sales Order", name), status))
 
 
 @frappe.whitelist()

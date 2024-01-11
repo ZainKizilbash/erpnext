@@ -150,7 +150,7 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 				if(me.frm.doc.status === 'On Hold') {
 				   // un-hold
 				   me.frm.add_custom_button(__('Resume'), function() {
-					   me.update_status('Resume', 'Draft')
+					   me.update_status('Resume', 'Resumed')
 				   }, __("Status"));
 
 				   if (me.frm.doc.delivery_status == "To Deliver" || me.frm.doc.billing_status == "To Bill") {
@@ -161,7 +161,7 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 				else if(me.frm.doc.status === 'Closed') {
 				   // un-close
 				   me.frm.add_custom_button(__('Re-Open'), function() {
-					   me.update_status('Re-Open', 'Draft')
+					   me.update_status('Re-Open', 'Re-Opened')
 				   }, __("Status"));
 			   }
 			}

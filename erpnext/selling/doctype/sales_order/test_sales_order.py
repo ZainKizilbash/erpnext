@@ -180,7 +180,7 @@ class TestSalesOrder(unittest.TestCase):
 
 		# unclose so
 		so.load_from_db()
-		so.update_status('Draft')
+		so.update_status('Re-Opened')
 		self.assertEqual(get_reserved_qty(), existing_reserved_qty + 5)
 
 		dn.cancel()

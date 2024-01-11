@@ -1347,7 +1347,7 @@ def stop_unstop(work_order, status):
 	pro_order.run_method("update_status", status)
 	pro_order.notify_update()
 
-	frappe.msgprint(_("Work Order has been {0}").format(frappe.bold(status)))
+	frappe.msgprint(_("{0} has been {1}").format(frappe.get_desk_link("Work Order", work_order), status))
 
 	return pro_order.status
 
