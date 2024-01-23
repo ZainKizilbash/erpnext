@@ -680,7 +680,7 @@ class TransactionController(StockController):
 			return frappe.db.get_single_value("Global Defaults", "disable_rounded_total")
 
 	def update_item_prices(self):
-		from erpnext.stock.get_item_details import get_price_list_rate, process_args
+		from erpnext.stock.get_item_details import get_price_list_data, process_args
 		from erpnext.stock.report.item_prices.item_prices import _set_item_pl_rate
 
 		parent_dict = frappe._dict({})
@@ -704,7 +704,7 @@ class TransactionController(StockController):
 					args["transaction_date"] = args.get("posting_date")
 
 				item_price_data = frappe._dict()
-				get_price_list_rate(args, frappe.get_cached_doc("Item", item.item_code), item_price_data)
+				get_price_list_data(args, frappe.get_cached_doc("Item", item.item_code), item_price_data)
 
 				if flt(item.price_list_rate) and abs(flt(item_price_data.price_list_rate) - flt(item.price_list_rate)) > 0.005:
 					_set_item_pl_rate(args["transaction_date"], item.item_code, self.buying_price_list, flt(item.price_list_rate), item.uom, item.conversion_factor)

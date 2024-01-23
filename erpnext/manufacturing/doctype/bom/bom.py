@@ -8,7 +8,7 @@ from frappe import _
 from erpnext.setup.utils import get_exchange_rate
 from frappe.website.website_generator import WebsiteGenerator
 from erpnext.stock.get_item_details import get_conversion_factor
-from erpnext.stock.get_item_details import get_price_list_rate
+from erpnext.stock.get_item_details import get_price_list_data
 from erpnext.stock.get_item_details import get_default_warehouse, get_default_cost_center
 from frappe.core.doctype.version.version import get_diff
 from frappe.model.utils import get_fetch_values
@@ -238,7 +238,7 @@ class BOM(WebsiteGenerator):
 						})
 						item_doc = frappe.get_cached_doc("Item", arg.get("item_code"))
 						out = frappe._dict()
-						get_price_list_rate(args, item_doc, out)
+						get_price_list_data(args, item_doc, out)
 						rate = out.price_list_rate
 
 					if not rate:

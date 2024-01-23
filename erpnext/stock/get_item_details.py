@@ -72,7 +72,7 @@ def get_item_details(args, doc=None, for_validate=False, overwrite_warehouse=Tru
 
 	update_party_blanket_order(args, out)
 
-	get_price_list_rate(args, item, out)
+	get_price_list_data(args, item, out)
 
 	if args.customer and cint(args.is_pos):
 		out.update(get_pos_profile_item_details(args.company, args))
@@ -694,45 +694,6 @@ def get_item_defaults_details(args, set_warehouse=False):
 	return out
 
 
-def get_price_list_rate(args, item_doc, out):
-	meta = frappe.get_meta(args.parenttype or args.doctype)
-
-	if meta.get_field("currency") or args.get('currency'):
-		pl_details = get_price_list_currency_and_exchange_rate(args)
-		args.update(pl_details)
-		if meta.get_field("currency"):
-			validate_conversion_rate(args, meta)
-
-		# price from variant or template
-		price_list_rate = get_price_list_rate_for(item_doc.name, args.get("price_list"), args) or 0
-		if not price_list_rate and item_doc.variant_of:
-			price_list_rate = get_price_list_rate_for(item_doc.variant_of, args.get("price_list"), args)
-
-		# insert in database
-		if not price_list_rate:
-			if args.price_list and args.rate:
-				insert_item_price(args)
-			return {}
-
-		out.price_list_rate = flt(price_list_rate) * flt(args.plc_conversion_rate) \
-			/ flt(args.conversion_rate)
-
-		if "retail_price_list" in args:
-			retail_rate = 0
-			if args.get("retail_price_list") and args.get("currency"):
-				if frappe.db.get_value("Price List", args.get("retail_price_list"), "currency", cache=True) == args.get("currency"):
-					retail_rate = get_price_list_rate_for(item_doc.name, args.get("retail_price_list"), args) or 0
-					if not retail_rate and item_doc.variant_of:
-						retail_rate = get_price_list_rate_for(item_doc.variant_of, args.get("retail_price_list"), args)
-
-			out.retail_rate = flt(retail_rate)
-
-		if not out.price_list_rate and args.transaction_type=="buying":
-			from erpnext.stock.doctype.item.item import get_last_purchase_details
-			out.update(get_last_purchase_details(item_doc.name,
-				args.name, args.conversion_rate))
-
-
 def get_claim_customer(item, args):
 	claim_customer = None
 
@@ -764,6 +725,45 @@ def get_claim_customer_from_project(project):
 		return project_details.bill_to
 
 
+def get_price_list_data(args, item_doc, out):
+	meta = frappe.get_meta(args.parenttype or args.doctype)
+
+	if meta.get_field("currency") or args.get('currency'):
+		pl_details = get_price_list_currency_and_exchange_rate(args)
+		args.update(pl_details)
+		if meta.get_field("currency"):
+			validate_conversion_rate(args, meta)
+
+		# price from variant or template
+		price_list_rate = get_price_list_rate(item_doc.name, args.get("price_list"), args) or 0
+		if not price_list_rate and item_doc.variant_of:
+			price_list_rate = get_price_list_rate(item_doc.variant_of, args.get("price_list"), args)
+
+		# insert in database
+		if not price_list_rate:
+			if args.price_list and args.rate:
+				insert_item_price(args)
+			return {}
+
+		out.price_list_rate = flt(price_list_rate) * flt(args.plc_conversion_rate) \
+			/ flt(args.conversion_rate)
+
+		if "retail_price_list" in args:
+			retail_rate = 0
+			if args.get("retail_price_list") and args.get("currency"):
+				if frappe.db.get_value("Price List", args.get("retail_price_list"), "currency", cache=True) == args.get("currency"):
+					retail_rate = get_price_list_rate(item_doc.name, args.get("retail_price_list"), args) or 0
+					if not retail_rate and item_doc.variant_of:
+						retail_rate = get_price_list_rate(item_doc.variant_of, args.get("retail_price_list"), args)
+
+			out.retail_rate = flt(retail_rate)
+
+		if not out.price_list_rate and args.transaction_type=="buying":
+			from erpnext.stock.doctype.item.item import get_last_purchase_details
+			out.update(get_last_purchase_details(item_doc.name,
+				args.name, args.conversion_rate))
+
+
 def insert_item_price(args):
 	"""Insert Item Price if Price List and Price List Rate are specified and currency is the same"""
 	if frappe.db.get_value("Price List", args.price_list, "currency", cache=True) == args.currency \
@@ -791,6 +791,72 @@ def insert_item_price(args):
 				item_price.insert()
 				frappe.msgprint(_("Item Price added for {0} in Price List {1}").format(args.item_code,
 					args.price_list), alert=True)
+
+
+def get_price_list_rate(item_code, price_list, args):
+	"""
+		:param customer: link to Customer DocType
+		:param supplier: link to Supplier DocType
+		:param price_list: str (Standard Buying or Standard Selling)
+		:param item_code: str, Item Doctype field item_code
+		:param qty: Desired Qty
+		:param transaction_date: Date of the price
+	"""
+
+	for hook_method in reversed(frappe.get_hooks("get_price_list_rate")):
+		overriden_price_list_rate = frappe.get_attr(hook_method)(item_code, price_list, args)
+		if overriden_price_list_rate is not None:
+			return overriden_price_list_rate
+
+	return get_price_list_rate_for(item_code, price_list, args)
+
+
+def get_price_list_rate_for(item_code, price_list, args):
+	item_price_args = {
+		"item_code": item_code,
+		"price_list": price_list or args.get('price_list'),
+		"customer": args.get('customer'),
+		"supplier": args.get('supplier'),
+		"uom": args.get('uom'),
+		"transaction_date": args.get('transaction_date') or args.get('posting_date'),
+	}
+
+	item_price_data = None
+	item_price = get_item_price(item_price_args, item_code)
+	if item_price:
+		desired_qty = args.get("qty")
+		if desired_qty is None:
+			desired_qty = 1
+
+		if desired_qty and check_packing_list(item_price, desired_qty, item_code):
+			item_price_data = item_price
+	else:
+		for field in ["customer", "supplier"]:
+			del item_price_args[field]
+
+		general_item_price = get_item_price(item_price_args, item_code, ignore_party=args.get("ignore_party"))
+
+		if not general_item_price and args.get("uom") != args.get("stock_uom"):
+			item_price_args["uom"] = args.get("stock_uom")
+			general_item_price = get_item_price(item_price_args, item_code, ignore_party=args.get("ignore_party"))
+
+		if general_item_price:
+			item_price_data = general_item_price
+
+	if item_price_data:
+		if item_price_data.uom == args.get("uom"):
+			return item_price_data.price_list_rate
+		elif args.get('price_list_uom_dependant'):
+			return convert_item_uom_for(
+				value=item_price_data.price_list_rate,
+				item_code=item_code,
+				from_uom=item_price_data.uom,
+				to_uom=args.get("uom"),
+				conversion_factor=args.get("conversion_factor"),
+				is_rate=True
+			)
+		else:
+			return item_price_data.price_list_rate
 
 
 def get_item_price(args, item_code, ignore_party=False):
@@ -855,62 +921,6 @@ def get_item_price(args, item_code, ignore_party=False):
 		return convertible_prices[0] if convertible_prices else None
 
 	return prices[0] if prices else None
-
-
-def get_price_list_rate_for(item_code, price_list, args):
-	"""
-		:param customer: link to Customer DocType
-		:param supplier: link to Supplier DocType
-		:param price_list: str (Standard Buying or Standard Selling)
-		:param item_code: str, Item Doctype field item_code
-		:param qty: Desired Qty
-		:param transaction_date: Date of the price
-	"""
-	item_price_args = {
-		"item_code": item_code,
-		"price_list": price_list or args.get('price_list'),
-		"customer": args.get('customer'),
-		"supplier": args.get('supplier'),
-		"uom": args.get('uom'),
-		"transaction_date": args.get('transaction_date') or args.get('posting_date'),
-	}
-
-	item_price_data = None
-	item_price = get_item_price(item_price_args, item_code)
-	if item_price:
-		desired_qty = args.get("qty")
-		if desired_qty is None:
-			desired_qty = 1
-
-		if desired_qty and check_packing_list(item_price, desired_qty, item_code):
-			item_price_data = item_price
-	else:
-		for field in ["customer", "supplier"]:
-			del item_price_args[field]
-
-		general_item_price = get_item_price(item_price_args, item_code, ignore_party=args.get("ignore_party"))
-
-		if not general_item_price and args.get("uom") != args.get("stock_uom"):
-			item_price_args["uom"] = args.get("stock_uom")
-			general_item_price = get_item_price(item_price_args, item_code, ignore_party=args.get("ignore_party"))
-
-		if general_item_price:
-			item_price_data = general_item_price
-
-	if item_price_data:
-		if item_price_data.uom == args.get("uom"):
-			return item_price_data.price_list_rate
-		elif args.get('price_list_uom_dependant'):
-			return convert_item_uom_for(
-				value=item_price_data.price_list_rate,
-				item_code=item_code,
-				from_uom=item_price_data.uom,
-				to_uom=args.get("uom"),
-				conversion_factor=args.get("conversion_factor"),
-				is_rate=True
-			)
-		else:
-			return item_price_data.price_list_rate
 
 
 def check_packing_list(item_price, desired_qty, item_code):
@@ -1258,7 +1268,7 @@ def apply_price_list(args, as_doc=False):
 def apply_price_list_on_item(args):
 	item_details = frappe._dict()
 	item_doc = frappe.get_cached_doc("Item", args.item_code)
-	get_price_list_rate(args, item_doc, item_details)
+	get_price_list_data(args, item_doc, item_details)
 
 	item_details.update(get_pricing_rule_for_item(args, item_details.price_list_rate))
 
