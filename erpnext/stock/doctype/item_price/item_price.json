@@ -9,7 +9,6 @@
  "field_order": [
   "item_code",
   "uom",
-  "packing_unit",
   "column_break_17",
   "item_name",
   "item_group",
@@ -17,6 +16,7 @@
   "item_description",
   "price_list_details",
   "price_list",
+  "column_break_swqcl",
   "customer",
   "supplier",
   "column_break_3",
@@ -28,9 +28,10 @@
   "price_list_rate",
   "section_break_15",
   "valid_from",
-  "lead_time_days",
-  "column_break_18",
   "valid_upto",
+  "column_break_18",
+  "lead_time_days",
+  "packing_unit",
   "section_break_24",
   "note",
   "reference"
@@ -197,8 +198,10 @@
    "search_index": 1
   },
   {
+   "collapsible": 1,
    "fieldname": "section_break_24",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "More Information"
   },
   {
    "fieldname": "note",
@@ -217,12 +220,16 @@
    "label": "Item Group",
    "options": "Item Group",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_swqcl",
+   "fieldtype": "Column Break"
   }
  ],
  "icon": "fa fa-flag",
  "idx": 1,
  "links": [],
- "modified": "2023-10-24 14:02:44.739721",
+ "modified": "2024-01-23 12:03:12.880162",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Item Price",

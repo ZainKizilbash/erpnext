@@ -59,7 +59,7 @@ class LCCostingReport(object):
 			"transaction_date": getdate(d.posting_date),
 		}
 		current_rate = get_item_price(item_price_args, d.item_code)
-		current_rate = current_rate[0][1] if current_rate else None
+		current_rate = current_rate.price_list_rate if current_rate else None
 		return current_rate
 
 	def get_conditions(self):

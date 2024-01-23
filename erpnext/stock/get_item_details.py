@@ -824,33 +824,37 @@ def get_item_price(args, item_code, ignore_party=False):
 			conditions += """ and %(transaction_date)s between
 				ifnull(valid_from, '2000-01-01') and ifnull(valid_upto, '2500-12-31')"""
 
-	out = frappe.db.sql("""
-		select name, price_list_rate, uom,
-			ifnull(valid_from, '2000-01-01') as valid_from, ifnull(valid_upto, '2500-12-31') as valid_upto
+	prices = frappe.db.sql("""
+		select name,
+			price_list_rate,
+			uom,
+			ifnull(valid_from, '2000-01-01') as valid_from,
+			ifnull(valid_upto, '2500-12-31') as valid_upto,
+			packing_unit
 		from `tabItem Price`
-		{conditions} {order_by}
-	""".format(conditions=conditions, order_by=order_by), args, as_list=1)
+		{conditions}
+		{order_by}
+	""".format(conditions=conditions, order_by=order_by), args, as_dict=1)
 
-	matches_uom = list(filter(lambda d: cstr(d[2]) == cstr(args.get('uom')), out))
+	matches_uom = [d for d in prices if cstr(d.uom) == cstr(args.get('uom'))]
 	if matches_uom:
-		return matches_uom
+		return matches_uom[0]
 
-	has_uom = list(filter(lambda d: d[2], out))
+	has_uom = [d for d in prices if d.uom]
 	if has_uom:
 		# there are item prices with uom other than the current uom
-
 		item = frappe.get_cached_doc("Item", item_code)
 		item_uoms = [d.uom for d in item.uoms]
 
-		convertible_prices = [d for d in has_uom if d[2] in item_uoms]
+		convertible_prices = [d for d in has_uom if d.uom in item_uoms]
 		if convertible_prices:
-			has_uom_other_than_stock_uom = list(filter(lambda d: cstr(d[2]) != cstr(item.stock_uom), convertible_prices))
+			has_uom_other_than_stock_uom = [d for d in convertible_prices if cstr(d.uom) != cstr(item.stock_uom)]
 			if has_uom_other_than_stock_uom:
-				return has_uom_other_than_stock_uom
+				return has_uom_other_than_stock_uom[0]
 
-		return convertible_prices
+		return convertible_prices[0] if convertible_prices else None
 
-	return out
+	return prices[0] if prices else None
 
 
 def get_price_list_rate_for(item_code, price_list, args):
@@ -871,52 +875,55 @@ def get_price_list_rate_for(item_code, price_list, args):
 		"transaction_date": args.get('transaction_date') or args.get('posting_date'),
 	}
 
-	item_price_data = 0
-	price_list_rate = get_item_price(item_price_args, item_code)
-	if price_list_rate:
+	item_price_data = None
+	item_price = get_item_price(item_price_args, item_code)
+	if item_price:
 		desired_qty = args.get("qty")
 		if desired_qty is None:
 			desired_qty = 1
 
-		if desired_qty and check_packing_list(price_list_rate[0][0], desired_qty, item_code):
-			item_price_data = price_list_rate
+		if desired_qty and check_packing_list(item_price, desired_qty, item_code):
+			item_price_data = item_price
 	else:
 		for field in ["customer", "supplier"]:
 			del item_price_args[field]
 
-		general_price_list_rate = get_item_price(item_price_args, item_code,
-			ignore_party=args.get("ignore_party"))
+		general_item_price = get_item_price(item_price_args, item_code, ignore_party=args.get("ignore_party"))
 
-		if not general_price_list_rate and args.get("uom") != args.get("stock_uom"):
+		if not general_item_price and args.get("uom") != args.get("stock_uom"):
 			item_price_args["uom"] = args.get("stock_uom")
-			general_price_list_rate = get_item_price(item_price_args, item_code, ignore_party=args.get("ignore_party"))
+			general_item_price = get_item_price(item_price_args, item_code, ignore_party=args.get("ignore_party"))
 
-		if general_price_list_rate:
-			item_price_data = general_price_list_rate
+		if general_item_price:
+			item_price_data = general_item_price
 
 	if item_price_data:
-		if item_price_data[0][2] == args.get("uom"):
-			return item_price_data[0][1]
+		if item_price_data.uom == args.get("uom"):
+			return item_price_data.price_list_rate
 		elif args.get('price_list_uom_dependant'):
-			return convert_item_uom_for(value=item_price_data[0][1], item_code=item_code,
-				from_uom=item_price_data[0][2], to_uom=args.get("uom"),
-				conversion_factor=args.get("conversion_factor"), is_rate=True)
+			return convert_item_uom_for(
+				value=item_price_data.price_list_rate,
+				item_code=item_code,
+				from_uom=item_price_data.uom,
+				to_uom=args.get("uom"),
+				conversion_factor=args.get("conversion_factor"),
+				is_rate=True
+			)
 		else:
-			return item_price_data[0][1]
+			return item_price_data.price_list_rate
 
 
-def check_packing_list(price_list_rate_name, desired_qty, item_code):
+def check_packing_list(item_price, desired_qty, item_code):
 	"""
 		Check if the desired qty is within the increment of the packing list.
-		:param price_list_rate_name: Name of Item Price
+		:param item_price: Name of Item Price
 		:param desired_qty: Desired Qt
 		:param item_code: str, Item Doctype field item_code
 		:param qty: Desired Qt
 	"""
 
 	flag = True
-	item_price = frappe.get_doc("Item Price", price_list_rate_name)
-	if item_price.packing_unit:
+	if item_price and item_price.packing_unit:
 		packing_increment = desired_qty % item_price.packing_unit
 
 		if packing_increment != 0:

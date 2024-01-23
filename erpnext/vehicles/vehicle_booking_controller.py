@@ -631,7 +631,7 @@ def get_vehicle_price(company, item_code, vehicle_price_list, fni_price_list=Non
 	}
 
 	vehicle_item_price = get_item_price(vehicle_price_args, item_code, ignore_party=True)
-	vehicle_item_price = vehicle_item_price[0][1] if vehicle_item_price else 0
+	vehicle_item_price = vehicle_item_price.price_list_rate if vehicle_item_price else 0
 	out.vehicle_amount = flt(vehicle_item_price)
 
 	if not cint(do_not_apply_withholding_tax):
@@ -643,7 +643,7 @@ def get_vehicle_price(company, item_code, vehicle_price_list, fni_price_list=Non
 		fni_price_args = vehicle_price_args.copy()
 		fni_price_args['price_list'] = fni_price_list
 		fni_item_price = get_item_price(fni_price_args, item_code, ignore_party=True)
-		fni_item_price = fni_item_price[0][1] if fni_item_price else 0
+		fni_item_price = fni_item_price.price_list_rate if fni_item_price else 0
 		out.fni_amount = flt(fni_item_price)
 	else:
 		out.fni_amount = 0

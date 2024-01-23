@@ -217,7 +217,7 @@ def get_item_price(item_code, price_list, transaction_date=None):
 	}
 	item_price = get_item_price(price_args, item_code, ignore_party=True)
 
-	return flt(item_price[0][1]) if item_price else 0
+	return flt(item_price.price_list_rate) if item_price else 0
 
 
 def validate_args(args):
