@@ -23,18 +23,19 @@
   "buying",
   "selling",
   "item_details",
-  "currency",
-  "col_br_1",
   "price_list_rate",
+  "col_br_1",
+  "currency",
   "section_break_15",
   "valid_from",
-  "valid_upto",
   "column_break_18",
-  "lead_time_days",
-  "packing_unit",
+  "valid_upto",
   "section_break_24",
   "note",
-  "reference"
+  "column_break_7l9ba",
+  "reference",
+  "lead_time_days",
+  "packing_unit"
  ],
  "fields": [
   {
@@ -170,7 +171,8 @@
   },
   {
    "fieldname": "section_break_15",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Validity"
   },
   {
    "fieldname": "valid_from",
@@ -224,12 +226,16 @@
   {
    "fieldname": "column_break_swqcl",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_7l9ba",
+   "fieldtype": "Column Break"
   }
  ],
  "icon": "fa fa-flag",
  "idx": 1,
  "links": [],
- "modified": "2024-01-23 12:03:12.880162",
+ "modified": "2024-01-23 18:11:30.536383",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Item Price",
