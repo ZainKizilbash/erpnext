@@ -868,6 +868,9 @@ def get_item_price(args, item_code, ignore_party=False):
 		:param item_code: str, Item Doctype field item_code
 	"""
 
+	if not args.get("price_list"):
+		return None
+
 	args['item_code'] = item_code
 
 	conditions = """where item_code = %(item_code)s and price_list = %(price_list)s"""
