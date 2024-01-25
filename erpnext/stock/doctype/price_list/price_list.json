@@ -85,7 +85,7 @@
  "icon": "fa fa-tags",
  "idx": 1,
  "links": [],
- "modified": "2023-09-09 12:10:09.370728",
+ "modified": "2024-01-25 02:03:24.955971",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Price List",
@@ -150,7 +150,7 @@
  ],
  "search_fields": "currency",
  "show_name_in_global_search": 1,
- "sort_field": "modified",
- "sort_order": "ASC",
+ "sort_field": "idx",
+ "sort_order": "DESC",
  "states": []
 }
