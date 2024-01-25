@@ -818,7 +818,7 @@ def get_price_list_rate_for(item_code, price_list, args):
 		"customer": args.get('customer'),
 		"supplier": args.get('supplier'),
 		"uom": args.get('uom'),
-		"transaction_date": args.get('transaction_date') or args.get('posting_date'),
+		"transaction_date": getdate(args.get('transaction_date') or args.get('posting_date')),
 	}
 
 	item_price_data = None
