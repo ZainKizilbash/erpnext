@@ -282,6 +282,7 @@ class PackingSlip(TransactionController):
 				"ref_dn_field": "sales_order_item",
 				"compare_fields": [["item_code", "="], ["uom", "="], ["conversion_factor", "="]],
 				"is_child_table": True,
+				"allow_duplicate_prev_row_id": True,
 			},
 			"Packing Slip Item": {
 				"ref_dn_field": "packing_slip_item",
