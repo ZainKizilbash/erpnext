@@ -877,7 +877,10 @@ erpnext.stock.StockEntry = class StockEntry extends erpnext.stock.StockControlle
 	}
 
 	scan_barcode() {
-		const barcode_scanner = new erpnext.utils.BarcodeScanner({frm:this.frm});
+		const barcode_scanner = new erpnext.utils.BarcodeScanner({
+			frm: this.frm,
+			prompt_qty: true,
+		});
 		barcode_scanner.process_scan();
 	}
 

@@ -1284,6 +1284,7 @@ def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False, jo
 
 	if purpose == "Material Transfer for Manufacture":
 		stock_entry.to_warehouse = wip_warehouse
+		stock_entry.from_warehouse = work_order.source_warehouse
 	else:
 		stock_entry.from_warehouse = wip_warehouse
 

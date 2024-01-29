@@ -145,11 +145,28 @@ erpnext.utils.BarcodeScanner = class BarcodeScanner {
 				await frappe.model.set_value(row.doctype, row.name, item_data);
 				return value;
 			};
+			const set_qty = async (value = 1) => {
+				const item_data = {item_code: item_code};
+				item_data[this.qty_field] = Number(value);
+				await frappe.model.set_value(row.doctype, row.name, item_data);
+				return value;
+			};
 
 			if (this.prompt_qty) {
-				frappe.prompt(__("Please enter quantity for item {0}", [item_code]), ({value}) => {
-					increment(value).then((value) => resolve(value));
-				});
+				frappe.prompt([
+						{
+							fieldname: "qty",
+							label: __("Quantity"),
+							fieldtype: "Float",
+							reqd: 1,
+							default: row[this.qty_field] || null,
+						}
+					],
+					({qty}) => {
+						set_qty(qty).then((value) => resolve(value));
+					},
+					__("Enter qty for Item {0}", [item_code])
+				);
 			} else if (this.frm.has_items) {
 				this.prepare_item_for_scan(row, item_code, barcode, batch_no, serial_no);
 			} else {
@@ -365,7 +382,11 @@ erpnext.utils.BarcodeScanner = class BarcodeScanner {
 	show_scan_message(idx, item_code, exists = null, qty = 1) {
 		// show new row or qty increase toast
 		if (exists) {
-			this.show_alert(__("Row #{0}: Qty increased by {1} for Item <b>{2}</b>", [idx, qty, item_code]), "green");
+			if (this.prompt_qty) {
+				this.show_alert(__("Row #{0}: Qty set as <b>{1}</b> for Item <b>{2}</b>", [idx, qty, item_code]), "green");
+			} else {
+				this.show_alert(__("Row #{0}: Qty increased by <b>{1}</b> for Item <b>{2}</b>", [idx, qty, item_code]), "green");
+			}
 		} else {
 			this.show_alert(__("Row #{0}: Item <b>{1}</b> added", [idx, item_code]), "green")
 		}
@@ -418,7 +439,7 @@ erpnext.utils.BarcodeScanner = class BarcodeScanner {
 
 	clean_up() {
 		this.scan_barcode_field.set_value("");
-		refresh_field(this.items_table_name);
+		this.frm.refresh_field(this.items_table_name);
 	}
 	show_alert(msg, indicator, duration=3) {
 		frappe.show_alert({message: msg, indicator: indicator}, duration);
