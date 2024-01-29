@@ -725,6 +725,10 @@ erpnext.stock.StockEntry = class StockEntry extends erpnext.stock.StockControlle
 		}
 	}
 
+	onload() {
+		erpnext.utils.setup_scan_barcode_field(this.frm.fields_dict.scan_barcode);
+	}
+
 	onload_post_render() {
 		var me = this;
 		this.set_default_account(false, function() {

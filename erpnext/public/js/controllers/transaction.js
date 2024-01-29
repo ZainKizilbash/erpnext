@@ -7,7 +7,6 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 		super.setup();
 
 		erpnext.setup_applies_to_fields(this.frm);
-		erpnext.utils.setup_scan_barcode_field(this.frm.fields_dict.scan_barcode);
 
 		frappe.ui.form.on(this.frm.doctype + " Item", "rate", function(frm, cdt, cdn) {
 			var item = frappe.get_doc(cdt, cdn);
@@ -400,6 +399,8 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 	}
 	onload() {
 		var me = this;
+
+		erpnext.utils.setup_scan_barcode_field(this.frm.fields_dict.scan_barcode);
 
 		if(this.frm.doc.__islocal) {
 			var currency = frappe.defaults.get_user_default("currency");
