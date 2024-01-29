@@ -1128,60 +1128,64 @@ def update_mapped_items_based_on_purchase_and_production(source, target):
 
 		if target_item.sales_order and (item.has_batch_no or item.has_serial_no) and not target_item.get("packing_slip"):
 			purchase_receipt_items = frappe.db.sql("""
-				select pr_item.batch_no, pr_item.serial_no, pr_item.qty
-				from `tabPurchase Receipt Item` pr_item
-				inner join `tabPurchase Receipt` prec on prec.name = pr_item.parent
-				inner join `tabPurchase Order Item` po_item on po_item.name = pr_item.purchase_order_item
-				where pr_item.docstatus = 1 and (prec.is_return = 0 or prec.reopen_order = 1)
+				select i.batch_no, i.serial_no, i.qty
+				from `tabPurchase Receipt Item` i
+				inner join `tabPurchase Receipt` prec on prec.name = i.parent
+				inner join `tabPurchase Order Item` po_item on po_item.name = i.purchase_order_item
+				where i.docstatus = 1 and (prec.is_return = 0 or prec.reopen_order = 1)
 					and po_item.sales_order_item = %s
 			""", target_item.sales_order_item, as_dict=1)
 
 			purchase_invoice_items = frappe.db.sql("""
-				select pi_item.batch_no, pi_item.serial_no, pi_item.qty
-				from `tabPurchase Invoice Item` pi_item
-				inner join `tabPurchase Invoice` pinv on pinv.name = pi_item.parent
-				inner join `tabPurchase Order Item` po_item on po_item.name = pi_item.purchase_order_item
+				select i.batch_no, i.serial_no, i.qty
+				from `tabPurchase Invoice Item` i
+				inner join `tabPurchase Invoice` pinv on pinv.name = i.parent
+				inner join `tabPurchase Order Item` po_item on po_item.name = i.purchase_order_item
 				where pinv.docstatus = 1 and pinv.update_stock = 1 and (pinv.is_return = 0 or pinv.reopen_order = 1)
 					and po_item.sales_order_item = %s
 			""", target_item.sales_order_item, as_dict=1)
 
 			produced_items = frappe.db.sql("""
-				select se_item.batch_no, se_item.serial_no, se_item.stock_qty / %s as qty
-				from `tabStock Entry Detail` se_item
-				inner join `tabStock Entry` ste on ste.name = se_item.parent
+				select i.batch_no, i.serial_no, i.stock_qty / %s as qty
+				from `tabStock Entry Detail` i
+				inner join `tabStock Entry` ste on ste.name = i.parent
 				inner join `tabWork Order` wo on wo.name = ste.work_order
 				where ste.docstatus = 1
 					and ste.purpose = 'Manufacture'
-					and ifnull(se_item.s_warehouse, '') = ''
-					and ifnull(se_item.t_warehouse, '') != ''
+					and ifnull(i.s_warehouse, '') = ''
+					and ifnull(i.t_warehouse, '') != ''
 					and wo.sales_order_item = %s
-					and se_item.item_code = %s
+					and i.item_code = %s
 			""", (target_item.conversion_factor, target_item.sales_order_item, target_item.item_code), as_dict=1)
 
+			unpacked_delivery_condition = ""
+			if target.doctype == "Packing Slip":
+				unpacked_delivery_condition = " and ifnull(i.packing_slip, '') = ''"
+
 			delivery_note_items = frappe.db.sql("""
-				select dn_item.batch_no, dn_item.serial_no, dn_item.qty
-				from `tabDelivery Note Item` dn_item
-				inner join `tabDelivery Note` dn on dn.name = dn_item.parent
-				where dn_item.docstatus = 1 and (dn.is_return = 0 or dn.reopen_order = 1)
-					and dn_item.sales_order_item = %s
-			""", target_item.sales_order_item, as_dict=1)
+				select i.batch_no, i.serial_no, i.qty
+				from `tabDelivery Note Item` i
+				inner join `tabDelivery Note` dn on dn.name = i.parent
+				where i.docstatus = 1 and (dn.is_return = 0 or dn.reopen_order = 1)
+					and i.sales_order_item = %s {0}
+			""".format(unpacked_delivery_condition), target_item.sales_order_item, as_dict=1)
 
 			sales_invoice_items = frappe.db.sql("""
-				select si_item.batch_no, si_item.serial_no, si_item.qty
-				from `tabSales Invoice Item` si_item
-				inner join `tabSales Invoice` sinv on sinv.name = si_item.parent
+				select i.batch_no, i.serial_no, i.qty
+				from `tabSales Invoice Item` i
+				inner join `tabSales Invoice` sinv on sinv.name = i.parent
 				where sinv.docstatus = 1 and sinv.update_stock = 1 and (sinv.is_return = 0 or sinv.reopen_order = 1)
-					and si_item.sales_order_item = %s
-			""", target_item.sales_order_item, as_dict=1)
+					and i.sales_order_item = %s {0}
+			""".format(unpacked_delivery_condition), target_item.sales_order_item, as_dict=1)
 
 			packed_items = []
 			if target.doctype == "Packing Slip":
 				packed_items = frappe.db.sql("""
-					select ps_item.batch_no, ps_item.serial_no, ps_item.qty
-					from `tabPacking Slip Item` ps_item
-					inner join `tabPacking Slip` ps on ps.name = ps_item.parent
-					where ps_item.docstatus = 1 and ifnull(ps_item.source_packing_slip, '') = ''
-						and ps_item.sales_order_item = %s
+					select i.batch_no, i.serial_no, i.qty
+					from `tabPacking Slip Item` i
+					inner join `tabPacking Slip` ps on ps.name = i.parent
+					where i.docstatus = 1 and ifnull(i.source_packing_slip, '') = ''
+						and i.sales_order_item = %s
 				""", target_item.sales_order_item, as_dict=1)
 
 			incoming_items = (
