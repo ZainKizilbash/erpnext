@@ -45,6 +45,9 @@ class EmployeeAdvance(StatusUpdaterERP):
 		self.db_set('status', 'Cancelled')
 
 	def validate_employee_advance_account(self):
+		if not self.advance_account and self.company:
+			self.advance_account = frappe.get_cached_value("Company", self.company, "default_employee_advance_account")
+
 		company_currency = erpnext.get_company_currency(self.company)
 		if (self.advance_account and
 			company_currency != frappe.db.get_value('Account', self.advance_account, 'account_currency')):

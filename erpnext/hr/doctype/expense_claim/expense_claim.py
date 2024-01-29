@@ -34,6 +34,7 @@ class ExpenseClaim(AccountsController):
 		self.title = self.employee_name or self.employee
 
 	def validate(self):
+		self.set_default_payable_account()
 		self.set_cost_center()
 		self.set_project_from_task()
 		self.validate_sanctioned_amount()
@@ -120,6 +121,10 @@ class ExpenseClaim(AccountsController):
 				"advance_amount": flt(d.amount),
 				"allocated_amount": 0
 			})
+
+	def set_default_payable_account(self):
+		if not self.payable_account and self.company:
+			self.payable_account = frappe.get_cached_value("Company", self.company, "default_expense_claim_payable_account")
 
 	def set_cost_center(self):
 		default_cost_center = self.get('cost_center') or frappe.get_cached_value('Company', self.company, 'cost_center')
