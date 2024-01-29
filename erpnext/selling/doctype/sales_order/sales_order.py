@@ -1174,11 +1174,22 @@ def update_mapped_items_based_on_purchase_and_production(source, target):
 					and si_item.sales_order_item = %s
 			""", target_item.sales_order_item, as_dict=1)
 
+			packed_items = []
+			if target.doctype == "Packing Slip":
+				packed_items = frappe.db.sql("""
+					select ps_item.batch_no, ps_item.serial_no, ps_item.qty
+					from `tabPacking Slip Item` ps_item
+					inner join `tabPacking Slip` ps on ps.name = ps_item.parent
+					where ps_item.docstatus = 1 and ifnull(ps_item.source_packing_slip, '') = ''
+						and ps_item.sales_order_item = %s
+				""", target_item.sales_order_item, as_dict=1)
+
 			incoming_items = (
 				[d for d in purchase_receipt_items if d.qty > 0]
 				+ [d for d in purchase_invoice_items if d.qty > 0]
 				+ [d for d in delivery_note_items if d.qty < 0]
 				+ [d for d in sales_invoice_items if d.qty < 0]
+				+ [d for d in packed_items if d.qty < 0]
 				+ produced_items
 			)
 
@@ -1187,6 +1198,7 @@ def update_mapped_items_based_on_purchase_and_production(source, target):
 				+ [d for d in sales_invoice_items if d.qty > 0]
 				+ [d for d in purchase_receipt_items if d.qty < 0]
 				+ [d for d in purchase_invoice_items if d.qty < 0]
+				+ [d for d in packed_items if d.qty > 0]
 			)
 
 			batch_wise_details = {}
