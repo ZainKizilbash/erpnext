@@ -84,7 +84,8 @@
   {
    "fieldname": "barcode",
    "fieldtype": "Data",
-   "label": "Barcode"
+   "label": "Barcode",
+   "options": "Barcode"
   },
   {
    "fieldname": "section_break_2",
@@ -640,7 +641,7 @@
  "idx": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-10-23 23:15:43.337008",
+ "modified": "2024-01-30 01:55:51.894663",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Stock Entry Detail",

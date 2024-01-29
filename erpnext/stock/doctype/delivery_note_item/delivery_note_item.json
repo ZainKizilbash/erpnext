@@ -166,6 +166,7 @@
    "fieldname": "barcode",
    "fieldtype": "Data",
    "label": "Barcode",
+   "options": "Barcode",
    "print_hide": 1
   },
   {
@@ -1395,7 +1396,7 @@
  "idx": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-10-23 23:15:25.844727",
+ "modified": "2024-01-30 01:55:55.360414",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Delivery Note Item",

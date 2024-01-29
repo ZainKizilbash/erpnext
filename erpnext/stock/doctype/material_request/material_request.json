@@ -35,8 +35,8 @@
   "section_break_22",
   "set_warehouse",
   "items_section",
-  "scan_barcode",
   "items",
+  "scan_barcode",
   "section_break_16",
   "total_qty",
   "column_break_18",
@@ -148,7 +148,9 @@
   {
    "fieldname": "scan_barcode",
    "fieldtype": "Data",
-   "label": "Scan Barcode"
+   "hidden": 1,
+   "label": "Scan Barcode",
+   "options": "Barcode"
   },
   {
    "allow_bulk_edit": 1,
@@ -427,10 +429,11 @@
  "idx": 70,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-05-30 13:08:35.293150",
+ "modified": "2024-01-30 03:17:05.372310",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Material Request",
+ "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
   {

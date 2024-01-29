@@ -58,8 +58,8 @@
   "is_subcontracted",
   "items_section",
   "get_items_from_open_material_requests",
-  "scan_barcode",
   "items",
+  "scan_barcode",
   "section_break_48",
   "pricing_rules",
   "raw_material_details",
@@ -543,7 +543,9 @@
   {
    "fieldname": "scan_barcode",
    "fieldtype": "Data",
-   "label": "Scan Barcode"
+   "hidden": 1,
+   "label": "Scan Barcode",
+   "options": "Barcode"
   },
   {
    "allow_bulk_edit": 1,
@@ -1642,7 +1644,7 @@
  "idx": 105,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-01-03 00:29:16.049967",
+ "modified": "2024-01-30 03:16:39.381856",
  "modified_by": "Administrator",
  "module": "Buying",
  "name": "Purchase Order",

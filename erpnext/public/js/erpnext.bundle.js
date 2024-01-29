@@ -19,6 +19,7 @@ import "./utils/manufacturing.js"
 import "./templates/item_selector.html"
 import "./utils/item_selector.js"
 import "./utils/serial_batch_selector.js"
+import "./utils/barcode_scanner.js"
 
 // Quick Entries
 import "./utils/item_quick_entry.js"

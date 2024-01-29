@@ -86,8 +86,8 @@
   "column_break_79",
   "set_warehouse",
   "items_section",
-  "scan_barcode",
   "items",
+  "scan_barcode",
   "packing_list",
   "packed_items",
   "product_bundle_help",
@@ -681,7 +681,9 @@
   {
    "fieldname": "scan_barcode",
    "fieldtype": "Data",
-   "label": "Scan Barcode"
+   "hidden": 1,
+   "label": "Scan Barcode",
+   "options": "Barcode"
   },
   {
    "allow_bulk_edit": 1,
@@ -2317,7 +2319,7 @@
  "idx": 181,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-10-20 16:56:19.131644",
+ "modified": "2024-01-30 03:17:30.229977",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Sales Invoice",
