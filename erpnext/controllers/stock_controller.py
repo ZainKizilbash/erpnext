@@ -167,7 +167,7 @@ class StockController(AccountsController):
 		'''Create batches if required. Called before submit'''
 		for d in self.items:
 			if d.get(warehouse_field) and not d.batch_no:
-				has_batch_no, create_new_batch = frappe.db.get_value('Item', d.item_code, ['has_batch_no', 'create_new_batch'])
+				has_batch_no, create_new_batch = frappe.get_cached_value('Item', d.item_code, ['has_batch_no', 'create_new_batch'])
 				if has_batch_no and create_new_batch:
 					if item_condition and not item_condition(d):
 						continue
@@ -181,6 +181,8 @@ class StockController(AccountsController):
 						"reference_name": self.name,
 						"auto_created": 1,
 					}).insert().name
+
+					d.db_set("batch_no", d.batch_no)
 
 	def unlink_auto_created_batches(self):
 		auto_created_batches = frappe.get_all("Batch", filters={

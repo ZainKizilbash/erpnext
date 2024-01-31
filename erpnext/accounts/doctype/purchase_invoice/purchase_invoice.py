@@ -68,9 +68,6 @@ class PurchaseInvoice(BuyingController):
 		self.validate_deferred_start_and_end_date()
 		validate_service_stop_date(self)
 
-		if self._action == "submit" and self.update_stock and not self.is_return:
-			self.auto_create_batches('warehouse')
-
 		self.validate_release_date()
 		self.check_conversion_rate()
 		self.validate_credit_to_acc()
@@ -104,6 +101,9 @@ class PurchaseInvoice(BuyingController):
 			self.release_date = None
 
 	def on_submit(self):
+		if self.update_stock and not self.is_return:
+			self.auto_create_batches('warehouse')
+
 		super(PurchaseInvoice, self).on_submit()
 
 		self.validate_previous_docstatus()

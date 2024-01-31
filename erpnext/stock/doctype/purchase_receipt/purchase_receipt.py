@@ -35,9 +35,6 @@ class PurchaseReceipt(BuyingController):
 		self.validate_posting_time()
 		super(PurchaseReceipt, self).validate()
 
-		if self._action == "submit" and not self.is_return:
-			self.auto_create_batches('warehouse')
-
 		self.validate_order_required()
 		self.validate_with_previous_doc()
 		self.validate_uom_is_integer("uom", ["qty", "received_qty"])
@@ -58,6 +55,9 @@ class PurchaseReceipt(BuyingController):
 		self.set_title()
 
 	def on_submit(self):
+		if not self.is_return:
+			self.auto_create_batches('warehouse')
+
 		super(PurchaseReceipt, self).on_submit()
 
 		# Check for Approving Authority
