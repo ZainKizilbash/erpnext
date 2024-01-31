@@ -727,7 +727,13 @@ def get_batch_no(doctype, txt, searchfield, start, page_len, filters):
 		"page_len": page_len
 	}
 
-	having_clause = "having sum(sle.actual_qty) > 0"
+	if filters.get("show_all") or filters.get("is_return"):
+		having_clause = ""
+	elif filters.get("show_negative"):
+		having_clause = "having sum(sle.actual_qty) != 0"
+	else:
+		having_clause = "having sum(sle.actual_qty) > 0"
+
 	if filters.get("is_return") or filters.get('is_receipt'):
 		having_clause = ""
 
