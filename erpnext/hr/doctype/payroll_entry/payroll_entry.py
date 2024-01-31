@@ -664,6 +664,7 @@ class PayrollEntry(Document):
 	def set_start_end_dates(self):
 		self.update(get_start_end_dates(self.payroll_frequency, self.start_date or self.posting_date, self.company))
 
+	@frappe.whitelist()
 	def validate_employee_attendance(self):
 		employees_to_mark_attendance = []
 		days_in_payroll, days_holiday, days_attendance_marked = 0, 0, 0
