@@ -1053,14 +1053,15 @@ class StockEntry(TransactionController):
 		self.get_work_order()
 
 		transferred_qty = flt(self.pro_doc.material_transferred_for_manufacturing)
-		completed_qty = flt(self.fg_completed_qty) + flt(self.scrap_qty)
+		completed_qty = flt(self.pro_doc.produced_qty) + flt(self.pro_doc.scrap_qty)
+		remaining_qty = max(transferred_qty - completed_qty, 0)
 
 		if not self.fg_completed_qty:
 			frappe.throw(_("Production Quantity is mandatory"))
 		if not transferred_qty:
 			frappe.throw(_("Work Order does not have transferred materials"))
 
-		completed_to_transferred_ratio = completed_qty / transferred_qty
+		completed_to_remaining_ratio = flt(self.fg_completed_qty) / remaining_qty
 
 		transferred_materials_data = frappe.db.sql("""
 			select
@@ -1132,7 +1133,7 @@ class StockEntry(TransactionController):
 			if total_pending_qty <= 0:
 				continue
 
-			total_required_qty = pending_item_dict.total_transferred_qty * completed_to_transferred_ratio
+			total_required_qty = pending_item_dict.total_transferred_qty * completed_to_remaining_ratio
 			total_required_qty = flt(total_required_qty, qty_precision)
 
 			total_to_consume = min(total_required_qty, total_pending_qty)
