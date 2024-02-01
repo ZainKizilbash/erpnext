@@ -105,7 +105,7 @@ class AttendanceRequest(Document):
 		# Check if employee on Leave
 		leave_record = frappe.db.sql("""select half_day from `tabLeave Application`
 			where employee = %s and %s between from_date and to_date
-			and docstatus = 1""", (self.employee, attendance_date), as_dict=True)
+			and docstatus = 1 and late_deduction = 0""", (self.employee, attendance_date), as_dict=True)
 		if leave_record:
 			frappe.msgprint(_("Attendance not created for {0} as {1} is On Leave.")
 				.format(formatdate(attendance_date), self.employee))
