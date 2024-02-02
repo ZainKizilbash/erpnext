@@ -285,6 +285,12 @@ def get_item_conditions(filters, for_item_dt):
 		if filters.get("item_group"):
 			conditions.append(get_item_group_condition(filters.get("item_group")))
 
+		if filters.get("customer_provided_items") and for_item_dt:
+			if filters.get("customer_provided_items") == "Customer Provided Items Only":
+				conditions.append("item.is_customer_provided_item = 1")
+			elif filters.get("customer_provided_items") == "Exclude Customer Provided Items":
+				conditions.append("item.is_customer_provided_item = 0")
+
 	if filters.get("supplier") and for_item_dt:
 		if frappe.get_meta("Item").has_field("default_supplier"):
 			conditions.append("item.default_supplier = %(supplier)s")
