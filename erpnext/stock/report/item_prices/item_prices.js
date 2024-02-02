@@ -109,6 +109,16 @@ frappe.query_reports["Item Prices"] = {
 			default: "Default UOM"
 		},
 		{
+			fieldname: "customer_provided_items",
+			label: __("Customer Provided Items"),
+			fieldtype: "Select",
+			options: [
+				"",
+				"Customer Provided Items Only",
+				"Exclude Customer Provided Items",
+			]
+		},
+		{
 			fieldname: "filter_items_without_price",
 			label: __("Filter Items Without Price"),
 			fieldtype: "Check"
