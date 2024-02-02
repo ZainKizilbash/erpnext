@@ -589,9 +589,7 @@ frappe.ui.form.on('Stock Entry Detail', {
 					if(r.message) {
 						var d = locals[cdt][cdn];
 						$.each(r.message, function(k, v) {
-							if (v) {
-								frappe.model.set_value(cdt, cdn, k, v); // qty and it's subsequent fields weren't triggered
-							}
+							frappe.model.set_value(cdt, cdn, k, v); // qty and it's subsequent fields weren't triggered
 						});
 						frm.cscript.show_hide_select_batch_button();
 						refresh_field("items");
@@ -665,6 +663,17 @@ erpnext.stock.StockEntry = class StockEntry extends erpnext.stock.StockControlle
 				}
 			};
 		};
+
+		if (this.frm.fields_dict["cost_center"]) {
+			this.frm.set_query("cost_center", function(doc) {
+				return {
+					filters: {
+						"company": doc.company,
+						"is_group": 0
+					}
+				};
+			});
+		}
 
 		this.frm.fields_dict.items.grid.get_field('item_code').get_query = function() {
 			return erpnext.queries.item({is_stock_item: 1});

@@ -104,6 +104,8 @@ def get_item_details(args, doc=None, for_validate=False, overwrite_warehouse=Tru
 		out.rate = args.rate or out.price_list_rate
 		out.amount = flt(args.qty * out.rate)
 
+	frappe.utils.call_hook_method("get_item_details", args, out, doc=doc, for_validate=for_validate)
+
 	return out
 
 

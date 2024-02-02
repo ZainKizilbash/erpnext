@@ -29,10 +29,10 @@ form_grid_templates = {
 	"items": "templates/form_grid/stock_entry_grid.html"
 }
 
-force_fields = ["stock_uom", "has_batch_no", "has_serial_no", "is_vehicle", "alt_uom", "alt_uom_size"]
-
 
 class StockEntry(TransactionController):
+	force_item_fields = ["stock_uom", "has_batch_no", "has_serial_no", "is_vehicle", "alt_uom", "alt_uom_size"]
+
 	def get_feed(self):
 		return self.stock_entry_type
 
@@ -337,7 +337,7 @@ class StockEntry(TransactionController):
 		}), for_update=True)
 
 		for f in item_details:
-			if f in force_fields or not item.get(f):
+			if f in self.force_item_fields or not item.get(f):
 				item.set(f, item_details.get(f))
 
 	def validate_qty(self):
@@ -832,6 +832,11 @@ class StockEntry(TransactionController):
 
 	@frappe.whitelist()
 	def get_item_details(self, args=None, for_update=False):
+		if isinstance(args, str):
+			args = json.loads(args)
+
+		args = frappe._dict(args)
+
 		if not args.get('item_code'):
 			frappe.throw(_("Item Code not provided"))
 
@@ -845,8 +850,8 @@ class StockEntry(TransactionController):
 			'item_name': item.item_name,
 			'hide_item_code': get_hide_item_code(item, args),
 			'cost_center': get_default_cost_center(item, args),
-			'qty': args.get("qty"),
-			'stock_qty': args.get('qty'),
+			'qty': flt(args.get("qty")) or 0,
+			'stock_qty': flt(args.get('qty')) or 0,
 			'conversion_factor': 1,
 			'batch_no': '',
 			'actual_qty': 0,
@@ -896,6 +901,8 @@ class StockEntry(TransactionController):
 		elif self.purpose == "Send to Subcontractor" and self.get("purchase_order") and args.get("item_code"):
 			from erpnext.buying.doctype.purchase_order.purchase_order import get_subcontracted_item_from_material_item
 			out.update(get_subcontracted_item_from_material_item(args.get("item_code"), self.purchase_order))
+
+		frappe.utils.call_hook_method("stock_entry_get_item_details", args, out)
 
 		return out
 

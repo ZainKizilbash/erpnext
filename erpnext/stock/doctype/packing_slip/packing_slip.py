@@ -15,11 +15,9 @@ from erpnext.stock.doctype.batch.batch import auto_select_and_split_batches
 import json
 
 
-force_item_fields = ["stock_uom", "has_batch_no", "has_serial_no", "force_default_warehouse", "item_group"]
-
-
 class PackingSlip(TransactionController):
 	item_table_fields = ["items", "packaging_items"]
+	force_item_fields = ["stock_uom", "has_batch_no", "has_serial_no", "force_default_warehouse", "item_group"]
 
 	def get_feed(self):
 		return _("Packed {0}").format(self.get("package_type"))
@@ -97,7 +95,7 @@ class PackingSlip(TransactionController):
 
 					item_details = get_item_details(args)
 					for f in item_details:
-						if f in force_item_fields or item.get(f) in ("", None):
+						if f in self.force_item_fields or item.get(f) in ("", None):
 							item.set(f, item_details.get(f))
 
 	def set_source_packing_slips(self):
@@ -1221,6 +1219,8 @@ def get_item_details(args):
 		stock_adjustment_account = frappe.get_cached_value('Company', args.company, 'stock_adjustment_account')
 		out.expense_account = stock_adjustment_account or get_default_expense_account(args.item_code, args)
 		out.cost_center = get_default_cost_center(args.item_code, args)
+
+	frappe.utils.call_hook_method("packing_slip_get_item_details", args, out)
 
 	return out
 
