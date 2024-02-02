@@ -5,7 +5,7 @@ erpnext.utils.setup_scan_barcode_field = (field) => {
 		return;
 	}
 
-	field.$input.attr("placeholder", __("Scan Barcode"));
+	field.$input?.attr("placeholder", __("Scan Barcode"));
 	$(field.label_area).addClass("hidden");
 }
 
