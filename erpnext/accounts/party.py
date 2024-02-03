@@ -264,7 +264,7 @@ def set_contact_details(party_details, party, party_type, contact_person=None, p
 	project_details = None
 	if project and party_type == "Customer":
 		project_details = frappe.db.get_value("Project", project,
-			['customer', 'contact_person', 'contact_mobile', 'contact_phone'], as_dict=1)
+			['customer', 'contact_person', 'contact_mobile', 'contact_phone', 'contact_email'], as_dict=1)
 
 	if not party_details.contact_person and project_details and party.name == project_details.customer:
 		party_details.contact_person = project_details.contact_person
