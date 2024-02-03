@@ -1900,7 +1900,7 @@
    "options": "Customer"
   },
   {
-   "depends_on": "eval:doc.bill_to && doc.bill_to_name != doc.bill_to && (doc.docstatus == 0 || doc.bill_to != doc.customer)",
+   "depends_on": "eval:doc.bill_to && doc.bill_to_name != doc.bill_to && doc.bill_to != doc.customer",
    "fetch_from": "bill_to.customer_name",
    "fieldname": "bill_to_name",
    "fieldtype": "Data",
@@ -2319,7 +2319,7 @@
  "idx": 181,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-01-30 03:17:30.229977",
+ "modified": "2024-02-03 11:21:39.267162",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Sales Invoice",
