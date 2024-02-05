@@ -231,6 +231,10 @@ erpnext.taxes_and_totals = class TaxesAndTotals extends erpnext.payments {
 				item.alt_uom_size = item.alt_uom ? item.alt_uom_size : 1.0;
 				item.alt_uom_qty = flt(stock_qty * item.alt_uom_size, precision('alt_uom_qty', item));
 
+				if (frappe.meta.has_field(item.doctype, "alt_uom_rate")) {
+					item.alt_uom_rate = flt(item.rate / (item.alt_uom_size || 1));
+				}
+
 				me.set_in_company_currency(item, ["price_list_rate", "rate", "amount",
 					"taxable_rate", "taxable_amount", "net_rate", "net_amount",
 					"tax_exclusive_price_list_rate", "tax_exclusive_rate", "tax_exclusive_amount",

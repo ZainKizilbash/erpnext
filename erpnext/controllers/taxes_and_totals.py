@@ -188,6 +188,9 @@ class calculate_taxes_and_totals(object):
 				item.alt_uom_size = item.alt_uom_size if item.alt_uom else 1.0
 				item.alt_uom_qty = flt(stock_qty * item.alt_uom_size, item.precision('alt_uom_qty'))
 
+				if item.meta.has_field("alt_uom_rate"):
+					item.alt_uom_rate = flt(item.rate / (item.alt_uom_size or 1))
+
 				self._set_in_company_currency(item, ["price_list_rate", "rate", "amount",
 					"taxable_rate", "taxable_amount", "net_rate", "net_amount",
 					"tax_exclusive_price_list_rate", "tax_exclusive_rate", "tax_exclusive_amount",

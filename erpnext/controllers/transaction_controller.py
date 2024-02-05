@@ -46,11 +46,15 @@ class TransactionController(StockController):
 	]
 
 	merge_items_rate_fields = [
-		('rate', 'amount'), ('taxable_rate', 'taxable_amount'), ('net_rate', 'net_amount'),
-		('discount_amount', 'total_discount'), ('price_list_rate', 'amount_before_discount'),
-		('tax_inclusive_rate', 'tax_inclusive_amount'),
-		('tax_inclusive_rate_before_discount', 'tax_inclusive_amount_before_discount'),
-		('net_weight_per_unit', 'net_weight'),
+		('rate', 'amount', 'qty'),
+		('taxable_rate', 'taxable_amount', 'qty'),
+		('net_rate', 'net_amount', 'qty'),
+		('discount_amount', 'total_discount', 'qty'),
+		('price_list_rate', 'amount_before_discount', 'qty'),
+		('tax_inclusive_rate', 'tax_inclusive_amount', 'qty'),
+		('tax_inclusive_rate_before_discount', 'tax_inclusive_amount_before_discount', 'qty'),
+		('net_weight_per_unit', 'net_weight', 'stock_qty'),
+		('alt_uom_rate', 'amount', 'stock_qty'),
 	]
 
 	print_total_fields_from_items = [
@@ -299,12 +303,12 @@ class TransactionController(StockController):
 		sum_fields = [f for f in sum_fields if f not in copy_fields]
 		sum_fields += ['tax_exclusive_' + f for f in sum_fields if item_meta.has_field('tax_exclusive_' + f)]
 
-		rate_fields = [(t, s) for t, s in self.merge_items_rate_fields if item_meta.has_field(s)]
-		rate_fields += [('tax_exclusive_' + t, 'tax_exclusive_' + s) for t, s in rate_fields
+		rate_fields = [(t, s, qf) for t, s, qf in self.merge_items_rate_fields if item_meta.has_field(s)]
+		rate_fields += [('tax_exclusive_' + t, 'tax_exclusive_' + s, qf) for t, s, qf in rate_fields
 			if item_meta.has_field('tax_exclusive_' + s)]
 
 		base_fields = [('base_' + f, f) for f in sum_fields if item_meta.has_field('base_' + f)]
-		base_fields += [('base_' + t, t) for t, s in rate_fields if item_meta.has_field('base_' + t)]
+		base_fields += [('base_' + t, t) for t, s, qf in rate_fields if item_meta.has_field('base_' + t)]
 		base_fields += [('base_' + f, f) for f in copy_fields if item_meta.has_field('base_' + f)]
 
 		# Sum amounts
@@ -361,13 +365,13 @@ class TransactionController(StockController):
 		sum_fields += additional_sum_fields or []
 		sum_fields += ['tax_exclusive_' + f for f in sum_fields if item_meta.has_field('tax_exclusive_' + f)]
 
-		rate_fields = [(t, s) for t, s in self.merge_items_rate_fields if item_meta.has_field(s)]
+		rate_fields = [(t, s, qf) for t, s, qf in self.merge_items_rate_fields if item_meta.has_field(s)]
 		rate_fields += additional_rate_fields or []
-		rate_fields += [('tax_exclusive_' + t, 'tax_exclusive_' + s) for t, s in rate_fields
+		rate_fields += [('tax_exclusive_' + t, 'tax_exclusive_' + s, qf) for t, s, qf in rate_fields
 			if item_meta.has_field('tax_exclusive_' + s)]
 
 		base_fields = [('base_' + f, f) for f in sum_fields if item_meta.has_field('base_' + f)]
-		base_fields += [('base_' + t, t) for t, s in rate_fields if item_meta.has_field('base_' + t)]
+		base_fields += [('base_' + t, t) for t, s, qf in rate_fields if item_meta.has_field('base_' + t)]
 
 		# Sum amounts
 		for item in self.items:
@@ -422,15 +426,14 @@ class TransactionController(StockController):
 			group_item_tax_detail[tax_row_name] += flt(tax_amount)
 
 	def merge_similar_items_postprocess(self, group_item, rate_fields):
-		if group_item.qty:
-			for target, source in rate_fields:
+		for target, source, qty_field in rate_fields:
+			if group_item.get(qty_field):
 				if target == "price_list_rate" and group_item.get('amount_before_depreciation'):
 					source = 'amount_before_depreciation'
 				if target == "tax_exclusive_price_list_rate" and group_item.get('tax_exclusive_amount_before_depreciation'):
 					source = 'tax_exclusive_amount_before_depreciation'
 				group_item[target] = flt(group_item[source]) / flt(group_item.qty)
-		else:
-			for target, source in rate_fields:
+			else:
 				group_item[target] = 0
 
 		group_item.serial_no = '\n'.join(group_item.serial_no)

@@ -898,6 +898,10 @@ frappe.form.global_formatters.push(function (value, df, options, doc) {
 		if (['alt_uom_qty', 'alt_uom_size', 'alt_uom_size_std'].includes(df.fieldname) && doc.alt_uom) {
 			return cstr(value) + " " + cstr(doc.alt_uom)
 		}
+
+		if (['alt_uom_rate', 'base_alt_uom_rate'].includes(df.fieldname) && doc.alt_uom) {
+			return cstr(value) + "/" + cstr(doc.alt_uom);
+		}
 	}
 });
 

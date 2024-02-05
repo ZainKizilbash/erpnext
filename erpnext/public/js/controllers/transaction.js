@@ -14,6 +14,11 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 			frm.cscript.calculate_taxes_and_totals();
 		});
 
+		frappe.ui.form.on(this.frm.doctype + " Item", "alt_uom_rate", function(frm, cdt, cdn) {
+			let item = frappe.get_doc(cdt, cdn);
+			frappe.model.set_value(cdt, cdn, "rate", flt(item.alt_uom_rate) * flt(item.alt_uom_size || 1));
+		});
+
 		frappe.ui.form.on(this.frm.doctype + " Item", "amount", function(frm, cdt, cdn) {
 			var item = frappe.get_doc(cdt, cdn);
 
@@ -1521,7 +1526,7 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 		var me = this;
 
 		this.frm.set_currency_labels([
-			"base_price_list_rate", "base_rate", "base_net_rate", "base_taxable_rate",
+			"base_price_list_rate", "base_rate", "base_net_rate", "base_taxable_rate", "base_alt_uom_rate",
 			"base_amount", "base_net_amount", "base_taxable_amount",
 			"base_rate_with_margin", "base_tax_exclusive_price_list_rate",
 			"base_tax_exclusive_rate", "base_tax_exclusive_amount", "base_tax_exclusive_rate_with_margin",
@@ -1535,7 +1540,7 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 		], company_currency, "items");
 
 		this.frm.set_currency_labels([
-			"price_list_rate", "rate", "net_rate", "taxable_rate",
+			"price_list_rate", "rate", "net_rate", "taxable_rate", "alt_uom_rate",
 			"amount", "net_amount", "taxable_amount", "rate_with_margin",
 			"discount_amount", "tax_exclusive_price_list_rate", "tax_exclusive_rate", "tax_exclusive_amount",
 			"tax_exclusive_discount_amount", "tax_exclusive_rate_with_margin",
@@ -1605,7 +1610,7 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 
 		let item_grid = this.frm.fields_dict["items"].grid;
 		$.each([
-			"base_rate", "base_price_list_rate", "base_amount", "base_rate_with_margin",
+			"base_rate", "base_price_list_rate", "base_amount", "base_rate_with_margin", "base_alt_uom_rate",
 			"base_amount_before_discount", "base_total_discount",
 			"base_amount_before_depreciation", "base_depreciation_amount", "base_underinsurance_amount",
 			"base_item_taxes_before_discount", "base_tax_inclusive_amount_before_discount", "base_tax_inclusive_rate_before_discount",
