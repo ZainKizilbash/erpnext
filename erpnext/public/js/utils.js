@@ -893,6 +893,14 @@ frappe.form.link_formatters['Customer'] = function(value, doc) {
 	}
 }
 
+frappe.form.global_formatters.push(function (value, df, options, doc) {
+	if (df && doc) {
+		if (['alt_uom_qty', 'alt_uom_size', 'alt_uom_size_std'].includes(df.fieldname) && doc.alt_uom) {
+			return cstr(value) + " " + cstr(doc.alt_uom)
+		}
+	}
+});
+
 // add description on posting time
 $(document).on('app_ready', function() {
 	if(!frappe.datetime.is_timezone_same()) {
