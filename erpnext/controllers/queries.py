@@ -241,8 +241,8 @@ def item_query(doctype, txt, searchfield, start, page_len, filters, as_dict=Fals
 	default_conditions = "and {0}".format(" and ".join(default_conditions)) if default_conditions else ""
 
 	return frappe.db.sql("""select tabItem.name,
-		if(length(tabItem.item_name) > 40,
-			concat(substr(tabItem.item_name, 1, 40), "..."), item_name) as item_name,
+		if(length(tabItem.item_name) > 50,
+			concat(substr(tabItem.item_name, 1, 50), "..."), item_name) as item_name,
 		tabItem.item_group, tabItem.brand
 		{columns}
 		from tabItem
