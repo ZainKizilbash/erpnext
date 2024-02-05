@@ -11,7 +11,7 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 		frappe.ui.form.on(this.frm.doctype + " Item", "rate", function(frm, cdt, cdn) {
 			let item = frappe.get_doc(cdt, cdn);
 			frm.cscript.set_item_rate(item);
-			this.calculate_taxes_and_totals();
+			frm.cscript.calculate_taxes_and_totals();
 		});
 
 		frappe.ui.form.on(this.frm.doctype + " Item", "amount", function(frm, cdt, cdn) {
