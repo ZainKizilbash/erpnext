@@ -43,6 +43,10 @@ class StockEntry(TransactionController):
 	def before_print(self, print_settings=None):
 		super().before_print(print_settings)
 
+		if self.get("purchase_order"):
+			self.po_no = self.purchase_order
+			self.po_date = frappe.db.get_value("Purchase Order", self.purchase_order, "transaction_date")
+
 		self.s_warehouses = list(set([frappe.get_cached_value("Warehouse", item.s_warehouse, 'warehouse_name')
 			for item in self.items if item.get('s_warehouse')]))
 		self.t_warehouses = list(set([frappe.get_cached_value("Warehouse", item.t_warehouse, 'warehouse_name')
