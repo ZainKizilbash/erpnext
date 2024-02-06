@@ -1291,10 +1291,10 @@ def make_stock_entry(work_order_id, purpose, qty=None, scrap_remaining=False, jo
 	if purpose == "Manufacture":
 		stock_entry.to_warehouse = work_order.fg_warehouse
 
+	frappe.utils.call_hook_method("update_stock_entry_from_work_order", stock_entry, work_order)
+
 	stock_entry.set_stock_entry_type()
 	stock_entry.get_items(auto_select_batches=settings.auto_select_batches_in_stock_entry)
-
-	frappe.utils.call_hook_method("update_stock_entry_from_work_order", stock_entry, work_order)
 
 	def submit_stock_entry(ste):
 		ste_copy = frappe.get_doc(copy.deepcopy(ste))
