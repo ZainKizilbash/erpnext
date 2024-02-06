@@ -176,6 +176,8 @@ class ExpenseClaim(AccountsController):
 		total_employee_advances = flt(total_employee_advances, self.precision('total_advance'))
 		payable_amount = flt(self.total_sanctioned_amount) - total_employee_advances
 
+		descriptions = ", ".join(list(set([d.description for d in self.expenses if d.description])))
+
 		# payable entry
 		if payable_amount:
 			gl_entry.append(
@@ -186,7 +188,8 @@ class ExpenseClaim(AccountsController):
 					"against": ", ".join(set([exp.expense_account for exp in self.expenses])),
 					"party_type": "Employee",
 					"party": self.employee,
-					"cost_center": self.get('cost_center')
+					"cost_center": self.get('cost_center'),
+					"remarks": descriptions,
 				})
 			)
 
@@ -204,6 +207,7 @@ class ExpenseClaim(AccountsController):
 					"party": d.party,
 					"against_voucher_type": "Purchase Invoice" if d.requires_purchase_invoice else "",
 					"against_voucher": d.purchase_invoice if d.requires_purchase_invoice else "",
+					"remarks": d.description
 				}, item=d)
 			)
 

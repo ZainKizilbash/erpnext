@@ -90,7 +90,7 @@
    "oldfieldname": "sanctioned_amount",
    "oldfieldtype": "Currency",
    "options": "Company:company:default_currency",
-   "permlevel": 2,
+   "permlevel": 1,
    "print_width": "150px",
    "width": "150px"
   },
@@ -209,7 +209,7 @@
  "idx": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-01-29 13:06:53.126966",
+ "modified": "2024-02-06 15:14:32.964887",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Expense Claim Detail",
