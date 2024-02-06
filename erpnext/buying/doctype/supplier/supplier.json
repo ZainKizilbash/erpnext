@@ -113,7 +113,7 @@
    "fieldname": "tax_id",
    "fieldtype": "Data",
    "in_standard_filter": 1,
-   "label": "NTN"
+   "label": "Tax ID"
   },
   {
    "allow_in_quick_entry": 1,
@@ -423,7 +423,7 @@
  "idx": 370,
  "image_field": "image",
  "links": [],
- "modified": "2023-02-27 23:15:56.452829",
+ "modified": "2024-02-05 06:09:10.060540",
  "modified_by": "Administrator",
  "module": "Buying",
  "name": "Supplier",
