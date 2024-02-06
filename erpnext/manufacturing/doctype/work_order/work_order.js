@@ -197,7 +197,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 
 		if (doc.docstatus == 1 && doc.status != "Stopped") {
 			// Packing Slip
-			if (doc.packing_status == "To Pack") {
+			if (doc.packing_status == "To Pack" && frappe.model.can_create("Packing Slip")) {
 				this.frm.add_custom_button(__("Packing Slip"), () => {
 					this.make_packing_slip("Material Transfer for Manufacture");
 				}, __("Create"));
@@ -212,7 +212,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 
 			// Subcontract Order
 			let subcontractable_qty = erpnext.manufacturing.get_subcontractable_qty(doc);
-			if (subcontractable_qty > 0 && doc.status != "Completed") {
+			if (subcontractable_qty > 0 && doc.status != "Completed" && frappe.model.can_create("Purchase Order")) {
 				this.frm.add_custom_button(__("Subcontract Order"), () => {
 					this.make_purchase_order();
 				}, __("Create"));
@@ -240,7 +240,8 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 
 		// Start Button
 		const show_start_btn = (
-			!doc.skip_transfer
+			erpnext.manufacturing.has_stock_entry_permission()
+			&& !doc.skip_transfer
 			&& doc.transfer_material_against != "Job Card"
 			&& flt(doc.material_transferred_for_manufacturing) < qty_with_allowance
 		);
@@ -254,7 +255,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 		)
 
 		if (show_start_btn) {
-			this.frm.show_pick_list_btn = true;
+			this.frm.show_pick_list_btn = frappe.model.can_create("Pick List");
 
 			let start_btn = this.frm.add_custom_button(__("Start"), () => {
 				erpnext.manufacturing.start_work_order(doc);
@@ -267,8 +268,11 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 
 		// Finish Button
 		let show_finish_button = (
-			(doc.skip_transfer && flt(doc.produced_qty) < qty_with_allowance) ||
-			(!doc.skip_transfer && flt(doc.produced_qty) < flt(doc.material_transferred_for_manufacturing))
+			erpnext.manufacturing.has_stock_entry_permission()
+			&& (
+				(doc.skip_transfer && flt(doc.produced_qty) < qty_with_allowance)
+				|| (!doc.skip_transfer && flt(doc.produced_qty) < flt(doc.material_transferred_for_manufacturing))
+			)
 		)
 
 		let finish_button_default = (
@@ -288,7 +292,8 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 
 		// If "Material Consumption is check in Manufacturing Settings, allow Material Consumption
 		let show_consumption_button = (
-			!doc.skip_transfer
+			erpnext.manufacturing.has_stock_entry_permission()
+			&& !doc.skip_transfer
 			&& flt(doc.produced_qty) < flt(doc.material_transferred_for_manufacturing)
 			&& (doc.required_items || []).some(d => flt(d.consumed_qty) < flt(d.required_qty))
 		)
