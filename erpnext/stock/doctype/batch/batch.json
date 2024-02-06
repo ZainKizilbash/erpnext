@@ -157,7 +157,7 @@
  "idx": 1,
  "image_field": "image",
  "links": [],
- "modified": "2023-08-31 15:00:11.291908",
+ "modified": "2024-02-06 21:26:54.267353",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Batch",
@@ -207,6 +207,10 @@
    "report": 1,
    "role": "Sales User (Read Only)",
    "share": 1
+  },
+  {
+   "role": "Sales Master (Read Only)",
+   "select": 1
   },
   {
    "email": 1,

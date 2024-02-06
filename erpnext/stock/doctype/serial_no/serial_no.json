@@ -527,7 +527,7 @@
  "icon": "fa fa-barcode",
  "idx": 1,
  "links": [],
- "modified": "2023-10-10 14:16:31.431408",
+ "modified": "2024-02-06 21:27:00.577974",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Serial No",
@@ -568,6 +568,10 @@
    "read": 1,
    "report": 1,
    "role": "Sales User (Read Only)"
+  },
+  {
+   "role": "Sales Master (Read Only)",
+   "select": 1
   }
  ],
  "search_fields": "item_code",

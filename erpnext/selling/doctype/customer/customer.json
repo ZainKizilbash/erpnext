@@ -686,7 +686,7 @@
  "idx": 363,
  "image_field": "image",
  "links": [],
- "modified": "2024-02-05 06:09:20.224645",
+ "modified": "2024-02-06 21:19:53.266830",
  "modified_by": "Administrator",
  "module": "Selling",
  "name": "Customer",
@@ -790,6 +790,10 @@
   },
   {
    "role": "Packing User",
+   "select": 1
+  },
+  {
+   "role": "Sales Master (Read Only)",
    "select": 1
   },
   {

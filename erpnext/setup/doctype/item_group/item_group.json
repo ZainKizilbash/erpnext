@@ -298,7 +298,7 @@
  "image_field": "image",
  "is_tree": 1,
  "links": [],
- "modified": "2023-09-09 12:10:09.040062",
+ "modified": "2024-02-06 21:19:55.022475",
  "modified_by": "Administrator",
  "module": "Setup",
  "name": "Item Group",
@@ -353,6 +353,11 @@
    "read": 1,
    "report": 1,
    "role": "Sales User (Read Only)"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Sales Master (Read Only)"
   },
   {
    "read": 1,

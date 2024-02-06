@@ -706,7 +706,7 @@
  "idx": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-01-30 03:17:17.799074",
+ "modified": "2024-02-06 21:24:28.526346",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Stock Entry",
@@ -743,35 +743,12 @@
    "write": 1
   },
   {
-   "amend": 1,
-   "cancel": 1,
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Manufacturing Manager",
-   "share": 1,
-   "submit": 1,
-   "write": 1
-  },
-  {
-   "amend": 1,
-   "cancel": 1,
-   "create": 1,
-   "delete": 1,
    "email": 1,
    "export": 1,
-   "import": 1,
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "Stock Manager",
-   "set_user_permissions": 1,
-   "share": 1,
-   "submit": 1,
-   "write": 1
+   "role": "Accounts User"
   },
   {
    "export": 1,
@@ -779,14 +756,6 @@
    "read": 1,
    "role": "Accounts User",
    "write": 1
-  },
-  {
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Accounts User"
   },
   {
    "export": 1,

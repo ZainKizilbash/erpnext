@@ -1361,7 +1361,7 @@
  "idx": 2,
  "image_field": "image",
  "links": [],
- "modified": "2024-02-04 15:19:26.664172",
+ "modified": "2024-02-06 21:19:55.835693",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Item",
@@ -1425,6 +1425,11 @@
    "read": 1,
    "report": 1,
    "role": "Sales User (Read Only)"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Sales Master (Read Only)"
   },
   {
    "read": 1,
