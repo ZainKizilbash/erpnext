@@ -246,6 +246,8 @@ class VehicleStockReport(object):
 				d.delivery_period = booking_data.get('delivery_period')
 				d.delivery_due_date = booking_data.get('delivery_date')
 
+				d.transfer_status = booking_data.get('transfer_status')
+
 			# Invoice Receipt Data
 			if d.vehicle in self.vehicle_invoice_receipt_data:
 				invoice_data = self.vehicle_invoice_receipt_data[d.vehicle]
