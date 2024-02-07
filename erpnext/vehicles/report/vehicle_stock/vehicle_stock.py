@@ -339,6 +339,11 @@ class VehicleStockReport(object):
 		if self.filters.vehicle_color:
 			data = [d for d in data if d.color == self.filters.vehicle_color]
 
+		if self.filters.status == 'To Transfer':
+			data = [d for d in data if d.transfer_status == 'To Transfer']
+		else:
+			data = [d for d in data if d.transfer_status != 'To Transfer']
+
 		if self.filters.invoice_status == "Invoice In Hand and Delivered":
 			data = [d for d in data if d.invoice_received_date or d.invoice_delivery_date]
 		elif self.filters.invoice_status == "Invoice In Hand":
@@ -602,7 +607,8 @@ class VehicleStockReport(object):
 				customer_name, lessee_name,
 				supplier, supplier_name,
 				contact_mobile, contact_phone,
-				delivery_period, delivery_date
+				delivery_period, delivery_date, 
+				transfer_status
 			from `tabVehicle Booking Order`
 			where docstatus = 1 and vehicle in %s
 		""", [vehicle_names], as_dict=1)
