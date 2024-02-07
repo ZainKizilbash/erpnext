@@ -246,6 +246,8 @@ class VehicleStockReport(object):
 				d.delivery_period = booking_data.get('delivery_period')
 				d.delivery_due_date = booking_data.get('delivery_date')
 
+				d.transfer_status = booking_data.get('transfer_status')
+
 			# Invoice Receipt Data
 			if d.vehicle in self.vehicle_invoice_receipt_data:
 				invoice_data = self.vehicle_invoice_receipt_data[d.vehicle]
@@ -336,6 +338,11 @@ class VehicleStockReport(object):
 
 		if self.filters.vehicle_color:
 			data = [d for d in data if d.color == self.filters.vehicle_color]
+
+		if self.filters.status == 'To Transfer':
+			data = [d for d in data if d.transfer_status == 'To Transfer']
+		else:
+			data = [d for d in data if d.transfer_status != 'To Transfer']
 
 		if self.filters.invoice_status == "Invoice In Hand and Delivered":
 			data = [d for d in data if d.invoice_received_date or d.invoice_delivery_date]
@@ -600,7 +607,8 @@ class VehicleStockReport(object):
 				customer_name, lessee_name,
 				supplier, supplier_name,
 				contact_mobile, contact_phone,
-				delivery_period, delivery_date
+				delivery_period, delivery_date, 
+				transfer_status
 			from `tabVehicle Booking Order`
 			where docstatus = 1 and vehicle in %s
 		""", [vehicle_names], as_dict=1)

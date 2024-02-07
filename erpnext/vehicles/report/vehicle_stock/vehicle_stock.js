@@ -14,6 +14,7 @@ frappe.query_reports["Vehicle Stock"] = {
 				'Dispatched Vehicles',
 				'In Stock and Dispatched Vehicles',
 				'Delivered Vehicles',
+				'To Transfer'
 			],
 			default: 'All Vehicles'
 		},

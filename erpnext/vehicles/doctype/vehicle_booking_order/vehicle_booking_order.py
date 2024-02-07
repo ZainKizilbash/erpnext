@@ -539,14 +539,14 @@ class VehicleBookingOrder(VehicleBookingController):
 			elif self.invoice_status == "Not Received":
 				self.status = "To Receive Invoice"
 
+			elif self.transfer_status == "To Transfer":
+				self.status = "To Transfer"
+
 			elif self.delivery_status == "In Stock":
 				self.status = "To Deliver Vehicle"
 
 			elif self.invoice_status != "Delivered":
 				self.status = "To Deliver Invoice"
-
-			elif self.transfer_status == "To Transfer":
-				self.status = "To Transfer"
 
 			else:
 				self.status = "Completed"
