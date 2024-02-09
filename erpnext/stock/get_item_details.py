@@ -747,6 +747,11 @@ def get_price_list_data(args, item_doc, out):
 				insert_item_price(args)
 			return {}
 
+		out.discount_percentage = 0
+		if args.margin_type:
+			out.margin_type = None
+			out.margin_rate_or_amount = 0
+
 		out.price_list_rate = flt(price_list_rate) * flt(args.plc_conversion_rate) \
 			/ flt(args.conversion_rate)
 

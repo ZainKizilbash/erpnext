@@ -193,7 +193,7 @@ def apply_pricing_rule(args, doc=None):
 		data = get_pricing_rule_for_item(args_copy, item.get('price_list_rate'), doc=doc)
 		out.append(data)
 		if not item.get("serial_no") and set_serial_nos_based_on_fifo and not args.get('is_return'):
-			out[0].update(get_serial_no_for_item(args_copy))
+			data.update(get_serial_no_for_item(args_copy))
 
 	return out
 

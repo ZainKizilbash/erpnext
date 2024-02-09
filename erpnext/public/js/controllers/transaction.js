@@ -1772,7 +1772,7 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 		var item_list = [];
 		var append_item = function(d) {
 			if (d.item_code) {
-				item_list.push({
+				let item_args = {
 					"doctype": d.doctype,
 					"name": d.name,
 					"child_docname": d.name,
@@ -1789,6 +1789,7 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 					"parenttype": d.parenttype,
 					"parent": d.parent,
 					"pricing_rules": d.pricing_rules,
+					"batch_no": d.batch_no,
 					"warehouse": d.warehouse,
 					"serial_no": d.serial_no,
 					"discount_percentage": d.discount_percentage || 0.0,
@@ -1796,13 +1797,16 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 					"conversion_factor": d.conversion_factor || 1.0,
 					"apply_taxes_on_retail": d.apply_taxes_on_retail,
 					"allow_zero_valuation_rate": d.allow_zero_valuation_rate
-				});
+				}
 
 				// if doctype is Quotation Item / Sales Order Iten then add Margin Type and rate in item_list
 				if (in_list(["Quotation Item", "Sales Order Item", "Delivery Note Item", "Sales Invoice Item"]), d.doctype){
-					item_list[0]["margin_type"] = d.margin_type;
-					item_list[0]["margin_rate_or_amount"] = d.margin_rate_or_amount;
+					item_args["margin_type"] = d.margin_type;
+					item_args["margin_rate_or_amount"] = d.margin_rate_or_amount;
 				}
+				}
+
+				item_list.push(item_args);
 			}
 		};
 
@@ -1818,18 +1822,13 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 
 	_set_values_for_item_list(children) {
 		let me = this;
-		let price_list_rate_changed = false;
 		let items_rule_dict = {};
 
 		for (let d of children) {
 			let existing_pricing_rule = frappe.model.get_value(d.doctype, d.name, "pricing_rules");
-			for (let k of Object.keys(d)) {
-				let v = d[k];
-				if (!["doctype", "name", "parent", "parenttype"].includes(k)) {
-					if (k == "price_list_rate" && flt(v) != flt(d.price_list_rate)) {
-						price_list_rate_changed = true;
-					}
-					frappe.model.set_value(d.doctype, d.name, k, v);
+			for (let [k, v] of Object.entries(d)) {
+				if (!["doctype", "name", "parent", "parenttype"].includes(k) && frappe.meta.has_field(d.doctype, k)) {
+					frappe.model.set_value(d.doctype, d.child_docname || d.name, k, v);
 				}
 			}
 
