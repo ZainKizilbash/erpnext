@@ -1,6 +1,8 @@
 // Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 // License: GNU General Public License v3. See license.txt
 
+erpnext.update_item_args_for_pricing_hooks = [];
+
 erpnext.TransactionController = class TransactionController extends erpnext.taxes_and_totals {
 	setup() {
 		frappe.flags.hide_serial_batch_dialog = true
@@ -1804,6 +1806,9 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 					item_args["margin_type"] = d.margin_type;
 					item_args["margin_rate_or_amount"] = d.margin_rate_or_amount;
 				}
+
+				for (let func of erpnext.update_item_args_for_pricing_hooks || []) {
+					func.apply(this, [d, item_args]);
 				}
 
 				item_list.push(item_args);
