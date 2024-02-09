@@ -523,6 +523,9 @@ def _get_sales_orders_to_be_billed(doctype="Sales Order", txt="", searchfield="n
 	select_fields = ", ".join(["`tabSales Order`.{0}".format(f) for f in fields])
 	limit = "limit {0}, {1}".format(start, page_len) if page_len else ""
 
+	if not filters:
+		filters = {}
+
 	claim_customer_cond = ""
 	if cint(filters.get('claim_billing')):
 		if filters.get('customer'):
