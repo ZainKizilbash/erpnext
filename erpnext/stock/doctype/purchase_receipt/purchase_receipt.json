@@ -464,7 +464,6 @@
   {
    "fieldname": "set_warehouse",
    "fieldtype": "Link",
-   "ignore_user_permissions": 1,
    "label": "Accepted Warehouse",
    "options": "Warehouse",
    "print_hide": 1
@@ -1587,7 +1586,7 @@
  "idx": 261,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-01-30 03:17:11.869013",
+ "modified": "2024-02-12 16:23:13.067424",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Purchase Receipt",
