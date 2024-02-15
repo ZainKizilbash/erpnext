@@ -26,6 +26,8 @@
   "customer_name",
   "sales_order",
   "sales_order_item",
+  "parent_work_order",
+  "work_order_item",
   "order_line_no",
   "material_request",
   "material_request_item",
@@ -852,6 +854,23 @@
    "no_copy": 1,
    "print_hide": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "parent_work_order",
+   "fieldtype": "Link",
+   "label": "Parent Work Order",
+   "no_copy": 1,
+   "options": "Work Order",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "work_order_item",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Work Order Item",
+   "no_copy": 1,
+   "read_only": 1
   }
  ],
  "icon": "fa fa-cogs",
@@ -860,7 +879,7 @@
  "is_calendar_and_gantt": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-06 15:05:40.872935",
+ "modified": "2024-02-15 07:01:38.071702",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Work Order",

@@ -146,7 +146,7 @@ def get_latest_stock_qty(item_code, warehouse=None):
 		where item_code=%s {0}
 	""".format(condition), values)[0][0]
 
-	return actual_qty
+	return flt(actual_qty)
 
 
 def get_latest_stock_balance():

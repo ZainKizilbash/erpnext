@@ -625,6 +625,125 @@ $.extend(erpnext.manufacturing, {
 		return flt(subcontractable_qty, erpnext.manufacturing.get_work_order_precision());
 	},
 
+	make_work_orders_from_order_dialog: function(items_data, doc, create_sub_assembly_work_orders) {
+		let dialog_doc = {
+			items: items_data,
+		};
+
+		const fields = [{
+			label: "Items to Produce",
+			fieldtype: "Table",
+			fieldname: "items",
+			cannot_add_rows: 1,
+			description: __("Confirm BOM and Production Qty"),
+			fields: [
+				{
+					fieldname: "item_code",
+					label: __("Production Item"),
+					fieldtype: "Link",
+					options: "Item",
+					in_list_view: 1,
+					read_only: 1,
+					reqd: 1,
+					columns: 5,
+				},
+				{
+					fieldname: "bom_no",
+					label: __("BOM No"),
+					fieldtype: "Link",
+					options: "BOM",
+					reqd: 1,
+					in_list_view: 1,
+					columns: 3,
+					get_query: function (doc) {
+						return {
+							filters: {
+								item: doc.item_code,
+								is_active: 1,
+								docstatus: 1,
+							}
+						};
+					}
+				},
+				{
+					fieldname: "production_qty",
+					label: __("Qty"),
+					fieldtype: "Float",
+					reqd: 1,
+					in_list_view: 1,
+					columns: 1,
+				},
+				{
+					fieldname: "stock_uom",
+					label: __("UOM"),
+					fieldtype: "Data",
+					in_list_view: 1,
+					read_only: 1,
+					columns: 1,
+				},
+				{
+					fieldtype: "Data",
+					fieldname: "sales_order_item",
+					reqd: 1,
+					label: __("Sales Order Item"),
+					hidden: 1
+				},
+				{
+					fieldtype: "Data",
+					fieldname: "work_order_item",
+					reqd: 1,
+					label: __("Work Order Item"),
+					hidden: 1
+				},
+			],
+			data: dialog_doc.items,
+		}];
+
+		let dialog = new frappe.ui.Dialog({
+			title: __("Select Items to Produce"),
+			fields: fields,
+			doc: dialog_doc,
+			size: "extra-large",
+			primary_action: () => {
+				let values = dialog.get_values();
+				for (let d of values.items) {
+					if (doc.doctype == "Sales Order") {
+						d.sales_order = doc.name;
+					} else if (doc.doctype == "Work Order") {
+						d.parent_work_order = doc.name;
+					}
+
+					d.customer = doc.customer;
+					d.customer_name = doc.customer_name;
+					d.project = doc.project;
+				}
+
+				return frappe.call({
+					method: "erpnext.manufacturing.doctype.work_order.work_order.create_work_orders",
+					args: {
+						items: values.items,
+						company: doc.company,
+						create_sub_assembly_work_orders: cint(create_sub_assembly_work_orders),
+					},
+					freeze: true,
+					callback: (r) => {
+						if (r.message) {
+							frappe.msgprint({
+								message: __("Work Orders Created: {0}", [
+									r.message.map((d) => `<a href=${frappe.utils.get_form_link("Work Order", d)}>${d}</a>`).join(', ')
+								]),
+								indicator: "green",
+							})
+						}
+						dialog.hide();
+					}
+				});
+			},
+			primary_action_label: __("Create")
+		});
+		dialog.show();
+	},
+
 	show_progress_for_production: function(doc, frm) {
 		let qty_precision = erpnext.manufacturing.get_work_order_precision();
 

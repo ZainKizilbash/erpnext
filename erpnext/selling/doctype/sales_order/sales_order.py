@@ -15,7 +15,7 @@ from erpnext.vehicles.doctype.vehicle.vehicle import split_vehicle_items_by_qty,
 from erpnext.selling.doctype.customer.customer import check_credit_limit
 from erpnext.manufacturing.doctype.production_plan.production_plan import get_items_for_material_requests
 from erpnext.accounts.doctype.sales_invoice.sales_invoice import validate_inter_company_party, update_linked_doc
-from erpnext.stock.get_item_details import item_has_product_bundle, get_skip_delivery_note
+from erpnext.stock.get_item_details import item_has_product_bundle, get_skip_delivery_note, get_default_bom
 from erpnext.stock.doctype.serial_no.serial_no import get_serial_nos
 
 
@@ -722,7 +722,7 @@ class SalesOrder(SellingController):
 
 			bom_no = self.run_method("get_sales_order_item_bom", d)
 			if not bom_no:
-				bom_no = get_default_bom_item(d.item_code)
+				bom_no = get_default_bom(d.item_code)
 
 			if not bom_no:
 				continue
@@ -755,7 +755,8 @@ class SalesOrder(SellingController):
 					"sales_order_item": d.name,
 					"order_line_no": d.idx,
 					"project": self.project,
-					"cost_center": self.get("cost_center") or d.get("cost_center")
+					"cost_center": self.get("cost_center") or d.get("cost_center"),
+					"delivery_date": d.delivery_date,
 				}
 
 				if for_raw_material_request:
@@ -1648,14 +1649,6 @@ def get_supplier(doctype, txt, searchfield, start, page_len, filters):
 			'page_len': page_len,
 			'parent': filters.get('parent')
 		})
-
-
-def get_default_bom_item(item_code):
-	bom = frappe.get_all('BOM', dict(item=item_code, is_active=True),
-			order_by='is_default desc')
-	bom = bom[0].name if bom else None
-
-	return bom
 
 
 @frappe.whitelist()

@@ -12,6 +12,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 			"Pick List": "Pick List",
 			"Packing Slip": "Packing Slip",
 			"Job Card": "Create Job Card",
+			"Work Order": "Sub-Assembly Work Order",
 			"Purchase Order": "Subcontract Order",
 			"Purchase Receipt": "Subcontract Receipt",
 		};
@@ -203,11 +204,10 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 				}, __("Create"));
 			}
 
-			// Pick List
-			if (this.frm.show_pick_list_btn) {
-				this.frm.add_custom_button(__("Pick List"), () => {
-					this.make_pick_list("Material Transfer for Manufacture");
-				}, __("Create"));
+			// Sub Assembly Work Orders
+			if (!this.frm.doc.use_multi_level_bom && doc.status != "Completed" && frappe.model.can_create("Work Order")) {
+				this.frm.add_custom_button(__("Sub-Assembly Work Order"), () => this.make_sub_assembly_work_orders(),
+					__("Create"));
 			}
 
 			// Subcontract Order
@@ -215,6 +215,13 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 			if (subcontractable_qty > 0 && doc.status != "Completed" && frappe.model.can_create("Purchase Order")) {
 				this.frm.add_custom_button(__("Subcontract Order"), () => {
 					this.make_purchase_order();
+				}, __("Create"));
+			}
+
+			// Pick List
+			if (this.frm.show_pick_list_btn) {
+				this.frm.add_custom_button(__("Pick List"), () => {
+					this.make_pick_list("Material Transfer for Manufacture");
 				}, __("Create"));
 			}
 
@@ -604,6 +611,24 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 					let doc = frappe.model.sync(r.message)[0];
 					frappe.set_route("Form", doc.doctype, doc.name);
 				}
+			}
+		});
+	}
+
+	make_sub_assembly_work_orders() {
+		return this.frm.call({
+			method: "get_sub_assembly_items",
+			doc: this.frm.doc,
+			callback: (r) => {
+				if (!r.message || !r.message.length) {
+					frappe.msgprint({
+						title: __('Work Orders not created'),
+						message: __('No pending Sub-Assembly Items with Bill of Materials to Manufacture'),
+						indicator: 'orange'
+					});
+					return;
+				}
+				return erpnext.manufacturing.make_work_orders_from_order_dialog(r.message, this.frm.doc, true);
 			}
 		});
 	}

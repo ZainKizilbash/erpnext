@@ -7,7 +7,7 @@
 frappe.ui.form.on('Material Request', {
 	setup: function(frm) {
 		frm.custom_make_buttons = {
-			'Stock Entry': 'Issue Material',
+			'Stock Entry': 'Transfer Material',
 			'Pick List': 'Pick List',
 			'Purchase Order': 'Purchase Order',
 			'Request for Quotation': 'Request for Quotation',

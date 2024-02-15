@@ -202,7 +202,7 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 						&& allow_delivery
 					) {
 						me.frm.add_custom_button(__('Delivery Note'), () => me.make_delivery_note_based_on(), __('Create'));
-						me.frm.add_custom_button(__('Work Order'), () => me.make_work_order(), __('Create'));
+						me.frm.add_custom_button(__('Work Order'), () => me.make_work_orders(), __('Create'));
 
 						if (has_unpacked || me.frm.doc.packing_status == "To Pack") {
 							me.frm.add_custom_button(__('Packing Slip'), () => me.make_packing_slip(), __('Create'));
@@ -347,7 +347,7 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 		})
 	}
 
-	make_work_order() {
+	make_work_orders() {
 		return this.frm.call({
 			method: "get_work_order_items",
 			doc: this.frm.doc,
@@ -355,116 +355,14 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 				if (!r.message || !r.message.length) {
 					frappe.msgprint({
 						title: __('Work Orders not created'),
-						message: __('No Items with Bill of Materials to Manufacture'),
+						message: __('No pending Items with Bill of Materials to Manufacture'),
 						indicator: 'orange'
 					});
 					return;
 				}
-				return this.make_work_order_dialog(r.message);
+				return erpnext.manufacturing.make_work_orders_from_order_dialog(r.message, this.frm.doc);
 			}
 		});
-	}
-
-	make_work_order_dialog(items_data) {
-		let doc = {
-			items: items_data,
-		};
-
-		const fields = [{
-			label: "Items",
-			fieldtype: "Table",
-			fieldname: "items",
-			description: __("Select BOM and Qty for Production"),
-			fields: [
-				{
-					fieldname: "item_code",
-					label: __("Production Item"),
-					fieldtype: "Link",
-					options: "Item",
-					in_list_view: 1,
-					read_only: 1,
-					reqd: 1,
-					columns: 5,
-				},
-				{
-					fieldname: "bom_no",
-					label: __("BOM No"),
-					fieldtype: "Link",
-					options: "BOM",
-					reqd: 1,
-					in_list_view: 1,
-					columns: 3,
-					get_query: function (doc) {
-						return {
-							filters: {
-								item: doc.item_code,
-								is_active: 1
-							}
-						};
-					}
-				},
-				{
-					fieldname: "production_qty",
-					label: __("Qty"),
-					fieldtype: "Float",
-					reqd: 1,
-					in_list_view: 1,
-					columns: 1,
-				},
-				{
-					fieldname: "stock_uom",
-					label: __("UOM"),
-					fieldtype: "Data",
-					in_list_view: 1,
-					read_only: 1,
-					columns: 1,
-				},
-				{
-					fieldtype: "Data",
-					fieldname: "sales_order_item",
-					reqd: 1,
-					label: __("Sales Order Item"),
-					hidden: 1
-				},
-			],
-			data: doc.items,
-		}];
-
-		let dialog = new frappe.ui.Dialog({
-			title: __("Select Items to Manufacture"),
-			fields: fields,
-			doc: doc,
-			size: "extra-large",
-			primary_action: () => {
-				let values = dialog.get_values();
-				for (let d of values.items) {
-					d.sales_order = this.frm.doc.name;
-					d.customer = this.frm.doc.customer;
-					d.customer_name = this.frm.doc.customer_name;
-					d.project = this.frm.doc.project;
-				}
-				return this.frm.call({
-					method: "erpnext.manufacturing.doctype.work_order.work_order.create_work_orders",
-					args: {
-						items: values.items,
-						company: this.frm.doc.company,
-					},
-					freeze: true,
-					callback: (r) => {
-						if(r.message) {
-							frappe.msgprint({
-								message: __("Work Orders Created: {0}", [
-									r.message.map((d) => `<a href=${frappe.utils.get_form_link("Work Order", d)}>${d}</a>`).join(', ')
-								]), indicator: "green"
-							})
-						}
-						dialog.hide();
-					}
-				});
-			},
-			primary_action_label: __("Create")
-		});
-		dialog.show();
 	}
 
 	create_vehicles() {
@@ -617,7 +515,7 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 					{fieldname: "item_name", label: __("Item Name"), fieldtype: "Data", read_only: 1},
 					{fieldname: "bom_no", label: __("BOM No"), fieldtype: "Link", options: "BOM", reqd: 1, columns: 3, in_list_view: 1,
 						get_query: (doc) => { return { filters: {
-							item: doc.item_code, is_active: 1,
+							item: doc.item_code, is_active: 1, docstatus: 1,
 						} } }
 					},
 					{fieldname: "required_qty", label: __("Qty"), fieldtype: "Float", reqd: 1, columns: 1, in_list_view: 1},

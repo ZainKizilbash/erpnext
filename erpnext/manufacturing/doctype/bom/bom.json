@@ -182,7 +182,7 @@
    "default": "1",
    "fieldname": "set_rate_of_sub_assembly_item_based_on_bom",
    "fieldtype": "Check",
-   "label": "Set rate of sub-assembly item based on BOM"
+   "label": "Set Rate of Sub-Assembly Item Based on BOM"
   },
   {
    "depends_on": "inspection_required",
@@ -599,7 +599,7 @@
  "image_field": "image",
  "is_submittable": 1,
  "links": [],
- "modified": "2023-03-01 02:13:58.493826",
+ "modified": "2024-02-15 05:13:11.544015",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "BOM",

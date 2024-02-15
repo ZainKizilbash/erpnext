@@ -1316,11 +1316,32 @@ def get_price_list_currency_and_exchange_rate(args):
 
 
 @frappe.whitelist()
-def get_default_bom(item_code=None):
-	if item_code:
-		bom = frappe.db.get_value("BOM", {"docstatus": 1, "is_default": 1, "is_active": 1, "item": item_code})
-		if bom:
-			return bom
+def get_default_bom(item_code, project=None):
+	if not item_code:
+		return None
+
+	order_by = "is_default desc, creation desc"
+
+	filters = {"item": item_code, "is_active": 1}
+	if project:
+		filters["project"] = project
+
+	# look for active bom
+	bom = frappe.db.get_value("BOM", filters=filters, order_by=order_by)
+
+	# if not found, look in template item
+	if not bom:
+		variant_of = frappe.db.get_value("Item", item_code, "variant_of")
+		if variant_of:
+			template_filters = filters.copy()
+			template_filters["item"] = variant_of
+			bom = frappe.db.get_value("BOM", filters=template_filters, order_by=order_by)
+
+	# if not found in project, look without project
+	if not bom and project:
+		bom = get_default_bom(item_code, project=None)
+
+	return bom
 
 
 def set_valuation_rate(out, args):

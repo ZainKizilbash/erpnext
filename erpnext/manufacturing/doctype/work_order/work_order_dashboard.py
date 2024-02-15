@@ -4,6 +4,9 @@ from frappe import _
 def get_data():
 	return {
 		'fieldname': 'work_order',
+		'non_standard_fieldnames': {
+			'Work Order': 'parent_work_order',
+		},
 		'transactions': [
 			{
 				'label': _('Fulfilment'),
@@ -16,6 +19,10 @@ def get_data():
 			{
 				'label': _("Subcontracting"),
 				'items': ['Purchase Order', 'Purchase Receipt']
+			},
+			{
+				'label': _("Sub-Assembly"),
+				'items': ['Work Order']
 			},
 		]
 	}

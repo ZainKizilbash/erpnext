@@ -373,7 +373,8 @@ def bom(doctype, txt, searchfield, start, page_len, filters):
 			{fcond} {mcond}
 		order by
 			if(locate(%(_txt)s, name), locate(%(_txt)s, name), 99999),
-			modified desc, name
+			creation desc,
+			name desc
 		limit %(start)s, %(page_len)s """.format(
 			fields=", ".join(fields),
 			fcond=get_filters_cond(doctype, filters, conditions).replace('%', '%%'),

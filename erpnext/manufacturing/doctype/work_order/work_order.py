@@ -10,6 +10,7 @@ from erpnext.stock.stock_balance import get_planned_qty, update_bin_qty
 from erpnext.stock.utils import get_bin, validate_warehouse_company, get_latest_stock_qty
 from erpnext.utilities.transaction_base import validate_uom_is_integer
 from erpnext.controllers.status_updater import StatusUpdaterERP
+from erpnext.stock.get_item_details import get_default_bom
 from frappe.model.mapper import get_mapped_doc
 import json
 import math
@@ -1015,6 +1016,64 @@ class WorkOrder(StatusUpdaterERP):
 		bom.set_bom_material_details()
 		return bom
 
+	@frappe.whitelist()
+	def get_sub_assembly_items(self, for_raw_material_request=False, item_condition=None):
+		"""Returns items with BOM that already do not have a linked work order"""
+		work_order_items = []
+		default_rm_warehouse = frappe.get_cached_value("Manufacturing Settings", None, "default_rm_warehouse")
+		for_raw_material_request = cint(for_raw_material_request)
+
+		for d in self.get("required_items"):
+			if item_condition and not item_condition(d):
+				continue
+
+			bom_no = self.run_method("get_work_order_item_bom", d)
+			if not bom_no:
+				bom_no = get_default_bom(d.item_code)
+
+			if not bom_no:
+				continue
+
+			stock_qty = flt(d.stock_required_qty)
+			if for_raw_material_request:
+				pending_qty = stock_qty
+			else:
+				work_order_data = frappe.db.sql("""
+					select sum(qty)
+					from `tabWork Order`
+					where production_item = %s and parent_work_order = %s and work_order_item = %s and docstatus < 2
+				""", (d.item_code, self.name, d.name))
+				total_work_order_qty = flt(work_order_data[0][0]) if work_order_data else 0
+				pending_qty = stock_qty - total_work_order_qty
+
+			work_order_precison = frappe.get_precision("Work Order", "qty")
+			pending_qty = round_up(pending_qty, work_order_precison)
+
+			if pending_qty:
+				wo_item = {
+					"name": d.name,
+					"item_code": d.item_code,
+					"item_name": d.item_name,
+					"description": d.description,
+					"bom_no": bom_no,
+					"warehouse": default_rm_warehouse if for_raw_material_request else d.source_warehouse,
+					"stock_uom": d.get("stock_uom") or d.get("uom"),
+					"parent_work_order": self.name,
+					"work_order_item": d.name,
+					"project": self.project,
+					"cost_center": self.get("cost_center") or d.get("cost_center")
+				}
+
+				if for_raw_material_request:
+					wo_item["required_qty"] = pending_qty
+				else:
+					wo_item["pending_qty"] = pending_qty
+					wo_item["production_qty"] = pending_qty
+
+				work_order_items.append(wo_item)
+
+		return work_order_items
+
 
 def get_qty_with_allowance(qty, qty_to_produce, max_qty):
 	allowance_percentage = get_over_production_allowance(qty_to_produce, max_qty)
@@ -1054,31 +1113,16 @@ def get_item_details(item, project=None):
 
 	res = res[0]
 
-	filters = {"item": item, "is_default": 1}
-
-	if project:
-		filters = {"item": item, "project": project}
-
-	res["bom_no"] = frappe.db.get_value("BOM", filters = filters)
-
+	res["bom_no"] = get_default_bom(item, project=project)
 	if not res["bom_no"]:
-		variant_of = frappe.db.get_value("Item", item, "variant_of")
-
-		if variant_of:
-			res["bom_no"] = frappe.db.get_value("BOM", filters={"item": variant_of, "is_default": 1})
-
-	if not res["bom_no"]:
-		if project:
-			res = get_item_details(item)
-			frappe.msgprint(_("Default BOM not found for Item {0} and Project {1}").format(item, project), alert=1)
-		else:
-			frappe.throw(_("Default BOM for {0} not found").format(item))
+		frappe.throw(_("Active BOM for Item {0} not found").format(frappe.bold(item)))
 
 	bom_data = frappe.db.get_value('BOM', res['bom_no'],
 		['project', 'allow_alternative_item', 'transfer_material_against', 'item_name'], as_dict=1)
 
 	res['project'] = project or bom_data.pop("project")
 	res.update(bom_data)
+
 	res.update(check_if_scrap_warehouse_mandatory(res["bom_no"]))
 
 	return res
@@ -1104,12 +1148,12 @@ def make_work_order(bom_no, item, qty=0, project=None):
 
 
 @frappe.whitelist()
-def create_work_orders(items, company, ignore_version=True, ignore_feed=False):
+def create_work_orders(items, company, ignore_version=True, ignore_feed=False, create_sub_assembly_work_orders=False):
 	'''Make Work Orders against the given Sales Order for the given `items`'''
 	if isinstance(items, str):
 		items = json.loads(items)
 
-	out = []
+	work_order_docs = []
 
 	for d in items:
 		if not d.get("bom_no"):
@@ -1118,27 +1162,37 @@ def create_work_orders(items, company, ignore_version=True, ignore_feed=False):
 			frappe.throw(_("Please select Qty against Item {0}").format(d.get("item_code")))
 
 		sales_order = d.get("sales_order")
+		parent_work_order = d.get("parent_work_order")
 		customer = d.get("customer")
 		customer_name = d.get("customer_name") if d.get("customer") else None
 		delivery_date = d.get("delivery_date") or d.get("schedule_date") or d.get("expected_delivery_date")
 
+		# set missing customer
 		if not customer and sales_order:
 			customer = frappe.db.get_value("Sales Order", sales_order, "customer", cache=1)
 			customer_name = frappe.db.get_value("Sales Order", sales_order, "customer_name", cache=1)
 
+		if not customer and parent_work_order:
+			customer = frappe.db.get_value("Work Order", parent_work_order, "customer", cache=1)
+			customer_name = frappe.db.get_value("Work Order", parent_work_order, "customer_name", cache=1)
+
+		# set missing delivery date from sales order
 		if not delivery_date and sales_order:
 			delivery_date = frappe.db.get_value("Sales Order", sales_order, "delivery_date", cache=1)
 
+		# set missing customer name
 		if not customer_name and customer:
 			customer_name = frappe.get_cached_value("Customer", customer, "customer_name")
 
+		# set missing order line no
 		order_line_no = cint(d.get("order_line_no"))
 		if not order_line_no and d.get("sales_order_item"):
 			order_line_no = frappe.db.get_value("Sales Order Item", d.get("sales_order_item"), 'idx')
 
+		# create work order
 		work_order = frappe.new_doc("Work Order")
-		work_order.flags.ignore_version = ignore_version
-		work_order.flags.ignore_feed = ignore_feed
+		work_order.flags.ignore_version = cint(ignore_version)
+		work_order.flags.ignore_feed = cint(ignore_feed)
 
 		work_order.update({
 			"production_item": d.get("item_code"),
@@ -1150,12 +1204,17 @@ def create_work_orders(items, company, ignore_version=True, ignore_feed=False):
 			"company": company or d.get("company"),
 			"sales_order": sales_order,
 			"sales_order_item": d.get("sales_order_item"),
+			"parent_work_order": parent_work_order,
+			"work_order_item": d.get("work_order_item"),
 			"customer": customer,
 			"customer_name": customer_name,
 			"project": d.get("project"),
 			"order_line_no": order_line_no,
 			"expected_delivery_date": delivery_date,
 		})
+
+		if parent_work_order:
+			work_order.packing_slip_required = 0
 
 		if work_order.meta.has_field("cost_center") and d.get("cost_center"):
 			work_order.cost_center = d.get("cost_center")
@@ -1168,9 +1227,18 @@ def create_work_orders(items, company, ignore_version=True, ignore_feed=False):
 		if frappe.db.get_single_value("Manufacturing Settings", "auto_submit_work_order"):
 			work_order.submit()
 
-		out.append(work_order)
+		work_order_docs.append(work_order)
 
-	return [p.name for p in out]
+	work_order_names = [p.name for p in work_order_docs]
+
+	if cint(create_sub_assembly_work_orders):
+		for work_order in work_order_docs:
+			sub_assembly_items = work_order.get_sub_assembly_items()
+			if sub_assembly_items:
+				work_order_names += create_work_orders(sub_assembly_items, company=company,
+					ignore_version=ignore_version, ignore_feed=ignore_feed, create_sub_assembly_work_orders=True)
+
+	return work_order_names
 
 
 @frappe.whitelist()
