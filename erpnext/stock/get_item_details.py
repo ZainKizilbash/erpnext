@@ -1657,6 +1657,17 @@ def scan_barcode(search_value: str):
 		set_cache(batch_no_data)
 		return batch_no_data
 
+	# search packing slip
+	packing_slip_data = frappe.db.get_value(
+		"Packing Slip",
+		{"name": search_value, "docstatus": 1},
+		["name as packing_slip"],
+		as_dict=True
+	)
+	if packing_slip_data:
+		set_cache(packing_slip_data)
+		return packing_slip_data
+
 	return {}
 
 

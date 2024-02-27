@@ -96,7 +96,19 @@ erpnext.utils.BarcodeScanner = class BarcodeScanner {
 		return new Promise((resolve, reject) => {
 			let cur_grid = this.frm.fields_dict[this.items_table_name].grid;
 
-			const {item_code, barcode, batch_no, serial_no, uom} = data;
+			const {item_code, barcode, batch_no, serial_no, uom, packing_slip} = data;
+
+			if (packing_slip) {
+				if (this.frm.cscript.get_items_from_packing_slip) {
+					return this.frm.cscript.get_items_from_packing_slip(this.frm.doc.doctype, packing_slip).then(() => {
+						this.show_alert(__("Package <b>{0}</b> added", [packing_slip]), "green")
+						this.clean_up();
+						resolve();
+					});
+				} else {
+					reject();
+				}
+			}
 
 			let row = this.get_row_to_modify_on_scan(item_code, batch_no, uom, barcode);
 

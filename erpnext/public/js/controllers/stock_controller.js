@@ -281,7 +281,7 @@ erpnext.stock.StockController = class StockController extends frappe.ui.form.Con
 		}, __("Get Items From"));
 	}
 
-	get_items_from_packing_slip(target_doctype) {
+	get_items_from_packing_slip(target_doctype, packing_slip_id) {
 		let method;
 		if (target_doctype == "Delivery Note") {
 			method = "erpnext.stock.doctype.packing_slip.packing_slip.make_delivery_note";
@@ -290,79 +290,98 @@ erpnext.stock.StockController = class StockController extends frappe.ui.form.Con
 		} else if (target_doctype == "Packing Slip") {
 			method = "erpnext.stock.doctype.packing_slip.packing_slip.make_target_packing_slip";
 		} else {
-			frappe.throw(__("Invalid Target DocType"))
+			return;
 		}
 
-		let columns = ['customer', 'total_stock_qty', 'packed_items', 'posting_date'];
-		if (target_doctype == "Packing Slip") {
-			columns.push('package_type');
-		}
+		if (packing_slip_id) {
+			erpnext.utils.remove_empty_first_row(this.frm, "items");
 
-		erpnext.utils.map_current_doc({
-			method: method,
-			source_doctype: "Packing Slip",
-			target: this.frm,
-			setters: [
-				{
-					fieldname: 'customer',
-					label: __('Customer'),
-					fieldtype: 'Link',
-					options: 'Customer',
-					default: this.frm.doc.customer || undefined,
-					depends_on: "eval:!doc.no_customer",
-					get_query: () => erpnext.queries.customer(),
+			return frappe.call({
+				method: method,
+				args: {
+					source_name: packing_slip_id,
+					target_doc: this.frm.doc,
 				},
-				{
-					fieldname: 'warehouse',
-					label: __('Warehouse'),
-					fieldtype: 'Link',
-					options: 'Warehouse',
-					default: this.frm.doc.set_warehouse || undefined,
-					get_query: () => erpnext.queries.warehouse(this.frm.doc),
-				},
-				{
-					fieldname: 'sales_order',
-					label: __('Sales Order'),
-					fieldtype: 'Link',
-					options: 'Sales Order',
-					get_query: () => {
-						return {
-							filters: {
-								docstatus: 1
+				freeze: true,
+				callback: (r) => {
+					if (r.message) {
+						frappe.model.sync(r.message);
+						this.frm.refresh_fields();
+					}
+				}
+			});
+		} else {
+			let columns = ['customer', 'total_stock_qty', 'packed_items', 'posting_date'];
+			if (target_doctype == "Packing Slip") {
+				columns.push('package_type');
+			}
+
+			erpnext.utils.map_current_doc({
+				method: method,
+				source_doctype: "Packing Slip",
+				target: this.frm,
+				setters: [
+					{
+						fieldname: 'customer',
+						label: __('Customer'),
+						fieldtype: 'Link',
+						options: 'Customer',
+						default: this.frm.doc.customer || undefined,
+						depends_on: "eval:!doc.no_customer",
+						get_query: () => erpnext.queries.customer(),
+					},
+					{
+						fieldname: 'warehouse',
+						label: __('Warehouse'),
+						fieldtype: 'Link',
+						options: 'Warehouse',
+						default: this.frm.doc.set_warehouse || undefined,
+						get_query: () => erpnext.queries.warehouse(this.frm.doc),
+					},
+					{
+						fieldname: 'sales_order',
+						label: __('Sales Order'),
+						fieldtype: 'Link',
+						options: 'Sales Order',
+						get_query: () => {
+							return {
+								filters: {
+									docstatus: 1
+								}
 							}
 						}
+					},
+					{
+						fieldname: 'item_code',
+						label: __('Has Item'),
+						fieldtype: 'Link',
+						options: 'Item',
+						get_query: () => erpnext.queries.item(),
+					},
+					{
+						fieldname: 'no_customer',
+						label: __('Without Customer'),
+						fieldtype: 'Check',
+						options: 'Item',
+						get_query: () => erpnext.queries.item(),
+					},
+				],
+				columns: columns,
+				get_query: () => {
+					let filters = {
+						company: this.frm.doc.company,
+					};
+
+					if (this.frm.doc.customer) {
+						filters["customer"] = this.frm.doc.customer;
 					}
-				},
-				{
-					fieldname: 'item_code',
-					label: __('Has Item'),
-					fieldtype: 'Link',
-					options: 'Item',
-					get_query: () => erpnext.queries.item(),
-				},
-				{
-					fieldname: 'no_customer',
-					label: __('Without Customer'),
-					fieldtype: 'Check',
-					options: 'Item',
-					get_query: () => erpnext.queries.item(),
-				},
-			],
-			columns: columns,
-			get_query: () => {
-				let filters = {
-					company: this.frm.doc.company,
-				};
 
-				if (this.frm.doc.customer) {
-					filters["customer"] = this.frm.doc.customer;
-				}
-
-				return {
-					query: "erpnext.controllers.queries.get_packing_slips_to_be_delivered",
-					filters: filters
-				};
-			},
-		});
+					return {
+						query: "erpnext.controllers.queries.get_packing_slips_to_be_delivered",
+						filters: filters
+					};
+				},
+			});
+		}
 	}
 };
