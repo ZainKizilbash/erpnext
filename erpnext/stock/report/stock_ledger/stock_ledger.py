@@ -203,9 +203,9 @@ def get_items(filters):
 	return items
 
 
-def get_item_details(items, sl_entries, include_uom):
+def get_item_details(items, sl_entries=None, include_uom=None):
 	item_details = {}
-	if not items:
+	if not items and sl_entries:
 		items = list(set([d.item_code for d in sl_entries]))
 
 	if not items:
