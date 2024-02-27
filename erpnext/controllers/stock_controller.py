@@ -163,7 +163,7 @@ class StockController(AccountsController):
 
 		return stock_ledger
 
-	def auto_create_batches(self, warehouse_field, item_condition=None):
+	def auto_create_batches(self, warehouse_field, item_condition=None, set_manufacturing_date=False):
 		'''Create batches if required. Called before submit'''
 		for d in self.items:
 			if d.get(warehouse_field) and not d.batch_no:
@@ -172,7 +172,7 @@ class StockController(AccountsController):
 					if item_condition and not item_condition(d):
 						continue
 
-					d.batch_no = frappe.get_doc({
+					batch_doc = frappe.get_doc({
 						"doctype": "Batch",
 						"item": d.item_code,
 						"item_name": d.item_name,
@@ -180,8 +180,12 @@ class StockController(AccountsController):
 						"reference_doctype": self.doctype,
 						"reference_name": self.name,
 						"auto_created": 1,
-					}).insert().name
+					})
+					if set_manufacturing_date and self.get("posting_date"):
+						batch_doc.manufacturing_date = self.posting_date
 
+					batch_doc.insert()
+					d.batch_no = batch_doc.name
 					d.db_set("batch_no", d.batch_no)
 
 	def unlink_auto_created_batches(self):

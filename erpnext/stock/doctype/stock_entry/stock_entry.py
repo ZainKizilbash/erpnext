@@ -91,7 +91,9 @@ class StockEntry(TransactionController):
 		self.validate_purchase_order_raw_material_qty()
 
 	def on_submit(self):
-		self.auto_create_batches("t_warehouse", item_condition=lambda d: not d.s_warehouse)
+		self.auto_create_batches("t_warehouse",
+			item_condition=lambda d: not d.s_warehouse,
+			set_manufacturing_date=self.purpose in ("Manufacture", "Repack"))
 		self.update_stock_ledger()
 		update_serial_nos_after_submit(self, "items")
 		self.update_work_order()
