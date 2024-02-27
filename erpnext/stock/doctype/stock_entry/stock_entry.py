@@ -1146,14 +1146,14 @@ class StockEntry(TransactionController):
 			if total_pending_qty <= 0:
 				continue
 
-			total_required_qty = pending_item_dict.total_transferred_qty * completed_to_remaining_ratio
+			total_required_qty = pending_item_dict.total_pending_qty * completed_to_remaining_ratio
 			total_required_qty = flt(total_required_qty, qty_precision)
 
 			total_to_consume = min(total_required_qty, total_pending_qty)
 
 			# adjust for material consumptions
 			if self.purpose == "Manufacture" and pending_item_dict.total_consumed_qty:
-				material_per_fg = flt(total_required_qty / completed_qty)
+				material_per_fg = flt(pending_item_dict.total_transferred_qty / transferred_qty)
 				expected_consumed_qty = flt(self.pro_doc.produced_qty) * material_per_fg
 				excess_consumption = flt(pending_item_dict.total_consumed_qty) - expected_consumed_qty
 				if flt(excess_consumption, qty_precision) > 0:
