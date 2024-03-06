@@ -453,12 +453,10 @@ class BuyingController(TransactionController):
 
 	def get_raw_materials_supplied_against_item(self, row):
 		if not row.get("purchase_order") or not row.get("purchase_order_item") or not row.get("item_code"):
-			return []
+			return [], 0
 
 		transferred_materials_map = self.get_raw_materials_supplied_against_purchase_order(row.purchase_order)
-		transferred_materials_data = transferred_materials_map.get(row.item_code)
-		if not transferred_materials_map:
-			return []
+		transferred_materials_data = transferred_materials_map.get(row.item_code) or []
 
 		ordered_lines = frappe.get_all("Purchase Order Item",
 			filters={"item_code": row.item_code, "parent": row.purchase_order},
@@ -592,7 +590,12 @@ class BuyingController(TransactionController):
 
 			reserve_warehouse = None
 			if self.doctype == "Purchase Order":
-				reserve_warehouse = bom_item.source_warehouse or get_default_warehouse(bom_item.item_code, self)
+				if item.get("work_order"):
+					reserve_warehouse = frappe.db.get_value("Work Order", item.work_order, "source_warehouse", cache=1)
+
+				if not reserve_warehouse:
+					reserve_warehouse = bom_item.source_warehouse or get_default_warehouse(bom_item.item_code, self)
+
 				if reserve_warehouse and frappe.get_cached_value("Warehouse", reserve_warehouse, "company") != self.company:
 					reserve_warehouse = None
 

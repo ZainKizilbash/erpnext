@@ -826,6 +826,7 @@ def make_rm_stock_entry(purchase_order, packing_slips=None):
 	ste.address_display = purchase_order.address_display
 	ste.from_warehouse = purchase_order.set_reserve_warehouse
 	ste.to_warehouse = purchase_order.supplier_warehouse
+	ste.cost_center = purchase_order.get("cost_center")
 	ste.set_stock_entry_type()
 
 	if packing_slips:
@@ -876,6 +877,9 @@ def make_packing_slip(purchase_order):
 	doc.supplier_name = purchase_order.supplier_name
 	doc.from_warehouse = purchase_order.set_reserve_warehouse
 	doc.warehouse = purchase_order.set_reserve_warehouse
+
+	if purchase_order.meta.has_field("cost_center") and doc.meta.has_field("cost_center"):
+		doc.cost_center = purchase_order.cost_center
 
 	for d in supplied_items:
 		unsupplied_qty = flt(d.required_qty) - flt(d.supplied_qty)
