@@ -149,6 +149,7 @@
   "installed_qty",
   "accounting_dimensions_section",
   "expense_account",
+  "skip_sales_invoice",
   "allow_zero_valuation_rate",
   "item_tax_rate",
   "item_tax_detail",
@@ -1391,12 +1392,18 @@
    "options": "Company:company:default_currency",
    "print_hide": 1,
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "skip_sales_invoice",
+   "fieldtype": "Check",
+   "label": "Skip Sales Invoice"
   }
  ],
  "idx": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-01-30 01:55:55.360414",
+ "modified": "2024-03-09 15:55:59.994318",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Delivery Note Item",

@@ -117,6 +117,34 @@ class DeliveryNote(SellingController):
 	def set_title(self):
 		self.title = self.customer_name or self.customer
 
+	def set_missing_values(self, for_validate=False):
+		super().set_missing_values(for_validate=for_validate)
+		self.set_skip_sales_invoice()
+
+	def set_skip_sales_invoice(self):
+		for d in self.get("items"):
+			self.set_skip_sales_invoice_for_row(d)
+
+		self.set_skip_sales_invoice_for_delivery_note()
+
+	def set_skip_sales_invoice_for_row(self, row, update=False, update_modified=True):
+		if row.item_code:
+			hooked_skip_sales_invoice = self.run_method("get_skip_sales_invoice", row)
+			if hooked_skip_sales_invoice is not None:
+				row.skip_sales_invoice = 1 if hooked_skip_sales_invoice else 0
+		else:
+			row.skip_sales_invoice = 0
+
+		if update:
+			row.db_set("skip_sales_invoice", row.skip_sales_invoice, update_modified=update_modified)
+
+	def set_skip_sales_invoice_for_delivery_note(self, update=False, update_modified=True):
+		all_skip_sales_invoice = all(d.skip_sales_invoice for d in self.get("items"))
+		self.skip_sales_invoice = cint(all_skip_sales_invoice)
+
+		if update:
+			self.db_set("skip_sales_invoice", self.skip_sales_invoice, update_modified=update_modified)
+
 	def validate_previous_docstatus(self):
 		for d in self.get('items'):
 			if d.sales_order and frappe.db.get_value("Sales Order", d.sales_order, "docstatus", cache=1) != 1:
@@ -234,17 +262,19 @@ class DeliveryNote(SellingController):
 				}, update_modified=update_modified)
 
 		# update percentage in parent
+		billable_rows = [d for d in self.items if not d.skip_sales_invoice]
+
 		self.per_returned = flt(self.calculate_status_percentage('returned_qty', 'qty', self.items))
-		self.per_billed = self.calculate_status_percentage('billed_qty', 'qty', self.items)
-		self.per_completed = self.calculate_status_percentage(['billed_qty', 'returned_qty'], 'qty', self.items)
+		self.per_billed = self.calculate_status_percentage('billed_qty', 'qty', billable_rows)
+		self.per_completed = self.calculate_status_percentage(['billed_qty', 'returned_qty'], 'qty', billable_rows)
 		if self.per_completed is None:
-			total_billed_qty = flt(sum([flt(d.billed_qty) for d in self.items]), self.precision('total_qty'))
+			total_billed_qty = flt(sum([flt(d.billed_qty) for d in billable_rows]), self.precision('total_qty'))
 			self.per_billed = 100 if total_billed_qty else 0
 			self.per_completed = 100 if total_billed_qty else 0
 
 		# update billing_status
 		self.billing_status = self.get_completion_status('per_completed', 'Bill',
-			not_applicable=self.status == "Closed" or self.per_returned == 100 or self.is_return,
+			not_applicable=self.skip_sales_invoice or self.status == "Closed" or self.per_returned == 100 or self.is_return,
 			not_applicable_based_on='per_billed')
 
 		if update:
@@ -630,6 +660,9 @@ def make_sales_invoice(source_name, target_doc=None, only_items=None, skip_postp
 			else:
 				if not source.claim_customer:
 					return False
+
+		if source.skip_sales_invoice:
+			return False
 
 		if source_parent.get('is_return'):
 			return get_pending_qty(source) <= 0

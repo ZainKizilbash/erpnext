@@ -214,11 +214,13 @@ erpnext.stock.DeliveryNoteController = class DeliveryNoteController extends erpn
 					return "green";
 				}
 			} else if (doc.docstatus === 1) {
-				var completed_qty = flt(doc.billed_qty) + flt(doc.returned_qty);
-				if (!completed_qty) {
-					return "orange";
-				} else if (doc.returned_qty >= doc.qty) {
+				let completed_qty = flt(doc.billed_qty) + flt(doc.returned_qty);
+				if (doc.returned_qty && doc.returned_qty >= doc.qty) {
 					return "grey";
+				} else if (doc.skip_sales_invoice) {
+					return "blue"
+				} else if (!completed_qty) {
+					return "orange";
 				} else if (completed_qty < doc.qty) {
 					return "yellow";
 				} else if (doc.billed_qty < doc.qty) {

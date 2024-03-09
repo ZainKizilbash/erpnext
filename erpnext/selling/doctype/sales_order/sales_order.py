@@ -159,8 +159,8 @@ class SalesOrder(SellingController):
 			row.skip_delivery_note = get_skip_delivery_note(item, delivered_by_supplier=cint(row.delivered_by_supplier))
 			if not row.skip_delivery_note:
 				hooked_skip_delivery_note = self.run_method("get_skip_delivery_note", row)
-				if hooked_skip_delivery_note:
-					row.skip_delivery_note = 1
+				if hooked_skip_delivery_note is not None:
+					row.skip_delivery_note = 1 if hooked_skip_delivery_note else 0
 		else:
 			row.skip_delivery_note = 1
 

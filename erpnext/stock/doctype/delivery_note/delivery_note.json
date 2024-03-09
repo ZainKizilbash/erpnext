@@ -189,6 +189,7 @@
   "sec_billing",
   "billing_status",
   "per_completed",
+  "skip_sales_invoice",
   "cb_7",
   "per_billed",
   "per_returned",
@@ -1721,13 +1722,21 @@
    "options": "To Bill\nBilled\nNot Applicable",
    "print_hide": 1,
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "skip_sales_invoice",
+   "fieldtype": "Check",
+   "label": "Skip Sales Invoice",
+   "print_hide": 1,
+   "read_only": 1
   }
  ],
  "icon": "fa fa-truck",
  "idx": 146,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-12 16:23:17.435450",
+ "modified": "2024-03-09 16:20:57.782485",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Delivery Note",

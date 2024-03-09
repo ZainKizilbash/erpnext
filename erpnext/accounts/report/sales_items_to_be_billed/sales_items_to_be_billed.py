@@ -278,6 +278,11 @@ class ItemsToBeBilled:
 		if self.filters.project_type:
 			conditions.append("proj.project_type = %(project_type)s")
 
+		if frappe.get_meta(doctype).has_field("skip_sales_invoice"):
+			conditions.append("o.skip_sales_invoice = 0")
+		if frappe.get_meta(doctype + " Item").has_field("skip_sales_invoice"):
+			conditions.append("i.skip_sales_invoice = 0")
+
 		return "AND {}".format(" AND ".join(conditions)) if conditions else ""
 
 	def prepare_data(self):
