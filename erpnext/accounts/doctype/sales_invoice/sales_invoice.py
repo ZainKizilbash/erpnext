@@ -1676,7 +1676,7 @@ def validate_inter_company_party(doctype, party, company, inter_company_referenc
 
 	if inter_company_reference:
 		doc = frappe.get_doc(ref_doctype, inter_company_reference)
-		ref_party = doc.supplier if doctype in ["Sales Invoice", "Delivery Note", "Sales Order"] else doc.customer
+		ref_party = doc.supplier if doctype in ["Sales Invoice", "Delivery Note", "Sales Order"] else doc.get("bill_to") or doc.customer
 		if not frappe.db.get_value(partytype, {"represents_company": doc.company}, "name") == party:
 			frappe.throw(_("Invalid {0} for Inter Company Transaction.").format(partytype))
 		if not frappe.get_cached_value(ref_partytype, ref_party, "represents_company") == company:
@@ -1837,8 +1837,9 @@ def set_account_for_mode_of_payment(self):
 
 def get_inter_company_details(doc, doctype):
 	if doctype in ["Sales Invoice", "Delivery Note", "Sales Order"]:
+		customer = doc.get("bill_to") or doc.customer
 		party = frappe.db.get_value("Supplier", {"disabled": 0, "is_internal_supplier": 1, "represents_company": doc.company}, "name")
-		company = frappe.get_cached_value("Customer", doc.customer, "represents_company")
+		company = frappe.get_cached_value("Customer", customer, "represents_company")
 	else:
 		party = frappe.db.get_value("Customer", {"disabled": 0, "is_internal_customer": 1, "represents_company": doc.company}, "name")
 		company = frappe.get_cached_value("Supplier", doc.supplier, "represents_company")
