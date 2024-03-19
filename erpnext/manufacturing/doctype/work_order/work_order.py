@@ -1148,7 +1148,30 @@ def make_work_order(bom_no, item, qty=0, project=None):
 
 
 @frappe.whitelist()
-def create_work_orders(items, company, ignore_version=True, ignore_feed=False, create_sub_assembly_work_orders=False):
+def create_work_orders(
+	items,
+	company,
+	ignore_version=True,
+	ignore_feed=False,
+	create_sub_assembly_work_orders=False
+):
+	_create_work_orders(
+		items,
+		company,
+		ignore_version=ignore_version,
+		ignore_feed=ignore_feed,
+		create_sub_assembly_work_orders=create_sub_assembly_work_orders,
+	)
+
+
+def _create_work_orders(
+	items,
+	company,
+	ignore_permissions=False,
+	ignore_version=True,
+	ignore_feed=False,
+	create_sub_assembly_work_orders=False
+):
 	'''Make Work Orders against the given Sales Order for the given `items`'''
 	if isinstance(items, str):
 		items = json.loads(items)
@@ -1191,6 +1214,7 @@ def create_work_orders(items, company, ignore_version=True, ignore_feed=False, c
 
 		# create work order
 		work_order = frappe.new_doc("Work Order")
+		work_order.flags.ignore_permissions = cint(ignore_permissions)
 		work_order.flags.ignore_version = cint(ignore_version)
 		work_order.flags.ignore_feed = cint(ignore_feed)
 
@@ -1235,8 +1259,14 @@ def create_work_orders(items, company, ignore_version=True, ignore_feed=False, c
 		for work_order in work_order_docs:
 			sub_assembly_items = work_order.get_sub_assembly_items()
 			if sub_assembly_items:
-				work_order_names += create_work_orders(sub_assembly_items, company=company,
-					ignore_version=ignore_version, ignore_feed=ignore_feed, create_sub_assembly_work_orders=True)
+				work_order_names += _create_work_orders(
+					sub_assembly_items,
+					company=company,
+					ignore_permissions=ignore_permissions,
+					ignore_version=ignore_version,
+					ignore_feed=ignore_feed,
+					create_sub_assembly_work_orders=True
+				)
 
 	return work_order_names
 
