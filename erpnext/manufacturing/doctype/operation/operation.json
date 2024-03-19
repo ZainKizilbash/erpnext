@@ -45,7 +45,7 @@
  ],
  "icon": "fa fa-wrench",
  "links": [],
- "modified": "2023-11-16 01:34:11.602746",
+ "modified": "2024-03-19 18:07:10.885871",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Operation",
@@ -58,20 +58,17 @@
    "export": 1,
    "import": 1,
    "read": 1,
-   "role": "Manufacturing User",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "export": 1,
-   "import": 1,
-   "read": 1,
    "report": 1,
    "role": "Manufacturing Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "export": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Manufacturing User",
+   "share": 1
   }
  ],
  "quick_entry": 1,
