@@ -836,12 +836,18 @@
    "fieldname": "material_request",
    "fieldtype": "Link",
    "label": "Material Request",
-   "options": "Material Request"
+   "no_copy": 1,
+   "options": "Material Request",
+   "read_only": 1
   },
   {
    "fieldname": "material_request_item",
    "fieldtype": "Data",
-   "label": "Material Request Item"
+   "hidden": 1,
+   "label": "Material Request Item",
+   "no_copy": 1,
+   "print_hide": 1,
+   "read_only": 1
   },
   {
    "fieldname": "expense_account",
@@ -1492,7 +1498,7 @@
  "idx": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-01-30 01:55:49.085697",
+ "modified": "2024-03-20 15:38:17.545933",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Purchase Receipt Item",
