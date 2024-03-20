@@ -401,6 +401,7 @@
    "precision": "2"
   },
   {
+   "bold": 1,
    "columns": 1,
    "fieldname": "rate",
    "fieldtype": "Currency",
@@ -1431,7 +1432,7 @@
  "idx": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-10-23 23:16:02.519110",
+ "modified": "2024-03-20 15:36:50.660173",
  "modified_by": "Administrator",
  "module": "Selling",
  "name": "Sales Order Item",
