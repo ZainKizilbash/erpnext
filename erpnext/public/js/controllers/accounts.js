@@ -176,7 +176,7 @@ cur_frm.cscript.account_head = function(doc, cdt, cdn) {
 					if (["Actual", "Manual"].includes(d.charge_type)) {
 						frappe.model.set_value(cdt, cdn, "rate", flt(r.message.tax_rate) || 0);
 					} else {
-						frappe.model.set_value(cdt, cdn, "rate", null);
+						frappe.model.set_value(cdt, cdn, "rate", 0);
 					}
 				}
 			}
