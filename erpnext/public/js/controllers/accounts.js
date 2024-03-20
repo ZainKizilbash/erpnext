@@ -157,23 +157,30 @@ var get_payment_mode_account = function(frm, mode_of_payment, callback) {
 }
 
 cur_frm.cscript.account_head = function(doc, cdt, cdn) {
-	var d = locals[cdt][cdn];
-	if(!d.charge_type && d.account_head){
+	let d = locals[cdt][cdn];
+	if (!d.charge_type && d.account_head) {
 		frappe.msgprint(__("Please select Charge Type first"));
 		frappe.model.set_value(cdt, cdn, "account_head", "");
-	} else if(d.account_head && d.charge_type!=="Actual" && d.charge_type !=="Manual") {
-		frappe.call({
-			type:"GET",
-			method: "erpnext.controllers.accounts_controller.get_tax_rate",
-			args: {"account_head":d.account_head},
+	} else if (d.account_head) {
+		return frappe.call({
+			type: "GET",
+			method: "erpnext.accounts.doctype.account.account.get_tax_account_details",
+			args: {
+				account_head: d.account_head
+			},
 			callback: function(r) {
-				frappe.model.set_value(cdt, cdn, "rate", r.message.tax_rate || 0);
-				frappe.model.set_value(cdt, cdn, "description", r.message.account_name);
-				frappe.model.set_value(cdt, cdn, "exclude_from_item_tax_amount", r.message.exclude_from_item_tax_amount);
+				if (r.message) {
+					frappe.model.set_value(cdt, cdn, "description", r.message.account_name);
+					frappe.model.set_value(cdt, cdn, "exclude_from_item_tax_amount", cint(r.message.exclude_from_item_tax_amount));
+
+					if (["Actual", "Manual"].includes(d.charge_type)) {
+						frappe.model.set_value(cdt, cdn, "rate", flt(r.message.tax_rate) || 0);
+					} else {
+						frappe.model.set_value(cdt, cdn, "rate", null);
+					}
+				}
 			}
-		})
-	} else if (d.charge_type == 'Actual' && d.account_head) {
-		frappe.model.set_value(cdt, cdn, "description", d.account_head.split(' - ')[0]);
+		});
 	}
 }
 

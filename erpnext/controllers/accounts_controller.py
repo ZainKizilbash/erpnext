@@ -661,13 +661,6 @@ class AccountsController(TransactionBase):
 					frappe.throw(_("Row #{0}: Service End Date cannot be before Invoice Posting Date").format(d.idx))
 
 
-@frappe.whitelist()
-def get_tax_rate(account_head):
-	return frappe.db.get_value("Account", account_head, [
-		"tax_rate", "account_name", "exclude_from_item_tax_amount"
-	], as_dict=True)
-
-
 def validate_conversion_rate(currency, conversion_rate, conversion_rate_label, company):
 	"""common validation for currency and price list currency"""
 
