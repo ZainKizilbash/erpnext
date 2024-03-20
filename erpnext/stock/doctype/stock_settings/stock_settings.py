@@ -21,9 +21,19 @@ class StockSettings(Document):
 			make_bundling_fields()
 
 	def update_global_defaults(self):
-		for key in ["item_naming_by", "item_group", "stock_uom", "weight_uom", "restrict_stock_valuation_to_role",
-			"allow_negative_stock", "default_warehouse", "set_qty_in_transactions_based_on_serial_no_input"]:
-				frappe.db.set_default(key, self.get(key, ""))
+		global_default_fields = [
+			"item_naming_by",
+			"item_group",
+			"stock_uom",
+			"weight_uom",
+			"restrict_stock_valuation_to_role",
+			"allow_negative_stock",
+			"default_warehouse",
+			"set_qty_in_transactions_based_on_serial_no_input",
+			"disable_item_formatter",
+		]
+		for key in global_default_fields:
+			frappe.db.set_default(key, self.get(key, ""))
 
 	def validate_freeze_date(self):
 		stock_frozen_limit = 356

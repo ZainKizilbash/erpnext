@@ -869,7 +869,13 @@ erpnext.utils.query_report_local_refresh = function() {
 }
 
 frappe.form.link_formatters['Item'] = function(value, doc) {
-	if(doc && doc.item_name && doc.item_name !== value && !doc.disable_item_formatter) {
+	if (
+		doc
+		&& doc.item_name
+		&& doc.item_name !== value
+		&& !doc.disable_item_formatter
+		&& !frappe.defaults.get_default('disable_item_formatter')
+	) {
 		return value ? value + ': ' + doc.item_name : doc.item_name;
 	} else {
 		return value;
