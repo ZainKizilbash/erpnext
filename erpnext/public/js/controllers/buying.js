@@ -220,13 +220,18 @@ erpnext.buying.BuyingController = class BuyingController extends erpnext.Transac
 	}
 
 	qty(doc, cdt, cdn) {
-		var item = frappe.get_doc(cdt, cdn);
-		if ((doc.doctype == "Purchase Receipt") || (doc.doctype == "Purchase Invoice" && (doc.update_stock || doc.is_return))) {
+		let item = frappe.get_doc(cdt, cdn);
+		if (
+			(doc.doctype == "Purchase Receipt")
+			|| (doc.doctype == "Purchase Invoice" && (doc.update_stock || doc.is_return))
+		) {
 			frappe.model.round_floats_in(item, ["qty", "received_qty"]);
 
-			if(!doc.is_return && this.validate_negative_quantity(cdt, cdn, item, ["qty", "received_qty"])){ return }
+			if (!doc.is_return && this.validate_negative_quantity(cdt, cdn, item, ["qty", "received_qty"])) {
+				return;
+			}
 
-			if(!item.rejected_qty && item.qty) {
+			if (!item.rejected_qty && item.qty) {
 				item.received_qty = item.qty;
 			}
 
@@ -246,10 +251,12 @@ erpnext.buying.BuyingController = class BuyingController extends erpnext.Transac
 	}
 
 	calculate_accepted_qty(doc, cdt, cdn) {
-		var item = frappe.get_doc(cdt, cdn);
+		let item = frappe.get_doc(cdt, cdn);
 		frappe.model.round_floats_in(item, ["received_qty", "rejected_qty"]);
 
-		if(!doc.is_return && this.validate_negative_quantity(cdt, cdn, item, ["received_qty", "rejected_qty"])){ return }
+		if (!doc.is_return && this.validate_negative_quantity(cdt, cdn, item, ["received_qty", "rejected_qty"])) {
+			return;
+		}
 
 		item.qty = flt(item.received_qty - item.rejected_qty, precision("qty", item));
 		this.qty(doc, cdt, cdn);
