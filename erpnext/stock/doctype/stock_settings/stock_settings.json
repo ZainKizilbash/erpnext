@@ -32,7 +32,6 @@
   "column_break_23",
   "show_barcode_field",
   "clean_description_html",
-  "disable_item_formatter",
   "column_break_25",
   "enable_dynamic_bundling",
   "auto_material_request",
@@ -286,19 +285,13 @@
    "fieldname": "under_delivery_allowance",
    "fieldtype": "Float",
    "label": "Under Delivery Allowance (%)"
-  },
-  {
-   "default": "0",
-   "fieldname": "disable_item_formatter",
-   "fieldtype": "Check",
-   "label": "Disable Item Formatter in User Interface"
   }
  ],
  "icon": "icon-cog",
  "idx": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-03-20 14:43:25.316573",
+ "modified": "2024-03-21 16:12:56.157182",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Stock Settings",

@@ -30,7 +30,6 @@ class StockSettings(Document):
 			"allow_negative_stock",
 			"default_warehouse",
 			"set_qty_in_transactions_based_on_serial_no_input",
-			"disable_item_formatter",
 		]
 		for key in global_default_fields:
 			frappe.db.set_default(key, self.get(key, ""))
