@@ -522,7 +522,6 @@
    "default": "0",
    "fieldname": "is_subcontracted",
    "fieldtype": "Check",
-   "in_standard_filter": 1,
    "label": "Is Subcontracted (Supply Raw Materials)",
    "print_hide": 1
   },
@@ -1144,7 +1143,6 @@
   {
    "fieldname": "incoterms",
    "fieldtype": "Select",
-   "in_standard_filter": 1,
    "label": "Incoterms",
    "options": "\nCIF (Cost, Insurance and Freight)\nCIP (Carriage and Insurance Paid to)\nCFR (Cost and Freight)\nCPT (Carriage paid to)\nDAT (Delivered at Terminal)\nDAP (Delivered at Place)\nDDP (Delivery Duty Paid)\nEXW (Ex Works)\nFAS (Free Alongside Ship)\nFCA (Free Carrier)\nFOB (Free on Board)"
   },
@@ -1643,7 +1641,7 @@
  "idx": 105,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-12 16:23:02.564841",
+ "modified": "2024-03-21 17:06:34.496059",
  "modified_by": "Administrator",
  "module": "Buying",
  "name": "Purchase Order",
