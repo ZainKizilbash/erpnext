@@ -184,7 +184,9 @@ class StockController(AccountsController):
 					if set_manufacturing_date and self.get("posting_date"):
 						batch_doc.manufacturing_date = self.posting_date
 
+					batch_doc.flags.ignore_permissions = True
 					batch_doc.insert()
+
 					d.batch_no = batch_doc.name
 					d.db_set("batch_no", d.batch_no)
 
