@@ -16,40 +16,46 @@ erpnext.buying.SupplierQuotationController = class SupplierQuotationController e
 	}
 
 	refresh() {
-		var me = this;
+		let me = this;
 		super.refresh();
 		if (this.frm.doc.docstatus === 1) {
-			cur_frm.add_custom_button(__("Purchase Order"), this.make_purchase_order,
-				__('Create'));
-			cur_frm.page.set_inner_btn_group_as_primary(__('Create'));
-			cur_frm.add_custom_button(__("Quotation"), this.make_quotation,
-				__('Create'));
+			if (frappe.model.can_create("Purchase Order")) {
+				this.frm.add_custom_button(__("Purchase Order"), this.make_purchase_order,
+					__('Create'));
+			}
 
-			if(!this.frm.doc.auto_repeat) {
-				cur_frm.add_custom_button(__('Subscription'), function() {
+			if (frappe.model.can_create("Quotation")) {
+				this.frm.add_custom_button(__("Quotation"), this.make_quotation,
+					__('Create'));
+			}
+
+			this.frm.page.set_inner_btn_group_as_primary(__('Create'));
+
+			if(!this.frm.doc.auto_repeat && frappe.model.can_create("Auto Repeat")) {
+				this.frm.add_custom_button(__('Subscription'), function() {
 					erpnext.utils.make_subscription(me.frm.doc.doctype, me.frm.doc.name)
 				}, __('Create'))
 			}
-		}
-		else if (this.frm.doc.docstatus===0) {
-
-			this.frm.add_custom_button(__('Material Request'),
-				function() {
-					erpnext.utils.map_current_doc({
-						method: "erpnext.stock.doctype.material_request.material_request.make_supplier_quotation",
-						source_doctype: "Material Request",
-						target: me.frm,
-						setters: {
-							company: me.frm.doc.company
-						},
-						get_query_filters: {
-							material_request_type: "Purchase",
-							docstatus: 1,
-							status: ["!=", "Stopped"],
-							per_ordered: ["<", 99.99]
-						}
-					})
-				}, __("Get Items From"));
+		} else if (this.frm.doc.docstatus===0) {
+			if (frappe.model.can_read("Material Request")) {
+				this.frm.add_custom_button(__('Material Request'),
+					function () {
+						erpnext.utils.map_current_doc({
+							method: "erpnext.stock.doctype.material_request.material_request.make_supplier_quotation",
+							source_doctype: "Material Request",
+							target: me.frm,
+							setters: {
+								company: me.frm.doc.company
+							},
+							get_query_filters: {
+								material_request_type: "Purchase",
+								docstatus: 1,
+								status: ["!=", "Stopped"],
+								per_ordered: ["<", 99.99]
+							}
+						})
+					}, __("Get Items From"));
+			}
 		}
 	}
 

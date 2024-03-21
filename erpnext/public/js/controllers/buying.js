@@ -313,10 +313,13 @@ erpnext.buying.BuyingController = class BuyingController extends erpnext.Transac
 	}
 
 	set_from_product_bundle() {
-		var me = this;
-		this.frm.add_custom_button(__("Product Bundle"), function() {
-			erpnext.buying.get_items_from_product_bundle(me.frm);
-		}, __("Get Items From"));
+		let me = this;
+
+		if (frappe.model.can_read("Product Bundle")) {
+			this.frm.add_custom_button(__("Product Bundle"), function () {
+				erpnext.buying.get_items_from_product_bundle(me.frm);
+			}, __("Get Items From"));
+		}
 	}
 
 	shipping_address() {

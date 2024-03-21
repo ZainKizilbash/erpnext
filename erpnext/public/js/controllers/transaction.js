@@ -2526,16 +2526,18 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 	}
 
 	add_get_latest_price_button() {
-		var me = this;
+		let me = this;
 		me.frm.add_custom_button(__("Get Latest Prices"), function() {
 			me.get_latest_price();
 		}, __("Prices"));
 	}
 
 	add_update_price_list_button() {
-		var me = this;
-		me.frm.add_custom_button(__("Update Price List"), function() {
-			me.update_item_prices();
-		}, __("Prices"));
+		let me = this;
+		if (frappe.model.can_create("Item Price")) {
+			me.frm.add_custom_button(__("Update Price List"), function () {
+				me.update_item_prices();
+			}, __("Prices"));
+		}
 	}
 };

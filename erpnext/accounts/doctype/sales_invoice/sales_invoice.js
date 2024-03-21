@@ -53,7 +53,12 @@ erpnext.accounts.SalesInvoiceController = class SalesInvoiceController extends e
 			});
 		}
 
-		if (doc.docstatus == 1 && doc.project && doc.__onload && doc.__onload.can_make_vehicle_gate_pass) {
+		if (
+			doc.docstatus == 1
+			&& doc.project
+			&& doc.__onload?.can_make_vehicle_gate_pass
+			&& frappe.model.can_create("Vehicle Gate Pass")
+		) {
 			this.frm.add_custom_button(__('Vehicle Gate Pass'), function () {
 				me.make_vehicle_gate_pass();
 			});
@@ -78,59 +83,53 @@ erpnext.accounts.SalesInvoiceController = class SalesInvoiceController extends e
 			me.add_update_price_list_button();
 		}
 
-		if (doc.docstatus == 1 && doc.outstanding_amount!=0
-			&& !(cint(doc.is_return) && doc.return_against)) {
-			cur_frm.add_custom_button(__('Payment'),
-				this.make_payment_entry, __('Create'));
-			cur_frm.page.set_inner_btn_group_as_primary(__('Create'));
+		if (
+			doc.docstatus == 1
+			&& doc.outstanding_amount != 0
+			&& (!doc.is_return || !doc.return_against)
+			&& (frappe.model.can_create("Payment Entry") || frappe.model.can_create("Journal Entry"))
+		) {
+			me.frm.add_custom_button(__('Payment'), () => this.make_payment_entry(),
+				__('Create'));
+			me.frm.page.set_inner_btn_group_as_primary(__('Create'));
 		}
 
-		if(doc.docstatus==1 && !doc.is_return) {
+		if (doc.docstatus == 1 && !doc.is_return) {
+			let is_delivered_by_supplier = me.frm.doc.items.some((item) => item.is_delivered_by_supplier);
 
-			var is_delivered_by_supplier = false;
-
-			is_delivered_by_supplier = cur_frm.doc.items.some(function(item){
-				return item.is_delivered_by_supplier ? true : false;
-			})
-
-			if(doc.outstanding_amount >= 0 || Math.abs(flt(doc.outstanding_amount)) < flt(doc.grand_total)) {
-				cur_frm.add_custom_button(__('Return / Credit Note'),
+			if (
+				(doc.outstanding_amount >= 0 || Math.abs(flt(doc.outstanding_amount)) < flt(doc.grand_total))
+				&& frappe.model.can_create("Sales Invoice")
+			) {
+				me.frm.add_custom_button(__('Return / Credit Note'),
 					() => this.make_sales_return(), __('Create'));
-				cur_frm.page.set_inner_btn_group_as_primary(__('Create'));
+				me.frm.page.set_inner_btn_group_as_primary(__('Create'));
 			}
 
-			if(cint(doc.update_stock)!=1) {
+			if (!doc.update_stock) {
 				// show Make Delivery Note button only if Sales Invoice is not created from Delivery Note
-				var from_delivery_note = false;
-				from_delivery_note = cur_frm.doc.items
-					.some(function(item) {
-						return item.delivery_note ? true : false;
-					});
+				let from_delivery_note = me.frm.doc.items.some((item) => item.delivery_note);
 
-				if(!from_delivery_note && !is_delivered_by_supplier) {
-					cur_frm.add_custom_button(__('Delivery'),
-						cur_frm.cscript['Make Delivery Note'], __('Create'));
+				if (!from_delivery_note && !is_delivered_by_supplier && frappe.model.can_create("Delivery Note")) {
+					me.frm.add_custom_button(__('Delivery'), me.frm.cscript['Make Delivery Note'],
+						__('Create'));
 				}
 			}
 
-			if (doc.outstanding_amount>0) {
-				cur_frm.add_custom_button(__('Payment Request'), function() {
+			if (doc.outstanding_amount > 0 && frappe.model.can_create("Payment Request")) {
+				me.frm.add_custom_button(__('Payment Request'), function() {
 					me.make_payment_request();
 				}, __('Create'));
+			}
 
-				cur_frm.add_custom_button(__('Invoice Discounting'), function() {
-					cur_frm.events.create_invoice_discounting(cur_frm);
+			if (doc.docstatus === 1 && frappe.model.can_create("Maintenance Schedule")) {
+				me.frm.add_custom_button(__('Maintenance Schedule'), function () {
+					me.frm.cscript.make_maintenance_schedule();
 				}, __('Create'));
 			}
 
-			if (doc.docstatus === 1) {
-				cur_frm.add_custom_button(__('Maintenance Schedule'), function () {
-					cur_frm.cscript.make_maintenance_schedule();
-				}, __('Create'));
-			}
-
-			if(!doc.auto_repeat) {
-				cur_frm.add_custom_button(__('Subscription'), function() {
+			if (!doc.auto_repeat && frappe.model.can_create("Auto Repeat")) {
+				me.frm.add_custom_button(__('Subscription'), function() {
 					erpnext.utils.make_subscription(doc.doctype, doc.name)
 				}, __('Create'))
 			}
@@ -138,32 +137,42 @@ erpnext.accounts.SalesInvoiceController = class SalesInvoiceController extends e
 
 		// Show buttons only when pos view is active
 		if (doc.docstatus == 0 && this.frm.page.current_view_name != "pos") {
-			me.frm.add_custom_button(__('Delivery Note'), function() {
-				me.get_items_from_delivery_note();
-			}, __("Get Items From"));
-
-			if (!doc.is_return) {
-				me.frm.add_custom_button(__('Sales Order'), function() {
-					me.get_items_from_sales_order();
-				}, __("Get Items From"));
-
-				me.frm.add_custom_button(__('Quotation'), function() {
-					me.get_items_from_quotation();
-				}, __("Get Items From"));
-
-				me.frm.add_custom_button(__('Packing Slip'), function() {
-					me.get_items_from_packing_slip("Sales Invoice");
+			if (frappe.model.can_read("Delivery Note")) {
+				me.frm.add_custom_button(__('Delivery Note'), function () {
+					me.get_items_from_delivery_note();
 				}, __("Get Items From"));
 			}
 
-			me.frm.add_custom_button(__('Projects'), function() {
-				me.get_items_from_project();
-			}, __("Get Items From"));
+			if (!doc.is_return) {
+				if (frappe.model.can_read("Sales Order")) {
+					me.frm.add_custom_button(__('Sales Order'), function () {
+						me.get_items_from_sales_order();
+					}, __("Get Items From"));
+				}
+
+				if (frappe.model.can_read("Quotation")) {
+					me.frm.add_custom_button(__('Quotation'), function () {
+						me.get_items_from_quotation();
+					}, __("Get Items From"));
+				}
+
+				if (frappe.model.can_read("Packing Slip")) {
+					me.frm.add_custom_button(__('Packing Slip'), function () {
+						me.get_items_from_packing_slip("Sales Invoice");
+					}, __("Get Items From"));
+				}
+			}
+
+			if (frappe.model.can_read("Project")) {
+				me.frm.add_custom_button(__('Projects'), function () {
+					me.get_items_from_project();
+				}, __("Get Items From"));
+			}
 
 			this.add_get_applicable_items_button();
 			this.add_get_project_template_items_button();
 
-			if (frappe.boot.active_domains.includes("Vehicles")) {
+			if (frappe.boot.active_domains.includes("Vehicles") && frappe.model.can_read("Vehicle Booking Order")) {
 				me.frm.add_custom_button(__('Vehicle Booking Order'), function() {
 					me.get_items_from_vehicle_booking_order();
 				}, __("Get Items From"));

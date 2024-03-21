@@ -201,48 +201,60 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 						&& ["Sales", "Shopping Cart"].indexOf(me.frm.doc.order_type) !== -1
 						&& allow_delivery
 					) {
-						me.frm.add_custom_button(__('Delivery Note'), () => me.make_delivery_note_based_on(), __('Create'));
-						me.frm.add_custom_button(__('Work Order'), () => me.make_work_orders(), __('Create'));
+						if (frappe.model.can_create("Delivery Note")) {
+							me.frm.add_custom_button(__('Delivery Note'), () => me.make_delivery_note_based_on(), __('Create'));
+						}
 
-						if (has_unpacked || me.frm.doc.packing_status == "To Pack") {
+						if (frappe.model.can_create("Work Order")) {
+							me.frm.add_custom_button(__('Work Order'), () => me.make_work_orders(), __('Create'));
+						}
+
+						if ((has_unpacked || me.frm.doc.packing_status == "To Pack") && frappe.model.can_create("Packing Slip")) {
 							me.frm.add_custom_button(__('Packing Slip'), () => me.make_packing_slip(), __('Create'));
 						}
 
-						me.frm.add_custom_button(__('Pick List'), () => me.create_pick_list(), __('Create'));
+						if (frappe.model.can_create("Pick List")) {
+							me.frm.add_custom_button(__('Pick List'), () => me.create_pick_list(), __('Create'));
+						}
 
-						var has_vehicles = me.frm.doc.items.some(d => d.is_vehicle);
+						let has_vehicles = me.frm.doc.items.some(d => d.is_vehicle);
 						if (has_vehicles) {
 							me.frm.add_custom_button(__('Reserved Vehicles'), () => me.create_vehicles(), __('Create'));
 						}
 					}
 
-
 					// sales invoice
-					if(flt(me.frm.doc.per_completed, 6) < 100) {
-						me.frm.add_custom_button(__('Sales Invoice'), () => me.make_sales_invoice(), __('Create'));
+					if (flt(me.frm.doc.per_completed, 6) < 100) {
+						if (frappe.model.can_create("Sales Invoice")) {
+							me.frm.add_custom_button(__('Sales Invoice'), () => me.make_sales_invoice(), __('Create'));
+						}
 					}
 
 					// material request
 					if (
 						(!me.frm.doc.order_type || ["Sales", "Shopping Cart"].indexOf(me.frm.doc.order_type) !== -1)
 						&& me.frm.doc.delivery_status == "To Deliver"
+						&& frappe.model.can_create("Material Request")
 					) {
 						me.frm.add_custom_button(__('Material Request'), () => me.make_material_request(), __('Create'));
 						me.frm.add_custom_button(__('Request for Raw Materials'), () => me.make_raw_material_request(), __('Create'));
 					}
 
 					// make purchase order
-					me.frm.add_custom_button(__('Purchase Order'), () => me.make_purchase_order(), __('Create'));
+					if (frappe.model.can_create("Purchase Order")) {
+						me.frm.add_custom_button(__('Purchase Order'), () => me.make_purchase_order(), __('Create'));
+					}
 
 					// project
 					if (me.frm.doc.delivery_status == "To Deliver"
 						&& ["Sales", "Shopping Cart"].indexOf(me.frm.doc.order_type) !== -1
 						&& allow_delivery
+						&& frappe.model.can_create("Project")
 					) {
 						me.frm.add_custom_button(__('Project'), () => me.make_project(), __('Create'));
 					}
 
-					if(!me.frm.doc.auto_repeat) {
+					if(!me.frm.doc.auto_repeat && frappe.model.can_create("Auto Repeat")) {
 						me.frm.add_custom_button(__('Subscription'), function() {
 							erpnext.utils.make_subscription(me.frm.doc.doctype, me.frm.doc.name)
 						}, __('Create'))
@@ -258,52 +270,62 @@ erpnext.selling.SalesOrderController = class SalesOrderController extends erpnex
 				}
 				// payment request
 				if(flt(me.frm.doc.per_billed) == 0) {
-					me.frm.add_custom_button(__('Payment Request'), () => me.make_payment_request(), __('Create'));
-					me.frm.add_custom_button(__('Payment'), () => me.make_payment_entry(), __('Create'));
+					if (frappe.model.can_create("Payment Request")) {
+						me.frm.add_custom_button(__('Payment Request'), () => me.make_payment_request(), __('Create'));
+					}
+
+					if (frappe.model.can_create("Payment Entry") || frappe.model.can_create("Journal Entry")) {
+						me.frm.add_custom_button(__('Payment'), () => me.make_payment_entry(), __('Create'));
+					}
 				}
 				me.frm.page.set_inner_btn_group_as_primary(__('Create'));
 			}
 		}
 
 		if (me.frm.doc.docstatus === 0) {
-			me.frm.add_custom_button(__('Quotation'), function() {
-				erpnext.utils.map_current_doc({
-					method: "erpnext.selling.doctype.quotation.quotation.make_sales_order",
-					source_doctype: "Quotation",
-					target: me.frm,
-					setters: [
-						{
-							label: "Customer",
-							fieldname: "party_name",
-							fieldtype: "Link",
-							options: "Customer",
-							default: me.frm.doc.customer || undefined
-						},
-						{
-							fieldtype: 'Link',
-							label: __('Project'),
-							options: 'Project',
-							fieldname: 'project',
-							default: me.frm.doc.project || undefined,
-						},
-						{
-							fieldtype: 'DateRange',
-							label: __('Date Range'),
-							fieldname: 'transaction_date',
-						}
-					],
-					columns: ['customer_name', 'transaction_date', 'project'],
-					get_query_filters: {
-						company: me.frm.doc.company,
-						docstatus: 1,
-						status: ["!=", "Lost"]
-					}
-				})
-			}, __("Get Items From"));
+			if (frappe.model.can_read("Quotation")) {
+				me.frm.add_custom_button(__('Quotation'), () => me.get_items_from_quotation(),
+					__("Get Items From"));
+			}
 
 			me.add_get_applicable_items_button();
 			me.add_get_project_template_items_button();
 		}
+	}
+
+	get_items_from_quotation() {
+		erpnext.utils.map_current_doc({
+			method: "erpnext.selling.doctype.quotation.quotation.make_sales_order",
+			source_doctype: "Quotation",
+			target: this.frm,
+			setters: [
+				{
+					label: "Customer",
+					fieldname: "party_name",
+					fieldtype: "Link",
+					options: "Customer",
+					default: this.frm.doc.customer || undefined
+				},
+				{
+					fieldtype: 'Link',
+					label: __('Project'),
+					options: 'Project',
+					fieldname: 'project',
+					default: this.frm.doc.project || undefined,
+				},
+				{
+					fieldtype: 'DateRange',
+					label: __('Date Range'),
+					fieldname: 'transaction_date',
+				}
+			],
+			columns: ['customer_name', 'transaction_date', 'project'],
+			get_query_filters: {
+				company: this.frm.doc.company,
+				docstatus: 1,
+				status: ["!=", "Lost"]
+			}
+		})
 	}
 
 	setup_progressbars() {

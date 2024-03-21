@@ -39,7 +39,7 @@ erpnext.accounts.PurchaseInvoice = class PurchaseInvoice extends erpnext.buying.
 			me.add_update_price_list_button();
 		}
 
-		if(!doc.is_return && doc.docstatus == 1 && doc.outstanding_amount != 0){
+		if (!doc.is_return && doc.docstatus == 1 && doc.outstanding_amount != 0) {
 			if(doc.on_hold) {
 				this.frm.add_custom_button(
 					__('Change Release Date'),
@@ -60,102 +60,115 @@ erpnext.accounts.PurchaseInvoice = class PurchaseInvoice extends erpnext.buying.
 			}
 		}
 
-		if(doc.docstatus == 1 && doc.outstanding_amount != 0
-			&& !(doc.is_return && doc.return_against)) {
-			this.frm.add_custom_button(__('Payment'), this.make_payment_entry, __('Create'));
-			cur_frm.page.set_inner_btn_group_as_primary(__('Create'));
+		if(
+			doc.docstatus == 1
+			&& doc.outstanding_amount != 0
+			&& !(doc.is_return && doc.return_against)
+			&& (frappe.model.can_create("Payment Entry") || frappe.model.can_create("Journal Entry"))
+		) {
+			this.frm.add_custom_button(__('Payment'), this.make_payment_entry,
+				__('Create'));
+			this.frm.page.set_inner_btn_group_as_primary(__('Create'));
 		}
 
-		if(!doc.is_return && doc.docstatus==1) {
-			if(doc.outstanding_amount >= 0 || Math.abs(flt(doc.outstanding_amount)) < flt(doc.grand_total)) {
-				cur_frm.add_custom_button(__('Return / Debit Note'),
-					this.make_debit_note, __('Create'));
+		if (!doc.is_return && doc.docstatus==1) {
+			if (
+				(doc.outstanding_amount >= 0 || Math.abs(flt(doc.outstanding_amount)) < flt(doc.grand_total))
+				&& frappe.model.can_create("Purchase Invoice")
+			) {
+				this.frm.add_custom_button(__('Return / Debit Note'), this.make_debit_note,
+					__('Create'));
 			}
 
-			if (doc.update_stock) {
-				cur_frm.add_custom_button(__('Landed Cost Voucher'), this.make_landed_cost_voucher, __("Create"));
+			if (doc.update_stock && frappe.model.can_create("Landed Cost Voucher")) {
+				this.frm.add_custom_button(__('Landed Cost Voucher'), this.make_landed_cost_voucher,
+					__("Create"));
 			}
 
-			if(!doc.auto_repeat) {
-				cur_frm.add_custom_button(__('Subscription'), function() {
+			if (!doc.auto_repeat && frappe.model.can_create("Auto Repeat")) {
+				this.frm.add_custom_button(__('Subscription'), function() {
 					erpnext.utils.make_subscription(doc.doctype, doc.name)
 				}, __('Create'))
 			}
 		}
 
-		if (doc.outstanding_amount > 0 && !cint(doc.is_return)) {
-			cur_frm.add_custom_button(__('Payment Request'), function() {
+		if (doc.outstanding_amount > 0 && !cint(doc.is_return) && frappe.model.can_create("Payment Request")) {
+			this.frm.add_custom_button(__('Payment Request'), function() {
 				me.make_payment_request()
 			}, __('Create'));
 		}
 
-		if(doc.docstatus===0) {
-			this.frm.add_custom_button(__('Purchase Order'), function() {
-				erpnext.utils.map_current_doc({
-					method: "erpnext.buying.doctype.purchase_order.purchase_order.make_purchase_invoice",
-					source_doctype: "Purchase Order",
-					target: me.frm,
-					setters: [
-						{
-							fieldtype: 'Link',
-							label: __('Supplier'),
-							options: 'Supplier',
-							fieldname: 'supplier',
-							default: me.frm.doc.supplier || undefined,
-						},
-						{
-							fieldtype: 'DateRange',
-							label: __('Date Range'),
-							fieldname: 'transaction_date',
+		if (doc.docstatus===0) {
+			if (frappe.model.can_read("Purchase Receipt")) {
+				this.frm.add_custom_button(__('Purchase Receipt'), function () {
+					erpnext.utils.map_current_doc({
+						method: "erpnext.stock.doctype.purchase_receipt.purchase_receipt.make_purchase_invoice",
+						source_doctype: "Purchase Receipt",
+						target: me.frm,
+						date_field: "posting_date",
+						setters: [
+							{
+								fieldtype: 'Link',
+								label: __('Supplier'),
+								options: 'Supplier',
+								fieldname: 'supplier',
+								default: me.frm.doc.supplier || undefined,
+							},
+							{
+								fieldtype: 'Data',
+								label: __('Bill No'),
+								fieldname: 'bill_no',
+							},
+							{
+								fieldtype: 'DateRange',
+								label: __('Date Range'),
+								fieldname: 'posting_date',
+							}
+						],
+						columns: ['supplier_name', 'bill_no', 'posting_date'],
+						get_query_filters: {
+							supplier: me.frm.doc.supplier || undefined,
+							docstatus: 1,
+							status: ["not in", ["Closed", "Completed"]],
+							billing_status: "To Bill",
+							company: me.frm.doc.company,
+							is_return: me.frm.doc.is_return
 						}
-					],
-					columns: ['supplier_name', 'transaction_date'],
-					get_query_filters: {
-						supplier: me.frm.doc.supplier || undefined,
-						docstatus: 1,
-						status: ["not in", ["Closed", "On Hold"]],
-						billing_status: "To Bill",
-						company: me.frm.doc.company
-					}
-				})
-			}, __("Get Items From"));
+					})
+				}, __("Get Items From"));
+			}
 
-			this.frm.add_custom_button(__('Purchase Receipt'), function() {
-				erpnext.utils.map_current_doc({
-					method: "erpnext.stock.doctype.purchase_receipt.purchase_receipt.make_purchase_invoice",
-					source_doctype: "Purchase Receipt",
-					target: me.frm,
-					date_field: "posting_date",
-					setters: [
-						{
-							fieldtype: 'Link',
-							label: __('Supplier'),
-							options: 'Supplier',
-							fieldname: 'supplier',
-							default: me.frm.doc.supplier || undefined,
-						},
-						{
-							fieldtype: 'Data',
-							label: __('Bill No'),
-							fieldname: 'bill_no',
-						},
-						{
-							fieldtype: 'DateRange',
-							label: __('Date Range'),
-							fieldname: 'posting_date',
+			if (frappe.model.can_read("Purchase Order")) {
+				this.frm.add_custom_button(__('Purchase Order'), function () {
+					erpnext.utils.map_current_doc({
+						method: "erpnext.buying.doctype.purchase_order.purchase_order.make_purchase_invoice",
+						source_doctype: "Purchase Order",
+						target: me.frm,
+						setters: [
+							{
+								fieldtype: 'Link',
+								label: __('Supplier'),
+								options: 'Supplier',
+								fieldname: 'supplier',
+								default: me.frm.doc.supplier || undefined,
+							},
+							{
+								fieldtype: 'DateRange',
+								label: __('Date Range'),
+								fieldname: 'transaction_date',
+							}
+						],
+						columns: ['supplier_name', 'transaction_date'],
+						get_query_filters: {
+							supplier: me.frm.doc.supplier || undefined,
+							docstatus: 1,
+							status: ["not in", ["Closed", "On Hold"]],
+							billing_status: "To Bill",
+							company: me.frm.doc.company
 						}
-					],
-					columns: ['supplier_name', 'bill_no', 'posting_date'],
-					get_query_filters: {
-						supplier: me.frm.doc.supplier || undefined,
-						docstatus: 1,
-						status: ["not in", ["Closed", "Completed"]],
-						billing_status: "To Bill",
-						company: me.frm.doc.company,
-						is_return: me.frm.doc.is_return
-					}
-				})
-			}, __("Get Items From"));
+					})
+				}, __("Get Items From"));
+			}
 		}
 
 		if (doc.docstatus == 1 && !doc.inter_company_reference) {
@@ -167,8 +180,9 @@ erpnext.accounts.PurchaseInvoice = class PurchaseInvoice extends erpnext.buying.
 		}
 
 		// sales order
-		if (doc.docstatus === 1 && !doc.is_return) {
-			this.frm.add_custom_button(__('Sales Order'), function() { me.make_sales_order() }, __("Create"));
+		if (doc.docstatus === 1 && !doc.is_return && frappe.model.can_create("Sales Order")) {
+			this.frm.add_custom_button(__('Sales Order'), () => me.make_sales_order(),
+				__("Create"));
 		}
 	}
 
