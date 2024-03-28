@@ -8,6 +8,7 @@
  "document_type": "Setup",
  "engine": "InnoDB",
  "field_order": [
+  "image",
   "brand",
   "column_break_2",
   "description_section",
@@ -166,12 +167,19 @@
    "fieldtype": "Link",
    "label": "Default Unit of Measure",
    "options": "UOM"
+  },
+  {
+   "fieldname": "image",
+   "fieldtype": "Attach Image",
+   "hidden": 1,
+   "label": "Image"
   }
  ],
  "icon": "fa fa-certificate",
  "idx": 1,
+ "image_field": "image",
  "links": [],
- "modified": "2024-02-06 21:19:53.980387",
+ "modified": "2024-03-27 07:05:33.579921",
  "modified_by": "Administrator",
  "module": "Setup",
  "name": "Brand",
