@@ -730,7 +730,7 @@ $.extend(erpnext.manufacturing, {
 						if (r.message) {
 							frappe.msgprint({
 								message: __("Work Orders Created: {0}", [
-									r.message.map((d) => `<a href=${frappe.utils.get_form_link("Work Order", d)}>${d}</a>`).join(', ')
+									r.message.map((d) => `<a href="${frappe.utils.get_form_link("Work Order", d)}">${d}</a>`).join(', ')
 								]),
 								indicator: "green",
 							})
