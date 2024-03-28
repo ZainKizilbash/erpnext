@@ -72,7 +72,7 @@ class OpportunityERP(Opportunity):
 
 			item_details = get_item_details(d.item_code)
 			for k, v in item_details.items():
-				if d.meta.has_field(k) and (not d.get(k) or k in self.force_party_fields):
+				if d.meta.has_field(k) and (not d.get(k) or k in self.force_item_fields):
 					d.set(k, v)
 
 	def set_applies_to_details(self):
