@@ -394,6 +394,18 @@ frappe.ui.form.on('Stock Entry', {
 		}
 	},
 
+	calculate_total_fields: function(frm) {
+		let total_fields = ['qty', 'stock_qty', 'alt_uom_qty']
+
+		for (let fn of total_fields) {
+			let field_total = frm.doc.items.reduce((prev_total, d) => {
+				return d.s_warehouse ? prev_total + d[fn] : prev_total;
+			}, 0);
+
+			frm.set_value('total_' + fn, field_total);
+		}
+	},
+
 	get_warehouse_details: function(frm, cdt, cdn) {
 		var child = locals[cdt][cdn];
 		if(!child.bom_no) {
@@ -494,6 +506,7 @@ frappe.ui.form.on('Stock Entry Detail', {
 	qty: function(frm, cdt, cdn) {
 		frm.events.set_serial_no(frm, cdt, cdn, () => {
 			frm.events.set_basic_rate(frm, cdt, cdn);
+			frm.events.calculate_total_fields(frm, cdt, cdn);
 		});
 	},
 
