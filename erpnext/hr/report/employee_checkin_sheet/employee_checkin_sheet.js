@@ -64,6 +64,11 @@ frappe.query_reports["Employee Checkin Sheet"] = {
 			fieldtype: "Data",
 			read_only: 1,
 			on_change: () => { return false },
+		},
+		{
+			fieldname: "show_all_checkins",
+			label: __("Show All Checkins"),
+			fieldtype: "Check",
 		}
 	],
 

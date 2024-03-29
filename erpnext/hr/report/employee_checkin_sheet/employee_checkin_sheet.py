@@ -358,15 +358,31 @@ def get_columns(filters, checkin_column_count, totals):
 		{"fieldname": "shift_end_fmt", "label": _("Shift End"), "fieldtype": "Data", "width": 73},
 	]
 
-	for i in range(checkin_column_count):
-		checkin_time_fieldname = "checkin_time_{0}".format(i + 1)
-		columns.append({
-			"fieldname": checkin_time_fieldname,
-			"label": _("Checkin {0}").format(i+1),
-			"fieldtype": "Data",
-			"width": 85,
-			"checkin_idx": i + 1
-		})
+	if filters.show_all_checkins:
+		for i in range(checkin_column_count):
+			checkin_time_fieldname = "checkin_time_{0}".format(i + 1)
+			columns.append({
+				"fieldname": checkin_time_fieldname,
+				"label": _("Checkin {0}").format(i+1),
+				"fieldtype": "Data",
+				"width": 85,
+				"checkin_idx": i + 1
+			})
+	else:
+		columns += [
+			{
+				"fieldname": "time_in",
+				"label": _("Time In"),
+				"fieldtype": "Data",
+				"width": 85,
+			},
+			{
+				"fieldname": "time_out",
+				"label": _("Time Out"),
+				"fieldtype": "Data",
+				"width": 85,
+			},
+		]
 
 	columns += [
 		{"fieldname": "attendance_status", "label": _("Status"), "fieldtype": "Data", "width": 75},
