@@ -57,6 +57,11 @@ class AttendanceRequest(Document):
 
 					existing_doc.db_set(changes, notify=1)
 				else:
+					from erpnext.hr.doctype.shift_assignment.shift_assignment import get_employee_shift
+					assigned_shift = get_employee_shift(self.employee, attendance_date, True)
+					if assigned_shift:
+						assigned_shift = assigned_shift.shift_type.name
+
 					attendance = frappe.new_doc("Attendance")
 					attendance.employee = self.employee
 					attendance.employee_name = self.employee_name
@@ -64,6 +69,7 @@ class AttendanceRequest(Document):
 					attendance.attendance_date = attendance_date
 					attendance.company = self.company
 					attendance.attendance_request = self.name
+					attendance.shift = assigned_shift
 					attendance.save(ignore_permissions=True)
 					attendance.submit()
 
