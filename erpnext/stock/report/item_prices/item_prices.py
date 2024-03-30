@@ -13,39 +13,44 @@ import json
 
 
 def execute(filters=None):
+	# Get Data
+	filters = process_filters(filters)
+	item_prices_map, price_lists = get_item_price_data(filters)
+
+	# Sort Data
+	item_group_wise_data = {}
+	for d in item_prices_map.values():
+		item_group_wise_data.setdefault(d.item_group, []).append(d)
+
+	price_list_settings = frappe.get_single("Price List Settings")
+	rows = []
+
+	for item_group in price_list_settings.item_group_order or []:
+		if item_group.item_group in item_group_wise_data:
+			rows += sorted(item_group_wise_data[item_group.item_group], key=lambda d: d.item_code)
+			del item_group_wise_data[item_group.item_group]
+
+	for items in item_group_wise_data.values():
+		rows += sorted(items, key=lambda d: d.item_code)
+
+	# Get Columns and Return
+	columns = get_columns(filters, price_lists)
+	return columns, rows
+
+
+def process_filters(filters):
 	filters = frappe._dict(filters or {})
 	filters.date = getdate(filters.date or nowdate())
-	filters.from_date = filters.date
-	filters.to_date = frappe.utils.add_days(filters.from_date, 4)
 
 	if filters.buying_selling == "Selling":
 		filters.standard_price_list = frappe.db.get_single_value("Selling Settings", "selling_price_list")
 	elif filters.buying_selling == "Buying":
 		filters.standard_price_list = frappe.db.get_single_value("Buying Settings", "buying_price_list")
 
-	price_list_settings = frappe.get_single("Price List Settings")
-
-	data, price_lists = get_data(filters)
-	columns = get_columns(filters, price_lists)
-
-	item_group_wise_data = {}
-	for d in data:
-		item_group_wise_data.setdefault(d.item_group, []).append(d)
-
-	res = []
-
-	for item_group in price_list_settings.item_group_order or []:
-		if item_group.item_group in item_group_wise_data:
-			res += sorted(item_group_wise_data[item_group.item_group], key=lambda d: d.item_code)
-			del item_group_wise_data[item_group.item_group]
-
-	for items in item_group_wise_data.values():
-		res += sorted(items, key=lambda d: d.item_code)
-
-	return columns, res
+	return filters
 
 
-def get_data(filters):
+def get_item_price_data(filters):
 	conditions = get_item_conditions(filters, for_item_dt=False)
 	item_conditions = get_item_conditions(filters, for_item_dt=True)
 
@@ -59,27 +64,6 @@ def get_data(filters):
 		where disabled != 1 {0}
 	""".format(item_conditions), filters, as_dict=1)
 
-	po_data = frappe.db.sql("""
-		select
-			item.item_code,
-			sum(if(item.qty - item.received_qty < 0, 0, item.qty - item.received_qty) * item.conversion_factor) as po_qty,
-			sum(if(item.qty - item.received_qty < 0, 0, item.qty - item.received_qty) * item.conversion_factor * item.base_net_rate) as po_lc_amount
-		from `tabPurchase Order Item` item
-		inner join `tabPurchase Order` po on po.name = item.parent
-		where item.docstatus = 1 and po.status != 'Closed' {0}
-		group by item.item_code
-	""".format(conditions), filters, as_dict=1) # TODO add valuation rate in PO and use that
-
-	bin_data = frappe.db.sql("""
-		select
-			bin.item_code,
-			sum(bin.actual_qty) as actual_qty,
-			sum(bin.stock_value) as stock_value
-		from tabBin bin, tabItem item
-		where item.name = bin.item_code {0}
-		group by bin.item_code
-	""".format(item_conditions), filters, as_dict=1)
-
 	item_price_data = frappe.db.sql("""
 		select p.name, p.price_list, p.item_code, p.price_list_rate, p.currency, p.uom,
 			ifnull(p.valid_from, '2000-01-01') as valid_from
@@ -90,13 +74,39 @@ def get_data(filters):
 		order by p.uom
 	""".format(item_conditions, price_lists_cond), filters, as_dict=1)
 
-	previous_item_prices = frappe.db.sql("""
-		select p.price_list, p.item_code, p.price_list_rate, ifnull(p.valid_from, '2000-01-01') as valid_from, p.uom
-		from `tabItem Price` as p
-		inner join `tabItem` item on item.name = p.item_code
-		where p.valid_upto is not null and p.valid_upto < %(date)s {0} {1}
-		order by p.valid_upto desc
-	""".format(item_conditions, price_lists_cond), filters, as_dict=1)
+	if filters.only_prices:
+		po_data = []
+		bin_data = []
+		previous_item_prices = []
+	else:
+		po_data = frappe.db.sql("""
+			select
+				item.item_code,
+				sum(if(item.qty - item.received_qty < 0, 0, item.qty - item.received_qty) * item.conversion_factor) as po_qty,
+				sum(if(item.qty - item.received_qty < 0, 0, item.qty - item.received_qty) * item.conversion_factor * item.base_net_rate) as po_lc_amount
+			from `tabPurchase Order Item` item
+			inner join `tabPurchase Order` po on po.name = item.parent
+			where item.docstatus = 1 and po.status != 'Closed' {0}
+			group by item.item_code
+		""".format(conditions), filters, as_dict=1) # TODO add valuation rate in PO and use that
+
+		bin_data = frappe.db.sql("""
+			select
+				bin.item_code,
+				sum(bin.actual_qty) as actual_qty,
+				sum(bin.stock_value) as stock_value
+			from tabBin bin, tabItem item
+			where item.name = bin.item_code {0}
+			group by bin.item_code
+		""".format(item_conditions), filters, as_dict=1)
+
+		previous_item_prices = frappe.db.sql("""
+			select p.price_list, p.item_code, p.price_list_rate, ifnull(p.valid_from, '2000-01-01') as valid_from, p.uom
+			from `tabItem Price` as p
+			inner join `tabItem` item on item.name = p.item_code
+			where p.valid_upto is not null and p.valid_upto < %(date)s {0} {1}
+			order by p.valid_upto desc
+		""".format(item_conditions, price_lists_cond), filters, as_dict=1)
 
 	items_map = {}
 	for d in item_data:
@@ -204,7 +214,7 @@ def get_data(filters):
 		for item_code in to_remove:
 			del items_map[item_code]
 
-	return items_map.values(), price_lists
+	return items_map, price_lists
 
 
 def get_price_lists(filters):
@@ -248,7 +258,9 @@ def get_price_lists(filters):
 	add_to_price_lists(filters.standard_price_list)
 
 	if filters.customer:
-		filters.selected_price_list = frappe.db.get_value("Customer", filters.customer, 'default_price_list')
+		customer_price_list = frappe.db.get_value("Customer", filters.customer, 'default_price_list')
+		if customer_price_list:
+			filters.selected_price_list = customer_price_list
 
 	add_to_price_lists(filters.selected_price_list)
 
