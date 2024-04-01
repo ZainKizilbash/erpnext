@@ -63,14 +63,6 @@ class Quotation(SellingController):
 		elif self.quotation_to == "Lead":
 			self.set_onload('customer', get_customer_from_lead(self.party_name))
 
-	def set_indicator(self):
-		if self.docstatus == 1:
-			self.indicator_color = 'blue'
-			self.indicator_title = 'Submitted'
-		if self.valid_till and getdate(self.valid_till) < getdate(nowdate()):
-			self.indicator_color = 'light-gray'
-			self.indicator_title = 'Expired'
-
 	def set_ordered_status(self, update=False, update_modified=True):
 		ordered_qty_map = self.get_ordered_qty_map()
 		for d in self.items:
@@ -172,19 +164,6 @@ class Quotation(SellingController):
 
 	def on_recurring(self, reference_doc, auto_repeat_doc):
 		self.valid_till = None
-
-
-def get_list_context(context=None):
-	from erpnext.controllers.website_list_for_contact import get_list_context
-	list_context = get_list_context(context)
-	list_context.update({
-		'show_sidebar': True,
-		'show_search': True,
-		'no_breadcrumbs': True,
-		'title': _('Quotations'),
-	})
-
-	return list_context
 
 
 @frappe.whitelist()

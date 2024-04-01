@@ -17,8 +17,6 @@ frappe.ui.form.on("Item", {
 			frm.fields_dict["attributes"].grid.set_column_disp("attribute_value", true);
 		}
 
-		// should never check Private
-		frm.fields_dict["website_image"].df.is_private = 0;
 		if (frm.doc.is_fixed_asset) {
 			frm.trigger("set_asset_naming_series");
 		}
@@ -180,8 +178,6 @@ frappe.ui.form.on("Item", {
 		frm.toggle_display(['asset_naming_series'], frm.doc.auto_create_assets);
 	},
 
-	page_name: frappe.utils.warn_page_name_change,
-
 	brand: function(frm) {
 		erpnext.utils.set_item_overrides(frm);
 	},
@@ -211,25 +207,8 @@ frappe.ui.form.on("Item", {
 		}
 	},
 
-	copy_from_item_group: function(frm) {
-		return frm.call({
-			doc: frm.doc,
-			method: "copy_specification_from_item_group"
-		});
-	},
-
 	has_variants: function(frm) {
 		erpnext.item.toggle_attributes(frm);
-	},
-
-	show_in_website: function(frm) {
-		if (frm.doc.default_warehouse && !frm.doc.website_warehouse){
-			frm.set_value("website_warehouse", frm.doc.default_warehouse);
-		}
-	},
-
-	set_meta_tags: function (frm) {
-		frappe.utils.set_meta_tag(frm.doc.route);
 	},
 
 	net_weight_per_unit: function (frm) {

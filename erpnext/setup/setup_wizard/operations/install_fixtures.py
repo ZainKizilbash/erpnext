@@ -34,7 +34,7 @@ def install(country=None):
 		{'doctype': 'Item Group', 'item_group_name': _('All Item Groups'),
 			'is_group': 1, 'parent_item_group': ''},
 		{'doctype': 'Item Group', 'item_group_name': _('Products'),
-			'is_group': 0, 'parent_item_group': _('All Item Groups'), "show_in_website": 1 },
+			'is_group': 0, 'parent_item_group': _('All Item Groups') },
 		{'doctype': 'Item Group', 'item_group_name': _('Raw Material'),
 			'is_group': 0, 'parent_item_group': _('All Item Groups') },
 		{'doctype': 'Item Group', 'item_group_name': _('Services'),
@@ -453,23 +453,6 @@ def install_defaults(args=None):
 			except frappe.DuplicateEntryError:
 				# bank account same as a CoA entry
 				pass
-
-	# Now, with fixtures out of the way, onto concrete stuff
-	records = [
-
-		# Shopping cart: needs price lists
-		{
-			"doctype": "Shopping Cart Settings",
-			"enabled": 0,
-			'company': args.company_name,
-			# uh oh
-			'price_list': frappe.db.get_value("Price List", {"selling": 1}),
-			'default_customer_group': _("Individual"),
-			'quotation_series': "QTN-",
-		},
-	]
-
-	make_records(records)
 
 
 def get_fy_details(fy_start_date, fy_end_date):

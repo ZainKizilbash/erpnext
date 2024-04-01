@@ -6,14 +6,13 @@ import erpnext
 from frappe.utils import cint, cstr, flt
 from frappe import _
 from erpnext.setup.utils import get_exchange_rate
-from frappe.website.website_generator import WebsiteGenerator
+from frappe.model.document import Document
 from erpnext.stock.get_item_details import get_conversion_factor
 from erpnext.stock.get_item_details import get_price_list_data
 from erpnext.stock.get_item_details import get_default_warehouse, get_default_cost_center
 from frappe.core.doctype.version.version import get_diff
 from frappe.model.utils import get_fetch_values
 import functools
-from six import string_types
 from operator import itemgetter
 
 
@@ -24,13 +23,7 @@ form_grid_templates = {
 force_fields = ["stock_uom"]
 
 
-class BOM(WebsiteGenerator):
-	website = frappe._dict(
-		# page_title_field = "item_name",
-		condition_field = "show_in_website",
-		template = "templates/generators/bom.html"
-	)
-
+class BOM(Document):
 	def get_feed(self):
 		return "For {0}".format(self.get('item_name') or self.get('item_code') or self.get('name'))
 
@@ -56,7 +49,6 @@ class BOM(WebsiteGenerator):
 		self.name = 'BOM-' + self.item + ('-%.3i' % idx)
 
 	def validate(self):
-		self.route = frappe.scrub(self.name).replace('_', '-')
 		self.validate_main_item()
 		self.validate_currency()
 		self.set_conversion_rate()
@@ -67,9 +59,6 @@ class BOM(WebsiteGenerator):
 		self.validate_operations()
 		self.update_cost(update_parent=False, from_child_bom=True, save=False)
 		self.calculate_cost()
-
-	def get_context(self, context):
-		context.parents = [{'name': 'boms', 'title': _('All BOMs') }]
 
 	def on_update(self):
 		frappe.cache().hdel('bom_children', self.name)
@@ -156,7 +145,7 @@ class BOM(WebsiteGenerator):
 		if not args:
 			args = frappe.form_dict.get('args')
 
-		if isinstance(args, string_types):
+		if isinstance(args, str):
 			import json
 			args = json.loads(args)
 
@@ -709,11 +698,6 @@ class BOM(WebsiteGenerator):
 			self.set('operations', [])
 			for d in self.items:
 				d.operation = None
-
-
-def get_list_context(context):
-	context.title = _("Bill of Materials")
-	# context.introduction = _('Boms')
 
 
 def get_bom_items_as_dict(bom, company, qty=1, fetch_exploded=1, fetch_scrap_items=0, include_non_stock_items=False, fetch_qty_in_stock_uom=True):

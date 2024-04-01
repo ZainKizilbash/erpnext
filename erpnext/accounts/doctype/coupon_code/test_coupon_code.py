@@ -38,8 +38,6 @@ def test_create_test_data():
 		"selling_cost_center": "_Test Cost Center - _TC",
 		"income_account": "Sales - _TC"
 		}],
-		"show_in_website": 1,
-		"route":"-test-tesla-car",
 		"website_warehouse": "_Test Warehouse - _TC"
 		})
 		item.insert()
@@ -78,7 +76,6 @@ def test_create_test_data():
 		"doctype": "Sales Partner",
 		"partner_name":"_Test Coupon Partner",
 		"commission_rate":2,
-		"referral_code": "COPART"
 		})
 		sales_partner.insert()
 	# create test item coupon code

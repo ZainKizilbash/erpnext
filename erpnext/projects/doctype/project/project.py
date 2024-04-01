@@ -4,13 +4,8 @@
 import frappe
 import erpnext
 from frappe import _
-from email_reply_parser import EmailReplyParser
-from frappe.utils import flt, cint, get_url, cstr, nowtime, get_time, today, get_datetime, add_days, ceil, getdate,\
+from frappe.utils import flt, cint, get_url, cstr, today, add_days, ceil, getdate,\
 	clean_whitespace
-from erpnext.controllers.queries import get_filters_cond
-from frappe.desk.reportview import get_match_cond
-from erpnext.hr.doctype.daily_work_summary.daily_work_summary import get_users_email
-from erpnext.hr.doctype.holiday_list.holiday_list import is_holiday
 from erpnext.stock.get_item_details import get_applies_to_details
 from frappe.model.naming import set_name_by_naming_series
 from frappe.model.utils import get_fetch_values
@@ -21,7 +16,6 @@ from erpnext.controllers.status_updater import StatusUpdaterERP
 from erpnext.projects.doctype.project_status.project_status import get_auto_project_status, set_manual_project_status,\
 	get_valid_manual_project_status_names, is_manual_project_status, validate_project_status_for_transaction
 from erpnext.projects.doctype.project_workshop.project_workshop import get_project_workshop_details
-from six import string_types
 from erpnext.vehicles.vehicle_checklist import get_default_vehicle_checklist_items, set_missing_checklist
 from erpnext.vehicles.doctype.vehicle_log.vehicle_log import get_customer_vehicle_selector_data
 from frappe.model.meta import get_field_precision
@@ -114,8 +108,6 @@ class Project(StatusUpdaterERP):
 		self.set_title()
 
 		self.validate_cant_change()
-
-		self.send_welcome_email()
 
 		self._previous_appointment = self.db_get('appointment')
 
@@ -1138,24 +1130,6 @@ class Project(StatusUpdaterERP):
 		if old_name == self.copied_from:
 			frappe.db.set_value('Project', new_name, 'copied_from', new_name)
 
-	def send_welcome_email(self):
-		url = get_url("/project/?name={0}".format(self.name))
-		messages = (
-			_("You have been invited to collaborate on the project: {0}".format(self.name)),
-			url,
-			_("Join")
-		)
-
-		content = """
-		<p>{0}.</p>
-		<p><a href="{1}">{2}</a></p>
-		"""
-
-		for user in self.users:
-			if user.welcome_email_sent == 0:
-				frappe.sendmail(user.user, subject=_("Project Collaboration Invitation"),
-								content=content.format(*messages))
-				user.welcome_email_sent = 1
 
 	def get_item_groups_subtree(self, item_group):
 		if (self.get('_item_group_subtree') or {}).get(item_group):
@@ -1582,124 +1556,6 @@ def get_timeline_data(doctype, name):
 			group by date(from_time)''', name))
 
 
-def get_project_list(doctype, txt, filters, limit_start, limit_page_length=20, order_by="modified"):
-	return frappe.db.sql("""
-		select distinct project.*
-		from tabProject project, `tabProject User` project_user
-		where
-			(project_user.user = %(user)s and project_user.parent = project.name)
-			or project.owner = %(user)s
-		order by project.modified desc
-		limit {0}, {1}
-	""".format(limit_start, limit_page_length),
-		{'user': frappe.session.user},
-		as_dict=True,
-		update={'doctype': 'Project'}
-	)
-
-
-def get_list_context(context=None):
-	return {
-		"show_sidebar": True,
-		"show_search": True,
-		'no_breadcrumbs': True,
-		"title": _("Projects"),
-		"get_list": get_project_list,
-		"row_template": "templates/includes/projects/project_row.html"
-	}
-
-
-@frappe.whitelist()
-@frappe.validate_and_sanitize_search_inputs
-def get_users_for_project(doctype, txt, searchfield, start, page_len, filters):
-	conditions = []
-	return frappe.db.sql("""
-		select name, concat_ws(' ', first_name, middle_name, last_name)
-		from `tabUser`
-		where enabled=1
-			and name not in ("Guest", "Administrator")
-			and ({key} like %(txt)s
-				or full_name like %(txt)s)
-			{fcond} {mcond}
-		order by
-			if(locate(%(_txt)s, name), locate(%(_txt)s, name), 99999),
-			if(locate(%(_txt)s, full_name), locate(%(_txt)s, full_name), 99999),
-			idx desc,
-			name, full_name
-		limit %(start)s, %(page_len)s
-	""".format(**{
-		'key': searchfield,
-		'fcond': get_filters_cond(doctype, filters, conditions),
-		'mcond': get_match_cond(doctype)
-	}), {
-		'txt': "%%%s%%" % txt,
-		'_txt': txt.replace("%", ""),
-		'start': start,
-		'page_len': page_len
-	})
-
-
-def hourly_reminder():
-	fields = ["from_time", "to_time"]
-	projects = get_projects_for_collect_progress("Hourly", fields)
-
-	for project in projects:
-		if (get_time(nowtime()) >= get_time(project.from_time) or
-			get_time(nowtime()) <= get_time(project.to_time)):
-			send_project_update_email_to_users(project.name)
-
-
-def project_status_update_reminder():
-	daily_reminder()
-	twice_daily_reminder()
-	weekly_reminder()
-
-
-def daily_reminder():
-	fields = ["daily_time_to_send"]
-	projects =  get_projects_for_collect_progress("Daily", fields)
-
-	for project in projects:
-		if allow_to_make_project_update(project.name, project.get("daily_time_to_send"), "Daily"):
-			send_project_update_email_to_users(project.name)
-
-
-def twice_daily_reminder():
-	fields = ["first_email", "second_email"]
-	projects =  get_projects_for_collect_progress("Twice Daily", fields)
-	fields.remove("name")
-
-	for project in projects:
-		for d in fields:
-			if allow_to_make_project_update(project.name, project.get(d), "Twicely"):
-				send_project_update_email_to_users(project.name)
-
-
-def weekly_reminder():
-	fields = ["day_to_send", "weekly_time_to_send"]
-	projects =  get_projects_for_collect_progress("Weekly", fields)
-
-	current_day = get_datetime().strftime("%A")
-	for project in projects:
-		if current_day != project.day_to_send:
-			continue
-
-		if allow_to_make_project_update(project.name, project.get("weekly_time_to_send"), "Weekly"):
-			send_project_update_email_to_users(project.name)
-
-
-def allow_to_make_project_update(project, time, frequency):
-	data = frappe.db.sql(""" SELECT name from `tabProject Update`
-		WHERE project = %s and date = %s """, (project, today()))
-
-	# len(data) > 1 condition is checked for twicely frequency
-	if data and (frequency in ['Daily', 'Weekly'] or len(data) > 1):
-		return False
-
-	if get_time(nowtime()) >= get_time(time):
-		return True
-
-
 @frappe.whitelist()
 def create_duplicate_project(prev_doc, project_name):
 	''' Create duplicate project based on the old project '''
@@ -1729,93 +1585,6 @@ def create_duplicate_project(prev_doc, project_name):
 		new_task.insert()
 
 	project.db_set('project_template', prev_doc.get('project_template'))
-
-
-def get_projects_for_collect_progress(frequency, fields):
-	fields.extend(["name"])
-
-	return frappe.get_all("Project", fields = fields,
-		filters = {'collect_progress': 1, 'frequency': frequency, 'status': 'Open'})
-
-
-def send_project_update_email_to_users(project):
-	doc = frappe.get_doc('Project', project)
-
-	if is_holiday(doc.holiday_list) or not doc.users: return
-
-	project_update = frappe.get_doc({
-		"doctype" : "Project Update",
-		"project" : project,
-		"sent": 0,
-		"date": today(),
-		"time": nowtime(),
-		"naming_series": "UPDATE-.project.-.YY.MM.DD.-",
-	}).insert()
-
-	subject = "For project %s, update your status" % (project)
-
-	incoming_email_account = frappe.db.get_value('Email Account',
-		dict(enable_incoming=1, default_incoming=1), 'email_id')
-
-	frappe.sendmail(recipients=get_users_email(doc),
-		message=doc.message,
-		subject=_(subject),
-		reference_doctype=project_update.doctype,
-		reference_name=project_update.name,
-		reply_to=incoming_email_account
-	)
-
-
-def collect_project_status():
-	for data in frappe.get_all("Project Update",
-		{'date': today(), 'sent': 0}):
-		replies = frappe.get_all('Communication',
-			fields=['content', 'text_content', 'sender'],
-			filters=dict(reference_doctype="Project Update",
-				reference_name=data.name,
-				communication_type='Communication',
-				sent_or_received='Received'),
-			order_by='creation asc')
-
-		for d in replies:
-			doc = frappe.get_doc("Project Update", data.name)
-			user_data = frappe.db.get_values("User", {"email": d.sender},
-				["full_name", "user_image", "name"], as_dict=True)[0]
-
-			doc.append("users", {
-				'user': user_data.name,
-				'full_name': user_data.full_name,
-				'image': user_data.user_image,
-				'project_status': frappe.utils.md_to_html(
-					EmailReplyParser.parse_reply(d.text_content) or d.content
-				)
-			})
-
-			doc.save(ignore_permissions=True)
-
-
-def send_project_status_email_to_users():
-	yesterday = add_days(today(), -1)
-
-	for d in frappe.get_all("Project Update",
-		{'date': yesterday, 'sent': 0}):
-		doc = frappe.get_doc("Project Update", d.name)
-
-		project_doc = frappe.get_doc('Project', doc.project)
-
-		args = {
-			"users": doc.users,
-			"title": _("Project Summary for {0}").format(yesterday)
-		}
-
-		frappe.sendmail(recipients=get_users_email(project_doc),
-			template='daily_project_summary',
-			args=args,
-			subject=_("Daily Project Summary for {0}").format(d.name),
-			reference_doctype="Project Update",
-			reference_name=d.name)
-
-		doc.db_set('sent', 1)
 
 
 @frappe.whitelist()
@@ -1864,7 +1633,7 @@ def set_project_status(project, project_status):
 
 @frappe.whitelist()
 def get_customer_details(args):
-	if isinstance(args, string_types):
+	if isinstance(args, str):
 		args = json.loads(args)
 
 	args = frappe._dict(args)
@@ -1908,7 +1677,7 @@ def get_customer_details(args):
 
 @frappe.whitelist()
 def get_project_details(project, doctype):
-	if isinstance(project, string_types):
+	if isinstance(project, str):
 		project = frappe.get_doc("Project", project)
 
 	sales_doctypes = ['Quotation', 'Sales Order', 'Delivery Note', 'Sales Invoice']
@@ -2104,7 +1873,7 @@ def make_sales_invoice(project_name, target_doc=None, depreciation_type=None, cl
 	project_details = get_project_details(project, "Sales Invoice")
 
 	# Make Sales Invoice Target Document
-	if target_doc and isinstance(target_doc, string_types):
+	if target_doc and isinstance(target_doc, str):
 		target_doc = json.loads(target_doc)
 
 	target_doc = frappe.get_doc(target_doc) if target_doc else frappe.new_doc("Sales Invoice")
@@ -2391,7 +2160,7 @@ def set_depreciation_in_invoice_items(items_list, project, force=False):
 
 @frappe.whitelist()
 def set_warranty_claim_denied(projects, denied, reason=None):
-	if isinstance(projects, string_types):
+	if isinstance(projects, str):
 		projects = json.loads(projects)
 
 	denied = cint(denied)

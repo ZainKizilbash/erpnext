@@ -509,18 +509,6 @@ class DeliveryNote(SellingController):
 			frappe.throw(_("Installation Note {0} has already been submitted").format(submit_in[0][0]))
 
 
-def get_list_context(context=None):
-	from erpnext.controllers.website_list_for_contact import get_list_context
-	list_context = get_list_context(context)
-	list_context.update({
-		'show_sidebar': True,
-		'show_search': True,
-		'no_breadcrumbs': True,
-		'title': _('Shipments'),
-	})
-	return list_context
-
-
 def update_directly_billed_qty_for_dn(delivery_note, delivery_note_item, update_modified=True):
 	if isinstance(delivery_note, str):
 		is_delivery_return = frappe.db.get_value("Delivery Note", delivery_note, "is_return", cache=1)

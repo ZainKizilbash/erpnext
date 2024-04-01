@@ -204,11 +204,6 @@ class Task(NestedSet):
 					task.flags.ignore_recursion_check = True
 					task.save()
 
-	def has_webform_permission(self):
-		project_user = frappe.db.get_value("Project User", {"parent": self.project, "user":frappe.session.user} , "user")
-		if project_user:
-			return True
-
 	def set_is_overdue(self, update=False, update_modified=False):
 		self.is_overdue = 0
 

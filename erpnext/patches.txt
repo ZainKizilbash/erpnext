@@ -371,3 +371,4 @@ erpnext.patches.v14_0.set_sales_person_employee_details
 erpnext.patches.v14_0.set_appointment_type_company
 erpnext.patches.v14_0.set_navbar_app_name
 erpnext.patches.v14_0.set_stock_entry_total_fields
+erpnext.patches.v14_0.delete_website_doctypes

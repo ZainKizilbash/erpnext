@@ -18,15 +18,11 @@ develop_version = '14.x.x-develop'
 app_include_js = "erpnext.bundle.js"
 app_include_css = "erpnext.bundle.css"
 
-web_include_js = "erpnext-web.bundle.js"
-web_include_css = "erpnext-web.bundle.css"
-
 email_css = "email_erpnext.bundle.css"
 
 doctype_js = {
 	"Communication": "overrides/communication_hooks.js",
 	"Event": "overrides/event_hooks.js",
-	"Website Theme": "overrides/website_theme_hooks.js",
 
 	"Sales Person": "overrides/sales_person/sales_person_hooks.js",
 	"Territory": "overrides/territory/territory_hooks.js",
@@ -136,18 +132,7 @@ get_user_progress_slides = "erpnext.utilities.user_progress.get_user_progress_sl
 update_and_get_user_progress = "erpnext.utilities.user_progress_utils.update_default_domain_actions_and_get_state"
 leaderboards = "erpnext.startup.leaderboard.get_leaderboards"
 
-
-on_session_creation = [
-	"erpnext.portal.utils.create_customer_or_supplier",
-	"erpnext.shopping_cart.utils.set_cart_count"
-]
-on_logout = "erpnext.shopping_cart.utils.clear_cart_count"
-
 treeviews = ['Account', 'Cost Center', 'Warehouse', 'Item Group', 'Customer Group', 'Assessment Group', 'Department']
-
-# website
-update_website_context = ["erpnext.shopping_cart.utils.update_website_context", "erpnext.education.doctype.education_settings.education_settings.update_website_context"]
-my_account_context = "erpnext.shopping_cart.utils.update_my_account_context"
 
 email_append_to = ["Job Applicant", "Issue"]
 
@@ -166,137 +151,9 @@ domains = {
 	'Vehicles': 'erpnext.domains.vehicles',
 }
 
-website_generators = ["Item Group", "Item", "BOM", "Sales Partner",
-	"Job Opening", "Student Admission"]
-
 website_context = {
 	"favicon": 	"/assets/erpnext/images/favicon.png",
 	"splash_image": "/assets/erpnext/images/erp-icon.svg"
-}
-
-website_route_rules = [
-	{"from_route": "/orders", "to_route": "Sales Order"},
-	{"from_route": "/orders/<path:name>", "to_route": "order",
-		"defaults": {
-			"doctype": "Sales Order",
-			"parents": [{"label": _("Orders"), "route": "orders"}]
-		}
-	},
-	{"from_route": "/invoices", "to_route": "Sales Invoice"},
-	{"from_route": "/invoices/<path:name>", "to_route": "order",
-		"defaults": {
-			"doctype": "Sales Invoice",
-			"parents": [{"label": _("Invoices"), "route": "invoices"}]
-		}
-	},
-	{"from_route": "/supplier-quotations", "to_route": "Supplier Quotation"},
-	{"from_route": "/supplier-quotations/<path:name>", "to_route": "order",
-		"defaults": {
-			"doctype": "Supplier Quotation",
-			"parents": [{"label": _("Supplier Quotation"), "route": "supplier-quotations"}]
-		}
-	},
-	{"from_route": "/purchase-orders", "to_route": "Purchase Order"},
-	{"from_route": "/purchase-orders/<path:name>", "to_route": "order",
-		"defaults": {
-			"doctype": "Purchase Order",
-			"parents": [{"label": _("Purchase Order"), "route": "purchase-orders"}]
-		}
-	},
-	{"from_route": "/purchase-invoices", "to_route": "Purchase Invoice"},
-	{"from_route": "/purchase-invoices/<path:name>", "to_route": "order",
-		"defaults": {
-			"doctype": "Purchase Invoice",
-			"parents": [{"label": _("Purchase Invoice"), "route": "purchase-invoices"}]
-		}
-	},
-	{"from_route": "/quotations", "to_route": "Quotation"},
-	{"from_route": "/quotations/<path:name>", "to_route": "order",
-		"defaults": {
-			"doctype": "Quotation",
-			"parents": [{"label": _("Quotations"), "route": "quotations"}]
-		}
-	},
-	{"from_route": "/shipments", "to_route": "Delivery Note"},
-	{"from_route": "/shipments/<path:name>", "to_route": "order",
-		"defaults": {
-			"doctype": "Delivery Note",
-			"parents": [{"label": _("Shipments"), "route": "shipments"}]
-		}
-	},
-	{"from_route": "/rfq", "to_route": "Request for Quotation"},
-	{"from_route": "/rfq/<path:name>", "to_route": "rfq",
-		"defaults": {
-			"doctype": "Request for Quotation",
-			"parents": [{"label": _("Request for Quotation"), "route": "rfq"}]
-		}
-	},
-	{"from_route": "/addresses", "to_route": "Address"},
-	{"from_route": "/addresses/<path:name>", "to_route": "addresses",
-		"defaults": {
-			"doctype": "Address",
-			"parents": [{"label": _("Addresses"), "route": "addresses"}]
-		}
-	},
-	{"from_route": "/jobs", "to_route": "Job Opening"},
-	{"from_route": "/admissions", "to_route": "Student Admission"},
-	{"from_route": "/boms", "to_route": "BOM"},
-	{"from_route": "/timesheets", "to_route": "Timesheet"},
-	{"from_route": "/material-requests", "to_route": "Material Request"},
-	{"from_route": "/material-requests/<path:name>", "to_route": "material_request_info",
-		"defaults": {
-			"doctype": "Material Request",
-			"parents": [{"label": _("Material Request"), "route": "material-requests"}]
-		}
-	},
-]
-
-standard_portal_menu_items = [
-	{"title": _("Personal Details"), "route": "/personal-details", "reference_doctype": "Patient", "role": "Patient"},
-	{"title": _("Projects"), "route": "/project", "reference_doctype": "Project"},
-	{"title": _("Request for Quotations"), "route": "/rfq", "reference_doctype": "Request for Quotation", "role": "Supplier"},
-	{"title": _("Supplier Quotation"), "route": "/supplier-quotations", "reference_doctype": "Supplier Quotation", "role": "Supplier"},
-	{"title": _("Purchase Orders"), "route": "/purchase-orders", "reference_doctype": "Purchase Order", "role": "Supplier"},
-	{"title": _("Purchase Invoices"), "route": "/purchase-invoices", "reference_doctype": "Purchase Invoice", "role": "Supplier"},
-	{"title": _("Quotations"), "route": "/quotations", "reference_doctype": "Quotation", "role":"Customer"},
-	{"title": _("Orders"), "route": "/orders", "reference_doctype": "Sales Order", "role":"Customer"},
-	{"title": _("Invoices"), "route": "/invoices", "reference_doctype": "Sales Invoice", "role":"Customer"},
-	{"title": _("Shipments"), "route": "/shipments", "reference_doctype": "Delivery Note", "role":"Customer"},
-	{"title": _("Issues"), "route": "/issues", "reference_doctype": "Issue", "role":"Customer"},
-	{"title": _("Addresses"), "route": "/addresses", "reference_doctype": "Address"},
-	{"title": _("Timesheets"), "route": "/timesheets", "reference_doctype": "Timesheet", "role":"Customer"},
-	{"title": _("Lab Test"), "route": "/lab-test", "reference_doctype": "Lab Test", "role":"Patient"},
-	{"title": _("Prescription"), "route": "/prescription", "reference_doctype": "Patient Encounter", "role":"Patient"},
-	{"title": _("Patient Appointment"), "route": "/patient-appointments", "reference_doctype": "Patient Appointment", "role":"Patient"},
-	{"title": _("Fees"), "route": "/fees", "reference_doctype": "Fees", "role":"Student"},
-	{"title": _("Newsletter"), "route": "/newsletters", "reference_doctype": "Newsletter"},
-	{"title": _("Admission"), "route": "/admissions", "reference_doctype": "Student Admission", "role": "Student"},
-	{"title": _("Certification"), "route": "/certification", "reference_doctype": "Certification Application", "role": "Non Profit Portal User"},
-	{"title": _("Material Request"), "route": "/material-requests", "reference_doctype": "Material Request", "role": "Customer"},
-	{"title": _("Appointment Booking"), "route": "/book_appointment"},
-]
-
-default_roles = [
-	{'role': 'Customer', 'doctype':'Contact', 'email_field': 'email_id'},
-	{'role': 'Supplier', 'doctype':'Contact', 'email_field': 'email_id'},
-	{'role': 'Student', 'doctype':'Student', 'email_field': 'student_email_id'},
-]
-
-has_website_permission = {
-	"Sales Order": "erpnext.controllers.website_list_for_contact.has_website_permission",
-	"Quotation": "erpnext.controllers.website_list_for_contact.has_website_permission",
-	"Sales Invoice": "erpnext.controllers.website_list_for_contact.has_website_permission",
-	"Supplier Quotation": "erpnext.controllers.website_list_for_contact.has_website_permission",
-	"Purchase Order": "erpnext.controllers.website_list_for_contact.has_website_permission",
-	"Purchase Invoice": "erpnext.controllers.website_list_for_contact.has_website_permission",
-	"Material Request": "erpnext.controllers.website_list_for_contact.has_website_permission",
-	"Delivery Note": "erpnext.controllers.website_list_for_contact.has_website_permission",
-	"Issue": "erpnext.support.doctype.issue.issue.has_website_permission",
-	"Timesheet": "erpnext.controllers.website_list_for_contact.has_website_permission",
-	"Lab Test": "erpnext.healthcare.web_form.lab_test.lab_test.has_website_permission",
-	"Patient Encounter": "erpnext.healthcare.web_form.prescription.prescription.has_website_permission",
-	"Patient Appointment": "erpnext.healthcare.web_form.patient_appointments.patient_appointments.has_website_permission",
-	"Patient": "erpnext.healthcare.web_form.personal_details.personal_details.has_website_permission"
 }
 
 dump_report_map = "erpnext.startup.report_data_map.data_map"
@@ -305,21 +162,13 @@ before_tests = "erpnext.setup.utils.before_tests"
 
 standard_queries = {
 	"Customer": "erpnext.controllers.queries.customer_query",
-	"Healthcare Practitioner": "erpnext.healthcare.doctype.healthcare_practitioner.healthcare_practitioner.get_practitioner_list"
 }
 
 doc_events = {
 	"User": {
 		"after_insert": "frappe.contacts.doctype.contact.contact.update_contact",
 		"validate": "erpnext.hr.doctype.employee.employee.validate_employee_role",
-		"on_update": ["erpnext.hr.doctype.employee.employee.update_user_permissions",
-			"erpnext.portal.utils.set_default_role"]
-	},
-	("Sales Taxes and Charges Template", 'Price List'): {
-		"on_update": "erpnext.shopping_cart.doctype.shopping_cart_settings.shopping_cart_settings.validate_cart_settings"
-	},
-	"Website Settings": {
-		"validate": "erpnext.portal.doctype.products_settings.products_settings.home_page_is_products"
+		"on_update": ["erpnext.hr.doctype.employee.employee.update_user_permissions"]
 	},
 	"Sales Invoice": {
 		"on_submit": ["erpnext.regional.create_transaction_log", "erpnext.regional.italy.utils.sales_invoice_on_submit"],
@@ -351,7 +200,6 @@ naming_series_variables = {
 
 scheduler_events = {
 	"all": [
-		"erpnext.projects.doctype.project.project.project_status_update_reminder",
 		"erpnext.healthcare.doctype.patient_appointment.patient_appointment.set_appointment_reminder",
 		"erpnext.vehicles.doctype.vehicle_booking_order.vehicle_booking_order.send_payment_overdue_notifications",
 		"erpnext.vehicles.doctype.vehicle_booking_order.vehicle_booking_order.send_vehicle_anniversary_notifications",
@@ -363,8 +211,6 @@ scheduler_events = {
 		"erpnext.accounts.doctype.subscription.subscription.process_all",
 		"erpnext.erpnext_integrations.doctype.amazon_mws_settings.amazon_mws_settings.schedule_get_order_details",
 		"erpnext.erpnext_integrations.doctype.plaid_settings.plaid_settings.automatic_synchronization",
-		"erpnext.projects.doctype.project.project.hourly_reminder",
-		"erpnext.projects.doctype.project.project.collect_project_status",
 		"erpnext.hr.doctype.shift_type.shift_type.process_auto_attendance_for_all_shifts",
 		"erpnext.support.doctype.issue.issue.set_service_level_agreement_variance",
 		"erpnext.erpnext_integrations.fbr_pos_integration.post_fbr_pos_invoices_without_number",
@@ -385,7 +231,6 @@ scheduler_events = {
 		"erpnext.setup.doctype.company.company.cache_companies_monthly_sales_history",
 		"erpnext.assets.doctype.asset.asset.update_maintenance_status",
 		"erpnext.assets.doctype.asset.asset.make_post_gl_entry",
-		"erpnext.projects.doctype.project.project.send_project_status_email_to_users",
 		"erpnext.quality_management.doctype.quality_review.quality_review.review",
 		"erpnext.support.doctype.service_level_agreement.service_level_agreement.check_agreement_status",
 		"erpnext.selling.doctype.quotation.quotation.set_expired_status",
@@ -408,10 +253,6 @@ scheduler_events = {
 get_translated_dict = {
 	("doctype", "Global Defaults"): "frappe.geo.country_info.get_translated_dict"
 }
-
-bot_parsers = [
-	'erpnext.utilities.bot.FindItemBot',
-]
 
 get_site_info = 'erpnext.utilities.get_site_info'
 
