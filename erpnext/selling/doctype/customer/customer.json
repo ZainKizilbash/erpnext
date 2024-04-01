@@ -82,8 +82,8 @@
   "default_currency",
   "default_price_list",
   "column_break_41",
-  "tax_category",
   "taxes_and_charges_template",
+  "tax_category",
   "column_break_oqeav",
   "default_bank_account",
   "linked_supplier",
@@ -685,7 +685,7 @@
   {
    "fieldname": "taxes_and_charges_template",
    "fieldtype": "Link",
-   "label": "Taxes and Charges Template",
+   "label": "Default Taxes and Charges",
    "options": "Sales Taxes and Charges Template"
   }
  ],
@@ -693,7 +693,7 @@
  "idx": 363,
  "image_field": "image",
  "links": [],
- "modified": "2024-04-01 11:19:28.172999",
+ "modified": "2024-04-01 16:24:32.207288",
  "modified_by": "Administrator",
  "module": "Selling",
  "name": "Customer",
