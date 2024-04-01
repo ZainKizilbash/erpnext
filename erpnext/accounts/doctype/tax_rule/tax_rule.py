@@ -163,7 +163,7 @@ def get_tax_template(posting_date, args):
 	"""Get matching tax rule"""
 	args = frappe._dict(args)
 	
-	if "customer" in args:
+	if args.get("customer"):
 		customer_taxes_and_charges_template = frappe.get_cached_value("Customer", args.get("customer"), "taxes_and_charges_template")
 		if customer_taxes_and_charges_template:
 			return customer_taxes_and_charges_template
