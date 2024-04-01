@@ -629,6 +629,9 @@ class StockEntry(TransactionController):
 		if self.purpose not in ['Manufacture', 'Repack']:
 			self.total_amount = sum([flt(item.amount) for item in self.get("items")])
 
+		for fn in ['qty', 'stock_qty', 'alt_uom_qty']:
+			self.set('total_' + fn, sum(flt(d.get(fn) for d in self.items if d.s_warehouse)))
+
 	def set_stock_entry_type(self):
 		if self.purpose:
 			types = frappe.db.get_all("Stock Entry Type", filters={'purpose': self.purpose}, order_by='creation asc')

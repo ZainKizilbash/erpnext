@@ -60,6 +60,12 @@
   "items",
   "scan_barcode",
   "get_stock_and_rate",
+  "section_break_vjbig",
+  "total_qty",
+  "column_break_phxuw",
+  "total_stock_qty",
+  "column_break_yiunb",
+  "total_alt_uom_qty",
   "section_break_19",
   "total_outgoing_value",
   "column_break_22",
@@ -700,13 +706,52 @@
    "no_copy": 1,
    "options": "Stock Entry Consumed Material",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_break_vjbig",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "total_qty",
+   "fieldtype": "Float",
+   "label": "Total Qty",
+   "no_copy": 1,
+   "precision": "6",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_phxuw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_stock_qty",
+   "fieldtype": "Float",
+   "label": "Total Stock Qty",
+   "no_copy": 1,
+   "precision": "6",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_yiunb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_alt_uom_qty",
+   "fieldtype": "Float",
+   "label": "Total Contents Qty",
+   "no_copy": 1,
+   "precision": "6",
+   "print_hide": 1,
+   "read_only": 1
   }
  ],
  "icon": "fa fa-file-text",
  "idx": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-06 21:24:28.526346",
+ "modified": "2024-03-28 14:48:34.572965",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Stock Entry",
