@@ -83,8 +83,9 @@
   "default_price_list",
   "column_break_41",
   "tax_category",
-  "default_bank_account",
+  "taxes_and_charges_template",
   "column_break_oqeav",
+  "default_bank_account",
   "linked_supplier",
   "customer_pos_id",
   "is_frozen",
@@ -680,13 +681,19 @@
    "fieldname": "internal_customer_details_section",
    "fieldtype": "Section Break",
    "label": "Internal Customer Details"
+  },
+  {
+   "fieldname": "taxes_and_charges_template",
+   "fieldtype": "Link",
+   "label": "Taxes and Charges Template",
+   "options": "Sales Taxes and Charges Template"
   }
  ],
  "icon": "fa fa-user",
  "idx": 363,
  "image_field": "image",
  "links": [],
- "modified": "2024-02-06 21:19:53.266830",
+ "modified": "2024-04-01 11:19:28.172999",
  "modified_by": "Administrator",
  "module": "Selling",
  "name": "Customer",
