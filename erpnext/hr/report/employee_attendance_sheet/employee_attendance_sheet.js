@@ -98,4 +98,17 @@ frappe.query_reports["Employee Attendance Sheet"] = {
 
 		return default_formatter(value, row, column, data, {css: style, link_href: link, link_target: "_blank"});
 	},
+
+	onload: function(report) {
+		if (frappe.model.can_write("Shift Type")) {
+			report.page.add_menu_item(__("Update Checkin Shifts"), function () {
+				return frappe.call({
+					method: "erpnext.hr.doctype.shift_type.shift_type.update_shift_in_logs",
+					args: {
+						publish_progress: 1
+					},
+				});
+			});
+		}
+	}
 }

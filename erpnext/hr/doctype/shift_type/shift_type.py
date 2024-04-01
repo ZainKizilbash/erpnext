@@ -19,6 +19,8 @@ from collections import OrderedDict
 class ShiftType(Document):
 	@frappe.whitelist()
 	def enqueue_auto_attendance(self):
+		frappe.has_permission("Shift Type", "write", throw=True)
+
 		if not self.process_attendance_after:
 			frappe.msgprint(_("Cannot Process Auto Attendance because <b>'Process Attendance After'</b> is not set"))
 			return
@@ -29,14 +31,13 @@ class ShiftType(Document):
 		self.queue_action('process_auto_attendance', timeout=600)
 		frappe.msgprint(_("Auto Attendance Marking Started"), alert=True)
 
-	@frappe.whitelist()
 	def process_auto_attendance(self):
 		if not self.process_attendance_after:
 			return
 		if not self.last_sync_of_checkin:
 			return
 
-		self.update_shift_in_logs(publish_progress=True)
+		update_shift_in_logs(self.process_attendance_after, self.last_sync_of_checkin, publish_progress=True)
 
 		filters = {
 			'skip_auto_attendance': '0',
@@ -76,40 +77,6 @@ class ShiftType(Document):
 			completed_tasks += 1
 			frappe.publish_progress(completed_tasks * 100 / total_tasks,
 				title=_("Marking Attendance..."), description=_("Marking Absents for missing Attendances"))
-
-	def update_shift_in_logs(self, publish_progress=False):
-		filters = {
-			'skip_auto_attendance': '0',
-			'attendance': ('is', 'not set'),
-			'time': ('>=', self.process_attendance_after),
-			'shift_actual_end': ('<', self.last_sync_of_checkin),
-			'shift': ('is', 'set'),
-			'employee': ('is', 'set'),
-		}
-
-		logs = frappe.get_all('Employee Checkin', fields="name", filters=filters)
-
-		total_tasks = len(logs)
-		completed_tasks = 0
-
-		for log in logs:
-			keys = ("shift", "shift_actual_start", "shift_actual_end", "shift_start", "shift_end")
-
-			log_doc = frappe.get_doc("Employee Checkin", log.name)
-			before_values = tuple(log_doc.get(k) for k in keys)
-
-			log_doc.fetch_shift()
-			after_values = tuple(log_doc.get(k) for k in keys)
-
-			if after_values != before_values:
-				log_doc.flags.ignore_permissions = True
-				log_doc.flags.ignore_validate = True
-				log_doc.save()
-
-			completed_tasks += 1
-			if publish_progress:
-				frappe.publish_progress(completed_tasks * 100 / total_tasks,
-					title=_("Preparing Checkins..."))
 
 	def get_attendance(self, logs, ignore_working_hour_threshold=False):
 		"""Return attendance_status, working_hours for a set of logs belonging to a single shift.
@@ -259,6 +226,51 @@ def process_auto_attendance_for_all_shifts():
 	for shift in shift_list:
 		doc = frappe.get_doc('Shift Type', shift[0])
 		doc.process_auto_attendance()
+
+
+@frappe.whitelist()
+def update_shift_in_logs(process_attendance_after=None, last_sync_of_checkin=None, publish_progress=True):
+	frappe.has_permission("Shift Type", "write", throw=True)
+
+	filters = {
+		'skip_auto_attendance': '0',
+		'attendance': ('is', 'not set'),
+		'shift': ('is', 'set'),
+		'employee': ('is', 'set'),
+	}
+
+	if not process_attendance_after:
+		process_attendance_after = frappe.db.sql("select min(process_attendance_after) from `tabShift Type`")
+		process_attendance_after = process_attendance_after[0][0] if process_attendance_after else None
+
+	if process_attendance_after:
+		filters['time'] = ('>=', process_attendance_after)
+	if last_sync_of_checkin:
+		filters['shift_actual_end'] = ('<', last_sync_of_checkin)
+
+	logs = frappe.get_all('Employee Checkin', fields="name", filters=filters)
+
+	total_tasks = len(logs)
+	completed_tasks = 0
+
+	for log in logs:
+		keys = ("shift", "shift_actual_start", "shift_actual_end", "shift_start", "shift_end")
+
+		log_doc = frappe.get_doc("Employee Checkin", log.name)
+		before_values = tuple(log_doc.get(k) for k in keys)
+
+		log_doc.fetch_shift()
+		after_values = tuple(log_doc.get(k) for k in keys)
+
+		if after_values != before_values:
+			log_doc.flags.ignore_permissions = True
+			log_doc.flags.ignore_validate = True
+			log_doc.save()
+
+		completed_tasks += 1
+		if cint(publish_progress):
+			frappe.publish_progress(completed_tasks * 100 / total_tasks,
+				title=_("Updating Checkins..."))
 
 
 def get_filtered_date_list(employee, start_date, end_date, filter_attendance=True, holiday_list=None):
