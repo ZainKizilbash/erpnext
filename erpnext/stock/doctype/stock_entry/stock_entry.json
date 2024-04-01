@@ -715,9 +715,6 @@
    "fieldname": "total_qty",
    "fieldtype": "Float",
    "label": "Total Qty",
-   "no_copy": 1,
-   "precision": "6",
-   "print_hide": 1,
    "read_only": 1
   },
   {
@@ -728,9 +725,6 @@
    "fieldname": "total_stock_qty",
    "fieldtype": "Float",
    "label": "Total Stock Qty",
-   "no_copy": 1,
-   "precision": "6",
-   "print_hide": 1,
    "read_only": 1
   },
   {
@@ -738,12 +732,10 @@
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "eval:doc.total_alt_uom_qty != doc.total_qty",
    "fieldname": "total_alt_uom_qty",
    "fieldtype": "Float",
    "label": "Total Contents Qty",
-   "no_copy": 1,
-   "precision": "6",
-   "print_hide": 1,
    "read_only": 1
   }
  ],
@@ -751,7 +743,7 @@
  "idx": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-03-28 14:48:34.572965",
+ "modified": "2024-04-01 16:37:23.089006",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Stock Entry",
