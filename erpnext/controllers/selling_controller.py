@@ -3,7 +3,7 @@
 
 import frappe
 from frappe.utils import cint, flt, cstr
-from frappe import _, throw
+from frappe import _
 from erpnext.stock.get_item_details import get_bin_details
 from erpnext.stock.utils import get_incoming_rate, has_valuation_read_permission
 from erpnext.stock.get_item_details import get_target_warehouse_validation, item_has_product_bundle
@@ -13,6 +13,8 @@ from erpnext.controllers.transaction_controller import TransactionController
 
 
 class SellingController(TransactionController):
+	selling_or_buying = "selling"
+
 	def __setup__(self):
 		if hasattr(self, "taxes"):
 			self.flags.print_taxes_with_zero_amount = cint(frappe.get_cached_value("Print Settings", None,
@@ -44,9 +46,8 @@ class SellingController(TransactionController):
 					else:
 						item.actual_batch_qty = 0
 
-		if self.docstatus == 0:
-			if self.doctype in ("Quotation", "Sales Order", "Delivery Note", "Sales Invoice"):
-				self.calculate_taxes_and_totals()
+		if self.docstatus == 0 and self.meta.get_field("currency"):
+			self.calculate_taxes_and_totals()
 
 	def validate(self):
 		super(SellingController, self).validate()
@@ -169,7 +170,7 @@ class SellingController(TransactionController):
 		if self.meta.get_field("commission_rate"):
 			self.round_floats_in(self, ["base_net_total", "commission_rate"])
 			if self.commission_rate > 100.0:
-				throw(_("Commission rate cannot be greater than 100"))
+				frappe.throw(_("Commission rate cannot be greater than 100"))
 
 			self.total_commission = flt(self.base_net_total * self.commission_rate / 100.0,
 				self.precision("total_commission"))
@@ -530,7 +531,7 @@ class SellingController(TransactionController):
 					validate_end_of_life(d.item_code, end_of_life=item.end_of_life, disabled=item.disabled)
 
 				if cint(item.has_variants):
-					throw(_("Row #{0}: {1} is a template Item, please select one of its variants")
+					frappe.throw(_("Row #{0}: {1} is a template Item, please select one of its variants")
 						.format(d.idx, frappe.bold(d.item_code)))
 
 	def validate_target_warehouse(self):

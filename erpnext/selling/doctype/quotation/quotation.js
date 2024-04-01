@@ -154,7 +154,9 @@ erpnext.selling.QuotationController = class QuotationController extends erpnext.
 						}
 					})
 				}, __("Get Items From"), "btn-default");
+		}
 
+		if (me.frm.doc.docstatus == 0) {
 			me.add_get_applicable_items_button();
 			me.add_get_project_template_items_button();
 		}

@@ -7,7 +7,6 @@ from frappe import msgprint, _
 from frappe.model.document import Document
 from frappe.desk.reportview import get_match_cond, get_filters_cond
 from frappe.utils import comma_and
-import erpnext.www.lms as lms
 
 class ProgramEnrollment(Document):
 	def validate(self):
