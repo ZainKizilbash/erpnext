@@ -162,12 +162,13 @@ def get_party_details(party, party_type, args=None):
 def get_tax_template(posting_date, args):
 	"""Get matching tax rule"""
 	args = frappe._dict(args)
-	
+
 	if args.get("customer") and args.get("company"):
 		customer_tax_template = frappe.get_cached_value("Customer", args.get("customer"), "taxes_and_charges_template")
-		tax_template_company = frappe.get_cached_value("Sales Taxes and Charges Template", customer_tax_template, "company")
-		if customer_tax_template and tax_template_company == args.get("company"):
-			return customer_tax_template
+		if customer_tax_template:
+			tax_template_company = frappe.get_cached_value("Sales Taxes and Charges Template", customer_tax_template, "company")
+			if customer_tax_template and tax_template_company == args.get("company"):
+				return customer_tax_template
 
 	conditions = ["(from_date is null or from_date <= '{0}') and (to_date is null or to_date >= '{0}')".format(posting_date)]
 
