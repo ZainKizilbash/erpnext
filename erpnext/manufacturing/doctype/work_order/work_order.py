@@ -1155,7 +1155,7 @@ def create_work_orders(
 	ignore_feed=False,
 	create_sub_assembly_work_orders=False
 ):
-	_create_work_orders(
+	return _create_work_orders(
 		items,
 		company,
 		ignore_version=ignore_version,
