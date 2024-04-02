@@ -154,3 +154,13 @@ def mark_absent(employee, attendance_date, shift=None):
 		attendance = frappe.get_doc(doc_dict).insert()
 		attendance.submit()
 		return attendance.name
+
+
+def get_marked_attendance_dates_between(employee, start_date, end_date):
+	return frappe.db.sql_list("""
+		select attendance_date
+		from `tabAttendance`
+		where docstatus = 1 and employee = %(employee)s
+			and attendance_date between %(start_date)s and %(end_date)s
+		order by attendance_date
+	""", {"employee": employee, "start_date": start_date, "end_date": end_date})

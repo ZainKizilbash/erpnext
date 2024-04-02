@@ -7,12 +7,12 @@ from datetime import timedelta
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import cint, getdate, get_datetime
+from frappe.utils import cint, getdate, get_datetime, date_diff, add_days
 from erpnext.hr.doctype.shift_assignment.shift_assignment import get_actual_start_end_datetime_of_shift, get_employee_shift
 from erpnext.hr.doctype.employee_checkin.employee_checkin import mark_attendance_and_link_log, calculate_working_hours
-from erpnext.hr.doctype.attendance.attendance import mark_absent
+from erpnext.hr.doctype.attendance.attendance import get_marked_attendance_dates_between, mark_absent
 from erpnext.hr.doctype.employee.employee import get_holiday_list_for_employee
-from erpnext.hr.doctype.holiday_list.holiday_list import is_holiday
+from erpnext.hr.doctype.holiday_list.holiday_list import is_holiday, get_holiday_dates_between
 from collections import OrderedDict
 
 
@@ -90,7 +90,7 @@ class ShiftType(Document):
 
 		employee = logs[0].employee
 		shift_date = logs[0].shift_start.date()
-		holiday_list = self.holiday_list or get_holiday_list_for_employee(employee, False)
+		holiday_list = self.get_holiday_list(employee)
 
 		if not is_holiday(holiday_list, shift_date):
 			missing_checkin_no_absent = not out_time and self.missing_checkin_no_absent
@@ -139,7 +139,7 @@ class ShiftType(Document):
 		log_date = getdate(log_date)
 
 		month_start_date = frappe.utils.get_first_day(log_date)
-		to_date = frappe.utils.add_days(log_date, -1)
+		to_date = add_days(log_date, -1)
 
 		if to_date < month_start_date:
 			return False
@@ -155,14 +155,22 @@ class ShiftType(Document):
 		return early_exit_count >= cint(self.half_day_if_monthly_early_exit_count)
 
 	def mark_absent_for_dates_with_no_attendance(self, employee):
-		"""Marks Absents for the given employee on working days in this shift which have no attendance marked.
-		The Absent is marked starting from 'process_attendance_after' or employee creation date.
+		"""Marks Absents for the given employee on working days in this shift that have no attendance marked.
+		The Absent status is marked starting from 'process_attendance_after' or employee creation date.
 		"""
+		dates = self.get_dates_for_attendance(employee)
+
+		for date in dates:
+			shift_details = get_employee_shift(employee, date, True)
+			if shift_details and shift_details.shift_type.name == self.name:
+				mark_absent(employee, date, self.name)
+
+	def get_dates_for_attendance(self, employee):
 		date_of_joining, relieving_date = frappe.db.get_value("Employee", employee,
 			("date_of_joining", "relieving_date"), cache=1)
 
 		if not date_of_joining:
-			return
+			return []
 
 		start_date = max(getdate(self.process_attendance_after), date_of_joining)
 		actual_shift_datetime = get_actual_start_end_datetime_of_shift(employee, get_datetime(self.last_sync_of_checkin), True)
@@ -171,17 +179,15 @@ class ShiftType(Document):
 		if prev_shift:
 			end_date = min(prev_shift.start_datetime.date(), relieving_date) if relieving_date else prev_shift.start_datetime.date()
 		else:
-			return
+			return []
 
-		holiday_list_name = self.holiday_list
-		if not holiday_list_name:
-			holiday_list_name = get_holiday_list_for_employee(employee, False)
+		# skip marking absent on holidays and marked attendnace
+		date_range = get_date_range(start_date, end_date)
+		holiday_list = self.get_holiday_list(employee)
+		holiday_dates = get_holiday_dates_between(holiday_list, start_date, end_date)
+		marked_attendance_dates = get_marked_attendance_dates_between(employee, start_date, end_date)
 
-		dates = get_filtered_date_list(employee, start_date, end_date, holiday_list=holiday_list_name)
-		for date in dates:
-			shift_details = get_employee_shift(employee, date, True)
-			if shift_details and shift_details.shift_type.name == self.name:
-				mark_absent(employee, date, self.name)
+		return sorted(set(date_range) - set(holiday_dates) - set(marked_attendance_dates))
 
 	def get_assigned_employees(self, from_date=None, consider_default_shift=False):
 		args = {
@@ -219,6 +225,9 @@ class ShiftType(Document):
 			employees = list(set(employees))
 
 		return employees
+
+	def get_holiday_list(self, employee):
+		return self.holiday_list or get_holiday_list_for_employee(employee, False)
 
 
 def process_auto_attendance_for_all_shifts():
@@ -273,34 +282,7 @@ def update_shift_in_logs(process_attendance_after=None, last_sync_of_checkin=Non
 				title=_("Updating Checkins..."))
 
 
-def get_filtered_date_list(employee, start_date, end_date, filter_attendance=True, holiday_list=None):
-	"""Returns a list of dates after removing the dates with attendance and holidays
-	"""
-	base_dates_query = """select adddate(%(start_date)s, t2.i*100 + t1.i*10 + t0.i) selected_date from
-		(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t0,
-		(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t1,
-		(select 0 i union select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8 union select 9) t2"""
-	condition_query = ''
-	if filter_attendance:
-		condition_query += """ and a.selected_date not in (
-			select attendance_date from `tabAttendance` 
-			where docstatus = 1 and employee = %(employee)s 
-			and attendance_date between %(start_date)s and %(end_date)s)"""
-	if holiday_list:
-		condition_query += """ and a.selected_date not in (
-			select holiday_date from `tabHoliday` where parenttype = 'Holiday List' and
-			parentfield = 'holidays' and parent = %(holiday_list)s
-			and holiday_date between %(start_date)s and %(end_date)s)"""
-
-	dates = frappe.db.sql("""
-		select * from
-		({base_dates_query}) as a
-		where a.selected_date <= %(end_date)s {condition_query}
-	""".format(base_dates_query=base_dates_query, condition_query=condition_query), {
-		"employee": employee,
-		"start_date": start_date,
-		"end_date": end_date,
-		"holiday_list": holiday_list
-	}, as_list=True)
-
-	return [getdate(date[0]) for date in dates]
+def get_date_range(start_date, end_date):
+	"""returns list of dates between start and end dates"""
+	no_of_days = date_diff(end_date, start_date) + 1
+	return [add_days(start_date, i) for i in range(no_of_days)]
