@@ -1447,6 +1447,7 @@ def make_sales_invoice(source_name, target_doc=None):
 
 	postprocess_mapped_delivery_document(target_doc)
 	target_doc.update_stock = 1
+	target_doc.run_method("reset_taxes_and_charges")
 
 	return target_doc
 

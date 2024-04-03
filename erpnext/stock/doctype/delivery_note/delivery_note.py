@@ -687,6 +687,7 @@ def make_sales_invoice(source_name, target_doc=None, only_items=None, skip_postp
 		target.update_stock = 0
 		target.run_method("set_missing_values")
 		target.run_method("set_po_nos")
+		target.run_method("reset_taxes_and_charges")
 		target.run_method("calculate_taxes_and_totals")
 
 	mapping = {
