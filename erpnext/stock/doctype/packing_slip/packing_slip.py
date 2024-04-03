@@ -1315,7 +1315,7 @@ def make_unpack_packing_slip(source_name, target_doc=None):
 		target.run_method('set_missing_values')
 		target.run_method('calculate_totals')
 
-	unpack_packing_slip = get_mapped_doc("Packing Slip", source_name, {
+	mapper = {
 		"Packing Slip": {
 			"doctype": "Packing Slip",
 			"validation": {
@@ -1352,7 +1352,11 @@ def make_unpack_packing_slip(source_name, target_doc=None):
 			},
 			"postprocess": update_material
 		}
-	}, target_doc, postprocess)
+	}
+
+	frappe.utils.call_hook_method("update_unpack_from_packing_slip_mapper", mapper)
+
+	unpack_packing_slip = get_mapped_doc("Packing Slip", source_name, mapper, target_doc, postprocess)
 
 	return unpack_packing_slip
 
