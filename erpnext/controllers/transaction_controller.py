@@ -738,10 +738,9 @@ class TransactionController(StockController):
 		if (self.is_new() or self.is_pos_profile_changed()) and not self.get("taxes"):
 			if self.company and self.get("customer"):
 				# get default tax template from customer master
-				customer_default_taxes_and_charges = frappe.get_cached_value("Customer", self.get("customer"), "taxes_and_charges_template")
-				if customer_default_taxes_and_charges:
-					self.taxes_and_charges = customer_default_taxes_and_charges
-			
+				from erpnext.accounts.party import set_taxes
+				self.taxes_and_charges = set_taxes(self.customer, "Customer", self.get("transaction_date") or self.get("posting_date"), self.company)
+				
 			if self.company and not self.get("taxes_and_charges"):
 				# get the default tax master
 				self.taxes_and_charges = frappe.db.get_value(tax_master_doctype, {"is_default": 1, 'company': self.company})
