@@ -54,6 +54,12 @@ class AttendanceRequest(Document):
 							'late_entry': 0,
 							'previous_late_entry': existing_doc.late_entry,
 						})
+					
+					if self.remove_early_exit:
+						changes.update({
+							'early_exit': 0,
+							'previous_early_exit': existing_doc.early_exit,
+						})
 
 					existing_doc.db_set(changes, notify=1)
 				else:
@@ -119,13 +125,18 @@ class AttendanceRequest(Document):
 
 		existing_attendance = frappe.db.get_value("Attendance",
 			{'employee': self.employee, 'attendance_date': attendance_date, 'docstatus': 1},
-			['status', 'late_entry'], as_dict=1)
+			['status', 'late_entry', 'early_exit'], as_dict=1)
 		if existing_attendance:
 			if existing_attendance.status == "Present":
 				if self.remove_late_entry:
 					if not existing_attendance.late_entry:
 						frappe.msgprint(_("Attendance not created for {0} as it is already marked Present without Late Entry.")
 							.format(formatdate(attendance_date)))
+						return True
+				elif self.remove_early_exit:
+					if not existing_attendance.early_exit:
+						frappe.msgprint(_("Attendance not created for {0} as it is already marked Present without Early Exit.")
+					  		.format(formatdate(attendance_date)))
 						return True
 				else:
 					frappe.msgprint(_("Attendance not created for {0} as it is already marked Present.")

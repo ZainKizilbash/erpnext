@@ -24,6 +24,7 @@
   "from_date",
   "to_date",
   "remove_late_entry",
+  "remove_early_exit",
   "half_day",
   "half_day_date"
  ],
@@ -159,11 +160,17 @@
   {
    "fieldname": "column_break_icmit",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "remove_early_exit",
+   "fieldtype": "Check",
+   "label": "Remove Early Exit"
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2023-08-31 00:55:36.755860",
+ "modified": "2024-04-04 11:57:33.873231",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Attendance Request",
