@@ -102,6 +102,11 @@ class AttendanceRequest(Document):
 							'late_entry': att_doc.previous_late_entry,
 							'previous_late_entry': 0,
 						})
+					if self.remove_early_exit:
+						changes.update({
+							'early_exit': att_doc.previous_early_exit,
+							'previous_early_exit': 0,
+						})
 					att_doc.db_set(changes, notify=1)
 				else:
 					att_doc.flags.ignore_permissions = True
