@@ -44,6 +44,7 @@
   "section_break_hcg13",
   "total_qty",
   "column_break_jdwhq",
+  "total_rejected_qty",
   "total_stock_qty",
   "packaging_material_section",
   "packaging_items",
@@ -417,13 +418,18 @@
    "fieldname": "auto_select_batches",
    "fieldtype": "Button",
    "label": "Auto Select Batches (FIFO)"
+  },
+  {
+   "fieldname": "total_rejected_qty",
+   "fieldtype": "Float",
+   "label": "Total Rejected Qty"
   }
  ],
  "icon": "fa fa-suitcase",
  "idx": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-03-20 16:44:25.659215",
+ "modified": "2024-04-15 11:50:14.938631",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Packing Slip",
