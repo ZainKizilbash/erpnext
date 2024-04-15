@@ -422,14 +422,15 @@
   {
    "fieldname": "total_rejected_qty",
    "fieldtype": "Float",
-   "label": "Total Rejected Qty"
+   "label": "Total Rejected Qty",
+   "read_only": 1
   }
  ],
  "icon": "fa fa-suitcase",
  "idx": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-04-15 11:50:14.938631",
+ "modified": "2024-04-15 12:50:00.418433",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Packing Slip",
