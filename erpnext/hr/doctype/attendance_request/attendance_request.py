@@ -141,7 +141,7 @@ class AttendanceRequest(Document):
 				elif self.remove_early_exit:
 					if not existing_attendance.early_exit:
 						frappe.msgprint(_("Attendance not created for {0} as it is already marked Present without Early Exit.")
-					  		.format(formatdate(attendance_date)))
+							.format(formatdate(attendance_date)))
 						return True
 				else:
 					frappe.msgprint(_("Attendance not created for {0} as it is already marked Present.")
