@@ -102,6 +102,24 @@ def is_holiday(holiday_list, date=None):
 	return frappe.local_cache("is_holiday", (holiday_list, date), generator)
 
 
+def get_holiday_dates_between(holiday_list, start_date, end_date):
+	if not holiday_list:
+		return []
+
+	start_date = getdate(start_date)
+	end_date = getdate(end_date)
+
+	doc = frappe.get_cached_doc("Holiday List", holiday_list)
+
+	dates = []
+	for d in doc.get("holidays"):
+		holiday_date = getdate(d.holiday_date)
+		if start_date <= holiday_date <= end_date:
+			dates.append(holiday_date)
+
+	return sorted(dates)
+
+
 def get_default_holiday_list(company):
 	if company:
 		return frappe.get_cached_value('Company', company, "default_holiday_list")

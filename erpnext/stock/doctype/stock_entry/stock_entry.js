@@ -354,12 +354,6 @@ frappe.ui.form.on('Stock Entry', {
 
 	set_basic_rate: function(frm, cdt, cdn) {
 		const item = locals[cdt][cdn];
-		item.stock_qty = flt(item.qty) * flt(item.conversion_factor);
-
-		if (!item.alt_uom) {
-			item.alt_uom_size = 1.0;
-		}
-		item.alt_uom_qty = flt(flt(item.stock_qty) * flt(item.alt_uom_size), precision("alt_uom_qty", item));
 
 		if (cint(frm.doc.customer_provided)) {
 			frappe.model.set_value(cdt, cdn, 'basic_rate', 0.0);
@@ -392,6 +386,39 @@ frappe.ui.form.on('Stock Entry', {
 				});
 			}
 		}
+	},
+
+	calculate_total_qty(frm) {
+		frm.doc.total_qty = 0;
+		frm.doc.total_stock_qty = 0;
+		frm.doc.total_alt_uom_qty = 0;
+
+		let has_target_warehouse = (frm.doc.items || []).some(d => d.t_warehouse);
+
+		$.each(frm.doc.items || [], function (i, item) {
+			item.stock_qty = flt(flt(item.qty) * flt(item.conversion_factor), precision("stock_qty", item));
+
+			if (!item.alt_uom) {
+				item.alt_uom_size = 1.0;
+			}
+			item.alt_uom_qty = flt(flt(item.qty) * flt(item.conversion_factor) * flt(item.alt_uom_size),
+				precision("alt_uom_qty", item));
+
+			if (!has_target_warehouse || item.t_warehouse) {
+				frm.doc.total_qty += flt(item.qty)
+				frm.doc.total_stock_qty += flt(item.stock_qty)
+				frm.doc.total_alt_uom_qty += flt(item.alt_uom_qty)
+			}
+		});
+
+		frm.doc.total_qty = flt(frm.doc.total_qty, precision("total_qty"));
+		frm.doc.total_stock_qty = flt(frm.doc.total_stock_qty, precision("total_stock_qty"));
+		frm.doc.total_alt_uom_qty = flt(frm.doc.total_alt_uom_qty, precision("total_alt_uom_qty"));
+
+		frappe.model.round_floats_in(frm.doc, ["total_qty", "total_stock_qty", "total_alt_uom_qty"]);
+		frm.refresh_field("total_qty");
+		frm.refresh_field("total_stock_qty");
+		frm.refresh_field("total_alt_uom_qty");
 	},
 
 	get_warehouse_details: function(frm, cdt, cdn) {
@@ -493,11 +520,13 @@ frappe.ui.form.on('Stock Entry', {
 frappe.ui.form.on('Stock Entry Detail', {
 	qty: function(frm, cdt, cdn) {
 		frm.events.set_serial_no(frm, cdt, cdn, () => {
+			frm.events.calculate_total_qty(frm);
 			frm.events.set_basic_rate(frm, cdt, cdn);
 		});
 	},
 
 	conversion_factor: function(frm, cdt, cdn) {
+		frm.events.calculate_total_qty(frm);
 		frm.events.set_basic_rate(frm, cdt, cdn);
 	},
 
@@ -509,6 +538,7 @@ frappe.ui.form.on('Stock Entry Detail', {
 	},
 
 	t_warehouse: function(frm, cdt, cdn) {
+		frm.events.calculate_total_qty(frm);
 		frm.events.get_warehouse_details(frm, cdt, cdn);
 	},
 

@@ -159,7 +159,7 @@ def get_shift_type_timing(shift_types):
 	return shift_timing_map
 
 
-def get_employee_shift(employee, for_date=nowdate(), consider_default_shift=False, next_shift_direction=None, ignore_holidays=False):
+def get_employee_shift(employee, for_date=None, consider_default_shift=False, next_shift_direction=None, ignore_holidays=False):
 	"""Returns a Shift Type for the given employee on the given date. (excluding the holidays)
 
 	:param employee: Employee for which shift is required.
@@ -167,6 +167,8 @@ def get_employee_shift(employee, for_date=nowdate(), consider_default_shift=Fals
 	:param consider_default_shift: If set to true, default shift is taken when no shift assignment is found.
 	:param next_shift_direction: One of: None, 'forward', 'reverse'. Direction to look for next shift if shift not found on given date.
 	"""
+	for_date = getdate(for_date)
+
 	default_shift = frappe.db.get_value('Employee', employee, 'default_shift', cache=1)
 	shift_type_name = None
 
@@ -219,8 +221,9 @@ def get_employee_shift(employee, for_date=nowdate(), consider_default_shift=Fals
 
 
 def get_employee_shift_assignment(employee, for_date, consider_global_shift=False):
-	assigned_shift = None
 	for_date = getdate(for_date)
+
+	assigned_shift = None
 	args = {"employee": employee, "for_date": for_date}
 
 	employee_shift_assingment = frappe.db.sql_list("""
@@ -278,7 +281,7 @@ def get_employee_shift_timings(employee, for_timestamp=now_datetime(), consider_
 	return prev_shift, curr_shift, next_shift
 
 
-def get_shift_details(shift_type_name, for_date=nowdate()):
+def get_shift_details(shift_type_name, for_date=None):
 	"""Returns Shift Details which contain some additional information as described below.
 	'shift_details' contains the following keys:
 		'shift_type' - Object of DocType Shift Type,
@@ -292,6 +295,8 @@ def get_shift_details(shift_type_name, for_date=nowdate()):
 	"""
 	if not shift_type_name:
 		return None
+
+	for_date = getdate(for_date)
 
 	shift_type = frappe.get_cached_doc('Shift Type', shift_type_name)
 

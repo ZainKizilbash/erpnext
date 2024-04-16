@@ -145,34 +145,41 @@ frappe.query_reports["Item Prices"] = {
 
 	formatter: function(value, row, column, data, default_formatter) {
 		let original_value = value;
-		let style = {};
-		let link;
+
+		let options = {
+			link_target: "_blank",
+			css: {},
+		};
 
 		if (column.price_list) {
 			let old_rate_field = "rate_old_" + frappe.scrub(column.price_list);
 			if (data.hasOwnProperty(old_rate_field)) {
 				if (flt(original_value) < flt(data[old_rate_field])) {
-					style['color'] = 'green';
+					options.css['color'] = 'green';
 				} else if (flt(original_value) > flt(data[old_rate_field])) {
-					style['color'] = 'red';
+					options.css['color'] = 'red';
 				}
 			}
 
 			let item_price_field = "item_price_" + frappe.scrub(column.price_list);
 			if (data.hasOwnProperty(item_price_field) && data[item_price_field]) {
-				link = "/app/item-price/" + data[item_price_field];
+				options.link_href = "/app/item-price/" + data[item_price_field];
 			}
 		}
 
 		if (column.fieldname == "po_qty") {
-			link = "/app/query-report/Purchase Items To Be Received?item_code=" + data.item_code;
+			options.link_href = "/app/query-report/Purchase Items To Be Received?item_code=" + data.item_code;
 		}
 
 		if (['po_qty', 'actual_qty', 'standard_rate', 'avg_lc_rate'].includes(column.fieldname)) {
-			style['font-weight'] = 'bold';
+			options.css['font-weight'] = 'bold';
 		}
 
-		return default_formatter(value, row, column, data, {css: style, link_href: link, link_target: "_blank"});
+		if (column.fieldname == "alt_uom_size") {
+			options.always_show_decimals = 0;
+		}
+
+		return default_formatter(value, row, column, data, options);
 	},
 
 	onChange: function(new_value, column, data, rowIndex) {

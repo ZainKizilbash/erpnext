@@ -270,15 +270,29 @@ class StockEntry(TransactionController):
 			self.consumed_materials = []
 
 	def set_stock_qty(self):
+		self.total_qty = 0
+		self.total_stock_qty = 0
+		self.total_alt_uom_qty = 0
+
+		has_target_warehouse = any(d.t_warehouse for d in self.get("items") if d.t_warehouse)
+
 		for item in self.get("items"):
 			if not flt(item.conversion_factor):
 				frappe.throw(_("Row {0}: UOM Conversion Factor is mandatory").format(item.idx))
-			item.stock_qty = flt(flt(item.qty) * flt(item.conversion_factor),
-				self.precision("stock_qty", item))
+
+			item.stock_qty = flt(flt(item.qty) * flt(item.conversion_factor), item.precision("stock_qty"))
 
 			if not item.alt_uom:
 				item.alt_uom_size = 1.0
-			item.alt_uom_qty = flt(flt(item.qty) * flt(item.conversion_factor) * flt(item.alt_uom_size), item.precision("alt_uom_qty"))
+			item.alt_uom_qty = flt(flt(item.qty) * flt(item.conversion_factor) * flt(item.alt_uom_size),
+				item.precision("alt_uom_qty"))
+
+			if not has_target_warehouse or item.t_warehouse:
+				self.total_qty += flt(item.qty)
+				self.total_stock_qty += flt(item.stock_qty)
+				self.total_alt_uom_qty += flt(item.alt_uom_qty)
+
+		self.round_floats_in(self, ['total_qty', 'total_alt_uom_qty', 'total_stock_qty'])
 
 	def update_cost_in_project(self):
 		if self.work_order:
