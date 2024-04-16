@@ -29,7 +29,8 @@
   "working_hours",
   "late_entry",
   "previous_late_entry",
-  "early_exit"
+  "early_exit",
+  "previous_early_exit"
  ],
  "fields": [
   {
@@ -231,6 +232,15 @@
    "label": "Late Entry Before Modification",
    "no_copy": 1,
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "previous_status",
+   "fieldname": "previous_early_exit",
+   "fieldtype": "Check",
+   "label": "Early Exit Before Modification",
+   "no_copy": 1,
+   "read_only": 1
   }
  ],
  "icon": "fa fa-ok",
@@ -238,7 +248,7 @@
  "is_calendar_and_gantt": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2022-12-20 15:02:41.865307",
+ "modified": "2024-04-04 12:03:41.549431",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Attendance",
