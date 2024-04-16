@@ -10,6 +10,7 @@
   "valuation_method",
   "defaults_section",
   "item_group",
+  "default_rejected_warehouse",
   "column_break_6",
   "stock_uom",
   "weight_uom",
@@ -285,13 +286,19 @@
    "fieldname": "under_delivery_allowance",
    "fieldtype": "Float",
    "label": "Under Delivery Allowance (%)"
+  },
+  {
+   "fieldname": "default_rejected_warehouse",
+   "fieldtype": "Link",
+   "label": "Default Rejected Warehouse",
+   "options": "Warehouse"
   }
  ],
  "icon": "icon-cog",
  "idx": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-03-21 16:12:56.157182",
+ "modified": "2024-04-16 18:14:37.098687",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Stock Settings",

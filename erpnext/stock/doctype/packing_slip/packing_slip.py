@@ -654,6 +654,7 @@ class PackingSlip(TransactionController):
 		self.total_stock_qty = 0
 		self.total_net_weight = 0
 		self.total_tare_weight = 0
+		self.total_rejected_qty = 0
 
 		for field in self.item_table_fields:
 			for item in self.get(field):
@@ -673,6 +674,7 @@ class PackingSlip(TransactionController):
 
 				self.total_qty += item.qty
 				self.total_stock_qty += item.stock_qty
+				self.total_rejected_qty += item.get("rejected_qty") or 0
 
 				if not item.get("source_packing_slip"):
 					self.total_net_weight += flt(item.get("net_weight"))
@@ -794,6 +796,8 @@ class PackingSlip(TransactionController):
 			self.get_packing_transfer_sles(sl_entries)
 		else:
 			self.get_unpack_transfer_sles(sl_entries)
+
+		self.get_rejected_items_sles(sl_entries)
 
 		# Reverse for cancellation
 		if self.docstatus == 2:
@@ -918,6 +922,19 @@ class PackingSlip(TransactionController):
 							"dependency_percentage": d.cost_percentage
 						})
 
+			sl_entries.append(sle_in)
+
+	def get_rejected_items_sles(self, sl_entries):
+		for d in self.get("items"):
+			sle_out = self.get_sl_entries(d, {
+				"warehouse": d.source_warehouse,
+				"actual_qty": -flt(d.rejected_qty),
+			})
+			sl_entries.append(sle_out)
+			sle_in = self.get_sl_entries(d, {
+				"warehouse": frappe.db.get_single_value('Stock Settings', 'default_rejected_warehouse'),
+				"actual_qty": flt(d.rejected_qty),
+			})
 			sl_entries.append(sle_in)
 
 	def get_stock_voucher_items(self, sle_map):
