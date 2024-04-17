@@ -925,17 +925,21 @@ class PackingSlip(TransactionController):
 			sl_entries.append(sle_in)
 
 	def get_rejected_items_sles(self, sl_entries):
+		if not self.rejected_warehouse:
+			frappe.throw("Rejected warehouse is required.")
+		
 		for d in self.get("items"):
-			sle_out = self.get_sl_entries(d, {
-				"warehouse": d.source_warehouse,
-				"actual_qty": -flt(d.rejected_qty),
-			})
-			sl_entries.append(sle_out)
-			sle_in = self.get_sl_entries(d, {
-				"warehouse": frappe.db.get_single_value('Stock Settings', 'default_rejected_warehouse'),
-				"actual_qty": flt(d.rejected_qty),
-			})
-			sl_entries.append(sle_in)
+			if d.rejected_qty:
+				sle_out = self.get_sl_entries(d, {
+					"warehouse": d.source_warehouse,
+					"actual_qty": -flt(d.rejected_qty),
+				})
+				sl_entries.append(sle_out)
+				sle_in = self.get_sl_entries(d, {
+					"warehouse": self.rejected_warehouse,
+					"actual_qty": flt(d.rejected_qty),
+				})
+				sl_entries.append(sle_in)
 
 	def get_stock_voucher_items(self, sle_map):
 		return self.get("items") + self.get("packaging_items")

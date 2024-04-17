@@ -18,6 +18,25 @@ erpnext.stock.PackingSlipController = class PackingSlipController extends erpnex
 	refresh() {
 		erpnext.hide_company();
 		this.setup_buttons();
+		this.set_rejected_warehouse();
+	}
+
+	validate() {
+		// validate so rejected warehouse field should not be empty if items table has rejected qty set
+		const rejected_qty_rows = this.frm.doc.items.filter(item => item.rejected_qty > 0);
+		
+		if (rejected_qty_rows.length) {
+			this.frm.set_df_property('rejected_warehouse', 'reqd', 1);
+		} else {
+			this.frm.set_df_property('rejected_warehouse', 'reqd', 0);
+		}
+	}
+
+	set_rejected_warehouse() {
+		frappe.db.get_single_value("Stock Settings", "default_rejected_warehouse").then((value) => {
+			this.frm.doc.rejected_warehouse = value;
+			this.frm.refresh_field("rejected_warehouse");
+		});
 	}
 
 	setup_queries() {
