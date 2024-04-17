@@ -739,7 +739,10 @@ class TransactionController(StockController):
 			if self.company and self.get("customer"):
 				# get default tax template from customer master
 				from erpnext.accounts.party import set_taxes
-				self.taxes_and_charges = set_taxes(self.customer, "Customer", self.get("transaction_date") or self.get("posting_date"), self.company)
+				self.taxes_and_charges = set_taxes(self.customer, "Customer", self.get("transaction_date") or self.get("posting_date"), self.company,
+					customer_group=self.get("customer_group"), tax_category=self.get("tax_category"), transaction_type=self.get("transaction_type"),
+					cost_center=self.get("cost_center"), tax_id=self.get("tax_id"), tax_cnic=self.get("tax_cnic"), tax_strn=self.get("tax_strn"),
+					has_stin=self.get("has_stin"), billing_address=self.get("customer_address"), shipping_address=self.get("shipping_address"))
 				
 			if self.company and not self.get("taxes_and_charges"):
 				# get the default tax master
