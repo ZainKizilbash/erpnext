@@ -737,9 +737,11 @@ class TransactionController(StockController):
 
 		if (self.is_new() or self.is_pos_profile_changed()) and not self.get("taxes"):
 			if self.company and self.get("customer"):
-				# get default tax template from customer master
+				# get default tax template from bill to party master otherwise apply tax rule
 				from erpnext.accounts.party import set_taxes
-				self.taxes_and_charges = set_taxes(self.customer, "Customer", self.get("transaction_date") or self.get("posting_date"), self.company,
+				
+				bill_to_party = self.get("bill_to") if self.get("bill_to") else self.customer
+				self.taxes_and_charges = set_taxes(bill_to_party, "Customer", self.get("transaction_date") or self.get("posting_date"), self.company,
 					customer_group=self.get("customer_group"), tax_category=self.get("tax_category"), transaction_type=self.get("transaction_type"),
 					cost_center=self.get("cost_center"), tax_id=self.get("tax_id"), tax_cnic=self.get("tax_cnic"), tax_strn=self.get("tax_strn"),
 					has_stin=self.get("has_stin"), billing_address=self.get("customer_address"), shipping_address=self.get("shipping_address"))
