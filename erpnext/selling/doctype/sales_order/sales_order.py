@@ -1362,6 +1362,7 @@ def make_sales_invoice(source_name, target_doc=None, ignore_permissions=False,
 		target.flags.ignore_permissions = ignore_permissions
 		target.run_method("set_missing_values")
 		target.run_method("set_po_nos")
+		target.run_method("reset_taxes_and_charges")
 		target.run_method("calculate_taxes_and_totals")
 
 		# set the redeem loyalty points if provided via shopping cart
