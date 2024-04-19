@@ -179,6 +179,15 @@ class PackingSlip(TransactionController):
 						if flt(d.qty) < 0:
 							frappe.throw(_("Row #{0}: Item {1}, quantity must be positive number")
 								.format(d.idx, frappe.bold(d.item_code)))
+					
+					# validate packing slip item qty
+					if not self.is_unpack:
+						if (d.get("packed_qty") is not None) and (d.get("rejected_qty") is not None):
+							qty = d.packed_qty + d.rejected_qty
+							if flt(d.qty, precision=3) != flt(qty, precision=3):
+								frappe.throw(_("Row #{0}: Item {1}, quantity must be equal to sum of packed qty and rejected qty.").format(d.idx, frappe.bold(d.item_code)))
+
+
 
 	def validate_purchase_order(self):
 		if self.get("purchase_order"):
@@ -654,6 +663,7 @@ class PackingSlip(TransactionController):
 		self.total_stock_qty = 0
 		self.total_net_weight = 0
 		self.total_tare_weight = 0
+		self.total_packed_qty = 0
 		self.total_rejected_qty = 0
 
 		for field in self.item_table_fields:
@@ -674,6 +684,7 @@ class PackingSlip(TransactionController):
 
 				self.total_qty += item.qty
 				self.total_stock_qty += item.stock_qty
+				self.total_packed_qty += item.get("packed_qty") or 0
 				self.total_rejected_qty += item.get("rejected_qty") or 0
 
 				if not item.get("source_packing_slip"):
@@ -797,12 +808,12 @@ class PackingSlip(TransactionController):
 		else:
 			self.get_unpack_transfer_sles(sl_entries)
 
-		self.get_rejected_items_sles(sl_entries)
+		# self.get_rejected_items_sles(sl_entries)
 
 		# Reverse for cancellation
 		if self.docstatus == 2:
 			sl_entries.reverse()
-
+		
 		self.make_sl_entries(sl_entries, self.amended_from and 'Yes' or 'No', allow_negative_stock=allow_negative_stock)
 
 	def get_packaging_material_sles(self, sl_entries):
@@ -848,7 +859,7 @@ class PackingSlip(TransactionController):
 			# IN SLE for item contents target warehouse
 			sle_in = self.get_sl_entries(d, {
 				"warehouse": self.warehouse,
-				"actual_qty": flt(d.stock_qty),
+				"actual_qty": flt(d.packed_qty)*flt(d.conversion_factor),
 				"packing_slip": self.name,
 			})
 
@@ -873,13 +884,14 @@ class PackingSlip(TransactionController):
 						})
 
 			sl_entries.append(sle_in)
+			self.get_rejected_items_sles(sl_entries, d)
 
 	def get_unpack_transfer_sles(self, sl_entries):
 		for d in self.get("items"):
 			# Unpack OUT SLE for items contents target warehouse
 			sle_out = self.get_sl_entries(d, {
 				"warehouse": self.warehouse,
-				"actual_qty": flt(d.stock_qty),
+				"actual_qty": flt(d.packed_qty)*flt(d.conversion_factor),
 				"packing_slip": self.unpack_against,
 			})
 
@@ -890,7 +902,7 @@ class PackingSlip(TransactionController):
 					"dependent_voucher_no": self.unpack_against,
 					"dependent_voucher_detail_no": d.unpack_against_row,
 					"dependency_type": "Amount",
-					"dependency_qty_filter": "Positive",
+					"dependency_qty_filter": "Negative",
 				}]
 
 			sl_entries.append(sle_out)
@@ -898,7 +910,7 @@ class PackingSlip(TransactionController):
 			# Unpack IN SLE for item contents source warehouse
 			sle_in = self.get_sl_entries(d, {
 				"warehouse": d.source_warehouse,
-				"actual_qty": -flt(d.stock_qty),
+				"actual_qty": -flt(d.packed_qty) * flt(d.conversion_factor),
 				"packing_slip": d.get("source_packing_slip"),
 			})
 
@@ -924,23 +936,27 @@ class PackingSlip(TransactionController):
 
 			sl_entries.append(sle_in)
 
-	def get_rejected_items_sles(self, sl_entries):
-		if not self.rejected_warehouse:
-			frappe.throw("Rejected warehouse is required.")
-		
-		for d in self.get("items"):
-			if d.rejected_qty:
-				sle_out = self.get_sl_entries(d, {
-					"warehouse": d.source_warehouse,
-					"actual_qty": -flt(d.rejected_qty),
-				})
-				sl_entries.append(sle_out)
-				sle_in = self.get_sl_entries(d, {
-					"warehouse": self.rejected_warehouse,
-					"actual_qty": flt(d.rejected_qty),
-				})
-				sl_entries.append(sle_in)
+	def get_rejected_items_sles(self, sl_entries, item_row):
 
+		if item_row.get("rejected_qty"):
+			if not self.rejected_warehouse:
+				frappe.throw("Rejected warehouse is required.")
+			
+			rejected_sle_in = self.get_sl_entries(item_row, {
+				"warehouse": self.rejected_warehouse,
+				"actual_qty": flt(item_row.rejected_qty)*flt(item_row.conversion_factor),
+			})
+			
+			if self.docstatus == 1:
+				rejected_sle_in.dependencies = [{
+					"dependent_voucher_type": self.doctype,
+					"dependent_voucher_no": self.name,
+					"dependent_voucher_detail_no": item_row.name,
+					"dependency_type": "Rate",
+					"dependency_qty_filter": "Negative",
+				}]
+			sl_entries.append(rejected_sle_in)
+				
 	def get_stock_voucher_items(self, sle_map):
 		return self.get("items") + self.get("packaging_items")
 
@@ -1328,6 +1344,7 @@ def make_target_packing_slip(source_name, target_doc=None):
 def make_unpack_packing_slip(source_name, target_doc=None):
 	def update_item(source_doc, target_doc, source_parent, target_parent):
 		target_doc.qty = -1 * source_doc.qty
+		target_doc.packed_qty = -1 * source_doc.packed_qty
 
 	def update_material(source_doc, target_doc, source_parent, target_parent):
 		target_doc.qty = -1 * source_doc.qty

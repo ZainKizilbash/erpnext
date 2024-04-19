@@ -19,6 +19,13 @@ erpnext.stock.PackingSlipController = class PackingSlipController extends erpnex
 		erpnext.hide_company();
 		this.setup_buttons();
 		this.set_rejected_warehouse();
+
+		if (this.frm.is_new() && !this.frm.doc.is_unpack) {
+			this.frm.doc.items.forEach(function(item) {
+				item.packed_qty = item.qty;
+			});
+			frm.refresh_fields("items");
+		}
 	}
 
 	validate() {
@@ -334,5 +341,23 @@ erpnext.stock.PackingSlipController = class PackingSlipController extends erpnex
 		}
 	}
 };
+
+frappe.ui.form.on("Packing Slip Item", {
+	rejected_qty: function(frm, cdt, cdn) {
+		if (!frm.doc.is_unpack) {
+			const item_row = locals[cdt][cdn];
+			const qty = (item_row.packed_qty || 0) + (item_row.rejected_qty);
+			frappe.model.set_value(cdt, cdn, "qty", qty);
+		}
+	},
+
+	packed_qty: function(frm, cdt, cdn) {
+		if (!frm.doc.is_unpack) {
+			const item_row = locals[cdt][cdn];
+			const qty = (item_row.packed_qty || 0) + (item_row.rejected_qty);
+			frappe.model.set_value(cdt, cdn, "qty", qty);
+		}
+	}
+})
 
 extend_cscript(cur_frm.cscript, new erpnext.stock.PackingSlipController({frm: cur_frm}));
