@@ -179,14 +179,6 @@ class PackingSlip(TransactionController):
 						if flt(d.qty) < 0:
 							frappe.throw(_("Row #{0}: Item {1}, quantity must be positive number")
 								.format(d.idx, frappe.bold(d.item_code)))
-					
-					# validate packing slip item qty
-					if not self.is_unpack:
-						if (d.get("packed_qty") is not None) and (d.get("rejected_qty") is not None):
-							qty = d.packed_qty + d.rejected_qty
-							if flt(d.qty, precision=3) != flt(qty, precision=3):
-								frappe.throw(_("Row #{0}: Item {1}, quantity must be equal to sum of packed qty and rejected qty.").format(d.idx, frappe.bold(d.item_code)))
-
 
 
 	def validate_purchase_order(self):
@@ -671,6 +663,8 @@ class PackingSlip(TransactionController):
 				self.round_floats_in(item,
 					excluding=['net_weight_per_unit', 'tare_weight_per_unit', 'gross_weight_per_unit'])
 
+				if field == "items" and not self.is_unpack:
+					item.qty = item.packed_qty + item.rejected_qty
 				item.stock_qty = item.qty * item.conversion_factor
 
 				if item.meta.has_field("net_weight_per_unit"):
@@ -869,7 +863,8 @@ class PackingSlip(TransactionController):
 					"dependent_voucher_type": self.doctype,
 					"dependent_voucher_no": self.name,
 					"dependent_voucher_detail_no": d.name,
-					"dependency_type": "Amount",
+					"dependency_type": "Rate",
+					"dependency_qty_filter": "Negative"
 				}]
 
 				# Include Consumed Packaging Material in Valaution
@@ -901,7 +896,7 @@ class PackingSlip(TransactionController):
 					"dependent_voucher_type": self.doctype,
 					"dependent_voucher_no": self.unpack_against,
 					"dependent_voucher_detail_no": d.unpack_against_row,
-					"dependency_type": "Amount",
+					"dependency_type": "Rate",
 					"dependency_qty_filter": "Negative",
 				}]
 
