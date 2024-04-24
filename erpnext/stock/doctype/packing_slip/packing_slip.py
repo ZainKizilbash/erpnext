@@ -652,7 +652,6 @@ class PackingSlip(TransactionController):
 	def calculate_totals(self):
 		self.total_qty = 0
 		self.total_stock_qty = 0
-		self.total_packed_qty = 0
 		self.total_rejected_qty = 0
 		self.total_net_weight = 0
 		self.total_tare_weight = 0
@@ -664,9 +663,6 @@ class PackingSlip(TransactionController):
 
 				if self.is_unpack or item.source_packing_slip:
 					item.rejected_qty = 0
-
-				if field == "items":
-					item.qty = item.packed_qty + item.rejected_qty
 
 				item.stock_qty = item.qty * item.conversion_factor
 
@@ -681,7 +677,6 @@ class PackingSlip(TransactionController):
 
 				self.total_qty += item.qty
 				self.total_stock_qty += item.stock_qty
-				self.total_packed_qty += item.packed_qty
 				self.total_rejected_qty += item.rejected_qty
 
 				if not item.get("source_packing_slip"):
@@ -697,7 +692,7 @@ class PackingSlip(TransactionController):
 				self.total_tare_weight += d.tare_weight
 
 		self.round_floats_in(self, [
-			'total_qty', 'total_stock_qty', 'total_packed_qty', 'total_rejected_qty', 'total_net_weight', 'total_tare_weight',
+			'total_qty', 'total_stock_qty', 'total_rejected_qty', 'total_net_weight', 'total_tare_weight',
 		])
 		self.total_gross_weight = flt(self.total_net_weight + self.total_tare_weight, self.precision("total_gross_weight"))
 
@@ -835,9 +830,10 @@ class PackingSlip(TransactionController):
 	def get_packing_transfer_sles(self, sl_entries):
 		for d in self.get("items"):
 			# OUT SLE for items contents source warehouse
+			outgoing_qty = flt(d.stock_qty) + flt(d.rejected_qty) * flt(d.conversion_factor)
 			sle_out = self.get_sl_entries(d, {
 				"warehouse": d.source_warehouse,
-				"actual_qty": -flt(d.stock_qty),
+				"actual_qty": -outgoing_qty,
 				"packing_slip": d.get("source_packing_slip"),
 			})
 
@@ -856,7 +852,7 @@ class PackingSlip(TransactionController):
 			# IN SLE for item contents target warehouse
 			sle_in = self.get_sl_entries(d, {
 				"warehouse": self.warehouse,
-				"actual_qty": flt(d.packed_qty)*flt(d.conversion_factor),
+				"actual_qty": flt(d.stock_qty),
 				"packing_slip": self.name,
 			})
 
@@ -910,7 +906,7 @@ class PackingSlip(TransactionController):
 			# Unpack OUT SLE for items contents target warehouse
 			sle_out = self.get_sl_entries(d, {
 				"warehouse": self.warehouse,
-				"actual_qty": flt(d.packed_qty) * flt(d.conversion_factor),
+				"actual_qty": flt(d.stock_qty),
 				"packing_slip": self.unpack_against,
 			})
 
@@ -929,7 +925,7 @@ class PackingSlip(TransactionController):
 			# Unpack IN SLE for item contents source warehouse
 			sle_in = self.get_sl_entries(d, {
 				"warehouse": d.source_warehouse,
-				"actual_qty": -flt(d.packed_qty) * flt(d.conversion_factor),
+				"actual_qty": -flt(d.stock_qty),
 				"packing_slip": d.get("source_packing_slip"),
 			})
 
@@ -1343,7 +1339,6 @@ def make_target_packing_slip(source_name, target_doc=None):
 def make_unpack_packing_slip(source_name, target_doc=None):
 	def update_item(source_doc, target_doc, source_parent, target_parent):
 		target_doc.qty = -1 * source_doc.qty
-		target_doc.packed_qty = -1 * source_doc.packed_qty
 
 	def update_material(source_doc, target_doc, source_parent, target_parent):
 		target_doc.qty = -1 * source_doc.qty

@@ -1274,10 +1274,6 @@ def make_packing_slip(source_name, target_doc=None, warehouse=None):
 
 		update_mapped_items_based_on_purchase_and_production(source, target)
 		
-		# update packing slip items packed qty from packing slip items qty field
-		for d in target.get("items"):
-			d.packed_qty = d.qty
-		
 		target.run_method("set_missing_values")
 		target.run_method("calculate_totals")
 

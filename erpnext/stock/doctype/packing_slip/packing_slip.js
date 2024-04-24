@@ -114,14 +114,9 @@ erpnext.stock.PackingSlipController = class PackingSlipController extends erpnex
 		this.calculate_totals();
 	}
 
-	packed_qty() {
-		this.calculate_totals();
-	}
-
 	calculate_totals() {
 		this.frm.doc.total_qty = 0;
 		this.frm.doc.total_stock_qty = 0;
-		this.frm.doc.total_packed_qty = 0;
 		this.frm.doc.total_rejected_qty = 0;
 		this.frm.doc.total_net_weight = 0;
 		this.frm.doc.total_tare_weight = 0;
@@ -133,10 +128,6 @@ erpnext.stock.PackingSlipController = class PackingSlipController extends erpnex
 
 				if (this.frm.doc.is_unpack || item.source_packing_slip) {
 					item.rejected_qty = 0;
-				}
-
-				if (field == "items") {
-					item.qty = item.packed_qty + item.rejected_qty;
 				}
 
 				item.stock_qty = item.qty * item.conversion_factor;
@@ -156,7 +147,6 @@ erpnext.stock.PackingSlipController = class PackingSlipController extends erpnex
 
 				this.frm.doc.total_qty += item.qty;
 				this.frm.doc.total_stock_qty += item.stock_qty;
-				this.frm.doc.total_packed_qty += item.packed_qty;
 				this.frm.doc.total_rejected_qty += item.rejected_qty;
 
 				if (!item.source_packing_slip) {
@@ -177,7 +167,7 @@ erpnext.stock.PackingSlipController = class PackingSlipController extends erpnex
 		}
 
 		frappe.model.round_floats_in(this.frm.doc, [
-			'total_qty', 'total_stock_qty', 'total_packed_qty', 'total_rejected_qty', 'total_net_weight', 'total_tare_weight',
+			'total_qty', 'total_stock_qty', 'total_rejected_qty', 'total_net_weight', 'total_tare_weight',
 		]);
 		this.frm.doc.total_gross_weight = flt(this.frm.doc.total_net_weight + this.frm.doc.total_tare_weight,
 			precision("total_gross_weight"));
