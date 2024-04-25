@@ -113,6 +113,7 @@ class VehicleServiceFeedback:
 			conditions.append("""im.item_group in (select name from `tabItem Group`
 				where lft>=%s and rgt<=%s and docstatus<2)""" % (lft, rgt))
 
+		conditions.append("""ro.project_type != 'Internal'""" )
 		if self.filters.get("project_type"):
 			conditions.append("ro.project_type = %(project_type)s")
 
