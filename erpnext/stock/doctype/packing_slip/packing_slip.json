@@ -49,6 +49,8 @@
   "total_stock_qty",
   "column_break_lemhl",
   "total_rejected_qty",
+  "column_break_1nwz3",
+  "total_stock_rejected_qty",
   "packaging_material_section",
   "packaging_items",
   "package_weight_details",
@@ -441,13 +443,24 @@
   {
    "fieldname": "column_break_lemhl",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_1nwz3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "total_rejected_qty",
+   "fieldname": "total_stock_rejected_qty",
+   "fieldtype": "Float",
+   "label": "Total Stock Rejected Qty",
+   "read_only": 1
   }
  ],
  "icon": "fa fa-suitcase",
  "idx": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-04-24 18:31:11.739671",
+ "modified": "2024-04-25 11:33:52.436391",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Packing Slip",

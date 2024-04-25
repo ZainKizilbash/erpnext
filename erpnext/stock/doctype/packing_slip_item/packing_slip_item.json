@@ -29,6 +29,7 @@
   "stock_qty",
   "stock_uom",
   "rejected_qty",
+  "stock_rejected_qty",
   "weight_section",
   "net_weight_per_unit",
   "net_weight",
@@ -412,12 +413,18 @@
    "fieldtype": "Float",
    "label": "Rejected Qty",
    "non_negative": 1
+  },
+  {
+   "fieldname": "stock_rejected_qty",
+   "fieldtype": "Float",
+   "label": "Stock Rejected Qty",
+   "non_negative": 1
   }
  ],
  "idx": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-04-16 18:16:23.273128",
+ "modified": "2024-04-25 11:35:15.366904",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Packing Slip Item",

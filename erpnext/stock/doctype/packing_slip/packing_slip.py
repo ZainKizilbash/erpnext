@@ -653,6 +653,7 @@ class PackingSlip(TransactionController):
 		self.total_qty = 0
 		self.total_stock_qty = 0
 		self.total_rejected_qty = 0
+		self.total_stock_rejected_qty = 0
 		self.total_net_weight = 0
 		self.total_tare_weight = 0
 
@@ -665,6 +666,7 @@ class PackingSlip(TransactionController):
 					item.rejected_qty = 0
 
 				item.stock_qty = item.qty * item.conversion_factor
+				item.stock_rejected_qty = item.rejected_qty * item.conversion_factor
 
 				if item.meta.has_field("net_weight_per_unit"):
 					item.net_weight = flt(item.net_weight_per_unit * item.stock_qty, item.precision("net_weight"))
@@ -678,6 +680,7 @@ class PackingSlip(TransactionController):
 				self.total_qty += item.qty
 				self.total_stock_qty += item.stock_qty
 				self.total_rejected_qty += item.rejected_qty
+				self.total_stock_rejected_qty += item.stock_rejected_qty
 
 				if not item.get("source_packing_slip"):
 					self.total_net_weight += flt(item.get("net_weight"))
@@ -692,7 +695,7 @@ class PackingSlip(TransactionController):
 				self.total_tare_weight += d.tare_weight
 
 		self.round_floats_in(self, [
-			'total_qty', 'total_stock_qty', 'total_rejected_qty', 'total_net_weight', 'total_tare_weight',
+			'total_qty', 'total_stock_qty', 'total_rejected_qty', 'total_stock_rejected_qty', 'total_net_weight', 'total_tare_weight',
 		])
 		self.total_gross_weight = flt(self.total_net_weight + self.total_tare_weight, self.precision("total_gross_weight"))
 
