@@ -833,7 +833,7 @@ class PackingSlip(TransactionController):
 	def get_packing_transfer_sles(self, sl_entries):
 		for d in self.get("items"):
 			# OUT SLE for items contents source warehouse
-			outgoing_qty = flt(d.stock_qty) + flt(d.rejected_qty) * flt(d.conversion_factor)
+			outgoing_qty = flt(d.stock_qty) + flt(d.stock_rejected_qty)
 			sle_out = self.get_sl_entries(d, {
 				"warehouse": d.source_warehouse,
 				"actual_qty": -outgoing_qty,
@@ -889,7 +889,7 @@ class PackingSlip(TransactionController):
 
 				rejected_sle_in = self.get_sl_entries(d, {
 					"warehouse": self.rejected_warehouse,
-					"actual_qty": flt(d.rejected_qty) * flt(d.conversion_factor),
+					"actual_qty": flt(d.stock_rejected_qty),
 				})
 
 				if self.docstatus == 1:
@@ -1322,6 +1322,7 @@ def make_target_packing_slip(source_name, target_doc=None):
 			"expense_account",
 			"cost_center",
 			"rejected_qty",
+			"stock_rejected_qty",
 		]
 	}
 
@@ -1362,7 +1363,11 @@ def make_unpack_packing_slip(source_name, target_doc=None):
 				"warehouse": "warehouse",
 				"package_type": "package_type",
 				"purchase_order": "purchase_order",
-			}
+			},
+			"field_no_map": [
+				"total_rejected_qty",
+				"total_stock_rejected_qty",
+			]
 		},
 		"Packing Slip Item": {
 			"doctype": "Packing Slip Item",
@@ -1381,6 +1386,7 @@ def make_unpack_packing_slip(source_name, target_doc=None):
 			},
 			"field_no_map": [
 				"rejected_qty",
+				"stock_rejected_qty",
 			],
 			"postprocess": update_item
 		},
