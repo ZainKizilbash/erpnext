@@ -674,7 +674,8 @@ class Project(StatusUpdaterERP):
 		if self.get('appointment'):
 			return
 
-		appointment_required = self.project_type != "Internal" and frappe.get_cached_value("Projects Settings", None, "appointment_required")
+		project_type = frappe.get_cached_doc("Project Type", self.project_type)
+		appointment_required = project_type.is_internal != "Yes" and frappe.get_cached_value("Projects Settings", None, "appointment_required")
 		appointment_bypassed = self.project_type and frappe.get_cached_value("Project Type", self.project_type, "appointment_not_required")
 
 		if appointment_required and not appointment_bypassed:
