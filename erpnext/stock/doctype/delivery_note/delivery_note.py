@@ -121,17 +121,19 @@ class DeliveryNote(SellingController):
 		super().set_missing_values(for_validate=for_validate)
 		self.set_skip_sales_invoice()
 
-	def set_skip_sales_invoice(self):
+	def set_skip_sales_invoice(self, update=False, update_modified=True):
 		for d in self.get("items"):
-			self.set_skip_sales_invoice_for_row(d)
+			self.set_skip_sales_invoice_for_row(d, update=update, update_modified=update_modified)
 
-		self.set_skip_sales_invoice_for_delivery_note()
+		self.set_skip_sales_invoice_for_delivery_note(update=update, update_modified=update_modified)
 
 	def set_skip_sales_invoice_for_row(self, row, update=False, update_modified=True):
 		if row.item_code:
 			hooked_skip_sales_invoice = self.run_method("get_skip_sales_invoice", row)
 			if hooked_skip_sales_invoice is not None:
 				row.skip_sales_invoice = 1 if hooked_skip_sales_invoice else 0
+			else:
+				row.skip_sales_invoice = 0
 		else:
 			row.skip_sales_invoice = 0
 
@@ -687,6 +689,7 @@ def make_sales_invoice(source_name, target_doc=None, only_items=None, skip_postp
 		target.update_stock = 0
 		target.run_method("set_missing_values")
 		target.run_method("set_po_nos")
+		target.run_method("reset_taxes_and_charges")
 		target.run_method("calculate_taxes_and_totals")
 
 	mapping = {
