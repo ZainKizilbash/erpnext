@@ -54,7 +54,6 @@ class VehicleServiceFeedback:
 			LEFT JOIN `tabItem` im ON im.name = ro.applies_to_item
 			LEFT JOIN `tabCustomer` c ON c.name = ro.customer
 			LEFT JOIN `tabCustomer Feedback` cf ON cf.reference_doctype = 'Project' AND cf.reference_name = ro.name
-			LEFT JOIN `tabProject Type` pt ON pt.name = ro.project_type
 			WHERE
 				{date_field} BETWEEN %(from_date)s AND %(to_date)s
 				AND vgp.docstatus = 1
