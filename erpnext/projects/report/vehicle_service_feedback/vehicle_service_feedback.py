@@ -54,6 +54,7 @@ class VehicleServiceFeedback:
 			LEFT JOIN `tabItem` im ON im.name = ro.applies_to_item
 			LEFT JOIN `tabCustomer` c ON c.name = ro.customer
 			LEFT JOIN `tabCustomer Feedback` cf ON cf.reference_doctype = 'Project' AND cf.reference_name = ro.name
+			LEFT JOIN `tabProject Type` pt ON pt.name = ro.project_type
 			WHERE
 				{date_field} BETWEEN %(from_date)s AND %(to_date)s
 				AND vgp.docstatus = 1
@@ -113,7 +114,7 @@ class VehicleServiceFeedback:
 			conditions.append("""im.item_group in (select name from `tabItem Group`
 				where lft>=%s and rgt<=%s and docstatus<2)""" % (lft, rgt))
 
-		conditions.append("""ro.project_type in (select project_type from `tabProject Type`
+		conditions.append("""ro.project_type in (select name from `tabProject Type`
 			where is_internal != 'Yes')""")
 		if self.filters.get("project_type"):
 			conditions.append("ro.project_type = %(project_type)s")
