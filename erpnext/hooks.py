@@ -358,6 +358,7 @@ scheduler_events = {
 		"erpnext.vehicles.doctype.vehicle_booking_order.vehicle_booking_order.send_vehicle_anniversary_notifications",
 		"erpnext.maintenance.doctype.maintenance_schedule.maintenance_schedule.send_maintenance_schedule_reminder_notifications",
 		"erpnext.selling.doctype.customer.customer.send_customer_birthday_notifications",
+		"erpnext.maintenance.doctype.maintenance_schedule.maintenance_schedule.generate_maintenance_schedule"
 	],
 	"hourly": [
 		'erpnext.hr.doctype.daily_work_summary_group.daily_work_summary_group.trigger_emails',
@@ -397,7 +398,7 @@ scheduler_events = {
 		"erpnext.setup.doctype.email_digest.email_digest.send",
 		"erpnext.manufacturing.doctype.bom_update_tool.bom_update_tool.update_latest_price_in_all_boms",
 		"erpnext.hr.doctype.leave_ledger_entry.leave_ledger_entry.process_expired_allocation",
-		"erpnext.hr.doctype.leave_encashment.leave_encashment.generate_leave_encashment"
+		"erpnext.hr.doctype.leave_encashment.leave_encashment.generate_leave_encashment",
 	],
 	"monthly_long": [
 		"erpnext.accounts.deferred_revenue.convert_deferred_revenue_to_income",

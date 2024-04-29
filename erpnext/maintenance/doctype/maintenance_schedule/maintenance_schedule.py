@@ -1,11 +1,12 @@
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
+import datetime
 import frappe
 from frappe import _
 from erpnext.utilities.transaction_base import TransactionBase
 from dateutil.relativedelta import relativedelta
-from frappe.utils import add_days, getdate, get_time, now_datetime, combine_datetime, cstr, cint
+from frappe.utils import add_days, getdate, get_time, now_datetime, combine_datetime, add_to_date, cstr, cint
 from frappe.contacts.doctype.contact.contact import get_default_contact
 from erpnext.accounts.party import get_contact_details
 from frappe.core.doctype.sms_settings.sms_settings import enqueue_template_sms
@@ -147,6 +148,47 @@ def schedule_next_project_template(project_template, serial_no, args):
 
 		doc.append('schedules', schedule)
 		doc.save(ignore_permissions=True)
+	else:
+		for schedule in doc.schedules:
+			if schedule.project_template == template_details.next_project_template:
+				schedule.reference_doctype = args.reference_doctype
+				schedule.reference_name = args.reference_name
+				schedule.reference_date = getdate(args.reference_date)
+				schedule.scheduled_date = schedule.reference_date + relativedelta(months=template_details.next_due_after)
+
+				doc.save(ignore_permissions=True)
+
+
+def generate_maintenance_schedule():
+	for_date = getdate()
+	target_date = add_to_date(date=for_date, days=-1, as_string=True)
+
+	schedule_data = frappe.db.sql("""
+		select ms.serial_no
+		from `tabMaintenance Schedule Detail` msd
+		inner join `tabMaintenance Schedule` ms on ms.name = msd.parent
+		where ms.status = 'Active' and msd.scheduled_date = %s
+	""", target_date, as_dict=1)
+
+	for schedule in schedule_data:
+		doc = get_maintenance_schedule_doc(schedule.serial_no)
+		last_maintenance_schedule = doc.schedules[-1]
+		last_schedule_date = getdate(last_maintenance_schedule.scheduled_date)
+		if last_schedule_date < getdate():
+			next_schedule = frappe._dict({
+			'reference_date': getdate(last_maintenance_schedule.reference_date)
+			})
+
+			template_details = frappe.db.get_value("Project Template", last_maintenance_schedule.project_template, ["next_due_after", "next_project_template"], as_dict=1)
+			if not template_details or not template_details.next_due_after or not template_details.next_project_template:
+				return
+
+			next_schedule.project_template = template_details.next_project_template
+			next_schedule.scheduled_date = last_maintenance_schedule.reference_date + relativedelta(months=2*template_details.next_due_after)
+
+			doc.append('schedules', next_schedule)
+			doc.save(ignore_permissions=True)
+			frappe.db.commit()
 
 
 def schedule_project_templates_after_delivery(serial_no, args):
