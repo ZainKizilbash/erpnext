@@ -303,7 +303,7 @@ def set_missing_values(source, target_doc):
 def update_item(obj, target, source_parent, target_parent):
 	target.conversion_factor = obj.conversion_factor
 	target.qty = flt(flt(obj.stock_qty) - flt(obj.ordered_qty))/ target.conversion_factor
-	target.stock_qty = (target.qty * target.conversion_factor)
+	target.stock_qty = flt(target.qty * target.conversion_factor, 6)
 	if getdate(target.schedule_date) < getdate(nowdate()):
 		target.schedule_date = None
 
@@ -507,7 +507,7 @@ def make_stock_entry(source_name, target_doc=None):
 		qty = flt(flt(obj.stock_qty) - flt(obj.ordered_qty))/ target.conversion_factor \
 			if flt(obj.stock_qty) > flt(obj.ordered_qty) else 0
 		target.qty = qty
-		target.stock_qty = qty * obj.conversion_factor
+		target.stock_qty = flt(qty * obj.conversion_factor, 6)
 		target.conversion_factor = obj.conversion_factor
 
 		if source_parent.material_request_type == "Material Transfer" or source_parent.material_request_type == "Customer Provided":

@@ -218,7 +218,7 @@ erpnext.taxes_and_totals = class TaxesAndTotals extends erpnext.payments {
 
 				// Stock Qty
 				if (frappe.meta.has_field(item.doctype, "stock_qty") && frappe.meta.has_field(item.doctype, "conversion_factor")) {
-					item.stock_qty = item.qty * flt(item.conversion_factor);
+					item.stock_qty = flt(item.qty * flt(item.conversion_factor), 6);
 				}
 				let stock_qty = frappe.meta.has_field(item.doctype, "stock_qty") ? item.stock_qty : item.qty;
 

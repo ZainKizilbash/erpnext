@@ -1299,7 +1299,7 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 		let item = frappe.get_doc(cdt, cdn);
 
 		frappe.model.round_floats_in(item, ["qty", "conversion_factor"]);
-		item.stock_qty = flt(item.qty * item.conversion_factor);
+		item.stock_qty = flt(item.qty * item.conversion_factor, 6);
 
 		if(doc.doctype == "Material Request") {
 			this.calculate_total_qty();

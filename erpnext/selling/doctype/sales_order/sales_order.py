@@ -958,7 +958,6 @@ def make_purchase_invoice(supplier, source_name, target_doc=None):
 		target.price_list_rate = 0
 		target.rate = 0
 		target.qty = flt(source.qty) - flt(source.ordered_qty)
-		target.stock_qty = (flt(source.qty) - flt(source.ordered_qty)) * flt(source.conversion_factor)
 		target.project = source_parent.project
 
 	doc = get_mapped_doc("Sales Order", source_name, {

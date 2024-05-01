@@ -665,8 +665,8 @@ class PackingSlip(TransactionController):
 				if self.is_unpack or item.source_packing_slip:
 					item.rejected_qty = 0
 
-				item.stock_qty = item.qty * item.conversion_factor
-				item.stock_rejected_qty = item.rejected_qty * item.conversion_factor
+				item.stock_qty = flt(item.qty * item.conversion_factor, 6)
+				item.stock_rejected_qty = flt(item.rejected_qty * item.conversion_factor, 6)
 
 				if item.meta.has_field("net_weight_per_unit"):
 					item.net_weight = flt(item.net_weight_per_unit * item.stock_qty, item.precision("net_weight"))
@@ -1229,7 +1229,7 @@ def get_item_details(args):
 			out.uom = args.uom
 			out.conversion_factor = flt(conversion.get("conversion_factor"))
 
-	out.stock_qty = out.qty * out.conversion_factor
+	out.stock_qty = flt(out.qty * out.conversion_factor, 6)
 
 	# Weight Per Unit
 	out.net_weight_per_unit = flt(args.net_weight_per_unit) or get_weight_per_unit(item.name,

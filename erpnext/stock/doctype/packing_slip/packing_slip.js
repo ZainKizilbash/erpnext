@@ -137,8 +137,8 @@ erpnext.stock.PackingSlipController = class PackingSlipController extends erpnex
 					item.rejected_qty = 0;
 				}
 
-				item.stock_qty = item.qty * item.conversion_factor;
-				item.stock_rejected_qty = item.rejected_qty * item.conversion_factor; 
+				item.stock_qty = flt(item.qty * item.conversion_factor, 6);
+				item.stock_rejected_qty = flt(item.rejected_qty * item.conversion_factor, 6);
 
 				if (frappe.meta.has_field(item.doctype, "net_weight_per_unit")) {
 					item.net_weight = flt(item.net_weight_per_unit * item.stock_qty, precision("net_weight", item));

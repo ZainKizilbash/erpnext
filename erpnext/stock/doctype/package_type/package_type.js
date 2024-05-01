@@ -26,7 +26,7 @@ erpnext.stock.PackageTypeController = class PackageTypeController extends erpnex
 
 		for (let item of this.frm.doc.packaging_items || []) {
 			frappe.model.round_floats_in(item, null, ['tare_weight_per_unit']);
-			item.stock_qty = item.qty * item.conversion_factor;
+			item.stock_qty = flt(item.qty * item.conversion_factor, 6);
 			item.tare_weight = flt(item.tare_weight_per_unit * item.stock_qty, precision("tare_weight", item));
 
 			this.frm.doc.total_tare_weight += item.tare_weight;

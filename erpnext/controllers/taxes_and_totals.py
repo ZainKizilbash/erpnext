@@ -177,7 +177,7 @@ class calculate_taxes_and_totals(object):
 
 				# Stock Qty
 				if item.meta.has_field("stock_qty") and item.meta.has_field("conversion_factor"):
-					item.stock_qty = item.qty * flt(item.conversion_factor)
+					item.stock_qty = flt(item.qty * flt(item.conversion_factor), 6)
 				stock_qty = item.stock_qty if item.meta.has_field("stock_qty") else item.qty
 
 				# Net Weight
