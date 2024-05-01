@@ -42,6 +42,7 @@ class PackingSlip(TransactionController):
 		self.validate_uom_is_integer("stock_uom", "stock_qty")
 		self.validate_uom_is_integer("uom", "qty")
 		self.calculate_totals()
+		self.validate_qty()
 		self.validate_weights()
 		self.set_cost_percentage()
 		self.set_packed_items()
@@ -168,18 +169,6 @@ class PackingSlip(TransactionController):
 						frappe.throw(_("Row #{0}: {1} is not a stock Item")
 							.format(d.idx, frappe.bold(d.item_code)))
 
-					if not flt(d.qty):
-						frappe.throw(_("Row #{0}: Item {1}, Quantity cannot be 0").format(d.idx, frappe.bold(d.item_code)))
-
-					if self.is_unpack:
-						if flt(d.qty) > 0:
-							frappe.throw(_("Row #{0}: Item {1}, quantity must be negative number for unpacking")
-							.format(d.idx, frappe.bold(d.item_code)))
-					else:
-						if flt(d.qty) < 0:
-							frappe.throw(_("Row #{0}: Item {1}, quantity must be positive number")
-								.format(d.idx, frappe.bold(d.item_code)))
-
 	def validate_purchase_order(self):
 		if self.get("purchase_order"):
 			self.customer = None
@@ -222,6 +211,20 @@ class PackingSlip(TransactionController):
 				d.purchase_order_item = None
 				d.subcontracted_item = None
 				d.subcontracted_item_name = None
+
+	def validate_qty(self):
+		for d in self.items:
+			if not flt(d.qty):
+				frappe.throw(_("Row #{0}: Item {1}, Quantity cannot be 0").format(d.idx, frappe.bold(d.item_code)))
+
+			if self.is_unpack:
+				if flt(d.qty) > 0:
+					frappe.throw(_("Row #{0}: Item {1}, quantity must be negative number for unpacking")
+					.format(d.idx, frappe.bold(d.item_code)))
+			else:
+				if flt(d.qty) < 0 or flt(d.rejected_qty) < 0:
+					frappe.throw(_("Row #{0}: Item {1}, quantity must be positive number")
+					.format(d.idx, frappe.bold(d.item_code)))
 
 	def validate_weights(self):
 		weight_fields = ["net_weight", "tare_weight", "gross_weight"]
