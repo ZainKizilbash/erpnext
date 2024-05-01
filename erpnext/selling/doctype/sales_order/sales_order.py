@@ -1275,7 +1275,7 @@ def make_packing_slip(source_name, target_doc=None, warehouse=None):
 				target.determine_warehouse_from_sales_order()
 
 		update_mapped_items_based_on_purchase_and_production(source, target)
-
+		
 		target.run_method("set_missing_values")
 		target.run_method("calculate_totals")
 

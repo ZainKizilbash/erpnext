@@ -652,6 +652,8 @@ class PackingSlip(TransactionController):
 	def calculate_totals(self):
 		self.total_qty = 0
 		self.total_stock_qty = 0
+		self.total_rejected_qty = 0
+		self.total_stock_rejected_qty = 0
 		self.total_net_weight = 0
 		self.total_tare_weight = 0
 
@@ -660,7 +662,11 @@ class PackingSlip(TransactionController):
 				self.round_floats_in(item,
 					excluding=['net_weight_per_unit', 'tare_weight_per_unit', 'gross_weight_per_unit'])
 
+				if self.is_unpack or item.source_packing_slip:
+					item.rejected_qty = 0
+
 				item.stock_qty = item.qty * item.conversion_factor
+				item.stock_rejected_qty = item.rejected_qty * item.conversion_factor
 
 				if item.meta.has_field("net_weight_per_unit"):
 					item.net_weight = flt(item.net_weight_per_unit * item.stock_qty, item.precision("net_weight"))
@@ -673,6 +679,8 @@ class PackingSlip(TransactionController):
 
 				self.total_qty += item.qty
 				self.total_stock_qty += item.stock_qty
+				self.total_rejected_qty += item.rejected_qty
+				self.total_stock_rejected_qty += item.stock_rejected_qty
 
 				if not item.get("source_packing_slip"):
 					self.total_net_weight += flt(item.get("net_weight"))
@@ -686,7 +694,9 @@ class PackingSlip(TransactionController):
 				self.total_net_weight += d.net_weight
 				self.total_tare_weight += d.tare_weight
 
-		self.round_floats_in(self, ['total_qty', 'total_stock_qty', 'total_net_weight', 'total_tare_weight'])
+		self.round_floats_in(self, [
+			'total_qty', 'total_stock_qty', 'total_rejected_qty', 'total_stock_rejected_qty', 'total_net_weight', 'total_tare_weight',
+		])
 		self.total_gross_weight = flt(self.total_net_weight + self.total_tare_weight, self.precision("total_gross_weight"))
 
 	def set_target_warehouse_as_source_warehouse(self):
@@ -798,7 +808,7 @@ class PackingSlip(TransactionController):
 		# Reverse for cancellation
 		if self.docstatus == 2:
 			sl_entries.reverse()
-
+		
 		self.make_sl_entries(sl_entries, self.amended_from and 'Yes' or 'No', allow_negative_stock=allow_negative_stock)
 
 	def get_packaging_material_sles(self, sl_entries):
@@ -823,9 +833,10 @@ class PackingSlip(TransactionController):
 	def get_packing_transfer_sles(self, sl_entries):
 		for d in self.get("items"):
 			# OUT SLE for items contents source warehouse
+			outgoing_qty = flt(d.stock_qty) + flt(d.stock_rejected_qty)
 			sle_out = self.get_sl_entries(d, {
 				"warehouse": d.source_warehouse,
-				"actual_qty": -flt(d.stock_qty),
+				"actual_qty": -outgoing_qty,
 				"packing_slip": d.get("source_packing_slip"),
 			})
 
@@ -854,7 +865,8 @@ class PackingSlip(TransactionController):
 					"dependent_voucher_type": self.doctype,
 					"dependent_voucher_no": self.name,
 					"dependent_voucher_detail_no": d.name,
-					"dependency_type": "Amount",
+					"dependency_type": "Rate",
+					"dependency_qty_filter": "Negative"
 				}]
 
 				# Include Consumed Packaging Material in Valaution
@@ -869,6 +881,28 @@ class PackingSlip(TransactionController):
 						})
 
 			sl_entries.append(sle_in)
+
+			# IN SLE for rejected qty
+			if d.rejected_qty:
+				if not self.rejected_warehouse:
+					frappe.throw(_("Row #{0}: Rejected Warehouse is required for rejected packing").format(d.idx))
+
+				rejected_sle_in = self.get_sl_entries(d, {
+					"warehouse": self.rejected_warehouse,
+					"actual_qty": flt(d.stock_rejected_qty),
+				})
+
+				if self.docstatus == 1:
+					rejected_sle_in.dependencies = [{
+						"dependent_voucher_type": self.doctype,
+						"dependent_voucher_no": self.name,
+						"dependent_voucher_detail_no": d.name,
+						"dependency_type": "Rate",
+						"dependency_qty_filter": "Negative",
+					}]
+
+				sl_entries.append(rejected_sle_in)
+
 
 	def get_unpack_transfer_sles(self, sl_entries):
 		for d in self.get("items"):
@@ -1287,6 +1321,8 @@ def make_target_packing_slip(source_name, target_doc=None):
 			"source_warehouse",
 			"expense_account",
 			"cost_center",
+			"rejected_qty",
+			"stock_rejected_qty",
 		]
 	}
 
@@ -1327,7 +1363,11 @@ def make_unpack_packing_slip(source_name, target_doc=None):
 				"warehouse": "warehouse",
 				"package_type": "package_type",
 				"purchase_order": "purchase_order",
-			}
+			},
+			"field_no_map": [
+				"total_rejected_qty",
+				"total_stock_rejected_qty",
+			]
 		},
 		"Packing Slip Item": {
 			"doctype": "Packing Slip Item",
@@ -1344,6 +1384,10 @@ def make_unpack_packing_slip(source_name, target_doc=None):
 				"serial_no": "serial_no",
 				"source_warehouse": "source_warehouse",
 			},
+			"field_no_map": [
+				"rejected_qty",
+				"stock_rejected_qty",
+			],
 			"postprocess": update_item
 		},
 		"Packing Slip Packaging Material": {

@@ -29,6 +29,7 @@ class StockSettings(Document):
 			"restrict_stock_valuation_to_role",
 			"allow_negative_stock",
 			"default_warehouse",
+			"default_rejected_warehouse",
 			"set_qty_in_transactions_based_on_serial_no_input",
 		]
 		for key in global_default_fields:
