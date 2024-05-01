@@ -45,7 +45,7 @@ class PackageType(Document):
 
 		for item in self.get("packaging_items"):
 			self.round_floats_in(item, excluding=['tare_weight_per_unit'])
-			item.stock_qty = item.qty * item.conversion_factor
+			item.stock_qty = flt(item.qty * item.conversion_factor, 6)
 			item.tare_weight = flt(item.tare_weight_per_unit * item.stock_qty, item.precision("tare_weight"))
 
 			self.total_tare_weight += item.tare_weight

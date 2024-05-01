@@ -814,7 +814,7 @@ class BuyingController(TransactionController):
 				# Conversion factor should not be mandatory for non itemized items
 				if not d.conversion_factor and d.item_code:
 					frappe.throw(_("Row {0}: Conversion Factor is mandatory").format(d.idx))
-				d.stock_qty = flt(d.qty) * flt(d.conversion_factor)
+				d.stock_qty = flt(flt(d.qty) * flt(d.conversion_factor), 6)
 
 	def set_alt_uom_qty(self):
 		for d in self.get("items"):

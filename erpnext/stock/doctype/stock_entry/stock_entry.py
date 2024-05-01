@@ -280,7 +280,7 @@ class StockEntry(TransactionController):
 			if not flt(item.conversion_factor):
 				frappe.throw(_("Row {0}: UOM Conversion Factor is mandatory").format(item.idx))
 
-			item.stock_qty = flt(flt(item.qty) * flt(item.conversion_factor), item.precision("stock_qty"))
+			item.stock_qty = flt(flt(item.qty) * flt(item.conversion_factor), 6)
 
 			if not item.alt_uom:
 				item.alt_uom_size = 1.0
@@ -337,7 +337,7 @@ class StockEntry(TransactionController):
 			self.set_missing_item_values(d)
 
 			if not d.stock_qty and d.qty:
-				d.stock_qty = flt(flt(d.qty) * flt(d.conversion_factor), self.precision("stock_qty", d))
+				d.stock_qty = flt(flt(d.qty) * flt(d.conversion_factor), 6)
 
 			if (self.purpose in ("Material Transfer", "Material Transfer for Manufacture")
 					and not d.serial_no
@@ -1469,7 +1469,7 @@ class StockEntry(TransactionController):
 
 			# in stock uom
 			row.conversion_factor = flt(item.get("conversion_factor")) or 1
-			row.stock_qty = flt(item["qty"] * row.conversion_factor, row.precision("stock_qty"))
+			row.stock_qty = flt(item["qty"] * row.conversion_factor, 6)
 
 			self.set_missing_item_values(row)
 

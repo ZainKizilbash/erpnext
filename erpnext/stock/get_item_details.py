@@ -312,7 +312,7 @@ def get_basic_details(args, item, overwrite_warehouse=True):
 			out.conversion_factor = flt(conversion.get("conversion_factor"))
 
 	args.conversion_factor = out.conversion_factor
-	out.stock_qty = out.qty * out.conversion_factor
+	out.stock_qty = flt(out.qty * out.conversion_factor, 6)
 
 	# Contents UOM conversion factor and qty
 	out.alt_uom = item.alt_uom

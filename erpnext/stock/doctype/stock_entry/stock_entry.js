@@ -396,7 +396,7 @@ frappe.ui.form.on('Stock Entry', {
 		let has_target_warehouse = (frm.doc.items || []).some(d => d.t_warehouse);
 
 		$.each(frm.doc.items || [], function (i, item) {
-			item.stock_qty = flt(flt(item.qty) * flt(item.conversion_factor), precision("stock_qty", item));
+			item.stock_qty = flt(flt(item.qty) * flt(item.conversion_factor), 6);
 
 			if (!item.alt_uom) {
 				item.alt_uom_size = 1.0;
