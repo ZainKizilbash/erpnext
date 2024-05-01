@@ -395,6 +395,7 @@
    "read_only": 1
   },
   {
+   "depends_on": "purchase_order",
    "fieldname": "supplier",
    "fieldtype": "Link",
    "in_standard_filter": 1,
@@ -425,6 +426,7 @@
    "label": "Auto Select Batches (FIFO)"
   },
   {
+   "depends_on": "total_rejected_qty",
    "fieldname": "total_rejected_qty",
    "fieldtype": "Float",
    "label": "Total Rejected Qty",
@@ -449,7 +451,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "total_rejected_qty",
+   "depends_on": "eval:doc.total_stock_rejected_qty && doc.total_rejected_qty != doc.total_stock_rejected_qty",
    "fieldname": "total_stock_rejected_qty",
    "fieldtype": "Float",
    "label": "Total Stock Rejected Qty",
@@ -460,7 +462,7 @@
  "idx": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-04-25 11:33:52.436391",
+ "modified": "2024-05-01 16:48:20.467421",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Packing Slip",

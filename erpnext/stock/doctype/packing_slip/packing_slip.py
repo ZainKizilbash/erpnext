@@ -903,7 +903,6 @@ class PackingSlip(TransactionController):
 
 				sl_entries.append(rejected_sle_in)
 
-
 	def get_unpack_transfer_sles(self, sl_entries):
 		for d in self.get("items"):
 			# Unpack OUT SLE for items contents target warehouse
@@ -919,8 +918,8 @@ class PackingSlip(TransactionController):
 					"dependent_voucher_type": self.doctype,
 					"dependent_voucher_no": self.unpack_against,
 					"dependent_voucher_detail_no": d.unpack_against_row,
-					"dependency_type": "Amount",
-					"dependency_qty_filter": "Positive",
+					"dependency_type": "Rate",
+					"dependency_qty_filter": "Negative",
 				}]
 
 			sl_entries.append(sle_out)
@@ -1364,10 +1363,6 @@ def make_unpack_packing_slip(source_name, target_doc=None):
 				"package_type": "package_type",
 				"purchase_order": "purchase_order",
 			},
-			"field_no_map": [
-				"total_rejected_qty",
-				"total_stock_rejected_qty",
-			]
 		},
 		"Packing Slip Item": {
 			"doctype": "Packing Slip Item",

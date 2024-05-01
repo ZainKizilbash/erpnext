@@ -18,9 +18,7 @@ erpnext.stock.PackingSlipController = class PackingSlipController extends erpnex
 	refresh() {
 		erpnext.hide_company();
 		this.setup_buttons();
-		if (!this.frm.doc.rejected_warehouse) {
-			this.set_rejected_warehouse();
-		}
+		this.set_default_rejected_warehouse();
 	}
 
 	setup_queries() {
@@ -105,9 +103,11 @@ erpnext.stock.PackingSlipController = class PackingSlipController extends erpnex
 		erpnext.utils.setup_remove_zero_qty_rows(this.frm);
 	}
 
-	set_rejected_warehouse() {
-		this.frm.doc.rejected_warehouse = frappe.defaults.get_global_default("default_rejected_warehouse");
-		this.frm.refresh_field("rejected_warehouse");
+	set_default_rejected_warehouse() {
+		if (!this.frm.doc.rejected_warehouse && this.frm.is_new()) {
+			this.frm.doc.rejected_warehouse = frappe.defaults.get_global_default("default_rejected_warehouse");
+			this.frm.refresh_field("rejected_warehouse");
+		}
 	}
 
 	rejected_qty() {

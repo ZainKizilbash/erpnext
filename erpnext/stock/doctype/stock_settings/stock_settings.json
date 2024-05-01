@@ -10,12 +10,12 @@
   "valuation_method",
   "defaults_section",
   "item_group",
-  "default_rejected_warehouse",
   "column_break_6",
   "stock_uom",
   "weight_uom",
   "column_break_9",
   "default_warehouse",
+  "default_rejected_warehouse",
   "sample_retention_warehouse",
   "section_break_7",
   "over_delivery_receipt_allowance",
@@ -83,7 +83,8 @@
    "fieldname": "sample_retention_warehouse",
    "fieldtype": "Link",
    "label": "Sample Retention Warehouse",
-   "options": "Warehouse"
+   "options": "Warehouse",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_4",
@@ -298,7 +299,7 @@
  "idx": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-04-16 18:14:37.098687",
+ "modified": "2024-05-01 16:51:11.371629",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Stock Settings",
