@@ -158,7 +158,6 @@ def schedule_next_project_template(project_template, serial_no, args):
 
 				doc.save(ignore_permissions=True)
 
-
 def generate_maintenance_schedule():
 	for_date = getdate()
 	target_date = add_to_date(date=for_date, days=-1, as_string=True)
@@ -184,11 +183,13 @@ def generate_maintenance_schedule():
 				return
 
 			next_schedule.project_template = template_details.next_project_template
-			next_schedule.scheduled_date = last_maintenance_schedule.reference_date + relativedelta(months=2*template_details.next_due_after)
+			if last_maintenance_schedule.reference_doctype == 'Vehicle Delivery':
+				next_schedule.scheduled_date = last_maintenance_schedule.reference_date + relativedelta(months=3*template_details.next_due_after)
+			else:
+				next_schedule.scheduled_date = last_maintenance_schedule.reference_date + relativedelta(months=2*template_details.next_due_after)
 
 			doc.append('schedules', next_schedule)
 			doc.save(ignore_permissions=True)
-			frappe.db.commit()
 
 
 def schedule_project_templates_after_delivery(serial_no, args):
