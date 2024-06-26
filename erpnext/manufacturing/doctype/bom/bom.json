@@ -16,7 +16,6 @@
   "image",
   "is_active",
   "is_default",
-  "allow_alternative_item",
   "set_rate_of_sub_assembly_item_based_on_bom",
   "more_information",
   "project",
@@ -160,12 +159,6 @@
    "fieldname": "inspection_required",
    "fieldtype": "Check",
    "label": "Quality Inspection Required"
-  },
-  {
-   "default": "0",
-   "fieldname": "allow_alternative_item",
-   "fieldtype": "Check",
-   "label": "Allow Alternative Item"
   },
   {
    "allow_on_submit": 1,
@@ -520,7 +513,7 @@
  "image_field": "image",
  "is_submittable": 1,
  "links": [],
- "modified": "2024-03-31 11:22:05.900817",
+ "modified": "2024-06-07 16:00:55.307819",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "BOM",
