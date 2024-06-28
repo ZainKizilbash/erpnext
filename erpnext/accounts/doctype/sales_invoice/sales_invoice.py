@@ -757,7 +757,7 @@ class SalesInvoice(SellingController):
 			and amount = 0""", self.name)
 
 	def validate_with_previous_doc(self):
-		sales_order_compare = [["company", "="], ["currency", "="]]
+		sales_order_compare = [["currency", "="]]
 		delivery_note_compare = [["company", "="], ["currency", "="]]
 
 		if not self.get('claim_billing'):
