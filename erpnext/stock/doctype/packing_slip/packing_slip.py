@@ -859,6 +859,7 @@ class PackingSlip(TransactionController):
 				"warehouse": d.source_warehouse,
 				"actual_qty": -outgoing_qty,
 				"packing_slip": d.get("source_packing_slip"),
+				"is_transfer": 1,
 			})
 
 			if d.get("source_packing_slip") and d.get("packing_slip_item") and self.docstatus == 1:
@@ -878,6 +879,7 @@ class PackingSlip(TransactionController):
 				"warehouse": self.target_warehouse,
 				"actual_qty": flt(d.stock_qty),
 				"packing_slip": self.name,
+				"is_transfer": 1,
 			})
 
 			if self.docstatus == 1:
@@ -911,6 +913,7 @@ class PackingSlip(TransactionController):
 				rejected_sle_in = self.get_sl_entries(d, {
 					"warehouse": self.rejected_warehouse,
 					"actual_qty": flt(d.stock_rejected_qty),
+					"is_transfer": 1,
 				})
 
 				if self.docstatus == 1:
@@ -931,6 +934,7 @@ class PackingSlip(TransactionController):
 				"warehouse": self.target_warehouse,
 				"actual_qty": flt(d.stock_qty),
 				"packing_slip": self.unpack_against,
+				"is_transfer": 1,
 			})
 
 			# Unpack OUT at same rate
@@ -950,6 +954,7 @@ class PackingSlip(TransactionController):
 				"warehouse": d.source_warehouse,
 				"actual_qty": -flt(d.stock_qty),
 				"packing_slip": d.get("source_packing_slip"),
+				"is_transfer": 1,
 			})
 
 			if self.docstatus == 1:

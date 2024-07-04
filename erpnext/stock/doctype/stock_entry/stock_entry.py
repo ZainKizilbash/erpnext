@@ -707,7 +707,8 @@ class StockEntry(TransactionController):
 				sl_entries.append(self.get_sl_entries(d, {
 					"warehouse": cstr(d.s_warehouse),
 					"actual_qty": -flt(d.stock_qty),
-					"incoming_rate": 0
+					"incoming_rate": 0,
+					"is_transfer": cint(bool(d.s_warehouse and d.t_warehouse)),
 				}))
 
 		for d in self.get('items'):
@@ -717,6 +718,7 @@ class StockEntry(TransactionController):
 					"actual_qty": flt(d.stock_qty),
 					"incoming_rate": flt(d.valuation_rate),
 					"packing_slip": d.packing_slip if self.purpose == "Material Transfer" else None,
+					"is_transfer": cint(bool(d.s_warehouse and d.t_warehouse)),
 				})
 
 				# SLE Dependency

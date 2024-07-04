@@ -1,45 +1,55 @@
 {
  "actions": [],
  "allow_copy": 1,
- "autoname": "MAT-SLE-.YYYY.-.#####",
+ "autoname": "hash",
  "creation": "2013-01-29 19:25:42",
  "doctype": "DocType",
  "document_type": "Other",
  "engine": "InnoDB",
  "field_order": [
-  "item_code",
-  "batch_no",
-  "warehouse",
-  "packing_slip",
-  "posting_date",
-  "posting_time",
   "voucher_type",
   "voucher_no",
   "voucher_detail_no",
   "party_type",
   "party",
-  "stock_uom",
+  "column_break_8xsbj",
+  "item_code",
+  "warehouse",
+  "batch_no",
+  "packing_slip",
+  "serial_no",
+  "column_break_0ucfo",
+  "posting_date",
+  "posting_time",
+  "company",
+  "fiscal_year",
+  "project",
+  "is_cancelled",
+  "is_transfer",
+  "reset_rate",
+  "is_processed",
+  "section_break_as3im",
   "actual_qty",
+  "stock_value_difference",
+  "stock_uom",
+  "column_break_rcy6p",
   "qty_after_transaction",
   "batch_qty_after_transaction",
   "packed_qty_after_transaction",
-  "additional_cost",
+  "column_break_hlr2q",
   "incoming_rate",
   "outgoing_rate",
+  "additional_cost",
+  "column_break_zgizb",
   "valuation_rate",
   "batch_valuation_rate",
   "stock_value",
   "batch_stock_value",
-  "stock_value_difference",
+  "section_break_wlcik",
   "stock_queue",
-  "reset_rate",
-  "project",
-  "company",
-  "fiscal_year",
-  "is_cancelled",
-  "serial_no",
-  "is_processed",
+  "section_break_sv7lk",
   "serial_numbers",
+  "section_break_09h70",
   "dependencies"
  ],
  "fields": [
@@ -193,7 +203,7 @@
    "fieldname": "qty_after_transaction",
    "fieldtype": "Float",
    "in_filter": 1,
-   "label": "Actual Qty After Transaction",
+   "label": "Qty After Transaction",
    "oldfieldname": "bin_aqat",
    "oldfieldtype": "Currency",
    "print_width": "150px",
@@ -369,7 +379,50 @@
    "fieldname": "is_processed",
    "fieldtype": "Check",
    "hidden": 1,
-   "label": "Is Processed"
+   "label": "Is Processed",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_transfer",
+   "fieldtype": "Check",
+   "label": "Is Transfer"
+  },
+  {
+   "fieldname": "column_break_8xsbj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_0ucfo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_as3im",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_sv7lk",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_09h70",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_rcy6p",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_zgizb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_wlcik",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_hlr2q",
+   "fieldtype": "Column Break"
   }
  ],
  "hide_toolbar": 1,
@@ -377,11 +430,11 @@
  "idx": 1,
  "in_create": 1,
  "links": [],
- "modified": "2023-10-10 13:53:44.143737",
+ "modified": "2024-07-04 23:27:43.788877",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Stock Ledger Entry",
- "naming_rule": "Expression (old style)",
+ "naming_rule": "Random",
  "owner": "Administrator",
  "permissions": [
   {

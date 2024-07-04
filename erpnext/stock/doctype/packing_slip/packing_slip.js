@@ -372,6 +372,22 @@ erpnext.stock.PackingSlipController = class PackingSlipController extends erpnex
 			});
 		}
 	}
+
+	show_stock_ledger() {
+		let me = this;
+		if (this.frm.doc.docstatus === 1) {
+			this.frm.add_custom_button(__("Stock Ledger"), function() {
+				frappe.route_options = {
+					packing_slip: me.frm.doc.name,
+					from_date: me.frm.doc.posting_date,
+					to_date: frappe.datetime.get_today(),
+					company: me.frm.doc.company,
+					group_by: ""
+				};
+				frappe.set_route("query-report", "Stock Ledger");
+			}, __("View"));
+		}
+	}
 };
 
 extend_cscript(cur_frm.cscript, new erpnext.stock.PackingSlipController({frm: cur_frm}));

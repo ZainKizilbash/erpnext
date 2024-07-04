@@ -14,31 +14,35 @@ def execute(filters=None):
 
 
 class StockBalanceReport:
-	balance_qty_fields = [
+	qty_fields = [
 		"opening_qty",
 		"in_qty",
+		"out_qty",
+		"bal_qty",
 		"purchase_qty",
 		"purchase_return_qty",
-		"out_qty",
 		"sales_qty",
 		"sales_return_qty",
-		"reconcile_qty",
+		"reconciled_qty",
 		"consumed_qty",
-		"bal_qty",
+		"transferred_qty",
+
 		"ordered_qty",
 		"projected_qty",
 	]
-	balance_value_fields = [
+	value_fields = [
 		"opening_val",
 		"in_val",
+		"out_val",
+		"bal_val",
 		"purchase_val",
 		"purchase_return_val",
-		"out_val",
 		"sales_val",
 		"sales_return_val",
-		"reconcile_val",
+		"reconciled_val",
 		"consumed_val",
-		"bal_val",
+		"transferred_val",
+
 		"val_rate",
 	]
 
@@ -219,7 +223,11 @@ class StockBalanceReport:
 					stock_balance.out_qty += abs(qty_diff)
 					stock_balance.out_val += abs(value_diff)
 
-				if sle.voucher_type in ["Purchase Receipt", "Purchase Invoice"]:
+				if sle.is_transfer:
+					stock_balance.transferred_qty += qty_diff
+					stock_balance.transferred_val += value_diff
+
+				elif sle.voucher_type in ["Purchase Receipt", "Purchase Invoice"]:
 					if qty_diff < 0 and self.filters.get("separate_returns_qty"):
 						stock_balance.purchase_return_qty -= qty_diff
 						stock_balance.purchase_return_val -= value_diff
@@ -236,8 +244,8 @@ class StockBalanceReport:
 						stock_balance.sales_val -= value_diff
 
 				elif sle.voucher_type == "Stock Reconciliation":
-					stock_balance.reconcile_qty += qty_diff
-					stock_balance.reconcile_val += value_diff
+					stock_balance.reconciled_qty += qty_diff
+					stock_balance.reconciled_val += value_diff
 
 				elif sle.voucher_type == "Stock Entry":
 					if qty_diff < 0:
@@ -267,13 +275,13 @@ class StockBalanceReport:
 
 			is_empty_balance = True
 
-			for field in self.balance_qty_fields:
+			for field in self.qty_fields:
 				val = flt(stock_balance.get(field), 9)
 				stock_balance[field] = val
 				if val:
 					is_empty_balance = False
 
-			for field in self.balance_value_fields:
+			for field in self.value_fields:
 				val = flt(stock_balance.get(field), 9)
 				stock_balance[field] = val
 				if val and not self.is_package_included() and field != "val_rate":
@@ -342,8 +350,9 @@ class StockBalanceReport:
 					"sales_qty": stock_balance.sales_qty * alt_uom_size,
 					"sales_return_qty": stock_balance.sales_return_qty * alt_uom_size,
 					"bal_qty": stock_balance.bal_qty * alt_uom_size,
-					"reconcile_qty": stock_balance.reconcile_qty * alt_uom_size,
+					"reconciled_qty": stock_balance.reconciled_qty * alt_uom_size,
 					"consumed_qty": stock_balance.consumed_qty * alt_uom_size,
+					"transferred_qty": stock_balance.transferred_qty * alt_uom_size,
 					"reorder_level": item_reorder_level * alt_uom_size,
 					"reorder_qty": item_reorder_qty * alt_uom_size,
 					"ordered_qty": stock_balance.ordered_qty * alt_uom_size,
@@ -360,7 +369,9 @@ class StockBalanceReport:
 						"sales_val": stock_balance.sales_val,
 						"sales_return_val": stock_balance.sales_return_val,
 						"bal_val": stock_balance.bal_val,
-						"reconcile_val": stock_balance.reconcile_val,
+						"reconciled_val": stock_balance.reconciled_val,
+						"consumed_val": stock_balance.consumed_val,
+						"transferred_val": stock_balance.transferred_val,
 						"val_rate": stock_balance.val_rate / alt_uom_size,
 					})
 
@@ -382,7 +393,7 @@ class StockBalanceReport:
 			balance_key_fields = self.get_balance_fields()
 			balance_key_dict = dict(zip(balance_key_fields, key))
 
-			empty_balance = {f: 0 for f in self.balance_qty_fields + self.balance_value_fields}
+			empty_balance = {f: 0 for f in self.qty_fields + self.value_fields}
 			self.stock_balance_map[key] = frappe._dict(empty_balance)
 			self.stock_balance_map[key].update(balance_key_dict)
 
@@ -446,8 +457,8 @@ class StockBalanceReport:
 				"width": 80, "convertible": "qty", "projected_column": 1},
 			{"label": _("Projected Qty"), "fieldname": "projected_qty", "fieldtype": "Float",
 				"width": 80, "convertible": "qty", "projected_column": 1},
-			{"label": _("Open Qty"), "fieldname": "opening_qty", "fieldtype": "Float",
-				"width": 80, "convertible": "qty"},
+			{"label": _("Opening Qty"), "fieldname": "opening_qty", "fieldtype": "Float",
+				"width": 85, "convertible": "qty"},
 			{"label": _("Open Value"), "fieldname": "opening_val", "fieldtype": "Currency",
 				"width": 90, "is_value": True},
 			{"label": _("In Qty"), "fieldname": "in_qty", "fieldtype": "Float",
@@ -461,7 +472,7 @@ class StockBalanceReport:
 			{"label": _("Average Rate"), "fieldname": "val_rate", "fieldtype": "Currency",
 				"width": 100, "convertible": "rate", "is_value": True},
 			{"label": _("Purchase Qty"), "fieldname": "purchase_qty", "fieldtype": "Float",
-				"width": 105, "convertible": "qty"},
+				"width": 90, "convertible": "qty"},
 			{"label": _("Purchase Value"), "fieldname": "purchase_val", "fieldtype": "Currency",
 				"width": 105, "is_value": True},
 			{"label": _("Sales Qty"), "fieldname": "sales_qty", "fieldtype": "Float",
@@ -477,12 +488,16 @@ class StockBalanceReport:
 			{"label": _("Sales Return Value"), "fieldname": "sales_return_val", "fieldtype": "Currency",
 				"width": 130, "is_value": True, "is_return": True},
 			{"label": _("Consumed Qty"), "fieldname": "consumed_qty", "fieldtype": "Float",
-				"width": 100, "convertible": "qty"},
+				"width": 95, "convertible": "qty"},
 			{"label": _("Consumed Value"), "fieldname": "consumed_val", "fieldtype": "Currency",
 				"width": 110, "is_value": True},
-			{"label": _("Reconciled Qty"), "fieldname": "reconcile_qty", "fieldtype": "Float",
+			{"label": _("Transferred Qty"), "fieldname": "transferred_qty", "fieldtype": "Float",
 				"width": 100, "convertible": "qty"},
-			{"label": _("Reconciled Value"), "fieldname": "reconcile_val", "fieldtype": "Currency",
+			{"label": _("Transferred Value"), "fieldname": "transferred_val", "fieldtype": "Currency",
+				"width": 110, "is_value": True},
+			{"label": _("Reconciled Qty"), "fieldname": "reconciled_qty", "fieldtype": "Float",
+				"width": 100, "convertible": "qty"},
+			{"label": _("Reconciled Value"), "fieldname": "reconciled_val", "fieldtype": "Currency",
 				"width": 110, "is_value": True},
 			{"label": _("Reorder Level"), "fieldname": "reorder_level", "fieldtype": "Float",
 				"width": 90, "convertible": "qty", "is_reorder": True},
@@ -588,7 +603,7 @@ def get_stock_ledger_entries_for_stock_report(filters, item_list=None):
 		select
 			item_code, warehouse, company, batch_no, packing_slip, serial_no,
 			actual_qty, valuation_rate, qty_after_transaction, stock_value_difference,
-			posting_date, posting_time, voucher_type, voucher_no
+			posting_date, posting_time, voucher_type, voucher_no, is_transfer
 		from `tabStock Ledger Entry` force index (posting_sort_index)
 		where docstatus < 2 {0} {1}
 		order by posting_date, posting_time, creation, actual_qty

@@ -379,7 +379,8 @@ class SellingController(TransactionController):
 					or (cint(self.is_return) and self.docstatus==2)):
 						sl_entries.append(self.get_sl_entries(d, {
 							"actual_qty": -1*flt(d.qty),
-							"incoming_rate": return_rate
+							"incoming_rate": return_rate,
+							"is_transfer": cint(bool(d.get("target_warehouse"))),
 						}))
 
 				target_warehouse_dependency = []
@@ -400,7 +401,8 @@ class SellingController(TransactionController):
 					target_warehouse_sle = self.get_sl_entries(d, {
 						"actual_qty": flt(d.qty),
 						"warehouse": d.target_warehouse,
-						"dependencies": target_warehouse_dependency
+						"dependencies": target_warehouse_dependency,
+						"is_transfer": 1,
 					})
 
 					if self.docstatus == 1:
@@ -432,7 +434,8 @@ class SellingController(TransactionController):
 						sl_entries.append(self.get_sl_entries(d, {
 							"actual_qty": -1*flt(d.qty),
 							"incoming_rate": return_rate,
-							"dependencies": return_dependency
+							"dependencies": return_dependency,
+							"is_transfer": cint(bool(d.get("target_warehouse"))),
 						}))
 		self.make_sl_entries(sl_entries)
 
