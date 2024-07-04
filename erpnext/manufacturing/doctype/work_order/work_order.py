@@ -1645,8 +1645,8 @@ def make_packing_slip(work_orders, target_doc=None):
 	for wo_details in pack_from_work_orders:
 		if not target_doc.customer and wo_details.customer:
 			target_doc.customer = wo_details.customer
-		if not target_doc.warehouse and wo_details.fg_warehouse:
-			target_doc.warehouse = wo_details.fg_warehouse
+		if not target_doc.target_warehouse and wo_details.fg_warehouse:
+			target_doc.target_warehouse = wo_details.fg_warehouse
 
 		row = frappe.new_doc("Packing Slip Item")
 		row.work_order = wo_details.name

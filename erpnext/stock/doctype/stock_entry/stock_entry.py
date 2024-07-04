@@ -716,7 +716,7 @@ class StockEntry(TransactionController):
 					"warehouse": cstr(d.t_warehouse),
 					"actual_qty": flt(d.stock_qty),
 					"incoming_rate": flt(d.valuation_rate),
-					"packing_slip": None,
+					"packing_slip": d.packing_slip if self.purpose == "Material Transfer" else None,
 				})
 
 				# SLE Dependency
@@ -1534,8 +1534,9 @@ class StockEntry(TransactionController):
 						frappe.MappingMismatchError)
 
 	def validate_packing_slips(self):
-		if self.purpose != "Send to Subcontractor" and any(d for d in self.get("items") if d.get("packing_slip")):
-			frappe.throw(_("Stock Entry against Packing Slip is only allowed for purpose 'Send to Subcontractor'"))
+		if self.purpose not in ("Send to Subcontractor", "Material Issue", "Material Transfer"):
+			if any(d for d in self.get("items") if d.get("packing_slip")):
+				frappe.throw(_("Stock Entry against Packing Slip is not allowed for purpose '{0}'").format(self.purpose))
 
 		super().validate_packing_slips()
 

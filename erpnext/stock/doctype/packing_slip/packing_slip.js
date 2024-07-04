@@ -70,6 +70,17 @@ erpnext.stock.PackingSlipController = class PackingSlipController extends erpnex
 		});
 
 		me.frm.set_query("customer", erpnext.queries.customer);
+
+		if (me.frm.fields_dict["cost_center"]) {
+			me.frm.set_query("cost_center", function(doc) {
+				return {
+					filters: {
+						"company": doc.company,
+						"is_group": 0
+					}
+				};
+			});
+		}
 	}
 
 	setup_buttons() {

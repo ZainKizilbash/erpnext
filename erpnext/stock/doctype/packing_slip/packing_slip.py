@@ -59,7 +59,7 @@ class PackingSlip(TransactionController):
 		self.make_gl_entries()
 
 	def on_cancel(self):
-		self.db_set("status", "Cancelled")
+		self.db_set({"status": "Cancelled", "warehouse": None})
 		self.update_previous_doc_status()
 		self.update_stock_ledger()
 		self.make_gl_entries_on_cancel()
@@ -290,7 +290,7 @@ class PackingSlip(TransactionController):
 			""", [sales_order_row_names])
 
 			if warehouses and len(warehouses) == 1 and warehouses[0]:
-				self.warehouse = warehouses[0]
+				self.target_warehouse = warehouses[0]
 
 	def validate_with_previous_doc(self):
 		super(PackingSlip, self).validate_with_previous_doc({
@@ -544,7 +544,7 @@ class PackingSlip(TransactionController):
 				frappe.get_desk_link("Packing Slip", unpack_against.name), frappe.bold(unpack_against.package_type)
 			))
 
-		if self.warehouse != unpack_against.warehouse:
+		if self.target_warehouse != unpack_against.warehouse:
 			frappe.throw(_("Target Warehouse does not match with Unpack Against {0}. Target Warehouse must be {1}").format(
 				frappe.get_desk_link("Packing Slip", unpack_against.name), frappe.bold(unpack_against.warehouse)
 			))
@@ -723,7 +723,7 @@ class PackingSlip(TransactionController):
 	def set_target_warehouse_as_source_warehouse(self):
 		source_warehouses = set([d.source_warehouse for d in self.get("items")])
 		if len(source_warehouses) == 1:
-			self.warehouse = list(source_warehouses)[0]
+			self.target_warehouse = list(source_warehouses)[0]
 
 	@frappe.whitelist()
 	def auto_select_batches(self):
@@ -853,7 +853,7 @@ class PackingSlip(TransactionController):
 
 	def get_packing_transfer_sles(self, sl_entries):
 		for d in self.get("items"):
-			# OUT SLE for items contents source warehouse
+			# OUT SLE for items contents from source warehouse
 			outgoing_qty = flt(d.stock_qty) + flt(d.stock_rejected_qty)
 			sle_out = self.get_sl_entries(d, {
 				"warehouse": d.source_warehouse,
@@ -873,9 +873,9 @@ class PackingSlip(TransactionController):
 
 			sl_entries.append(sle_out)
 
-			# IN SLE for item contents target warehouse
+			# IN SLE for item contents to target warehouse
 			sle_in = self.get_sl_entries(d, {
-				"warehouse": self.warehouse,
+				"warehouse": self.target_warehouse,
 				"actual_qty": flt(d.stock_qty),
 				"packing_slip": self.name,
 			})
@@ -926,9 +926,9 @@ class PackingSlip(TransactionController):
 
 	def get_unpack_transfer_sles(self, sl_entries):
 		for d in self.get("items"):
-			# Unpack OUT SLE for items contents target warehouse
+			# Unpack OUT SLE for items contents from target warehouse
 			sle_out = self.get_sl_entries(d, {
-				"warehouse": self.warehouse,
+				"warehouse": self.target_warehouse,
 				"actual_qty": flt(d.stock_qty),
 				"packing_slip": self.unpack_against,
 			})
@@ -945,7 +945,7 @@ class PackingSlip(TransactionController):
 
 			sl_entries.append(sle_out)
 
-			# Unpack IN SLE for item contents source warehouse
+			# Unpack IN SLE for item contents to source warehouse
 			sle_in = self.get_sl_entries(d, {
 				"warehouse": d.source_warehouse,
 				"actual_qty": -flt(d.stock_qty),
@@ -989,6 +989,24 @@ class PackingSlip(TransactionController):
 		for d in self.get("items"):
 			packed_qty_map[d.name] = flt(d.qty)
 
+		# Transferred
+		transferred_map = self.get_transferred_map()
+		for stock_entry, ste_dict in transferred_map.items():
+			if len(ste_dict["warehouses"]) != 1:
+				frappe.throw(_(
+					"There are multiple target warehouses against {0}. "
+					"Please select one target warehouse for the Packing Slip."
+				).format(frappe.get_desk_link("Packing Slip", self.name)))
+
+			target_warehouse = list(ste_dict["warehouses"])[0]
+			self.warehouse = target_warehouse
+
+			if ste_dict["items"] != packed_qty_map:
+				self.raise_incomplete_fulfilment("transferred", "transfer")
+
+		if not transferred_map:
+			self.warehouse = self.target_warehouse if self.docstatus == 1 else None
+
 		# Nested
 		nested_qty_map = self.get_nested_qty_map()
 		if nested_qty_map == packed_qty_map:
@@ -1010,15 +1028,19 @@ class PackingSlip(TransactionController):
 		elif validate and delivered_qty_map:
 			self.raise_incomplete_fulfilment("delivered", "delivery")
 
+		# Warehouse
+		if is_delivered or is_unpacked or is_nested:
+			self.warehouse = None
+
 		if self.docstatus == 0:
 			self.status = "Draft"
 		elif self.docstatus == 1:
-			if is_delivered:
-				self.status = "Delivered"
-			elif is_unpacked or cint(self.is_unpack):
+			if is_unpacked or cint(self.is_unpack):
 				self.status = "Unpacked"
 			elif is_nested:
 				self.status = "Nested"
+			elif is_delivered:
+				self.status = "Delivered"
 			else:
 				self.status = "In Stock"
 		else:
@@ -1027,7 +1049,10 @@ class PackingSlip(TransactionController):
 		self.add_status_comment(previous_status)
 
 		if update:
-			self.db_set("status", self.status, update_modified=update_modified)
+			self.db_set({
+				"status": self.status,
+				"warehouse": self.warehouse,
+			}, update_modified=update_modified)
 
 	def get_delivered_qty_map(self):
 		if self.is_new():
@@ -1051,10 +1076,11 @@ class PackingSlip(TransactionController):
 		""", self.name, as_dict=1)
 
 		delivered_by_ste = frappe.db.sql("""
-			select packing_slip_item, sum(qty) as delivered_qty
-			from `tabStock Entry Detail`
-			where packing_slip = %s and docstatus = 1
-			group by packing_slip_item
+			select i.packing_slip_item, sum(i.qty) as delivered_qty
+			from `tabStock Entry Detail` i
+			inner join `tabStock Entry` ste on ste.name = i.parent
+			where i.packing_slip = %s and i.docstatus = 1 and ste.purpose = 'Send to Subcontractor'
+			group by i.packing_slip_item
 			having delivered_qty != 0
 		""", self.name, as_dict=1)
 
@@ -1092,25 +1118,61 @@ class PackingSlip(TransactionController):
 		if self.is_new():
 			return {}
 
-		unpacked_qty_map = dict(frappe.db.sql("""
-			select i.unpack_against_row, sum(-i.qty) as unpacked_qty
+		unpacked_by_ps = frappe.db.sql("""
+			select i.unpack_against_row as packing_slip_item, sum(-i.qty) as unpacked_qty
 			from `tabPacking Slip Item` i
 			inner join `tabPacking Slip` s on s.name = i.parent
 			where s.unpack_against = %s and s.docstatus = 1
 			group by i.unpack_against_row
-		""", self.name))
+			having unpacked_qty != 0
+		""", self.name, as_dict=1)
+
+		unpacked_by_ste = frappe.db.sql("""
+			select i.packing_slip_item, sum(i.qty) as unpacked_qty
+			from `tabStock Entry Detail` i
+			inner join `tabStock Entry` ste on ste.name = i.parent
+			where i.packing_slip = %s and i.docstatus = 1 and ste.purpose = 'Material Issue'
+			group by i.packing_slip_item
+			having unpacked_qty != 0
+		""", self.name, as_dict=1)
+
+		unpacked_qty_map = {}
+		for d in unpacked_by_ps + unpacked_by_ste:
+			unpacked_qty_map.setdefault(d.packing_slip_item, 0)
+			unpacked_qty_map[d.packing_slip_item] += d.unpacked_qty
 
 		return unpacked_qty_map
 
+	def get_transferred_map(self):
+		if self.is_new():
+			return {}
+
+		transferred_by_ste = frappe.db.sql("""
+			select ste.name as stock_entry, i.packing_slip_item, i.t_warehouse, i.qty
+			from `tabStock Entry Detail` i
+			inner join `tabStock Entry` ste on ste.name = i.parent
+			where i.packing_slip = %s and i.docstatus = 1 and ste.purpose = 'Material Transfer'
+			order by ste.posting_date, ste.posting_time, ste.creation
+		""", self.name, as_dict=1)
+
+		transferred_map = {}
+		for d in transferred_by_ste:
+			ste_dict = transferred_map.setdefault(d.stock_entry, {"warehouses": set(), "items": {}})
+			ste_dict["warehouses"].add(d.t_warehouse)
+			ste_dict["items"].setdefault(d.packing_slip_item, 0)
+			ste_dict["items"][d.packing_slip_item] += d.qty
+
+		return transferred_map
+
 	def raise_incomplete_fulfilment(self, past, present):
 		frappe.throw(_(
-			"Some items from {packing_slip} are were not completely {past}. "
-			"Partial {present} of Package is not allowed. "
+			"Some items from {0} are were not completely {1}. "
+			"Partial {2} of Package is not allowed. "
 			"Please select all items of Packing Slip."
 		).format(
-			packing_slip=frappe.get_desk_link("Packing Slip", self.name),
-			past=_(past),
-			present=_(present),
+			frappe.get_desk_link("Packing Slip", self.name),
+			_(past),
+			_(present),
 		))
 
 	def set_unpacked_return_status(self, update=False, update_modified=True,
@@ -1388,7 +1450,7 @@ def make_unpack_packing_slip(source_name, target_doc=None):
 			},
 			"field_map": {
 				"name": "unpack_against",
-				"warehouse": "warehouse",
+				"warehouse": "target_warehouse",
 				"package_type": "package_type",
 				"purchase_order": "purchase_order",
 			},
@@ -1520,11 +1582,27 @@ def make_sales_invoice(source_name, target_doc=None):
 	return target_doc
 
 
+@frappe.whitelist()
+def make_stock_entry(source_name, target_doc=None):
+	packing_slip = frappe.get_doc("Packing Slip", source_name)
+	target_doc = map_target_document("Stock Entry", target_doc, packing_slip)
+
+	map_stock_entry_items(packing_slip, target_doc)
+
+	target_doc.set_missing_values()
+	target_doc.set_actual_qty()
+	target_doc.calculate_rate_and_amount(raise_error_if_no_rate=False)
+	return target_doc
+
+
 def map_stock_entry_items(packing_slip, target_doc, target_warehouse=None):
 	packing_slip_item_mapper = get_packing_slip_item_mapper("Stock Entry Detail")
 	for ps_item in packing_slip.get("items"):
+		if not mapper_item_condition(ps_item, target_doc):
+			continue
+
 		ste_item = map_child_doc(ps_item, target_doc, packing_slip_item_mapper, packing_slip)
-		ste_item.t_warehouse = target_warehouse
+		ste_item.t_warehouse = target_warehouse or target_doc.to_warehouse
 		update_mapped_delivery_item(ste_item, packing_slip, "s_warehouse")
 
 
@@ -1535,7 +1613,10 @@ def map_target_document(target_doctype, target_doc, packing_slip):
 	if not target_doc:
 		target_doc = frappe.new_doc(target_doctype)
 
-	if packing_slip.customer and not target_doc.get("customer") and target_doc.meta.has_field("customer"):
+	if (
+		packing_slip.customer and not target_doc.get("customer") and target_doc.meta.has_field("customer")
+		and target_doctype != "Stock Entry"
+	):
 		target_doc.customer = packing_slip.customer
 
 	if packing_slip.supplier and not target_doc.get("supplier") and target_doc.meta.has_field("supplier"):

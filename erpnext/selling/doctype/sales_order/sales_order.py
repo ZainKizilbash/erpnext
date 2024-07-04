@@ -1288,9 +1288,9 @@ def make_packing_slip(source_name, target_doc=None, warehouse=None):
 		return undelivered_qty > 0 and unpacked_qty > 0
 
 	def set_missing_values(source, target):
-		if not target.warehouse:
+		if not target.target_warehouse:
 			if warehouse:
-				target.warehouse = warehouse
+				target.target_warehouse = warehouse
 			else:
 				target.determine_warehouse_from_sales_order()
 
