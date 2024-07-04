@@ -488,7 +488,11 @@ class StockController(AccountsController):
 					d.idx, frappe.get_desk_link("Packing Slip", packing_slip.name), packing_slip.project
 				))
 
-			if packing_slip.customer and self.get("customer") != packing_slip.customer and self.doctype != "Stock Entry":
+			if (
+				packing_slip.customer
+				and self.get("customer") != packing_slip.customer
+				and (self.doctype != "Stock Entry" or self.get("purpose") == "Send to Subcontractor")
+			):
 				frappe.throw(_("Row #{0}: Customer does not match with {1}. Customer must be {2}").format(
 					d.idx, frappe.get_desk_link("Packing Slip", packing_slip.name), packing_slip.customer
 				))

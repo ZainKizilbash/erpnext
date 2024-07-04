@@ -104,6 +104,7 @@ erpnext.stock.PackingSlipController = class PackingSlipController extends erpnex
 				} else {
 					this.frm.add_custom_button(__('Delivery Note'), () => this.make_delivery_note(), __('Create'));
 					this.frm.add_custom_button(__('Sales Invoice'), () => this.make_sales_invoice(), __('Create'));
+					this.frm.add_custom_button(__('Stock Entry'), () => this.make_stock_entry(), __('Create'));
 				}
 				this.frm.add_custom_button(__('Unpack'), () => this.make_unpack_packing_slip(), __('Create'));
 
@@ -345,6 +346,14 @@ erpnext.stock.PackingSlipController = class PackingSlipController extends erpnex
 
 	make_stock_entry() {
 		if (this.frm.doc.purchase_order) {
+			return this.make_stock_entry_for_type("Send to Subcontractor");
+		} else {
+			return this.make_stock_entry_for_type();
+		}
+	}
+
+	make_stock_entry_for_type(purpose) {
+		if (purpose == "Send to Subcontractor") {
 			return frappe.call({
 				method: "erpnext.buying.doctype.purchase_order.purchase_order.make_rm_stock_entry",
 				args: {
@@ -355,6 +364,11 @@ erpnext.stock.PackingSlipController = class PackingSlipController extends erpnex
 					let doclist = frappe.model.sync(r.message);
 					frappe.set_route("Form", doclist[0].doctype, doclist[0].name);
 				}
+			});
+		} else {
+			return frappe.model.open_mapped_doc({
+				method: "erpnext.stock.doctype.packing_slip.packing_slip.make_stock_entry",
+				frm: this.frm,
 			});
 		}
 	}
