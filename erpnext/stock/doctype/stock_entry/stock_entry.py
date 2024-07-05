@@ -1361,7 +1361,7 @@ class StockEntry(TransactionController):
 		if self.work_order:
 			self.get_work_order()
 			item_code = self.pro_doc.production_item
-			to_warehouse = self.pro_doc.fg_warehouse
+			to_warehouse = self.pro_doc.wip_warehouse if self.pro_doc.produce_fg_in_wip_warehouse else self.pro_doc.fg_warehouse
 		else:
 			item_code = frappe.db.get_value("BOM", self.bom_no, "item")
 			to_warehouse = self.to_warehouse
