@@ -76,6 +76,7 @@ class DeliveryNote(SellingController):
 		# Updating stock ledger should always be called after updating prevdoc status,
 		# because updating reserved qty in bin depends upon updated delivered qty in SO
 		self.update_stock_ledger()
+		self.update_packing_slips()
 		self.make_gl_entries()
 
 	def on_cancel(self):
@@ -88,6 +89,7 @@ class DeliveryNote(SellingController):
 		# Updating stock ledger should always be called after updating prevdoc status,
 		# because updating reserved qty in bin depends upon updated delivered qty in SO
 		self.update_stock_ledger()
+		self.update_packing_slips()
 		self.make_gl_entries_on_cancel()
 
 		if self.is_return:
@@ -225,7 +227,6 @@ class DeliveryNote(SellingController):
 			doc.notify_update()
 
 		self.update_project_billing_and_sales()
-		self.update_packing_slips()
 
 	def update_sales_order_billing_status(self):
 		sales_orders = set([d.sales_order for d in self.items if d.sales_order])

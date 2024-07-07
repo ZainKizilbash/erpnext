@@ -54,15 +54,15 @@ class PackingSlip(TransactionController):
 		self.validate_purchase_order_raw_material_qty()
 
 	def on_submit(self):
-		self.update_previous_doc_status()
 		self.update_stock_ledger()
 		self.make_gl_entries()
+		self.update_previous_doc_status()
 
 	def on_cancel(self):
 		self.db_set({"status": "Cancelled", "warehouse": None})
-		self.update_previous_doc_status()
 		self.update_stock_ledger()
 		self.make_gl_entries_on_cancel()
+		self.update_previous_doc_status()
 
 	def set_title(self):
 		self.title = self.package_type
@@ -985,57 +985,7 @@ class PackingSlip(TransactionController):
 	def set_status(self, update=False, status=None, update_modified=True, validate=True):
 		previous_status = self.status
 
-		is_nested = 0
-		is_unpacked = 0
-		is_delivered = 0
-
-		# Packed
-		packed_qty_map = {}
-		for d in self.get("items"):
-			packed_qty_map[d.name] = flt(d.qty)
-
-		# Transferred
-		transferred_map = self.get_transferred_map()
-		for stock_entry, ste_dict in transferred_map.items():
-			if len(ste_dict["warehouses"]) != 1:
-				frappe.throw(_(
-					"There are multiple target warehouses against {0}. "
-					"Please select one target warehouse for the Packing Slip."
-				).format(frappe.get_desk_link("Packing Slip", self.name)))
-
-			target_warehouse = list(ste_dict["warehouses"])[0]
-			self.warehouse = target_warehouse
-
-			if ste_dict["items"] != packed_qty_map:
-				self.raise_incomplete_fulfilment("transferred", "transfer")
-
-		if not transferred_map:
-			self.warehouse = self.target_warehouse if self.docstatus == 1 else None
-
-		# Nested
-		nested_qty_map = self.get_nested_qty_map()
-		if nested_qty_map == packed_qty_map:
-			is_nested = 1
-		elif validate and nested_qty_map:
-			self.raise_incomplete_fulfilment("nested", "nesting")
-
-		# Unpacked
-		unpacked_qty_map = self.get_unpacked_qty_map()
-		if unpacked_qty_map == packed_qty_map:
-			is_unpacked = 1
-		elif validate and unpacked_qty_map:
-			self.raise_incomplete_fulfilment("unpacked", "unpacking")
-
-		# Delivered
-		delivered_qty_map = self.get_delivered_qty_map()
-		if delivered_qty_map == packed_qty_map:
-			is_delivered = 1
-		elif validate and delivered_qty_map:
-			self.raise_incomplete_fulfilment("delivered", "delivery")
-
-		# Warehouse
-		if is_delivered or is_unpacked or is_nested:
-			self.warehouse = None
+		self.warehouse, is_delivered, is_nested, is_unpacked = self.process_packing_slip_ledger(validate=validate)
 
 		if self.docstatus == 0:
 			self.status = "Draft"
@@ -1059,125 +1009,183 @@ class PackingSlip(TransactionController):
 				"warehouse": self.warehouse,
 			}, update_modified=update_modified)
 
-	def get_delivered_qty_map(self):
-		if self.is_new():
-			return {}
+	def process_packing_slip_ledger(self, validate=False):
+		def get_qty_map(packing_slip_item_key, sles, is_incoming=False):
+			qty_map = frappe._dict({"warehouses": set(), "items": {}})
+			for sle in sles:
+				if is_incoming and sle.is_transfer and sle.actual_qty < 0:
+					continue
 
-		delivered_by_dn = frappe.db.sql("""
-			select packing_slip_item, sum(qty) as delivered_qty
-			from `tabDelivery Note Item`
-			where packing_slip = %s and docstatus = 1
-			group by packing_slip_item
-			having delivered_qty != 0
-		""", self.name, as_dict=1)
+				qty_map["warehouses"].add(sle.warehouse)
 
-		delivered_by_sinv = frappe.db.sql("""
-			select i.packing_slip_item, sum(i.qty) as delivered_qty
-			from `tabSales Invoice Item` i
-			inner join `tabSales Invoice` s on s.name = i.parent
-			where i.packing_slip = %s and s.docstatus = 1 and s.update_stock = 1
-			group by i.packing_slip_item
-			having delivered_qty != 0
-		""", self.name, as_dict=1)
+				against_row = sle.get(packing_slip_item_key)
+				qty_map["items"].setdefault(against_row, 0)
+				qty_map["items"][against_row] += sle.actual_qty
 
-		delivered_by_ste = frappe.db.sql("""
-			select i.packing_slip_item, sum(i.qty) as delivered_qty
-			from `tabStock Entry Detail` i
-			inner join `tabStock Entry` ste on ste.name = i.parent
-			where i.packing_slip = %s and i.docstatus = 1 and ste.purpose = 'Send to Subcontractor'
-			group by i.packing_slip_item
-			having delivered_qty != 0
-		""", self.name, as_dict=1)
+			to_remove = []
+			for against_row in qty_map["items"]:
+				qty_map["items"][against_row] = flt(qty_map["items"][against_row], 9)
 
-		delivered_qty_map = {}
-		for d in delivered_by_dn + delivered_by_sinv + delivered_by_ste:
-			delivered_qty_map.setdefault(d.packing_slip_item, 0)
-			delivered_qty_map[d.packing_slip_item] += d.delivered_qty
+				if not is_incoming:
+					qty_map["items"][against_row] *= -1
 
-		to_remove = []
-		for key, value in delivered_qty_map.items():
-			if not flt(value, 9):
-				to_remove.append(key)
+				if not qty_map["items"][against_row]:
+					to_remove.append(against_row)
 
-		for key in to_remove:
-			del delivered_qty_map[key]
+			for against_row in to_remove:
+				del qty_map["items"][against_row]
 
-		return delivered_qty_map
+			qty_map["warehouses"] = list(qty_map["warehouses"])
+			return qty_map
 
-	def get_nested_qty_map(self):
-		if self.is_new():
-			return {}
+		warehouse = None
+		is_nested = 0
+		is_unpacked = 0
+		is_delivered = 0
 
-		nested_qty_map = dict(frappe.db.sql("""
-			select i.packing_slip_item, sum(i.qty) as nested_qty
-			from `tabPacking Slip Item` i
-			inner join `tabPacking Slip` s on s.name = i.parent
-			where i.source_packing_slip = %s and s.docstatus = 1
-			group by i.packing_slip_item
-			having nested_qty != 0
-		""", self.name))
+		packed_qty_map = {}
+		if self.docstatus == 1:
+			warehouse = self.target_warehouse
+			for d in self.get("items"):
+				packed_qty_map[d.name] = flt(d.stock_qty)
 
-		return nested_qty_map
+		voucher_wise_sle_map = self.get_voucher_wise_stock_ledger_entries()
 
-	def get_unpacked_qty_map(self):
-		if self.is_new():
-			return {}
+		for (voucher_type, voucher_no), sl_entries in voucher_wise_sle_map.items():
+			if voucher_type == "Packing Slip":
+				# Packing
+				if voucher_no == self.name:
+					qty_map = get_qty_map("voucher_detail_no", sl_entries, is_incoming=True)
+					packed_qty_map = qty_map["items"]
+					warehouse = qty_map["warehouses"][0]
 
-		unpacked_by_ps = frappe.db.sql("""
-			select i.unpack_against_row as packing_slip_item, sum(-i.qty) as unpacked_qty
-			from `tabPacking Slip Item` i
-			inner join `tabPacking Slip` s on s.name = i.parent
-			where s.unpack_against = %s and s.docstatus = 1
-			group by i.unpack_against_row
-			having unpacked_qty != 0
-		""", self.name, as_dict=1)
+				# Unpacking
+				elif sl_entries[0].is_unpack:
+					qty_map = get_qty_map("unpack_against_row", sl_entries, is_incoming=False)
+					if qty_map["items"] == packed_qty_map:
+						is_unpacked = 1
+						warehouse = None
+					elif validate and qty_map["items"]:
+						self.raise_incomplete_fulfilment("unpacked", "unpacking", voucher_type, voucher_no)
 
-		unpacked_by_ste = frappe.db.sql("""
-			select i.packing_slip_item, sum(i.qty) as unpacked_qty
-			from `tabStock Entry Detail` i
-			inner join `tabStock Entry` ste on ste.name = i.parent
-			where i.packing_slip = %s and i.docstatus = 1 and ste.purpose = 'Material Issue'
-			group by i.packing_slip_item
-			having unpacked_qty != 0
-		""", self.name, as_dict=1)
+				# Nesting
+				elif sl_entries[0].source_packing_slip:
+					qty_map = get_qty_map("nest_against_row", sl_entries, is_incoming=False)
+					if qty_map["items"] == packed_qty_map:
+						is_nested = 1
+						warehouse = None
+					elif validate and qty_map["items"]:
+						self.raise_incomplete_fulfilment("nested", "nesting", voucher_type, voucher_no)
 
-		unpacked_qty_map = {}
-		for d in unpacked_by_ps + unpacked_by_ste:
-			unpacked_qty_map.setdefault(d.packing_slip_item, 0)
-			unpacked_qty_map[d.packing_slip_item] += d.unpacked_qty
+				# Invalid Entry
+				else:
+					frappe.throw(_("Invalid Entry"))
 
-		return unpacked_qty_map
+			elif voucher_type in ("Delivery Note", "Sales Invoice"):
+				key = "invoice_against_row" if voucher_type == "Sales Invoice" else "deliver_against_row"
+				# Delivery Return
+				if sl_entries[0].dn_is_return or sl_entries[0].si_is_return:
+					qty_map = get_qty_map(key, sl_entries, is_incoming=True)
+					if qty_map["items"] == packed_qty_map:
+						is_delivered = 0
+						warehouse = qty_map["warehouses"][0]
+					elif validate and qty_map["items"]:
+						self.raise_incomplete_fulfilment("returned", "return", voucher_type, voucher_no)
 
-	def get_transferred_map(self):
-		if self.is_new():
-			return {}
+					if len(qty_map["warehouses"]) != 1:
+						self.raise_multiple_target_warehouse(voucher_type, voucher_no)
 
-		transferred_by_ste = frappe.db.sql("""
-			select ste.name as stock_entry, i.packing_slip_item, i.t_warehouse, i.qty
-			from `tabStock Entry Detail` i
-			inner join `tabStock Entry` ste on ste.name = i.parent
-			where i.packing_slip = %s and i.docstatus = 1 and ste.purpose = 'Material Transfer'
-			order by ste.posting_date, ste.posting_time, ste.creation
-		""", self.name, as_dict=1)
+				# Delivery
+				else:
+					qty_map = get_qty_map(key, sl_entries, is_incoming=False)
+					if qty_map["items"] == packed_qty_map:
+						is_delivered = 1
+						warehouse = None
+					elif validate and qty_map["items"]:
+						self.raise_incomplete_fulfilment("delivered", "delivery", voucher_type, voucher_no)
 
-		transferred_map = {}
-		for d in transferred_by_ste:
-			ste_dict = transferred_map.setdefault(d.stock_entry, {"warehouses": set(), "items": {}})
-			ste_dict["warehouses"].add(d.t_warehouse)
-			ste_dict["items"].setdefault(d.packing_slip_item, 0)
-			ste_dict["items"][d.packing_slip_item] += d.qty
+			elif voucher_type == "Stock Entry":
+				# Material Transfer
+				if sl_entries[0].purpose == "Material Transfer":
+					qty_map = get_qty_map("ste_against_row", sl_entries, is_incoming=True)
+					if qty_map["items"] == packed_qty_map:
+						warehouse = qty_map["warehouses"][0]
+					elif validate and qty_map["items"]:
+						self.raise_incomplete_fulfilment("transferred", "transfer", voucher_type, voucher_no)
 
-		return transferred_map
+					if len(qty_map["warehouses"]) != 1:
+						self.raise_multiple_target_warehouse(voucher_type, voucher_no)
 
-	def raise_incomplete_fulfilment(self, past, present):
+				# Material Issue
+				if sl_entries[0].purpose == "Material Issue":
+					qty_map = get_qty_map("ste_against_row", sl_entries, is_incoming=False)
+					if qty_map["items"] == packed_qty_map:
+						is_unpacked = 1
+						warehouse = None
+					elif validate and qty_map["items"]:
+						self.raise_incomplete_fulfilment("unpacked", "unpack", voucher_type, voucher_no)
+
+				# Send to Subcontractor
+				if sl_entries[0].purpose == "Send to Subcontractor":
+					qty_map = get_qty_map("ste_against_row", sl_entries, is_incoming=False)
+					if qty_map["items"] == packed_qty_map:
+						is_delivered = 1
+						warehouse = None
+					elif validate and qty_map["items"]:
+						self.raise_incomplete_fulfilment("delivered", "delivery", voucher_type, voucher_no)
+
+		return warehouse, is_delivered, is_nested, is_unpacked
+
+	def get_voucher_wise_stock_ledger_entries(self):
+		sl_entries = []
+		if self.docstatus == 1:
+			sl_entries = frappe.db.sql("""
+				select
+					sle.voucher_type, sle.voucher_no, sle.voucher_detail_no,
+					sle.item_code, sle.warehouse, sle.actual_qty, sle.is_transfer,
+					ps.is_unpack, psi.unpack_against_row, psi.source_packing_slip, psi.packing_slip_item as nest_against_row,
+					dn.is_return as dn_is_return, dni.packing_slip_item as deliver_against_row,
+					si.is_return as si_is_return, sii.packing_slip_item as invoice_against_row,
+					ste.purpose, sti.packing_slip_item as ste_against_row
+				from `tabStock Ledger Entry` sle
+				left join `tabPacking Slip` ps on sle.voucher_type = 'Packing Slip' and sle.voucher_no = ps.name
+				left join `tabPacking Slip Item` psi on psi.parent = ps.name and psi.name = sle.voucher_detail_no
+				left join `tabDelivery Note` dn on sle.voucher_type = 'Delivery Note' and sle.voucher_no = dn.name
+				left join `tabDelivery Note Item` dni on dni.parent = dn.name and dni.name = sle.voucher_detail_no
+				left join `tabSales Invoice` si on sle.voucher_type = 'Sales Invoice' and sle.voucher_no = si.name
+				left join `tabSales Invoice Item` sii on sii.parent = si.name and sii.name = sle.voucher_detail_no
+				left join `tabStock Entry` ste on sle.voucher_type = 'Stock Entry' and sle.voucher_no = ste.name
+				left join `tabStock Entry Detail` sti on sti.parent = ste.name and sti.name = sle.voucher_detail_no
+				where sle.packing_slip = %s
+				order by sle.posting_date, sle.posting_time, sle.creation
+			""", self.name, as_dict=True)
+
+		sle_map = {}
+		for sle in sl_entries:
+			voucher_key = (sle.voucher_type, sle.voucher_no)
+			sle_map.setdefault(voucher_key, []).append(sle)
+
+		return sle_map
+
+	def raise_incomplete_fulfilment(self, past, present, voucher_type, voucher_no):
 		frappe.throw(_(
-			"Some items from {0} are were not completely {1}. "
-			"Partial {2} of Package is not allowed. "
+			"Some items from {0} are were not completely {1} by {2}. "
+			"Partial {3} of Package is not allowed. "
 			"Please select all items of Packing Slip."
 		).format(
 			frappe.get_desk_link("Packing Slip", self.name),
 			_(past),
+			frappe.get_desk_link(voucher_type, voucher_no),
 			_(present),
+		))
+
+	def raise_multiple_target_warehouse(self, voucher_type, voucher_no):
+		frappe.throw(_(
+			"{0} has multiple target warehouses against {1}. "
+			"Please select only one target warehouse for the Packing Slip."
+		).format(
+			frappe.get_desk_link(voucher_type, voucher_no),
+			frappe.get_desk_link("Packing Slip", self.name),
 		))
 
 	def set_unpacked_return_status(self, update=False, update_modified=True,

@@ -96,6 +96,7 @@ class StockEntry(TransactionController):
 			item_condition=lambda d: not d.s_warehouse,
 			set_manufacturing_date=self.purpose in ("Manufacture", "Repack"))
 		self.update_stock_ledger()
+		self.update_packing_slips()
 		update_serial_nos_after_submit(self, "items")
 		self.update_work_order()
 		self.update_purchase_order_supplied_items()
@@ -109,6 +110,7 @@ class StockEntry(TransactionController):
 	def on_cancel(self):
 		self.update_purchase_order_supplied_items()
 		self.update_stock_ledger()
+		self.update_packing_slips()
 		self.make_gl_entries_on_cancel()
 		self.update_work_order()
 		self.update_cost_in_project()
@@ -168,8 +170,6 @@ class StockEntry(TransactionController):
 				doc.validate_transferred_qty(from_doctype=self.doctype, row_names=stock_entry_row_names)
 				doc.set_status(update=True)
 				doc.notify_update()
-
-		self.update_packing_slips()
 
 	def set_transferred_status(self, update=False, update_modified=True):
 		transferred_qty_map = self.get_transferred_qty_map()
