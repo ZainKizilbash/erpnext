@@ -797,7 +797,7 @@ class update_entries_after(object):
 			}))
 
 
-def get_previous_sle(args, for_update=False):
+def get_previous_sle(args, for_update=False, packing_slip_sle=False):
 	"""
 		get the last sle on or before the current time-bucket,
 		to get actual qty before transaction, this function
@@ -817,7 +817,16 @@ def get_previous_sle(args, for_update=False):
 		batch_wise_valuation = 0
 
 	args["name"] = args.get("sle", None) or ""
-	sle = get_stock_ledger_entries(args, "<=", "desc", "limit 1", for_update=for_update, batch_sle=batch_wise_valuation)
+	sle = get_stock_ledger_entries(
+		args,
+		operator="<=",
+		order="desc",
+		limit="limit 1",
+		for_update=for_update,
+		batch_sle=batch_wise_valuation,
+		packing_slip_sle=packing_slip_sle,
+	)
+
 	return sle and sle[0] or {}
 
 

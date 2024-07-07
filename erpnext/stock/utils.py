@@ -76,17 +76,25 @@ def get_stock_value_on(warehouse=None, posting_date=None, item_code=None):
 	return sum(sle_map.values())
 
 
-@frappe.whitelist()
-def get_stock_balance(item_code, warehouse, posting_date=None, posting_time=None, batch_no=None,
-	with_valuation_rate=False, with_serial_no=False):
+def get_stock_balance(
+	item_code,
+	warehouse,
+	batch_no=None,
+	posting_date=None,
+	posting_time=None,
+	with_valuation_rate=False,
+	with_serial_no=False,
+):
 	"""Returns stock balance quantity at given warehouse on given posting date or current date.
 
 	If `with_valuation_rate` is True, will return tuple (qty, rate)"""
 
 	from erpnext.stock.stock_ledger import get_previous_sle, get_serial_nos_after_sle
 
-	if not posting_date: posting_date = nowdate()
-	if not posting_time: posting_time = nowtime()
+	if not posting_date:
+		posting_date = nowdate()
+	if not posting_time:
+		posting_time = nowtime()
 
 	args = {
 		"item_code": item_code,
@@ -95,29 +103,53 @@ def get_stock_balance(item_code, warehouse, posting_date=None, posting_time=None
 		"posting_time": posting_time,
 		"batch_no": batch_no
 	}
-
 	last_entry = get_previous_sle(args)
 
-	if with_valuation_rate:
-		if with_serial_no:
-			serial_nos = last_entry.get("serial_no")
+	out = frappe._dict({
+		"qty_after_transaction": last_entry.qty_after_transaction if last_entry else 0,
+	})
 
-			if (serial_nos and
-				len(get_serial_nos_data(serial_nos)) < last_entry.qty_after_transaction):
+	if batch_no:
+		out["batch_qty_after_transaction"] = last_entry.batch_qty_after_transaction if last_entry else 0
+
+	if with_valuation_rate:
+		if last_entry:
+			out["valuation_rate"] = last_entry.batch_valuation_rate if batch_no else last_entry.valuation_rate
+			out["stock_value"] = last_entry.batch_stock_value if batch_no else last_entry.stock_value
+		else:
+			out["valuation_rate"] = 0
+			out["stock_value"] = 0
+
+	if with_serial_no:
+		serial_nos = ""
+		if last_entry:
+			serial_nos = last_entry.get("serial_no")
+			if serial_nos and len(get_serial_nos_data(serial_nos)) < last_entry.qty_after_transaction:
 				serial_nos = get_serial_nos_after_sle(args)
 
-			return ((last_entry.qty_after_transaction,
-					last_entry.batch_valuation_rate if batch_no else last_entry.valuation_rate,
-					last_entry.batch_stock_value if batch_no else last_entry.stock_value,
-					serial_nos)
-				if last_entry else (0.0, 0.0, 0.0, ""))
-		else:
-			return (last_entry.qty_after_transaction,
-					last_entry.batch_valuation_rate if batch_no else last_entry.valuation_rate,
-					last_entry.batch_stock_value if batch_no else last_entry.stock_value) \
-				if last_entry else (0.0, 0.0, 0.0)
-	else:
-		return last_entry.qty_after_transaction if last_entry else 0.0
+		out["serial_nos"] = cstr(serial_nos)
+
+	return out
+
+
+def get_unpacked_balance_qty(item_code, warehouse, batch_no=None, posting_date=None, posting_time=None):
+	from erpnext.stock.stock_ledger import get_previous_sle
+
+	if not posting_date:
+		posting_date = nowdate()
+	if not posting_time:
+		posting_time = nowtime()
+
+	args = {
+		"item_code": item_code,
+		"warehouse": warehouse,
+		"posting_date": posting_date,
+		"posting_time": posting_time,
+		"batch_no": batch_no,
+	}
+
+	last_entry = get_previous_sle(args, packing_slip_sle=True)
+	return last_entry.packed_qty_after_transaction if last_entry else 0
 
 
 def get_serial_nos_data(serial_nos):
