@@ -513,7 +513,7 @@ class StockController(AccountsController):
 				))
 
 			warehouse_field = "s_warehouse" if self.doctype == "Stock Entry" else "warehouse"
-			if d.get(warehouse_field) != packing_slip.warehouse and not self.get("is_return"):
+			if is_stock_movement and d.get(warehouse_field) != packing_slip.warehouse and not self.get("is_return"):
 				frappe.throw(_("Row #{0}: Warehouse does not match with {1}. Warehouse must be {2}").format(
 					d.idx, frappe.get_desk_link("Packing Slip", packing_slip.name), packing_slip.warehouse
 				))
