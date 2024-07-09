@@ -380,9 +380,10 @@ class Company(NestedSet):
 		frappe.db.sql("delete from `tabSales Taxes and Charges Template` where company=%s", self.name)
 		frappe.db.sql("delete from `tabPurchase Taxes and Charges Template` where company=%s", self.name)
 
+
 @frappe.whitelist()
 def enqueue_replace_abbr(company, old, new):
-	kwargs = dict(company=company, old=old, new=new)
+	kwargs = dict(company=company, old=old, new=new, queue="long")
 	frappe.enqueue('erpnext.setup.doctype.company.company.replace_abbr', **kwargs)
 
 
@@ -410,6 +411,7 @@ def replace_abbr(company, old, new):
 	for dt in ["Warehouse", "Account", "Cost Center", "Department",
 			"Sales Taxes and Charges Template", "Purchase Taxes and Charges Template"]:
 		_rename_records(dt)
+
 
 def get_name_with_abbr(name, company):
 	company_abbr = frappe.get_cached_value('Company',  company,  "abbr")
