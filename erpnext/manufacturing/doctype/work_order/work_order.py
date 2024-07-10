@@ -207,8 +207,12 @@ class WorkOrder(StatusUpdaterERP):
 
 	def validate_warehouses(self):
 		if self.docstatus == 1:
-			if not self.wip_warehouse and not self.skip_transfer:
+			if (
+				not self.wip_warehouse
+				and (not self.skip_transfer or self.from_wip_warehouse or self.produce_fg_in_wip_warehouse)
+			):
 				frappe.throw(_("Work-in-Progress Warehouse is required before Submit"))
+
 			if not self.fg_warehouse:
 				frappe.throw(_("Target Warehouse is required before Submit"))
 
@@ -1607,10 +1611,11 @@ def make_packing_slip(work_orders, target_doc=None):
 	# Validate and separate sales order work orders
 	for name in work_orders:
 		wo_details = frappe.db.get_value("Work Order", name, [
-			"name", "docstatus", "fg_warehouse",
+			"name", "docstatus",
 			"customer", "sales_order", "sales_order_item",
 			"production_item", "item_name", "stock_uom",
 			"completed_qty", "packed_qty",
+			"fg_warehouse", "wip_warehouse", "produce_fg_in_wip_warehouse",
 		], as_dict=1)
 
 		if not wo_details or wo_details.docstatus != 1:
@@ -1645,14 +1650,14 @@ def make_packing_slip(work_orders, target_doc=None):
 	for wo_details in pack_from_work_orders:
 		if not target_doc.customer and wo_details.customer:
 			target_doc.customer = wo_details.customer
-		if not target_doc.warehouse and wo_details.fg_warehouse:
-			target_doc.warehouse = wo_details.fg_warehouse
+		if not target_doc.target_warehouse and wo_details.fg_warehouse:
+			target_doc.target_warehouse = wo_details.fg_warehouse
 
 		row = frappe.new_doc("Packing Slip Item")
 		row.work_order = wo_details.name
 		row.item_code = wo_details.production_item
 		row.item_name = wo_details.item_name
-		row.source_warehouse = wo_details.fg_warehouse
+		row.source_warehouse = wo_details.wip_warehouse if wo_details.produce_fg_in_wip_warehouse else wo_details.fg_warehouse
 		row.qty = wo_details.completed_qty - wo_details.packed_qty
 		row.uom = wo_details.stock_uom
 

@@ -200,38 +200,32 @@ frappe.ui.form.on('Stock Entry', {
 		}
 
 		if (frm.doc.docstatus===0) {
-			frm.add_custom_button(__('Purchase Invoice'), function() {
-				erpnext.utils.map_current_doc({
-					method: "erpnext.accounts.doctype.purchase_invoice.purchase_invoice.make_stock_entry",
-					source_doctype: "Purchase Invoice",
-					target: frm,
-					date_field: "posting_date",
-					setters: {
-						supplier: frm.doc.supplier || undefined,
-					},
-					get_query_filters: {
-						docstatus: 1
-					}
-				})
-			}, __("Get Items From"));
+			if (frappe.model.can_read("Material Request")) {
+				frm.add_custom_button(__('Material Request'), function () {
+					erpnext.utils.map_current_doc({
+						method: "erpnext.stock.doctype.material_request.material_request.make_stock_entry",
+						source_doctype: "Material Request",
+						target: frm,
+						date_field: "schedule_date",
+						setters: {
+							company: frm.doc.company,
+						},
+						get_query_filters: {
+							docstatus: 1,
+							material_request_type: ["in", ["Material Transfer", "Material Issue"]],
+							status: ["not in", ["Transferred", "Issued"]]
+						}
+					})
+				}, __("Get Items From"));
+			}
 
-			frm.add_custom_button(__('Material Request'), function() {
-				erpnext.utils.map_current_doc({
-					method: "erpnext.stock.doctype.material_request.material_request.make_stock_entry",
-					source_doctype: "Material Request",
-					target: frm,
-					date_field: "schedule_date",
-					setters: {
-						company: frm.doc.company,
-					},
-					get_query_filters: {
-						docstatus: 1,
-						material_request_type: ["in", ["Material Transfer", "Material Issue"]],
-						status: ["not in", ["Transferred", "Issued"]]
-					}
-				})
-			}, __("Get Items From"));
+			if (frappe.model.can_read("Packing Slip")) {
+				frm.add_custom_button(__('Packing Slip'), () => {
+					frm.cscript.get_items_from_packing_slip("Stock Entry");
+				}, __("Get Items From"));
+			}
 		}
+
 		if (frm.doc.docstatus===0 && frm.doc.purpose == "Material Issue") {
 			frm.add_custom_button(__('Expired Batches'), function() {
 				frappe.call({

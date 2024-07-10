@@ -151,6 +151,7 @@ class SalesInvoice(SellingController):
 		# because updating reserved qty in bin depends upon updated delivered qty in SO
 		if self.update_stock == 1:
 			self.update_stock_ledger()
+			self.update_packing_slips()
 
 		self.validate_vehicle_registration_order()
 
@@ -209,6 +210,7 @@ class SalesInvoice(SellingController):
 		# because updating reserved qty in bin depends upon updated delivered qty in SO
 		if self.update_stock == 1:
 			self.update_stock_ledger()
+			self.update_packing_slips()
 
 		self.make_gl_entries_on_cancel()
 
@@ -338,9 +340,6 @@ class SalesInvoice(SellingController):
 			doc.notify_update()
 
 		self.update_project_billing_and_sales()
-
-		if self.update_stock:
-			self.update_packing_slips()
 
 	def set_delivery_status(self, update=False, update_modified=True):
 		delivered_qty_map = self.get_delivered_qty_map()
@@ -739,7 +738,7 @@ class SalesInvoice(SellingController):
 			and amount = 0""", self.name)
 
 	def validate_with_previous_doc(self):
-		sales_order_compare = [["company", "="], ["currency", "="]]
+		sales_order_compare = [["currency", "="]]
 		delivery_note_compare = [["company", "="], ["currency", "="]]
 
 		if not self.get('claim_billing'):

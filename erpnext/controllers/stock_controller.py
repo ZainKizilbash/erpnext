@@ -442,15 +442,14 @@ class StockController(AccountsController):
 
 			return packing_slip_map[name]
 
-		is_delivery = (
+		is_stock_movement = (
 			self.doctype == "Delivery Note"
 			or (self.doctype == "Sales Invoice" and self.get("update_stock"))
-			or (self.doctype == "Stock Entry" and self.purpose == "Send to Subcontractor")
+			or self.doctype == "Stock Entry"
 		)
-		# is_transfer = self.doctype == "Material Transfer"
 
 		required_packing_slip_status = None
-		if is_delivery:
+		if is_stock_movement:
 			required_packing_slip_status = "In Stock" if not self.get("is_return") else "Delivered"
 
 		# Validate Packing Slips
@@ -489,7 +488,11 @@ class StockController(AccountsController):
 					d.idx, frappe.get_desk_link("Packing Slip", packing_slip.name), packing_slip.project
 				))
 
-			if packing_slip.customer and self.get("customer") != packing_slip.customer:
+			if (
+				packing_slip.customer
+				and self.get("customer") != packing_slip.customer
+				and (self.doctype != "Stock Entry" or self.get("purpose") == "Send to Subcontractor")
+			):
 				frappe.throw(_("Row #{0}: Customer does not match with {1}. Customer must be {2}").format(
 					d.idx, frappe.get_desk_link("Packing Slip", packing_slip.name), packing_slip.customer
 				))
@@ -510,7 +513,7 @@ class StockController(AccountsController):
 				))
 
 			warehouse_field = "s_warehouse" if self.doctype == "Stock Entry" else "warehouse"
-			if d.get(warehouse_field) != packing_slip.warehouse:
+			if is_stock_movement and d.get(warehouse_field) != packing_slip.warehouse and not self.get("is_return"):
 				frappe.throw(_("Row #{0}: Warehouse does not match with {1}. Warehouse must be {2}").format(
 					d.idx, frappe.get_desk_link("Packing Slip", packing_slip.name), packing_slip.warehouse
 				))
@@ -518,7 +521,7 @@ class StockController(AccountsController):
 			if not d.get("packing_slip_item"):
 				frappe.throw(_("Row #{0}: Missing Packing Slip Row Reference").format(d.idx))
 
-			if is_delivery and not self.get("is_return"):
+			if is_stock_movement and not self.get("is_return"):
 				packing_slip_qty = flt(frappe.db.get_value("Packing Slip Item", d.packing_slip_item, 'qty', cache=1))
 
 				if flt(d.qty) != packing_slip_qty:

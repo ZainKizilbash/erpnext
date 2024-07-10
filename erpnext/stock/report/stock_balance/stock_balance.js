@@ -173,10 +173,20 @@ frappe.query_reports["Stock Balance"] = {
 	formatter: function (value, row, column, data, default_formatter) {
 		var style = {};
 
-		if (["out_qty", "out_val"].includes(column.fieldname) && flt(value) > 0) {
+		let incoming_fields = ["in_qty", "in_val", "ordered_qty", "purchase_qty", "purchase_val"];
+		let outgoing_fields = ["out_qty", "out_val", "sales_qty", "sales_val", "consumed_qty", "consumed_val"];
+		let difference_fields = ["transferred_qty", "reconciled_qty"];
+
+		if (outgoing_fields.includes(column.fieldname) && flt(value) > 0) {
 			style['color'] = 'red';
-		} else if (["in_qty", "in_val", "ordered_qty"].includes(column.fieldname) && flt(value) > 0) {
+		} else if (incoming_fields.includes(column.fieldname) && flt(value) > 0) {
 			style['color'] = 'green';
+		} else if (difference_fields.includes(column.fieldname)) {
+			if (flt(value) > 0) {
+				style['color'] = 'green';
+			} else if (flt(value) < 0) {
+				style['color'] = 'red';
+			}
 		}
 
 		if (column.fieldname == "bal_qty") {

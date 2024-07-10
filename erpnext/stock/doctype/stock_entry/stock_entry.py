@@ -96,6 +96,7 @@ class StockEntry(TransactionController):
 			item_condition=lambda d: not d.s_warehouse,
 			set_manufacturing_date=self.purpose in ("Manufacture", "Repack"))
 		self.update_stock_ledger()
+		self.update_packing_slips()
 		update_serial_nos_after_submit(self, "items")
 		self.update_work_order()
 		self.update_purchase_order_supplied_items()
@@ -109,6 +110,7 @@ class StockEntry(TransactionController):
 	def on_cancel(self):
 		self.update_purchase_order_supplied_items()
 		self.update_stock_ledger()
+		self.update_packing_slips()
 		self.make_gl_entries_on_cancel()
 		self.update_work_order()
 		self.update_cost_in_project()
@@ -168,8 +170,6 @@ class StockEntry(TransactionController):
 				doc.validate_transferred_qty(from_doctype=self.doctype, row_names=stock_entry_row_names)
 				doc.set_status(update=True)
 				doc.notify_update()
-
-		self.update_packing_slips()
 
 	def set_transferred_status(self, update=False, update_modified=True):
 		transferred_qty_map = self.get_transferred_qty_map()
@@ -707,7 +707,8 @@ class StockEntry(TransactionController):
 				sl_entries.append(self.get_sl_entries(d, {
 					"warehouse": cstr(d.s_warehouse),
 					"actual_qty": -flt(d.stock_qty),
-					"incoming_rate": 0
+					"incoming_rate": 0,
+					"is_transfer": cint(bool(d.s_warehouse and d.t_warehouse)),
 				}))
 
 		for d in self.get('items'):
@@ -716,7 +717,8 @@ class StockEntry(TransactionController):
 					"warehouse": cstr(d.t_warehouse),
 					"actual_qty": flt(d.stock_qty),
 					"incoming_rate": flt(d.valuation_rate),
-					"packing_slip": None,
+					"packing_slip": d.packing_slip if self.purpose == "Material Transfer" else None,
+					"is_transfer": cint(bool(d.s_warehouse and d.t_warehouse)),
 				})
 
 				# SLE Dependency
@@ -1359,7 +1361,7 @@ class StockEntry(TransactionController):
 		if self.work_order:
 			self.get_work_order()
 			item_code = self.pro_doc.production_item
-			to_warehouse = self.pro_doc.fg_warehouse
+			to_warehouse = self.pro_doc.wip_warehouse if self.pro_doc.produce_fg_in_wip_warehouse else self.pro_doc.fg_warehouse
 		else:
 			item_code = frappe.db.get_value("BOM", self.bom_no, "item")
 			to_warehouse = self.to_warehouse
@@ -1534,8 +1536,9 @@ class StockEntry(TransactionController):
 						frappe.MappingMismatchError)
 
 	def validate_packing_slips(self):
-		if self.purpose != "Send to Subcontractor" and any(d for d in self.get("items") if d.get("packing_slip")):
-			frappe.throw(_("Stock Entry against Packing Slip is only allowed for purpose 'Send to Subcontractor'"))
+		if self.purpose not in ("Send to Subcontractor", "Material Issue", "Material Transfer"):
+			if any(d for d in self.get("items") if d.get("packing_slip")):
+				frappe.throw(_("Stock Entry against Packing Slip is not allowed for purpose '{0}'").format(self.purpose))
 
 		super().validate_packing_slips()
 

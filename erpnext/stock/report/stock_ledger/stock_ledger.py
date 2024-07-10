@@ -227,7 +227,7 @@ def get_sle_conditions(filters):
 	if filters.get("batch_no"):
 		conditions.append("batch_no=%(batch_no)s")
 	if filters.get("packing_slip"):
-		conditions.append("packing_slip=%(packing_slip)s")
+		conditions.append("(packing_slip=%(packing_slip)s or (voucher_type='Packing Slip' and voucher_no=%(packing_slip)s))")
 	if filters.get("project"):
 		conditions.append("project=%(project)s")
 	if filters.get("party_type"):

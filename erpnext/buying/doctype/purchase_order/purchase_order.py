@@ -896,7 +896,7 @@ def make_packing_slip(purchase_order):
 	doc.supplier = purchase_order.supplier
 	doc.supplier_name = purchase_order.supplier_name
 	doc.from_warehouse = purchase_order.set_reserve_warehouse
-	doc.warehouse = purchase_order.set_reserve_warehouse
+	doc.target_warehouse = purchase_order.set_reserve_warehouse
 
 	if purchase_order.meta.has_field("cost_center") and doc.meta.has_field("cost_center"):
 		doc.cost_center = purchase_order.cost_center

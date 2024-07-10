@@ -703,8 +703,13 @@ class TransactionController(StockController):
 				item_price_data = frappe._dict()
 				get_price_list_data(args, frappe.get_cached_doc("Item", item.item_code), item_price_data)
 
-				if flt(item.price_list_rate) and abs(flt(item_price_data.price_list_rate) - flt(item.price_list_rate)) > 0.005:
-					_set_item_pl_rate(args["transaction_date"], item.item_code, self.buying_price_list, flt(item.price_list_rate), item.uom, item.conversion_factor)
+				rate_field_setting = frappe.get_cached_value("Buying Settings", None,
+					"update_buying_prices_based_on")
+				rate_field = "rate" if rate_field_setting == "Actual Rate" else "price_list_rate"
+
+				new_rate = flt(item.get(rate_field))
+				if new_rate and abs(flt(item_price_data.price_list_rate) - new_rate) > 0.005:
+					_set_item_pl_rate(args["transaction_date"], item.item_code, self.buying_price_list, new_rate, item.uom, item.conversion_factor)
 
 	def is_inclusive_tax(self):
 		is_inclusive = cint(frappe.get_cached_value("Accounts Settings", None, "show_inclusive_tax_in_print"))

@@ -1261,9 +1261,10 @@ def make_packing_slip(source_name, target_doc=None, warehouse=None):
 		return undelivered_qty > 0 and unpacked_qty > 0
 
 	def set_missing_values(source, target):
-		if not target.warehouse:
+		# Target Warehouse
+		if not target.target_warehouse:
 			if warehouse:
-				target.warehouse = warehouse
+				target.target_warehouse = warehouse
 			else:
 				target.determine_warehouse_from_sales_order()
 
@@ -1276,6 +1277,16 @@ def make_packing_slip(source_name, target_doc=None, warehouse=None):
 		work_order_details = get_work_order_details(source)
 		target.work_order = work_order_details.name if work_order_details else None
 
+		# Source Warehouse
+		if work_order_details:
+			if work_order_details.produce_fg_in_wip_warehouse:
+				target.source_warehouse = work_order_details.wip_warehouse
+			else:
+				target.source_warehouse = work_order_details.fg_warehouse
+		else:
+			target.source_warehouse = source.warehouse
+
+		# Remaining Qty
 		undelivered_qty, unpacked_qty = get_remaining_qty(source)
 		target.qty = min(undelivered_qty, unpacked_qty)
 
@@ -1302,7 +1313,9 @@ def make_packing_slip(source_name, target_doc=None, warehouse=None):
 				"sales_order_item": source.name,
 				"docstatus": 1,
 				"packing_slip_required": 1,
-			}, fieldname=["name", "completed_qty"], as_dict=1)
+			}, fieldname=[
+				"name", "completed_qty", "fg_warehouse", "wip_warehouse", "produce_fg_in_wip_warehouse",
+			], as_dict=1)
 
 		return work_order_cache[source.name]
 
@@ -1311,9 +1324,6 @@ def make_packing_slip(source_name, target_doc=None, warehouse=None):
 			"doctype": "Packing Slip",
 			"validation": {
 				"docstatus": ["=", 1]
-			},
-			"field_map": {
-				"set_warehouse": "warehouse",
 			},
 			"field_no_map": [
 				"total_net_weight",
@@ -1326,7 +1336,6 @@ def make_packing_slip(source_name, target_doc=None, warehouse=None):
 			"field_map": {
 				"name": "sales_order_item",
 				"parent": "sales_order",
-				"warehouse": "source_warehouse",
 			},
 			"postprocess": update_item,
 			"condition": item_condition,

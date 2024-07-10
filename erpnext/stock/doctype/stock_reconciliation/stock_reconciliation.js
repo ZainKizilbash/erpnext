@@ -17,8 +17,6 @@ frappe.ui.form.on("Stock Reconciliation", {
 			}
 		});
 
-		var me = this;
-
 		frm.set_query("batch_no", "items", function(doc, cdt, cdn) {
 			var item = frappe.get_doc(cdt, cdn);
 			let filters = {
@@ -278,7 +276,13 @@ erpnext.stock.StockReconciliation = class StockReconciliation extends erpnext.st
 	}
 
 	refresh() {
-		if(this.frm.doc.docstatus==1) {
+		if (this.frm.doc.docstatus == 0) {
+			this.frm.add_custom_button(__("Set Qty as Packed Qty"), () => {
+				this.set_qty_zero();
+			}, __("Tools"));
+		}
+
+		if (this.frm.doc.docstatus == 1) {
 			this.show_stock_ledger();
 			if (erpnext.is_perpetual_inventory_enabled(this.frm.doc.company)) {
 				this.show_general_ledger();
@@ -290,6 +294,11 @@ erpnext.stock.StockReconciliation = class StockReconciliation extends erpnext.st
 		this.frm.events.set_amount_quantity(doc, cdt, cdn);
 	}
 
+	set_qty_zero() {
+		for (let d of this.frm.doc.items || []) {
+			frappe.model.set_value(d.doctype, d.name, "qty", flt(d.packed_qty) || 0);
+		}
+	}
 };
 
 cur_frm.cscript = new erpnext.stock.StockReconciliation({frm: cur_frm});
