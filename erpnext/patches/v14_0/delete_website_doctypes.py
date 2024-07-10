@@ -31,3 +31,23 @@ def execute():
 	frappe.delete_doc_if_exists("Web Form", "certification-application")
 	frappe.delete_doc_if_exists("Web Form", "grant-application")
 	frappe.delete_doc_if_exists("Web Form", "job-application")
+
+	# Website Settings
+	website_settings = frappe.get_single("Website Settings")
+	website_settings_changed = False
+	if website_settings.home_page == "home":
+		website_settings.home_page = "app"
+		website_settings_changed = True
+
+	to_remove = []
+	for d in website_settings.top_bar_items:
+		if d.url == "/all-products":
+			to_remove.append(d)
+
+	if to_remove:
+		website_settings_changed = True
+		for d in to_remove:
+			website_settings.remove(d)
+
+	if website_settings_changed:
+		website_settings.save()
