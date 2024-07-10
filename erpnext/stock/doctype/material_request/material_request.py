@@ -279,19 +279,6 @@ class MaterialRequest(BuyingController):
 		self.calculate_totals()
 
 
-def get_list_context(context=None):
-	from erpnext.controllers.website_list_for_contact import get_list_context
-	list_context = get_list_context(context)
-	list_context.update({
-		'show_sidebar': True,
-		'show_search': True,
-		'no_breadcrumbs': True,
-		'title': _('Material Request'),
-	})
-
-	return list_context
-
-
 def set_missing_values(source, target_doc):
 	if target_doc.doctype == "Purchase Order" and getdate(target_doc.schedule_date) < getdate(nowdate()):
 		target_doc.schedule_date = None

@@ -372,5 +372,6 @@ erpnext.patches.v14_0.set_sales_person_employee_details
 erpnext.patches.v14_0.set_appointment_type_company
 erpnext.patches.v14_0.set_navbar_app_name
 erpnext.patches.v14_0.set_stock_entry_total_fields
+erpnext.patches.v14_0.delete_website_doctypes
 erpnext.patches.v14_0.set_sle_is_transfer
 execute:frappe.db.set_single_value("Buying Settings", "update_buying_prices_based_on", "Price List Rate", update_modified=False)

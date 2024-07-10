@@ -7,16 +7,15 @@ import frappe
 import json
 import copy
 from frappe import throw, _
-from frappe.utils import flt, cint, getdate
-
+from frappe.utils import flt, getdate
 from frappe.model.document import Document
-
 from six import string_types
 
 apply_on_dict = {"Item Code": "items",
 	"Item Group": "item_groups", "Brand": "brands"}
 
 other_fields = ["other_item_code", "other_item_group", "other_brand"]
+
 
 class PricingRule(Document):
 	def validate(self):
@@ -148,6 +147,8 @@ class PricingRule(Document):
 
 @frappe.whitelist()
 def apply_pricing_rule(args, doc=None):
+	from erpnext.stock.get_item_details import determine_selling_or_buying
+
 	"""
 		args = {
 			"items": [{"doctype": "", "name": "", "item_code": "", "brand": "", "item_group": ""}, ...],
@@ -173,8 +174,8 @@ def apply_pricing_rule(args, doc=None):
 
 	args = frappe._dict(args)
 
-	if not args.transaction_type:
-		set_transaction_type(args)
+	if not args.selling_or_buying:
+		determine_selling_or_buying(args)
 
 	# list of dictionaries
 	out = []
@@ -302,7 +303,7 @@ def update_args_for_pricing_rule(args):
 		if not args.item_group:
 			frappe.throw(_("Item Group not mentioned in item master for item {0}").format(args.item_code))
 
-	if args.transaction_type=="selling":
+	if args.selling_or_buying == "selling":
 		if args.customer and not (args.customer_group and args.territory):
 
 			if args.quotation_to and args.quotation_to != 'Customer':
@@ -419,18 +420,6 @@ def remove_pricing_rules(item_list):
 
 	return out
 
-def set_transaction_type(args):
-	if args.transaction_type:
-		return
-	if args.doctype in ("Opportunity", "Quotation", "Sales Order", "Delivery Note", "Sales Invoice"):
-		args.transaction_type = "selling"
-	elif args.doctype in ("Material Request", "Supplier Quotation", "Purchase Order",
-		"Purchase Receipt", "Purchase Invoice"):
-			args.transaction_type = "buying"
-	elif args.customer:
-		args.transaction_type = "selling"
-	else:
-		args.transaction_type = "buying"
 
 @frappe.whitelist()
 def make_pricing_rule(doctype, docname):

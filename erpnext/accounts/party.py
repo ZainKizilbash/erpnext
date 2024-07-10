@@ -610,7 +610,7 @@ def get_address_tax_category(tax_category=None, billing_address=None, shipping_a
 @frappe.whitelist()
 def set_taxes(party, party_type, posting_date, company, customer_group=None, supplier_group=None, tax_category=None,
 		transaction_type=None, cost_center=None, tax_id=None, tax_cnic=None, tax_strn=None, has_stin=None,
-		billing_address=None, shipping_address=None, use_for_shopping_cart=None):
+		billing_address=None, shipping_address=None):
 	from erpnext.accounts.doctype.tax_rule.tax_rule import get_tax_template, get_party_details
 
 	args = {
@@ -656,9 +656,6 @@ def set_taxes(party, party_type, posting_date, company, customer_group=None, sup
 			del args['lead']
 	else:
 		args.update({"tax_type": "Purchase"})
-
-	if use_for_shopping_cart:
-		args.update({"use_for_shopping_cart": use_for_shopping_cart})
 
 	return get_tax_template(posting_date, args)
 

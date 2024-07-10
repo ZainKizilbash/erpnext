@@ -16,6 +16,8 @@ import json
 
 
 class BuyingController(TransactionController):
+	selling_or_buying = "buying"
+
 	def __setup__(self):
 		if hasattr(self, "taxes"):
 			self.flags.print_taxes_with_zero_amount = cint(frappe.get_cached_value("Print Settings", None,

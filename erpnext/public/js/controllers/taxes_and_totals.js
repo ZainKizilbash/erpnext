@@ -55,10 +55,8 @@ erpnext.taxes_and_totals = class TaxesAndTotals extends erpnext.payments {
 		}
 
 		// Sales person's commission
-		if(in_list(["Quotation", "Sales Order", "Delivery Note", "Sales Invoice"], this.frm.doc.doctype)) {
-			this.calculate_commission();
-			this.calculate_sales_team_contribution(true);
-		}
+		this.calculate_commission && this.calculate_commission();
+		this.calculate_sales_team_contribution && this.calculate_sales_team_contribution(true);
 
 		// Update paid amount on return/debit note creation
 		if(this.frm.doc.doctype === "Purchase Invoice" && this.frm.doc.is_return
@@ -791,7 +789,7 @@ erpnext.taxes_and_totals = class TaxesAndTotals extends erpnext.payments {
 			? this.frm.doc["taxes"][tax_count - 1].total + flt(this.frm.doc.rounding_adjustment)
 			: this.frm.doc.taxable_total);
 
-		if(in_list(["Quotation", "Sales Order", "Delivery Note", "Sales Invoice"], this.frm.doc.doctype)) {
+		if(frappe.meta.has_field(this.frm.doc.doctype, "taxes_and_charges_deducted")) {
 			this.frm.doc.base_total_after_taxes = (this.frm.doc.total_taxes_and_charges) ?
 				flt(this.frm.doc.total_after_taxes * this.frm.doc.conversion_rate) : this.frm.doc.base_taxable_total;
 		} else {
@@ -817,9 +815,11 @@ erpnext.taxes_and_totals = class TaxesAndTotals extends erpnext.payments {
 			this.frm.doc.base_total_after_taxes = flt((this.frm.doc.taxes_and_charges_added || this.frm.doc.taxes_and_charges_deducted) ?
 				flt(this.frm.doc.total_after_taxes * this.frm.doc.conversion_rate) : this.frm.doc.base_taxable_total);
 
-			this.set_in_company_currency(this.frm.doc,
-				["taxes_and_charges_added", "taxes_and_charges_deducted"],
-				!this.should_round_transaction_currency());
+			if(frappe.meta.has_field(this.frm.doc.doctype, "taxes_and_charges_deducted")) {
+				this.set_in_company_currency(this.frm.doc,
+					["taxes_and_charges_added", "taxes_and_charges_deducted"],
+					!this.should_round_transaction_currency());
+			}
 		}
 
 		this.frm.doc.total_taxes_and_charges = this.frm.doc.total_after_taxes - this.frm.doc.taxable_total - flt(this.frm.doc.rounding_adjustment);

@@ -939,18 +939,6 @@ def get_pending_raw_materials_to_transfer(purchase_order):
 	return supplied_items
 
 
-def get_list_context(context=None):
-	from erpnext.controllers.website_list_for_contact import get_list_context
-	list_context = get_list_context(context)
-	list_context.update({
-		'show_sidebar': True,
-		'show_search': True,
-		'no_breadcrumbs': True,
-		'title': _('Purchase Orders'),
-	})
-	return list_context
-
-
 @frappe.whitelist()
 def update_status(status, name):
 	po = frappe.get_doc("Purchase Order", name)

@@ -117,20 +117,6 @@ class SalesOrder(SellingController):
 	def set_title(self):
 		self.title = self.customer_name or self.customer
 
-	def set_indicator(self):
-		"""Set indicator for portal"""
-		if self.billing_status == "To Bill" and self.delivery_status == "To Deliver":
-			self.indicator_color = "orange"
-			self.indicator_title = _("Not Paid and Not Delivered")
-
-		elif self.billing_status == "Billed" and self.delivery_status == "To Deliver":
-			self.indicator_color = "orange"
-			self.indicator_title = _("Paid and Not Delivered")
-
-		else:
-			self.indicator_color = "green"
-			self.indicator_title = _("Paid")
-
 	def update_status(self, status):
 		self.check_modified_date()
 		self.set_status(status=status)
@@ -837,19 +823,6 @@ class SalesOrder(SellingController):
 				frappe.throw(_("Cannot ensure delivery by Serial No as \
 				Item {0} is added with and without Ensure Delivery by \
 				Serial No.").format(item.item_code))
-
-
-def get_list_context(context=None):
-	from erpnext.controllers.website_list_for_contact import get_list_context
-	list_context = get_list_context(context)
-	list_context.update({
-		'show_sidebar': True,
-		'show_search': True,
-		'no_breadcrumbs': True,
-		'title': _('Orders'),
-	})
-
-	return list_context
 
 
 @frappe.whitelist()
