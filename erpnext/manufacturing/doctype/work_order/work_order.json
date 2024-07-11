@@ -91,7 +91,7 @@
   "column_break_jnb92",
   "material_transferred_for_manufacturing",
   "produced_qty",
-  "scrap_qty",
+  "process_loss_qty",
   "column_break_dilvt",
   "per_material_transferred",
   "per_produced",
@@ -525,10 +525,10 @@
   },
   {
    "default": "0",
-   "depends_on": "scrap_qty",
-   "fieldname": "scrap_qty",
+   "depends_on": "process_loss_qty",
+   "fieldname": "process_loss_qty",
    "fieldtype": "Float",
-   "label": "Scrapped Qty",
+   "label": "Process Loss Qty",
    "read_only": 1
   },
   {
@@ -880,7 +880,7 @@
  "is_calendar_and_gantt": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-07-05 13:58:01.685726",
+ "modified": "2024-07-11 13:58:01.685726",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Work Order",

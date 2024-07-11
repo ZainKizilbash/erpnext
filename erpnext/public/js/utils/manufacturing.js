@@ -260,7 +260,7 @@ $.extend(erpnext.manufacturing, {
 					"purpose": purpose,
 					"qty": r.data.qty,
 					"use_alternative_item": r.data.use_alternative_item,
-					"scrap_remaining": r.data.scrap_remaining,
+					"process_loss_remaining": r.data.process_loss_remaining,
 					"args": r.args,
 				},
 				freeze: 1,
@@ -302,12 +302,12 @@ $.extend(erpnext.manufacturing, {
 					}
 				];
 
-				if (purpose === "Manufacture" && frappe.defaults.get_default('scrap_remaining_by_default')) {
+				if (purpose === "Manufacture" && frappe.defaults.get_default('process_loss_remaining_by_default')) {
 					fields.push({
 						fieldtype: 'Check',
-						label: __('Scrap Remaining'),
-						fieldname: 'scrap_remaining',
-						default: cint(frappe.defaults.get_default('scrap_remaining_by_default')),
+						label: __('Consider Remaining as Process Loss'),
+						fieldname: 'process_loss_remaining',
+						default: cint(frappe.defaults.get_default('process_loss_remaining_by_default')),
 					})
 				}
 
@@ -627,7 +627,7 @@ $.extend(erpnext.manufacturing, {
 
 	get_subcontractable_qty: function (doc) {
 		let production_completed_qty = Math.max(flt(doc.produced_qty), flt(doc.material_transferred_for_manufacturing));
-		let subcontractable_qty = flt(doc.producible_qty) - flt(doc.scrap_qty) - production_completed_qty;
+		let subcontractable_qty = flt(doc.producible_qty) - flt(doc.process_loss_qty) - production_completed_qty;
 		return flt(subcontractable_qty, erpnext.manufacturing.get_work_order_precision());
 	},
 
@@ -755,9 +755,9 @@ $.extend(erpnext.manufacturing, {
 
 		let pending_production;
 		if (doc.skip_transfer) {
-			pending_production = flt(doc.producible_qty - doc.produced_qty, qty_precision);
+			pending_production = flt(doc.producible_qty - doc.produced_qty - doc.process_loss_qty, qty_precision);
 		} else {
-			pending_production = flt(doc.material_transferred_for_manufacturing - doc.produced_qty, qty_precision);
+			pending_production = flt(doc.material_transferred_for_manufacturing - doc.produced_qty - doc.process_loss_qty, qty_precision);
 		}
 		pending_production = Math.max(pending_production, 0);
 
@@ -780,6 +780,15 @@ $.extend(erpnext.manufacturing, {
 					completed_qty: doc.produced_qty,
 					progress_class: "progress-bar-success",
 					add_min_width: doc.producible_qty ? 0.5 : 0,
+				},
+				{
+					title: __("<b>Process Loss:</b> {0} {1} ({2}%)", [
+						format_number(doc.process_loss_qty),
+						doc.stock_uom,
+						format_number(doc.producible_qty ? doc.process_loss_qty / doc.producible_qty * 100: 0, null, 1),
+					]),
+					completed_qty: doc.process_loss_qty,
+					progress_class: "progress-bar-info",
 				},
 				{
 					title: __("<b>Production Remaining:</b> {0} {1}", [format_number(pending_production), doc.stock_uom]),

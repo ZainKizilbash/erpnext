@@ -20,7 +20,7 @@
   "auto_submit_job_card",
   "auto_submit_manufacture_entry",
   "auto_select_batches_in_stock_entry",
-  "scrap_remaining_by_default",
+  "process_loss_remaining_by_default",
   "capacity_planning",
   "disable_capacity_planning",
   "allow_overtime",
@@ -125,9 +125,9 @@
   },
   {
    "default": "0",
-   "fieldname": "scrap_remaining_by_default",
+   "fieldname": "process_loss_remaining_by_default",
    "fieldtype": "Check",
-   "label": "Allow Scrap Remaining Option"
+   "label": "Allow Process Loss Remaining Option"
   },
   {
    "default": "0",
@@ -168,7 +168,7 @@
  "icon": "icon-wrench",
  "issingle": 1,
  "links": [],
- "modified": "2023-11-11 00:09:01.740827",
+ "modified": "2024-07-11 00:09:01.740827",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Manufacturing Settings",

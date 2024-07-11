@@ -610,7 +610,7 @@ class WorkOrder(StatusUpdaterERP):
 		# Set completed qtys
 		to_update = frappe._dict({
 			"produced_qty": flt(ste_qty_map.get("Manufacture", {}).get("fg_completed_qty")),
-			"scrap_qty": flt(ste_qty_map.get("Manufacture", {}).get("scrap_qty")),
+			"process_loss_qty": flt(ste_qty_map.get("Manufacture", {}).get("process_loss_qty")),
 			"material_transferred_for_manufacturing": flt(ste_qty_map.get("Material Transfer for Manufacture", {}).get("fg_completed_qty")),
 		})
 		if self.operations and self.transfer_material_against == 'Job Card':
@@ -624,7 +624,7 @@ class WorkOrder(StatusUpdaterERP):
 
 		# Set status fields
 		if self.docstatus == 1:
-			production_completion_qty = flt(to_update.produced_qty + to_update.scrap_qty, self.precision("qty"))
+			production_completion_qty = flt(to_update.produced_qty + to_update.process_loss_qty, self.precision("qty"))
 			min_production_qty = flt(self.get_min_qty(self.producible_qty), self.precision("qty"))
 
 			if production_completion_qty and (production_completion_qty >= min_production_qty or self.status == "Stopped"):
@@ -705,7 +705,7 @@ class WorkOrder(StatusUpdaterERP):
 			ste_qty_data = frappe.db.sql("""
 				select purpose,
 					sum(fg_completed_qty) as fg_completed_qty,
-					sum(scrap_qty) as scrap_qty,
+					sum(process_loss_qty) as process_loss_qty,
 					min(posting_date) as min_posting_date,
 					max(posting_date) as max_posting_date
 				from `tabStock Entry`
@@ -749,7 +749,7 @@ class WorkOrder(StatusUpdaterERP):
 
 		if self.docstatus == 1:
 			packed_qty = flt(self.packed_qty, self.precision("qty"))
-			min_packing_qty = flt(self.get_min_qty(self.completed_qty), self.precision("qty"))
+			min_packing_qty = flt(self.completed_qty, self.precision("qty"))
 
 			if self.packed_qty and (packed_qty >= min_packing_qty or self.status == "Stopped"):
 				self.packing_status = "Packed"
@@ -782,7 +782,7 @@ class WorkOrder(StatusUpdaterERP):
 
 		max_production_qty = flt(self.get_qty_with_allowance(self.producible_qty), self.precision("qty"))
 
-		for fieldname in ["produced_qty", "scrap_qty", "material_transferred_for_manufacturing"]:
+		for fieldname in ["produced_qty", "process_loss_qty", "material_transferred_for_manufacturing"]:
 			qty = flt(self.get(fieldname), self.precision("qty"))
 			if qty > max_production_qty:
 				frappe.throw(_("{0} {1} {2} cannot be greater than maximum quantity {3} {2} in {4}").format(
@@ -860,7 +860,7 @@ class WorkOrder(StatusUpdaterERP):
 			self.producible_qty,
 			self.material_transferred_for_manufacturing,
 			self.produced_qty,
-			self.scrap_qty
+			self.process_loss_qty
 		)
 
 	def set_status(self, status=None, update=False, update_modified=True):
@@ -1342,7 +1342,7 @@ def make_stock_entry(
 	purpose,
 	qty=None,
 	use_alternative_item=False,
-	scrap_remaining=False,
+	process_loss_remaining=False,
 	job_card=None,
 	auto_submit=False,
 	args=None
@@ -1387,9 +1387,9 @@ def make_stock_entry(
 	use_alternative_item = cint(use_alternative_item)
 	stock_entry.use_alternative_item = use_alternative_item
 
-	scrap_remaining = cint(scrap_remaining)
-	stock_entry.scrap_qty = flt(work_order.qty) - flt(work_order.produced_qty) - flt(qty) if scrap_remaining and qty else 0
-	stock_entry.scrap_qty = max(0.0, stock_entry.scrap_qty)
+	process_loss_remaining = cint(process_loss_remaining)
+	stock_entry.process_loss_qty = flt(work_order.qty) - flt(work_order.produced_qty) - flt(qty) if process_loss_remaining and qty else 0
+	stock_entry.process_loss_qty = max(0.0, stock_entry.process_loss_qty)
 
 	if work_order.bom_no:
 		stock_entry.inspection_required = frappe.db.get_value('BOM', work_order.bom_no, 'inspection_required')
@@ -1542,9 +1542,9 @@ def _make_job_card(work_order, row, qty):
 	return doc
 
 
-def get_subcontractable_qty(producible_qty, material_transferred_for_manufacturing, produced_qty, scrap_qty):
+def get_subcontractable_qty(producible_qty, material_transferred_for_manufacturing, produced_qty, process_loss_qty):
 	production_completed_qty = max(flt(produced_qty), flt(material_transferred_for_manufacturing))
-	subcontractable_qty = flt(producible_qty) - flt(scrap_qty) - production_completed_qty
+	subcontractable_qty = flt(producible_qty) - flt(process_loss_qty) - production_completed_qty
 	return subcontractable_qty
 
 

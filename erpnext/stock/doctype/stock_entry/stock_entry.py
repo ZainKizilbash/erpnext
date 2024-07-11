@@ -1081,7 +1081,7 @@ class StockEntry(TransactionController):
 		self.get_work_order()
 
 		transferred_qty = flt(self.pro_doc.material_transferred_for_manufacturing)
-		completed_qty = flt(self.pro_doc.produced_qty) + flt(self.pro_doc.scrap_qty)
+		completed_qty = flt(self.pro_doc.produced_qty) + flt(self.pro_doc.process_loss_qty)
 		remaining_qty = max(transferred_qty - completed_qty, 0)
 
 		if not self.fg_completed_qty:
@@ -1218,7 +1218,7 @@ class StockEntry(TransactionController):
 
 		self.get_work_order()
 
-		fg_total_qty = flt(self.fg_completed_qty) + flt(self.scrap_qty)
+		fg_total_qty = flt(self.fg_completed_qty) + flt(self.process_loss_qty)
 		items_dict = self.get_bom_raw_materials(fg_total_qty)
 		wo_required_items_dict = self.pro_doc.get_required_items_dict() if self.pro_doc else frappe._dict()
 
@@ -1383,13 +1383,13 @@ class StockEntry(TransactionController):
 			}
 		}, bom_no=self.bom_no)
 
-	def get_bom_raw_materials(self, qty, scrap_qty=0):
+	def get_bom_raw_materials(self, qty, process_loss_qty=0):
 		from erpnext.manufacturing.doctype.bom.bom import get_bom_items_as_dict
 
 		self.get_work_order()
 
 		# item dict = { item_code: {qty, description, stock_uom} }
-		item_dict = get_bom_items_as_dict(self.bom_no, self.company, qty=qty + scrap_qty,
+		item_dict = get_bom_items_as_dict(self.bom_no, self.company, qty=qty + process_loss_qty,
 			fetch_exploded=self.use_multi_level_bom, fetch_qty_in_stock_uom=False)
 
 		used_alternative_items = get_used_alternative_items(work_order=self.work_order)
