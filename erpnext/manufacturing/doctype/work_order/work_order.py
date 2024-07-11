@@ -749,7 +749,7 @@ class WorkOrder(StatusUpdaterERP):
 
 		if self.docstatus == 1:
 			packed_qty = flt(self.packed_qty, self.precision("qty"))
-			min_packing_qty = flt(self.completed_qty, self.precision("qty"))
+			min_packing_qty = flt(self.get_min_qty(self.completed_qty), self.precision("qty"))
 
 			if self.packed_qty and (packed_qty >= min_packing_qty or self.status == "Stopped"):
 				self.packing_status = "Packed"
