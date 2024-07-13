@@ -730,6 +730,7 @@ class WorkOrder(StatusUpdaterERP):
 
 	def set_packing_status(self, update=False, update_modified=True):
 		self.packed_qty = 0
+		self.reconciled_qty = 0
 		self.last_packing_date = None
 
 		if self.docstatus == 1:
@@ -745,10 +746,18 @@ class WorkOrder(StatusUpdaterERP):
 			self.packed_qty = flt(packing_data[0].packed_qty) if packing_data else 0
 			self.last_packing_date = packing_data[0].max_posting_date if packing_data else None
 
+			reconciled_qty = frappe.db.sql("""
+				select sum(i.stock_qty)
+				from `tabStock Entry Detail` i
+				inner join `tabStock Entry` ste on ste.name = i.parent
+				where i.work_order = %s and ste.docstatus = 1 and ste.purpose = 'Material Issue'
+			""", self.name)
+			self.reconciled_qty = flt(reconciled_qty[0][0]) if reconciled_qty else 0
+
 		self.per_packed = flt(self.packed_qty / self.qty * 100, 3)
 
 		if self.docstatus == 1:
-			packed_qty = flt(self.packed_qty, self.precision("qty"))
+			packed_qty = flt(self.packed_qty + self.reconciled_qty, self.precision("qty"))
 			min_packing_qty = flt(self.get_min_qty(self.completed_qty), self.precision("qty"))
 
 			if self.packed_qty and (packed_qty >= min_packing_qty or self.status == "Stopped"):
@@ -763,6 +772,7 @@ class WorkOrder(StatusUpdaterERP):
 		if update:
 			self.db_set({
 				"packed_qty": self.packed_qty,
+				"reconciled_qty": self.reconciled_qty,
 				"packing_status": self.packing_status,
 				"per_packed": self.per_packed,
 				"last_packing_date": self.last_packing_date,
@@ -805,7 +815,7 @@ class WorkOrder(StatusUpdaterERP):
 
 	def validate_overpacking(self, from_doctype=None):
 		max_qty = flt(self.get_qty_with_allowance(self.qty), self.precision("qty"))
-		for fieldname in ["packed_qty"]:
+		for fieldname in ["packed_qty", "reconciled_qty"]:
 			qty = flt(self.get(fieldname), self.precision("qty"))
 			if qty > max_qty:
 				frappe.throw(_("{0} {1} {2} cannot be greater than maximum quantity {3} {2} in {4}").format(
@@ -821,6 +831,15 @@ class WorkOrder(StatusUpdaterERP):
 		if packed_qty > completed_qty:
 			frappe.throw(_("Packed Qty {0} {1} cannot be more than the Completed Qty {2} {1} in {3}").format(
 				frappe.bold(self.get_formatted("packed_qty")),
+				self.stock_uom,
+				frappe.bold(self.get_formatted("completed_qty")),
+				frappe.get_desk_link("Work Order", self.name)
+			), StockOverProductionError)
+
+		pack_reconcile_qty = flt(flt(self.packed_qty) + flt(self.reconciled_qty), self.precision("qty"))
+		if pack_reconcile_qty > completed_qty:
+			frappe.throw(_("Packed + Reconciled Qty {0} {1} cannot be more than the Completed Qty {2} {1} in {3}").format(
+				frappe.bold(frappe.format(pack_reconcile_qty)),
 				self.stock_uom,
 				frappe.bold(self.get_formatted("completed_qty")),
 				frappe.get_desk_link("Work Order", self.name)
@@ -1658,7 +1677,7 @@ def make_packing_slip(work_orders, target_doc=None):
 		row.item_code = wo_details.production_item
 		row.item_name = wo_details.item_name
 		row.source_warehouse = wo_details.wip_warehouse if wo_details.produce_fg_in_wip_warehouse else wo_details.fg_warehouse
-		row.qty = wo_details.completed_qty - wo_details.packed_qty
+		row.qty = wo_details.completed_qty - wo_details.packed_qty - wo_details.reconciled_qty
 		row.uom = wo_details.stock_uom
 
 		target_doc.append("items", row)

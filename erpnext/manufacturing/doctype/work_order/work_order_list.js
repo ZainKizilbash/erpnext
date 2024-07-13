@@ -6,7 +6,7 @@ frappe.listview_settings['Work Order'] = {
 		"produced_qty", "completed_qty", "process_loss_qty", "material_transferred_for_manufacturing",
 		"subcontract_order_qty", "subcontract_received_qty", "per_subcontract_received",
 		"production_item", "item_name", "stock_uom",
-		"packing_slip_required", "packed_qty", "packing_status", "per_packed",
+		"packing_slip_required", "packed_qty", "reconciled_qty", "packing_status", "per_packed",
 		"order_line_no",
 	],
 

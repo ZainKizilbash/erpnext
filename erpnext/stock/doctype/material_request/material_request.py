@@ -133,9 +133,9 @@ class MaterialRequest(BuyingController):
 						select i.material_request_item, sum(i.stock_qty)
 						from `tabStock Entry Detail` i
 						inner join `tabStock Entry` p on p.name = i.parent
-						where p.docstatus = 1 and i.material_request_item in %s
+						where p.docstatus = 1 and i.material_request = %s and i.material_request_item in %s
 						group by i.material_request_item
-					""", [row_names]))
+					""", [self.name, row_names]))
 
 					data.received_qty_map = data.ordered_qty_map
 

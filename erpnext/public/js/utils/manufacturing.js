@@ -817,24 +817,37 @@ $.extend(erpnext.manufacturing, {
 
 	show_progress_for_packing: function (doc, frm) {
 		let qty_precision = erpnext.manufacturing.get_work_order_precision();
-		let packed_qty = doc.packed_qty;
-		let pending_complete = flt(flt(doc.completed_qty) - flt(doc.packed_qty), qty_precision);
+		let total_qty = flt(doc.qty);
+		let packed_qty = flt(doc.packed_qty);
+		let reconciled_qty = flt(doc.reconciled_qty);
+		let pending_complete = flt(flt(doc.completed_qty) - flt(doc.packed_qty) - flt(doc.reconciled_qty),
+			qty_precision);
+		pending_complete = Math.max(pending_complete, 0);
 
 		return erpnext.utils.show_progress_for_qty({
 			frm: frm,
 			as_html: !frm,
 			title: __('Packing Status'),
-			total_qty: doc.qty,
+			total_qty: total_qty,
 			progress_bars: [
 				{
 					title: __("<b>Packed:</b> {0} {1} ({2}%)", [
 						format_number(packed_qty),
 						doc.stock_uom,
-						format_number(packed_qty / doc.qty * 100, null, 1),
+						format_number(packed_qty / total_qty * 100, null, 1),
 					]),
 					completed_qty: packed_qty,
 					progress_class: "progress-bar-success",
 					add_min_width: 0.5,
+				},
+				{
+					title: __("<b>Reconciled:</b> {0} {1} ({2}%)", [
+						format_number(reconciled_qty),
+						"Meter",
+						format_number(reconciled_qty / total_qty * 100, null, 1),
+					]),
+					completed_qty: reconciled_qty,
+					progress_class: "progress-bar-info",
 				},
 				{
 					title: __("<b>Remaining:</b> {0} {1}", [format_number(pending_complete), doc.stock_uom]),

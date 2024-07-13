@@ -105,6 +105,7 @@
   "packing_status",
   "column_break_rjokj",
   "packed_qty",
+  "reconciled_qty",
   "column_break_kvrqf",
   "per_packed",
   "section_break_phsji",
@@ -872,6 +873,14 @@
    "fieldname": "produce_fg_in_wip_warehouse",
    "fieldtype": "Check",
    "label": "Produce Finished Goods in Work in Progress Warehouse"
+  },
+  {
+   "default": "0",
+   "depends_on": "reconciled_qty",
+   "fieldname": "reconciled_qty",
+   "fieldtype": "Float",
+   "label": "Reconciled Qty",
+   "read_only": 1
   }
  ],
  "icon": "fa fa-cogs",
@@ -880,7 +889,7 @@
  "is_calendar_and_gantt": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-07-11 13:58:01.685726",
+ "modified": "2024-07-13 13:35:40.855059",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Work Order",

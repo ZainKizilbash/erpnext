@@ -1295,11 +1295,11 @@ def make_packing_slip(source_name, target_doc=None, warehouse=None):
 		work_order = work_order_details.name if work_order_details else None
 
 		if work_order:
-			completed_qty = flt(work_order_details.completed_qty)
-			completed_qty_order_uom = completed_qty / source.conversion_factor
+			packable_qty = flt(work_order_details.completed_qty) - flt(work_order_details.reconciled_qty)
+			packable_qty_order_uom = packable_qty / source.conversion_factor
 
-			undelivered_qty = round_down(completed_qty_order_uom - flt(source.delivered_qty), source.precision("qty"))
-			unpacked_qty = round_down(completed_qty_order_uom - flt(source.packed_qty), source.precision("qty"))
+			undelivered_qty = round_down(packable_qty_order_uom - flt(source.delivered_qty), source.precision("qty"))
+			unpacked_qty = round_down(packable_qty_order_uom - flt(source.packed_qty), source.precision("qty"))
 		else:
 			undelivered_qty = flt(source.qty) - flt(source.delivered_qty)
 			unpacked_qty = flt(source.qty) - flt(source.packed_qty)
@@ -1314,7 +1314,8 @@ def make_packing_slip(source_name, target_doc=None, warehouse=None):
 				"docstatus": 1,
 				"packing_slip_required": 1,
 			}, fieldname=[
-				"name", "completed_qty", "fg_warehouse", "wip_warehouse", "produce_fg_in_wip_warehouse",
+				"name", "completed_qty", "reconciled_qty",
+				"fg_warehouse", "wip_warehouse", "produce_fg_in_wip_warehouse",
 			], as_dict=1)
 
 		return work_order_cache[source.name]

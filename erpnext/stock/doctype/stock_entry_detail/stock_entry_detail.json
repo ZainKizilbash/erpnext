@@ -68,6 +68,7 @@
   "original_item",
   "has_alternative_item",
   "reference_section",
+  "work_order",
   "material_request",
   "material_request_item",
   "against_stock_entry",
@@ -427,7 +428,8 @@
    "no_copy": 1,
    "options": "Stock Entry",
    "print_hide": 1,
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "ste_detail",
@@ -435,8 +437,7 @@
    "label": "Stock Entry Child",
    "no_copy": 1,
    "print_hide": 1,
-   "read_only": 1,
-   "search_index": 1
+   "read_only": 1
   },
   {
    "fieldname": "column_break_51",
@@ -632,12 +633,22 @@
    "no_copy": 1,
    "print_hide": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "work_order",
+   "fieldtype": "Link",
+   "label": "Work Order",
+   "no_copy": 1,
+   "options": "Work Order",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "idx": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-06-07 16:44:26.543005",
+ "modified": "2024-07-12 15:28:16.373883",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Stock Entry Detail",
