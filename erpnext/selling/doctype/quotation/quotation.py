@@ -171,19 +171,25 @@ def make_sales_order(source_name, target_doc=None):
 	quotation = frappe.db.get_value("Quotation", source_name, ["transaction_date", "valid_till"], as_dict = 1)
 	if quotation.valid_till and (quotation.valid_till < quotation.transaction_date or quotation.valid_till < getdate(nowdate())):
 		frappe.throw(_("Validity period of this quotation has ended."))
-	return _make_sales_order(source_name, target_doc)
+	return _make_sales_order(source_name, target_doc=target_doc)
 
 
-def _make_sales_order(source_name, target_doc=None, ignore_permissions=False):
-	def set_missing_values(source, target):
+def _make_sales_order(
+	source_name,
+	target_doc=None,
+	ignore_permissions=False,
+	skip_item_mapping=False,
+	skip_postprocess=False,
+):
+	def postprocess(source, target):
 		customer = get_customer_from_quotation(source)
 		if customer:
 			target.customer = customer.name
 			target.customer_name = customer.customer_name
 
 		if source.referral_sales_partner:
-			target.sales_partner=source.referral_sales_partner
-			target.commission_rate=frappe.get_value('Sales Partner', source.referral_sales_partner, 'commission_rate')
+			target.sales_partner = source.referral_sales_partner
+			target.commission_rate = frappe.get_value('Sales Partner', source.referral_sales_partner, 'commission_rate')
 
 		target.ignore_pricing_rule = 1
 		target.flags.ignore_permissions = ignore_permissions
@@ -191,34 +197,36 @@ def _make_sales_order(source_name, target_doc=None, ignore_permissions=False):
 		target.run_method("calculate_taxes_and_totals")
 		target.run_method("set_payment_schedule")
 
-	doclist = get_mapped_doc("Quotation", source_name, {
-			"Quotation": {
-				"doctype": "Sales Order",
-				"validation": {
-					"docstatus": ["=", 1]
-				},
-				"field_map": {
-					"remarks": "remarks"
-				}
+	mapping = {
+		"Quotation": {
+			"doctype": "Sales Order",
+			"validation": {
+				"docstatus": ["=", 1]
 			},
-			"Quotation Item": get_item_mapper_for_sales_order(),
-			"Sales Taxes and Charges": {
-				"doctype": "Sales Taxes and Charges",
-				"add_if_empty": True
-			},
-			"Sales Team": {
-				"doctype": "Sales Team",
-				"add_if_empty": True
-			},
-			"Payment Schedule": {
-				"doctype": "Payment Schedule",
-				"add_if_empty": True
+			"field_map": {
+				"remarks": "remarks"
 			}
-		}, target_doc, set_missing_values, ignore_permissions=ignore_permissions)
+		},
+		"Sales Taxes and Charges": {
+			"doctype": "Sales Taxes and Charges",
+			"add_if_empty": True
+		},
+		"Sales Team": {
+			"doctype": "Sales Team",
+			"add_if_empty": True
+		},
+		"Payment Schedule": {
+			"doctype": "Payment Schedule",
+			"add_if_empty": True
+		}
+	}
 
-	# postprocess: fetch shipping address, set missing values
+	if not skip_item_mapping:
+		mapping["Quotation Item"] = get_item_mapper_for_sales_order()
 
-	return doclist
+	return get_mapped_doc("Quotation", source_name, mapping, target_doc,
+		postprocess=postprocess if not skip_postprocess else None,
+		ignore_permissions=ignore_permissions)
 
 
 def get_item_mapper_for_sales_order():
