@@ -191,9 +191,6 @@ def _make_sales_order(source_name, target_doc=None, ignore_permissions=False):
 		target.run_method("calculate_taxes_and_totals")
 		target.run_method("set_payment_schedule")
 
-	def update_item(obj, target, source_parent, target_parent):
-		pass
-
 	doclist = get_mapped_doc("Quotation", source_name, {
 			"Quotation": {
 				"doctype": "Sales Order",
@@ -204,15 +201,7 @@ def _make_sales_order(source_name, target_doc=None, ignore_permissions=False):
 					"remarks": "remarks"
 				}
 			},
-			"Quotation Item": {
-				"doctype": "Sales Order Item",
-				"field_map": {
-					"parent": "quotation",
-					"name": "quotation_item",
-					"project_template": "project_template",
-				},
-				"postprocess": update_item
-			},
+			"Quotation Item": get_item_mapper_for_sales_order(),
 			"Sales Taxes and Charges": {
 				"doctype": "Sales Taxes and Charges",
 				"add_if_empty": True
@@ -230,6 +219,21 @@ def _make_sales_order(source_name, target_doc=None, ignore_permissions=False):
 	# postprocess: fetch shipping address, set missing values
 
 	return doclist
+
+
+def get_item_mapper_for_sales_order():
+	def update_item(obj, target, source_parent, target_parent):
+		pass
+
+	return {
+		"doctype": "Sales Order Item",
+		"field_map": {
+			"parent": "quotation",
+			"name": "quotation_item",
+			"project_template": "project_template",
+		},
+		"postprocess": update_item,
+	}
 
 
 def set_expired_status():
