@@ -376,3 +376,4 @@ erpnext.patches.v14_0.set_stock_entry_total_fields
 erpnext.patches.v14_0.delete_website_doctypes
 erpnext.patches.v14_0.set_sle_is_transfer
 execute:frappe.db.set_single_value("Buying Settings", "update_buying_prices_based_on", "Price List Rate", update_modified=False)
+execute:frappe.db.sql("update tabItem set gross_weight_per_unit = tare_weight_per_unit where is_packaging_material = 1")

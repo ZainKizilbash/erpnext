@@ -584,7 +584,7 @@ class Item(Document):
 
 		if self.is_packaging_material:
 			self.net_weight_per_unit = 0
-			self.gross_weight_per_unit = 0
+			self.gross_weight_per_unit = self.tare_weight_per_unit
 		else:
 			if self.net_weight_per_unit and self.gross_weight_per_unit and not self.tare_weight_per_unit:
 				self.tare_weight_per_unit = flt(self.gross_weight_per_unit - self.net_weight_per_unit,

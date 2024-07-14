@@ -1122,7 +1122,7 @@ def get_weight_per_unit(item_code, weight_uom=None, weight_field="net_weight_per
 		else:
 			return item_weight
 
-	elif weight_uom and weight_field == "net_weight_per_unit":
+	elif weight_uom and (weight_field == "net_weight_per_unit" or item.is_packaging_material):
 		weight_conversion_factor = get_conversion_factor(item.name, weight_uom)
 		if not weight_conversion_factor.get("not_convertible"):
 			return 1 / flt(weight_conversion_factor.get("conversion_factor"))
