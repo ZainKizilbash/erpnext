@@ -772,8 +772,8 @@ $.extend(erpnext.manufacturing, {
 			progress_bars: [
 				{
 					title: __("<b>Produced:</b> {0} / {1} {2} ({3}%)", [
-						format_number(doc.produced_qty),
-						format_number(doc.producible_qty),
+						frappe.format(doc.produced_qty, {'fieldtype': 'Float'}, { inline: 1 }),
+						frappe.format(doc.producible_qty, {'fieldtype': 'Float'}, { inline: 1 }),
 						doc.stock_uom,
 						format_number(doc.producible_qty ? doc.produced_qty / doc.producible_qty * 100: 0, null, 1),
 					]),
@@ -783,7 +783,7 @@ $.extend(erpnext.manufacturing, {
 				},
 				{
 					title: __("<b>Process Loss:</b> {0} {1} ({2}%)", [
-						format_number(doc.process_loss_qty),
+						frappe.format(doc.process_loss_qty, {'fieldtype': 'Float'}, { inline: 1 }),
 						doc.stock_uom,
 						format_number(doc.producible_qty ? doc.process_loss_qty / doc.producible_qty * 100: 0, null, 1),
 					]),
@@ -791,14 +791,14 @@ $.extend(erpnext.manufacturing, {
 					progress_class: "progress-bar-info",
 				},
 				{
-					title: __("<b>Production Remaining:</b> {0} {1}", [format_number(pending_production), doc.stock_uom]),
+					title: __("<b>Production Remaining:</b> {0} {1}", [frappe.format(pending_production, {'fieldtype': 'Float'}, { inline: 1 }), doc.stock_uom]),
 					completed_qty: pending_production,
 					progress_class: "progress-bar-warning",
 				},
 				{
 					title: __("<b>Subcontract Received:</b> {0} / {1} {2} ({3}%)", [
-						format_number(doc.subcontract_received_qty),
-						format_number(doc.subcontract_order_qty),
+						frappe.format(doc.subcontract_received_qty, {'fieldtype': 'Float'}, { inline: 1 }),
+						frappe.format(doc.subcontract_order_qty, {'fieldtype': 'Float'}, { inline: 1 }),
 						doc.stock_uom,
 						format_number(doc.subcontract_received_qty / doc.subcontract_order_qty * 100, null, 1),
 					]),
@@ -807,7 +807,7 @@ $.extend(erpnext.manufacturing, {
 					add_min_width: doc.subcontract_order_qty && !doc.producible_qty ? 0.5 : 0,
 				},
 				{
-					title: __("<b>Subcontract Remaining:</b> {0} {1}", [format_number(pending_subcontract), doc.stock_uom]),
+					title: __("<b>Subcontract Remaining:</b> {0} {1}", [frappe.format(pending_subcontract, {'fieldtype': 'Float'}, { inline: 1 }), doc.stock_uom]),
 					completed_qty: pending_subcontract,
 					progress_class: "progress-bar-yellow",
 				},
@@ -832,9 +832,9 @@ $.extend(erpnext.manufacturing, {
 			progress_bars: [
 				{
 					title: __("<b>Packed:</b> {0} {1} ({2}%)", [
-						format_number(packed_qty),
+						frappe.format(packed_qty, {'fieldtype': 'Float'}, { inline: 1 }),
 						doc.stock_uom,
-						format_number(packed_qty / total_qty * 100, null, 1),
+						frappe.format(packed_qty / total_qty * 100, null, 1),
 					]),
 					completed_qty: packed_qty,
 					progress_class: "progress-bar-success",
@@ -842,7 +842,7 @@ $.extend(erpnext.manufacturing, {
 				},
 				{
 					title: __("<b>Reconciled:</b> {0} {1} ({2}%)", [
-						format_number(reconciled_qty),
+						frappe.format(reconciled_qty, {'fieldtype': 'Float'}, { inline: 1 }),
 						"Meter",
 						format_number(reconciled_qty / total_qty * 100, null, 1),
 					]),
@@ -850,7 +850,7 @@ $.extend(erpnext.manufacturing, {
 					progress_class: "progress-bar-info",
 				},
 				{
-					title: __("<b>Remaining:</b> {0} {1}", [format_number(pending_complete), doc.stock_uom]),
+					title: __("<b>Remaining:</b> {0} {1}", [frappe.format(pending_complete, {'fieldtype': 'Float'}, { inline: 1 }), doc.stock_uom]),
 					completed_qty: pending_complete,
 					progress_class: "progress-bar-warning",
 				},
@@ -876,8 +876,8 @@ $.extend(erpnext.manufacturing, {
 			progress_bars: [
 				{
 					title: __("<b>Completed:</b> {0} / {1} {2} ({3}%)", [
-						format_number(row.completed_qty),
-						format_number(doc.producible_qty),
+						frappe.format(row.completed_qty, {'fieldtype': 'Float'}, { inline: 1 }),
+						frappe.format(doc.producible_qty, {'fieldtype': 'Float'}, { inline: 1 }),
 						doc.stock_uom,
 						format_number(doc.producible_qty ? flt(row.completed_qty) / doc.producible_qty * 100 : 0, null, 1),
 					]),
@@ -886,7 +886,7 @@ $.extend(erpnext.manufacturing, {
 					add_min_width: doc.producible_qty ? 0.5 : 0,
 				},
 				{
-					title: __("<b>Remaining:</b> {0} {1}", [format_number(pending_operation), doc.stock_uom]),
+					title: __("<b>Remaining:</b> {0} {1}", [frappe.format(pending_operation, {'fieldtype': 'Float'}, { inline: 1 }), doc.stock_uom]),
 					completed_qty: pending_operation,
 					progress_class: "progress-bar-warning",
 				},
