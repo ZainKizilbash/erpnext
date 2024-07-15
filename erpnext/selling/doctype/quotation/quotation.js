@@ -18,21 +18,11 @@ erpnext.selling.QuotationController = class QuotationController extends erpnext.
 		this.setup_queries();
 	}
 
-	refresh(doc, dt, dn) {
-		super.refresh(doc, dt, dn);
+	refresh() {
+		super.refresh();
 
 		this.set_dynamic_link();
-
-		var me = this;
-
-		if (me.frm.doc.__islocal && !me.frm.doc.valid_till && !cint(me.frm.doc.quotation_validity_days)) {
-			if(frappe.boot.sysdefaults.quotation_valid_till) {
-				this.frm.set_value('quotation_validity_days', cint(frappe.boot.sysdefaults.quotation_valid_till));
-			} else {
-				this.frm.set_value('valid_till', frappe.datetime.add_months(doc.transaction_date, 1));
-			}
-		}
-
+		this.set_default_validity();
 		this.setup_buttons();
 		this.toggle_reqd_lead_customer();
 		this.set_dynamic_field_label();
@@ -174,6 +164,18 @@ erpnext.selling.QuotationController = class QuotationController extends erpnext.
 		this.frm.toggle_reqd("party_name", this.frm.doc.quotation_to);
 	}
 
+	set_default_validity() {
+		if (this.frm.is_new() && !this.frm.doc.valid_till && !cint(this.frm.doc.quotation_validity_days)) {
+			if (frappe.boot.sysdefaults.quotation_valid_till) {
+				this.frm.set_value('quotation_validity_days', cint(frappe.boot.sysdefaults.quotation_valid_till));
+			} else {
+				let valid_till = frappe.datetime.add_months(doc.transaction_date, 1);
+				valid_till = frappe.datetime.add_days(valid_till, -1);
+				this.frm.set_value('valid_till', valid_till);
+			}
+		}
+	}
+
 	quotation_to() {
 		this.toggle_reqd_lead_customer();
 		this.set_dynamic_field_label();
@@ -185,6 +187,36 @@ erpnext.selling.QuotationController = class QuotationController extends erpnext.
 		return erpnext.utils.get_party_details(this.frm, null, null, function(r) {
 			me.apply_price_list();
 		});
+	}
+
+	transaction_date() {
+		if (this.frm.doc.transaction_date && cint(this.frm.doc.lead_time_days) > 0) {
+			this.frm.trigger('lead_time_days');
+		}
+		return super.transaction_date();
+	}
+
+	delivery_date() {
+		if (this.frm.doc.delivery_date) {
+			this.set_lead_time_days();
+		}
+	}
+
+	lead_time_days() {
+		if (cint(this.frm.doc.lead_time_days) > 0) {
+			let delivery_date = frappe.datetime.add_days(this.frm.doc.transaction_date, cint(this.frm.doc.lead_time_days));
+			this.frm.set_value('delivery_date', delivery_date);
+		}
+	}
+
+	set_lead_time_days() {
+		if (this.frm.doc.transaction_date && this.frm.doc.delivery_date) {
+			let days = frappe.datetime.get_diff(this.frm.doc.delivery_date, this.frm.doc.transaction_date);
+			if (days > 0) {
+				this.frm.doc.lead_time_days = days;
+				this.frm.refresh_field('lead_time_days');
+			}
+		}
 	}
 
 	tc_name() {

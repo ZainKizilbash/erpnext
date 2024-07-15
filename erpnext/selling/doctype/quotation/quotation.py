@@ -3,7 +3,7 @@
 
 import frappe
 from frappe.model.mapper import get_mapped_doc
-from frappe.utils import flt, nowdate, getdate, cint
+from frappe.utils import flt, nowdate, getdate, cint, add_days, date_diff
 from frappe import _
 from erpnext.overrides.lead.lead_hooks import get_customer_from_lead
 
@@ -30,6 +30,7 @@ class Quotation(SellingController):
 		super(Quotation, self).validate()
 		self.validate_uom_is_integer("stock_uom", "qty")
 		self.validate_quotation_valid_till()
+		self.validate_delivery_date()
 		self.set_customer_name()
 
 		if self.items:
@@ -62,6 +63,21 @@ class Quotation(SellingController):
 			self.set_onload('customer', self.party_name)
 		elif self.quotation_to == "Lead":
 			self.set_onload('customer', get_customer_from_lead(self.party_name))
+
+	def validate_delivery_date(self):
+		if cint(self.lead_time_days) < 0:
+			frappe.throw(_("{0} cannot be negative").format(self.meta.get_label("lead_time_days")))
+
+		if cint(self.lead_time_days):
+			self.delivery_date = add_days(getdate(self.transaction_date), cint(self.lead_time_days))
+
+		if not cint(self.lead_time_days) and self.delivery_date:
+			self.lead_time_days = date_diff(self.delivery_date, self.transaction_date)
+			if self.lead_time_days < 0:
+				self.lead_time_days = 0
+
+		if self.delivery_date and getdate(self.delivery_date) < getdate(self.transaction_date):
+			frappe.throw(_("Expected Delivery Date must be after Quotation Date"))
 
 	def set_ordered_status(self, update=False, update_modified=True):
 		ordered_qty_map = self.get_ordered_qty_map()
