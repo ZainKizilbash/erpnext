@@ -169,7 +169,7 @@ erpnext.selling.QuotationController = class QuotationController extends erpnext.
 			if (frappe.boot.sysdefaults.quotation_valid_till) {
 				this.frm.set_value('quotation_validity_days', cint(frappe.boot.sysdefaults.quotation_valid_till));
 			} else {
-				let valid_till = frappe.datetime.add_months(doc.transaction_date, 1);
+				let valid_till = frappe.datetime.add_months(this.frm.doc.transaction_date, 1);
 				valid_till = frappe.datetime.add_days(valid_till, -1);
 				this.frm.set_value('valid_till', valid_till);
 			}
