@@ -80,6 +80,7 @@ class PackingSlip(TransactionController):
 			self.packed_items = self.packed_items[:137] + "..."
 
 	def set_missing_values(self, for_validate=False):
+		self.set_package_type_details()
 		self.set_missing_item_details(for_validate)
 		self.set_source_packing_slips()
 
@@ -99,20 +100,23 @@ class PackingSlip(TransactionController):
 						if f in self.force_item_fields or item.get(f) in ("", None):
 							item.set(f, item_details.get(f))
 
-	def set_package_type_details(self):
+	def set_package_type_details(self, force=False):
 		if not self.get("package_type"):
 			return
 
 		package_type_details = get_package_type_details(self.package_type, self.as_dict())
-		if package_type_details.weight_uom:
+		if package_type_details.weight_uom and (not self.weight_uom or force or self.is_new()):
 			self.weight_uom = package_type_details.weight_uom
 
 		if package_type_details.packaging_items:
-			self.set("packaging_items", [])
-			for d in package_type_details.packaging_items:
-				row = frappe.new_doc("Packing Slip Packaging Material")
-				row.update(d)
-				self.append("packaging_items", row)
+			if force:
+				self.set("packaging_items", [])
+
+			if not self.packaging_items:
+				for d in package_type_details.packaging_items:
+					row = frappe.new_doc("Packing Slip Packaging Material")
+					row.update(d)
+					self.append("packaging_items", row)
 
 	def set_source_packing_slips(self):
 		# Packing Slips from items table

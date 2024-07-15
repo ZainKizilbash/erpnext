@@ -1262,7 +1262,7 @@ def make_packing_slip(source_name, target_doc=None, warehouse=None):
 		undelivered_qty, unpacked_qty = get_remaining_qty(source)
 		return undelivered_qty > 0 and unpacked_qty > 0
 
-	def set_missing_values(source, target):
+	def postprocess(source, target):
 		# Target Warehouse
 		if not target.target_warehouse:
 			if warehouse:
@@ -1271,6 +1271,8 @@ def make_packing_slip(source_name, target_doc=None, warehouse=None):
 				target.determine_warehouse_from_sales_order()
 
 		update_mapped_items_based_on_purchase_and_production(source, target)
+
+		frappe.utils.call_hook_method("postprocess_sales_order_to_packing_slip", source, target)
 
 		target.run_method("set_missing_values")
 		target.run_method("calculate_totals")
@@ -1340,10 +1342,15 @@ def make_packing_slip(source_name, target_doc=None, warehouse=None):
 				"name": "sales_order_item",
 				"parent": "sales_order",
 			},
+			"field_no_map": [
+				"net_weight_per_unit",
+				"tare_weight_per_unit",
+				"gross_weight_per_unit",
+			],
 			"postprocess": update_item,
 			"condition": item_condition,
 		},
-		"postprocess": set_missing_values,
+		"postprocess": postprocess,
 	}
 
 	frappe.utils.call_hook_method("update_packing_slip_from_sales_order_mapper", mapper, "Packing Slip")

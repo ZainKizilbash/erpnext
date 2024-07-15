@@ -1629,28 +1629,22 @@ def make_packing_slip(work_orders, target_doc=None):
 
 	# Validate and separate sales order work orders
 	for name in work_orders:
-		wo_details = frappe.db.get_value("Work Order", name, [
-			"name", "docstatus",
-			"customer", "sales_order", "sales_order_item",
-			"production_item", "item_name", "stock_uom",
-			"completed_qty", "packed_qty",
-			"fg_warehouse", "wip_warehouse", "produce_fg_in_wip_warehouse",
-		], as_dict=1)
+		wo_doc = frappe.get_doc("Work Order", name)
 
-		if not wo_details or wo_details.docstatus != 1:
+		if not wo_doc or wo_doc.docstatus != 1:
 			continue
-		if wo_details.packed_qty >= wo_details.completed_qty:
+		if wo_doc.packed_qty >= wo_doc.completed_qty:
 			continue
 
-		if wo_details.customer:
-			customers.add(wo_details.customer)
+		if wo_doc.customer:
+			customers.add(wo_doc.customer)
 			if len(customers) > 1:
 				frappe.throw(_("Cannot pack Work Orders for multiple customers"))
 
-		if wo_details.sales_order and wo_details.sales_order_item:
-			pack_from_sales_orders.setdefault(wo_details.sales_order, []).append(wo_details.sales_order_item)
+		if wo_doc.sales_order and wo_doc.sales_order_item:
+			pack_from_sales_orders.setdefault(wo_doc.sales_order, []).append(wo_doc.sales_order_item)
 		else:
-			pack_from_work_orders.append(wo_details)
+			pack_from_work_orders.append(wo_doc)
 
 	# Empty packable work order list error
 	if not pack_from_sales_orders and not pack_from_work_orders:
@@ -1666,24 +1660,27 @@ def make_packing_slip(work_orders, target_doc=None):
 	if not target_doc:
 		target_doc = frappe.new_doc("Packing Slip")
 
-	for wo_details in pack_from_work_orders:
-		if not target_doc.customer and wo_details.customer:
-			target_doc.customer = wo_details.customer
-		if not target_doc.target_warehouse and wo_details.fg_warehouse:
-			target_doc.target_warehouse = wo_details.fg_warehouse
+	for wo_doc in pack_from_work_orders:
+		if wo_doc.customer and not target_doc.customer:
+			target_doc.customer = wo_doc.customer
+		if wo_doc.fg_warehouse and not target_doc.target_warehouse:
+			target_doc.target_warehouse = wo_doc.fg_warehouse
+		if target_doc.meta.has_field("cost_center") and wo_doc.get("cost_center") and not target_doc.get("cost_center"):
+			target_doc.cost_center = wo_doc.get("cost_center")
 
-		row = frappe.new_doc("Packing Slip Item")
-		row.work_order = wo_details.name
-		row.item_code = wo_details.production_item
-		row.item_name = wo_details.item_name
-		row.source_warehouse = wo_details.wip_warehouse if wo_details.produce_fg_in_wip_warehouse else wo_details.fg_warehouse
-		row.qty = wo_details.completed_qty - wo_details.packed_qty - wo_details.reconciled_qty
-		row.uom = wo_details.stock_uom
+		row = target_doc.append("items", frappe.new_doc("Packing Slip Item"))
+		row.work_order = wo_doc.name
+		row.item_code = wo_doc.production_item
+		row.item_name = wo_doc.item_name
+		row.source_warehouse = wo_doc.wip_warehouse if wo_doc.produce_fg_in_wip_warehouse else wo_doc.fg_warehouse
+		row.qty = wo_doc.completed_qty - wo_doc.packed_qty - wo_doc.reconciled_qty
+		row.uom = wo_doc.stock_uom
 
-		target_doc.append("items", row)
+		frappe.utils.call_hook_method("postprocess_work_order_to_packing_slip_item", wo_doc, target_doc, row)
 
 	# Post process if necessary
 	if pack_from_work_orders:
+		frappe.utils.call_hook_method("postprocess_work_orders_to_packing_slip", pack_from_work_orders, target_doc)
 		target_doc.run_method("set_missing_values")
 		target_doc.run_method("calculate_totals")
 
