@@ -789,7 +789,7 @@ erpnext.taxes_and_totals = class TaxesAndTotals extends erpnext.payments {
 			? this.frm.doc["taxes"][tax_count - 1].total + flt(this.frm.doc.rounding_adjustment)
 			: this.frm.doc.taxable_total);
 
-		if(frappe.meta.has_field(this.frm.doc.doctype, "taxes_and_charges_deducted")) {
+		if(!frappe.meta.has_field(this.frm.doc.doctype, "taxes_and_charges_deducted")) {
 			this.frm.doc.base_total_after_taxes = (this.frm.doc.total_taxes_and_charges) ?
 				flt(this.frm.doc.total_after_taxes * this.frm.doc.conversion_rate) : this.frm.doc.base_taxable_total;
 		} else {
