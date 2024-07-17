@@ -129,7 +129,7 @@ $.extend(erpnext.manufacturing, {
 								completed_qty = flt(row.completed_qty);
 								qty = max;
 
-								description = __("Max: {0}", [format_number(max)]);
+								description = __("Max: {0}", [frappe.format(max, {"fieldtype": "Float"}, {"inline": 1})]);
 							}
 
 							dialog.set_value("workstation", workstation);
@@ -233,7 +233,9 @@ $.extend(erpnext.manufacturing, {
 					primary_action: function() {
 						let data = dialog.get_values();
 						if (flt(data.qty) > max_with_allowance) {
-							frappe.msgprint(__('Quantity can not be more than {0}', [format_number(max_with_allowance)]));
+							frappe.msgprint(__('Quantity can not be more than {0}', [
+								frappe.format(max_with_allowance, {"fieldtype": "Float"}, {"inline": 1}),
+							]));
 							reject();
 						}
 
@@ -291,7 +293,7 @@ $.extend(erpnext.manufacturing, {
 						fieldtype: 'Float',
 						label: __('Qty for {0}', [purpose]),
 						fieldname: 'qty',
-						description: __('Max: {0}', [format_number(max)]),
+						description: __('Max: {0}', [frappe.format(max, {"fieldtype": "Float"}, {"inline": 1})]),
 						reqd: 1,
 						default: max
 					},
@@ -407,7 +409,9 @@ $.extend(erpnext.manufacturing, {
 					primary_action: function() {
 						let data = dialog.get_values();
 						if (flt(data.qty) > max_with_allowance) {
-							frappe.msgprint(__('Quantity can not be more than {0}', [format_number(max_with_allowance)]));
+							frappe.msgprint(__('Quantity can not be more than {0}', [
+								frappe.format(max_with_allowance, {"fieldtype": "Float"}, {"inline": 1})
+							]));
 							return;
 						}
 
@@ -532,8 +536,11 @@ $.extend(erpnext.manufacturing, {
 
 					doc.work_orders.forEach(d => {
 						if (flt(d.finished_qty) > d.max_with_allowance) {
-							frappe.msgprint(__('Finished Qty {0} can not be more than {1} for Work Order {2}',
-								[format_number(d.finished_qty), format_number(d.max_with_allowance), d.work_order]));
+							frappe.msgprint(__('Finished Qty {0} can not be more than {1} for Work Order {2}', [
+								frappe.format(d.finished_qty, {"fieldtype": "Float"}, {"inline": 1}),
+								frappe.format(d.max_with_allowance, {"fieldtype": "Float"}, {"inline": 1}),
+								d.work_order
+							]));
 							reject();
 						}
 					});
@@ -834,7 +841,7 @@ $.extend(erpnext.manufacturing, {
 					title: __("<b>Packed:</b> {0} {1} ({2}%)", [
 						frappe.format(packed_qty, {'fieldtype': 'Float'}, { inline: 1 }),
 						doc.stock_uom,
-						frappe.format(packed_qty / total_qty * 100, null, 1),
+						format_number(packed_qty / total_qty * 100, null, 1),
 					]),
 					completed_qty: packed_qty,
 					progress_class: "progress-bar-success",
