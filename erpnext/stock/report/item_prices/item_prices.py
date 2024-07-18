@@ -50,11 +50,11 @@ def process_filters(filters):
 	return filters
 
 
-def get_item_price_data(filters):
+def get_item_price_data(filters, ignore_permissions=False):
 	conditions = get_item_conditions(filters, for_item_dt=False)
 	item_conditions = get_item_conditions(filters, for_item_dt=True)
 
-	price_lists, selected_price_list = get_price_lists(filters)
+	price_lists, selected_price_list = get_price_lists(filters, ignore_permissions=ignore_permissions)
 	price_lists_cond = " and p.price_list in ({0})".format(", ".join([frappe.db.escape(d) for d in price_lists or ['']]))
 
 	item_data = frappe.db.sql("""
@@ -217,7 +217,7 @@ def get_item_price_data(filters):
 	return items_map, price_lists
 
 
-def get_price_lists(filters):
+def get_price_lists(filters, ignore_permissions=False):
 	def get_additional_price_lists():
 		res = []
 		for i in range(1):
@@ -248,7 +248,9 @@ def get_price_lists(filters):
 	elif filters.buying_selling == "Buying":
 		conditions.append("buying = 1")
 
-	match_conditions = build_match_conditions("Price List")
+	match_conditions = None
+	if not ignore_permissions:
+		match_conditions = build_match_conditions("Price List")
 	if match_conditions:
 		conditions.append(match_conditions)
 
