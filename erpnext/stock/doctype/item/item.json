@@ -269,6 +269,7 @@
    "fieldname": "valuation_rate",
    "fieldtype": "Currency",
    "label": "Default Valuation Rate",
+   "permlevel": 1,
    "read_only_depends_on": "eval: doc.is_customer_provided_item"
   },
   {
@@ -316,7 +317,8 @@
    "oldfieldname": "brand",
    "oldfieldtype": "Link",
    "options": "Brand",
-   "print_hide": 1
+   "print_hide": 1,
+   "search_index": 1
   },
   {
    "fieldname": "description",
@@ -1164,7 +1166,7 @@
  "idx": 2,
  "image_field": "image",
  "links": [],
- "modified": "2024-03-31 11:15:05.365305",
+ "modified": "2024-07-19 03:21:41.472707",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Item",

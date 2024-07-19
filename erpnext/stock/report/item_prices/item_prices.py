@@ -50,9 +50,9 @@ def process_filters(filters):
 	return filters
 
 
-def get_item_price_data(filters, ignore_permissions=False):
+def get_item_price_data(filters, ignore_permissions=False, additional_conditions=None):
 	conditions = get_item_conditions(filters, for_item_dt=False)
-	item_conditions = get_item_conditions(filters, for_item_dt=True)
+	item_conditions = get_item_conditions(filters, for_item_dt=True, additional_conditions=additional_conditions)
 
 	price_lists, selected_price_list = get_price_lists(filters, ignore_permissions=ignore_permissions)
 	price_lists_cond = " and p.price_list in ({0})".format(", ".join([frappe.db.escape(d) for d in price_lists or ['']]))
@@ -280,7 +280,7 @@ def get_price_lists(filters, ignore_permissions=False):
 	return price_lists, filters.selected_price_list
 
 
-def get_item_conditions(filters, for_item_dt):
+def get_item_conditions(filters, for_item_dt, additional_conditions=None):
 	conditions = []
 
 	if filters.get("item_code"):
@@ -308,6 +308,12 @@ def get_item_conditions(filters, for_item_dt):
 	if filters.get("supplier") and for_item_dt:
 		if frappe.get_meta("Item").has_field("default_supplier"):
 			conditions.append("item.default_supplier = %(supplier)s")
+
+	if additional_conditions:
+		if isinstance(additional_conditions, list):
+			conditions += additional_conditions
+		else:
+			conditions.append(additional_conditions)
 
 	return " and " + " and ".join(conditions) if conditions else ""
 
