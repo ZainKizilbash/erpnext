@@ -826,9 +826,12 @@ $.extend(erpnext.manufacturing, {
 		let qty_precision = erpnext.manufacturing.get_work_order_precision();
 		let total_qty = flt(doc.qty);
 		let packed_qty = flt(doc.packed_qty);
+		let rejected_qty = flt(doc.rejected_qty);
 		let reconciled_qty = flt(doc.reconciled_qty);
-		let pending_complete = flt(flt(doc.completed_qty) - flt(doc.packed_qty) - flt(doc.reconciled_qty),
-			qty_precision);
+		let pending_complete = flt(
+			flt(doc.completed_qty) - flt(doc.packed_qty) - flt(doc.rejected_qty) - flt(doc.reconciled_qty),
+			qty_precision
+		);
 		pending_complete = Math.max(pending_complete, 0);
 
 		return erpnext.utils.show_progress_for_qty({
@@ -846,6 +849,15 @@ $.extend(erpnext.manufacturing, {
 					completed_qty: packed_qty,
 					progress_class: "progress-bar-success",
 					add_min_width: 0.5,
+				},
+				{
+					title: __("<b>Rejected:</b> {0} {1} ({2}%)", [
+						frappe.format(rejected_qty, {'fieldtype': 'Float'}, { inline: 1 }),
+						"Meter",
+						format_number(rejected_qty / total_qty * 100, null, 1),
+					]),
+					completed_qty: rejected_qty,
+					progress_class: "progress-bar-yellow",
 				},
 				{
 					title: __("<b>Reconciled:</b> {0} {1} ({2}%)", [

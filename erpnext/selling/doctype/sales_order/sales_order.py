@@ -1299,7 +1299,7 @@ def make_packing_slip(source_name, target_doc=None, warehouse=None):
 		work_order = work_order_details.name if work_order_details else None
 
 		if work_order:
-			packable_qty = flt(work_order_details.completed_qty) - flt(work_order_details.reconciled_qty)
+			packable_qty = flt(work_order_details.completed_qty) - flt(work_order_details.rejected_qty) - flt(work_order_details.reconciled_qty)
 			packable_qty_order_uom = packable_qty / source.conversion_factor
 
 			undelivered_qty = round_down(packable_qty_order_uom - flt(source.delivered_qty), source.precision("qty"))
@@ -1318,7 +1318,7 @@ def make_packing_slip(source_name, target_doc=None, warehouse=None):
 				"docstatus": 1,
 				"packing_slip_required": 1,
 			}, fieldname=[
-				"name", "completed_qty", "reconciled_qty",
+				"name", "completed_qty", "rejected_qty", "reconciled_qty",
 				"fg_warehouse", "wip_warehouse", "produce_fg_in_wip_warehouse",
 			], as_dict=1)
 

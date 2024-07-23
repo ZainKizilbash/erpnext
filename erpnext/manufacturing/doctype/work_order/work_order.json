@@ -105,6 +105,8 @@
   "packing_status",
   "column_break_rjokj",
   "packed_qty",
+  "column_break_qjsmi",
+  "rejected_qty",
   "reconciled_qty",
   "column_break_kvrqf",
   "per_packed",
@@ -881,6 +883,18 @@
    "fieldtype": "Float",
    "label": "Reconciled Qty",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_qjsmi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "depends_on": "rejected_qty",
+   "fieldname": "rejected_qty",
+   "fieldtype": "Float",
+   "label": "Rejected Qty",
+   "read_only": 1
   }
  ],
  "icon": "fa fa-cogs",
@@ -889,7 +903,7 @@
  "is_calendar_and_gantt": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-07-13 13:35:40.855059",
+ "modified": "2024-07-23 10:15:58.391307",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Work Order",

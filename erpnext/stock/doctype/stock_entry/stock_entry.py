@@ -872,8 +872,8 @@ class StockEntry(TransactionController):
 			self.pro_doc.run_method("update_status", from_doctype=self.doctype)
 			self.pro_doc.notify_update()
 
-		# Loss Qty
-		if self.purpose == "Material Issue":
+		# Rejected / Loss Qty
+		if self.purpose in ("Material Issue", "Material Transfer"):
 			work_orders = list(set([d.work_order for d in self.items if d.get("work_order")]))
 			for name in work_orders:
 				work_order = frappe.get_doc("Work Order", name)

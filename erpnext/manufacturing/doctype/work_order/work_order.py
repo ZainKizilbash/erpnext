@@ -730,6 +730,7 @@ class WorkOrder(StatusUpdaterERP):
 
 	def set_packing_status(self, update=False, update_modified=True):
 		self.packed_qty = 0
+		self.rejected_qty = 0
 		self.reconciled_qty = 0
 		self.last_packing_date = None
 
@@ -737,6 +738,7 @@ class WorkOrder(StatusUpdaterERP):
 			packing_data = frappe.db.sql("""
 				select
 					sum(psi.stock_qty - (psi.unpacked_return_qty * psi.conversion_factor)) as packed_qty,
+					sum(psi.stock_rejected_qty) as rejected_qty,
 					max(ps.posting_date) as max_posting_date
 				from `tabPacking Slip Item` psi
 				inner join `tabPacking Slip` ps on ps.name = psi.parent
@@ -744,20 +746,27 @@ class WorkOrder(StatusUpdaterERP):
 			""", self.name, as_dict=1)
 
 			self.packed_qty = flt(packing_data[0].packed_qty) if packing_data else 0
+			self.rejected_qty = flt(packing_data[0].rejected_qty) if packing_data else 0
 			self.last_packing_date = packing_data[0].max_posting_date if packing_data else None
 
-			reconciled_qty = frappe.db.sql("""
-				select sum(i.stock_qty)
+			reject_loss_data = frappe.db.sql("""
+				select ste.purpose, sum(i.stock_qty) as stock_qty
 				from `tabStock Entry Detail` i
 				inner join `tabStock Entry` ste on ste.name = i.parent
-				where i.work_order = %s and ste.docstatus = 1 and ste.purpose = 'Material Issue'
-			""", self.name)
-			self.reconciled_qty = flt(reconciled_qty[0][0]) if reconciled_qty else 0
+				where i.work_order = %s and ste.docstatus = 1 and ste.purpose in ('Material Issue', 'Material Transfer')
+				group by ste.purpose
+			""", self.name, as_dict=1)
+
+			for d in reject_loss_data:
+				if d.purpose == 'Material Issue':
+					self.reconciled_qty += flt(d.stock_qty)
+				elif d.purpose == 'Material Transfer':
+					self.rejected_qty += flt(d.stock_qty)
 
 		self.per_packed = flt(self.packed_qty / self.qty * 100, 3)
 
 		if self.docstatus == 1:
-			packed_qty = flt(self.packed_qty + self.reconciled_qty, self.precision("qty"))
+			packed_qty = flt(self.packed_qty + self.rejected_qty + self.reconciled_qty, self.precision("qty"))
 			min_packing_qty = flt(self.get_min_qty(self.completed_qty), self.precision("qty"))
 
 			if self.packed_qty and (packed_qty >= min_packing_qty or self.status == "Stopped"):
@@ -772,6 +781,7 @@ class WorkOrder(StatusUpdaterERP):
 		if update:
 			self.db_set({
 				"packed_qty": self.packed_qty,
+				"rejected_qty": self.rejected_qty,
 				"reconciled_qty": self.reconciled_qty,
 				"packing_status": self.packing_status,
 				"per_packed": self.per_packed,
@@ -815,7 +825,7 @@ class WorkOrder(StatusUpdaterERP):
 
 	def validate_overpacking(self, from_doctype=None):
 		max_qty = flt(self.get_qty_with_allowance(self.qty), self.precision("qty"))
-		for fieldname in ["packed_qty", "reconciled_qty"]:
+		for fieldname in ["packed_qty", "rejected_qty", "reconciled_qty"]:
 			qty = flt(self.get(fieldname), self.precision("qty"))
 			if qty > max_qty:
 				frappe.throw(_("{0} {1} {2} cannot be greater than maximum quantity {3} {2} in {4}").format(
@@ -836,7 +846,9 @@ class WorkOrder(StatusUpdaterERP):
 				frappe.get_desk_link("Work Order", self.name)
 			), StockOverProductionError)
 
-		pack_reconcile_qty = flt(flt(self.packed_qty) + flt(self.reconciled_qty), self.precision("qty"))
+		pack_reconcile_qty = flt(flt(self.packed_qty) + flt(self.rejected_qty) + flt(self.reconciled_qty),
+			self.precision("qty"))
+
 		if pack_reconcile_qty > completed_qty:
 			frappe.throw(_("Packed + Reconciled Qty {0} {1} cannot be more than the Completed Qty {2} {1} in {3}").format(
 				frappe.bold(frappe.format(pack_reconcile_qty)),
@@ -1673,7 +1685,7 @@ def make_packing_slip(work_orders, target_doc=None):
 		row.item_code = wo_doc.production_item
 		row.item_name = wo_doc.item_name
 		row.source_warehouse = wo_doc.wip_warehouse if wo_doc.produce_fg_in_wip_warehouse else wo_doc.fg_warehouse
-		row.qty = wo_doc.completed_qty - wo_doc.packed_qty - wo_doc.reconciled_qty
+		row.qty = wo_doc.completed_qty - wo_doc.packed_qty - wo_doc.rejected_qty - wo_doc.reconciled_qty
 		row.uom = wo_doc.stock_uom
 
 		frappe.utils.call_hook_method("postprocess_work_order_to_packing_slip_item", wo_doc, target_doc, row)
