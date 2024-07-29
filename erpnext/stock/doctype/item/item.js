@@ -95,7 +95,6 @@ frappe.ui.form.on("Item", {
 				[`<a href="/app/item/${encodeURIComponent(frm.doc.variant_of)}">${frm.doc.variant_of}</a>`]), true);
 		}
 
-		erpnext.item.toggle_naming_fields(frm);
 		erpnext.item.edit_prices_button(frm);
 		erpnext.item.toggle_attributes(frm);
 
@@ -186,10 +185,6 @@ frappe.ui.form.on("Item", {
 	},
 	item_source: function(frm) {
 		erpnext.utils.set_item_overrides(frm);
-	},
-
-	item_naming_by: function(frm) {
-		erpnext.item.toggle_naming_fields(frm);
 	},
 
 	item_code: function(frm) {
@@ -390,13 +385,6 @@ $.extend(erpnext.item, {
 		frm.add_custom_button(__("Add / Edit Prices"), function() {
 			frappe.set_route("query-report", "Item Prices", {"item_code": frm.doc.name});
 		}, __("View"));
-	},
-
-	toggle_naming_fields: function(frm) {
-		if (frm.doc.__islocal) {
-			frm.toggle_reqd("item_code", frm.doc.item_naming_by == "Item Code" ? 1 : 0);
-			frm.toggle_reqd("naming_series", frm.doc.item_naming_by == "Naming Series" ? 1 : 0);
-		}
 	},
 
 	weight_to_validate: function(frm){
