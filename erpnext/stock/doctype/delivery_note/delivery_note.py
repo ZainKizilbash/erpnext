@@ -166,7 +166,8 @@ class DeliveryNote(SellingController):
 	def update_previous_doc_status(self):
 		sales_orders = set()
 		sales_invoices = set()
-		sales_order_row_names = set()
+		so_row_names_without_packing_slip = set()
+		so_row_names_with_packing_slip = set()
 		sales_invoice_row_names = set()
 		delivery_note_row_names = set()
 
@@ -176,7 +177,10 @@ class DeliveryNote(SellingController):
 			if d.sales_invoice:
 				sales_invoices.add(d.sales_invoice)
 			if d.sales_order_item:
-				sales_order_row_names.add(d.sales_order_item)
+				if d.packing_slip:
+					so_row_names_with_packing_slip.add(d.sales_order_item)
+				else:
+					so_row_names_without_packing_slip.add(d.sales_order_item)
 			if d.sales_invoice_item:
 				sales_invoice_row_names.add(d.sales_invoice_item)
 			if d.delivery_note_item:
@@ -208,7 +212,9 @@ class DeliveryNote(SellingController):
 		for name in sales_orders:
 			doc = frappe.get_doc("Sales Order", name)
 			doc.set_delivery_status(update=True)
-			doc.validate_delivered_qty(from_doctype=self.doctype, row_names=sales_order_row_names)
+			doc.validate_delivered_qty(from_doctype=self.doctype, row_names=so_row_names_without_packing_slip)
+			doc.validate_delivered_qty(from_doctype=self.doctype, row_names=so_row_names_with_packing_slip,
+				check_packed_qty=True)
 			doc.set_billing_status(update=True)
 
 			# Update packed qty for unpacked returns

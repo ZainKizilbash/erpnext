@@ -535,9 +535,13 @@ class SalesOrder(SellingController):
 
 		return purchase_order_qty_map
 
-	def validate_delivered_qty(self, from_doctype=None, row_names=None):
-		self.validate_completed_qty('delivered_qty', 'qty', self.items,
-			allowance_type='qty', from_doctype=from_doctype, row_names=row_names)
+	def validate_delivered_qty(self, from_doctype=None, row_names=None, check_packed_qty=False):
+		if check_packed_qty:
+			self.validate_completed_qty('delivered_qty', 'packed_qty', self.items,
+				allowance_type=None, from_doctype=from_doctype, row_names=row_names)
+		else:
+			self.validate_completed_qty('delivered_qty', 'qty', self.items,
+				allowance_type='qty', from_doctype=from_doctype, row_names=row_names)
 
 	def validate_packed_qty(self, from_doctype=None, row_names=None):
 		self.validate_completed_qty('packed_qty', 'qty', self.items,

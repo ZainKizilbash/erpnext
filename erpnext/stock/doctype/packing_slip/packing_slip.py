@@ -772,7 +772,7 @@ class PackingSlip(TransactionController):
 
 	def update_previous_doc_status(self):
 		sales_orders = set()
-		sales_order_row_names = set()
+		so_row_names_without_wos = set()
 		work_orders = set()
 		packing_slips = set()
 
@@ -781,8 +781,8 @@ class PackingSlip(TransactionController):
 			if not d.get("source_packing_slip"):
 				if d.sales_order:
 					sales_orders.add(d.sales_order)
-				if d.sales_order_item:
-					sales_order_row_names.add(d.sales_order_item)
+				if d.sales_order_item and not d.work_order:
+					so_row_names_without_wos.add(d.sales_order_item)
 				if d.work_order:
 					work_orders.add(d.work_order)
 
@@ -795,7 +795,7 @@ class PackingSlip(TransactionController):
 		for name in sales_orders:
 			doc = frappe.get_doc("Sales Order", name)
 			doc.set_production_packing_status(update=True)
-			doc.validate_packed_qty(from_doctype=self.doctype, row_names=sales_order_row_names)
+			doc.validate_packed_qty(from_doctype=self.doctype, row_names=so_row_names_without_wos)
 			doc.notify_update()
 
 		if self.is_unpack and self.unpack_against:
