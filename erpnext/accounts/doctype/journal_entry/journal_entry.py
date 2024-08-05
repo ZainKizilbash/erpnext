@@ -1299,7 +1299,6 @@ def get_average_exchange_rate(account, from_currency, to_currency, transaction_d
 
 @frappe.whitelist()
 def make_inter_company_journal_entry(name, voucher_type, company):
-	from erpnext.accounts.doctype.account.account import get_other_company_account
 	from frappe.model.mapper import get_mapped_doc
 
 	def postprocess(source, target):
