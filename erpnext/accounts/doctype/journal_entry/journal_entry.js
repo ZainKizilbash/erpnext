@@ -538,7 +538,7 @@ frappe.ui.form.on("Journal Entry Account", {
 
 		erpnext.journal_entry.set_debit_credit_in_company_currency(frm, cdt, cdn);
 
-		if(["Purchase Invoice", "Sales Invoice", "Journal Entry"].includes(row.reference_type) && row.reference_name) {
+		if(frm.doc.multi_currency && (!row.exchange_rate || flt(row.exchange_rate) == 1)) {
 			erpnext.journal_entry.set_exchange_rate(frm, cdt, cdn, true);
 		}
 	}

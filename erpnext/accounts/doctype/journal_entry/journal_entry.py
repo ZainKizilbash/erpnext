@@ -528,14 +528,13 @@ class JournalEntry(AccountsController):
 		for d in self.get("accounts"):
 			if d.account_currency == self.company_currency or not d.account:
 				d.exchange_rate = 1
-			elif not d.exchange_rate or d.exchange_rate == 1 \
-				or (d.reference_type in ("Sales Invoice", "Purchase Invoice") and d.reference_name and self.posting_date) \
-				or (d.reference_type == "Journal Entry" and d.reference_name and d.party_type and d.party and d.account):
-
-					# Modified to include the posting date for which to retreive the exchange rate
-					d.exchange_rate = get_exchange_rate(self.posting_date, d.account, d.account_currency,
-						self.company, d.reference_type, d.reference_name, d.debit, d.credit, d.exchange_rate,
-						d.party_type, d.party)
+			elif not d.exchange_rate or d.exchange_rate == 1:
+				# or (d.reference_type in ("Sales Invoice", "Purchase Invoice") and d.reference_name and self.posting_date) \
+				# or (d.reference_type == "Journal Entry" and d.reference_name and d.party_type and d.party and d.account):
+				# Modified to include the posting date for which to retreive the exchange rate
+				d.exchange_rate = get_exchange_rate(self.posting_date, d.account, d.account_currency,
+					self.company, d.reference_type, d.reference_name, d.debit, d.credit, d.exchange_rate,
+					d.party_type, d.party)
 
 			if not d.exchange_rate:
 				frappe.throw(_("Row {0}: Exchange Rate is mandatory").format(d.idx))
