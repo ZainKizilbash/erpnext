@@ -289,6 +289,9 @@ erpnext.utils.set_taxes = function(frm, triggered_from_field) {
 		"shipping_address": frm.doc.shipping_address_name,
 		"transaction_type": frm.doc.transaction_type,
 		"cost_center": frm.doc.cost_center,
+		"tax_id": frm.doc.tax_id,
+		"tax_cnic": frm.doc.tax_cnic,
+		"tax_strn": frm.doc.tax_strn,
 	};
 
 	if (frappe.meta.has_field(frm.doc.doctype, 'has_stin')) {
