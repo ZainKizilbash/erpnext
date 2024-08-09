@@ -9,6 +9,7 @@ from erpnext.vehicles.vehicle_transaction_controller import VehicleTransactionCo
 from erpnext.maintenance.doctype.maintenance_schedule.maintenance_schedule import schedule_next_project_template
 
 
+
 class VehicleGatePass(VehicleTransactionController):
 	def get_feed(self):
 		return _("For {0} | {1}").format(self.get("customer_name") or self.get('customer'),
@@ -23,6 +24,7 @@ class VehicleGatePass(VehicleTransactionController):
 		self.validate_opportunity()
 		self.validate_vehicle_received()
 		self.validate_sales_invoice()
+		self.validate_invoice_unpaid_check()
 		self.validate_project_ready_to_close()
 		self.set_title()
 
@@ -287,9 +289,20 @@ class VehicleGatePass(VehicleTransactionController):
 	def remove_vehicle_maintenance_schedule(self, reference_doctype=None, reference_name=None):
 		if self.get("project"):
 			return super().remove_vehicle_maintenance_schedule("Project", self.project)
+	
+	def validate_invoice_unpaid_check(self):
+		if not self.get("sales_invoice"):
+			self.invoice_unpaid_check = 0
 
+		if self.get("sales_invoice"):
+			sales_invoice = frappe.db.get_value("Sales Invoice", self.sales_invoice, ['outstanding_amount', 'docstatus'],
+				as_dict=1)
+			if sales_invoice.outstanding_amount > 0 and sales_invoice.docstatus == 1:
+				self.invoice_unpaid_check = 1
+			else:
+				self.invoice_unpaid_check = 0
 
-@frappe.whitelist()
+@frappe.whitelist()		
 def get_opportunity_details(opportunity):
 	if not opportunity:
 		frappe.throw(_("Opportunity not provided"))

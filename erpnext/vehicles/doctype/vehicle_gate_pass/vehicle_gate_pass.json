@@ -20,6 +20,7 @@
   "sales_person",
   "service_advisor",
   "sales_invoice",
+  "invoice_unpaid_check",
   "technician",
   "vehicle_delivery",
   "column_break_11",
@@ -427,13 +428,20 @@
    "label": "Customer Contact Name",
    "no_copy": 1,
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "invoice_unpaid_check",
+   "fieldtype": "Check",
+   "label": "Unpaid Invoice",
+   "read_only": 1
   }
  ],
  "icon": "fa fa-file-text",
  "image_field": "image",
  "is_submittable": 1,
  "links": [],
- "modified": "2023-10-31 15:24:31.320618",
+ "modified": "2024-08-09 14:46:39.541173",
  "modified_by": "Administrator",
  "module": "Vehicles",
  "name": "Vehicle Gate Pass",
