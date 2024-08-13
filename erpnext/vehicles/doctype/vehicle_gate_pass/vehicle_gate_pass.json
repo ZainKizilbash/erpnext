@@ -20,7 +20,7 @@
   "sales_person",
   "service_advisor",
   "sales_invoice",
-  "invoice_unpaid_check",
+  "invoice_is_unpaid",
   "technician",
   "vehicle_delivery",
   "column_break_11",
