@@ -295,11 +295,11 @@ class VehicleGatePass(VehicleTransactionController):
 			sales_invoice = frappe.db.get_value("Sales Invoice", self.sales_invoice, ['outstanding_amount', 'docstatus'],
 				as_dict=1)
 			if sales_invoice.outstanding_amount > 0 and sales_invoice.docstatus == 1:
-				self.invoice_unpaid_check = 1
+				self.invoice_is_unpaid = 1
 			else:
-				self.invoice_unpaid_check = 0
+				self.invoice_is_unpaid = 0
 		else:
-			self.invoice_unpaid_check = 0
+			self.invoice_is_unpaid = 0
 
 
 @frappe.whitelist()

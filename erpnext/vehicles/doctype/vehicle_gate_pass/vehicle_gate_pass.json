@@ -431,7 +431,7 @@
   },
   {
    "default": "0",
-   "fieldname": "invoice_unpaid_check",
+   "fieldname": "invoice_is_unpaid",
    "fieldtype": "Check",
    "label": "Unpaid Invoice",
    "read_only": 1
@@ -441,7 +441,7 @@
  "image_field": "image",
  "is_submittable": 1,
  "links": [],
- "modified": "2024-08-09 14:46:39.541173",
+ "modified": "2024-08-13 13:32:21.821631",
  "modified_by": "Administrator",
  "module": "Vehicles",
  "name": "Vehicle Gate Pass",
