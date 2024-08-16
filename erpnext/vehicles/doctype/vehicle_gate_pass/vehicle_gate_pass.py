@@ -9,7 +9,6 @@ from erpnext.vehicles.vehicle_transaction_controller import VehicleTransactionCo
 from erpnext.maintenance.doctype.maintenance_schedule.maintenance_schedule import schedule_next_project_template
 
 
-
 class VehicleGatePass(VehicleTransactionController):
 	def get_feed(self):
 		return _("For {0} | {1}").format(self.get("customer_name") or self.get('customer'),
