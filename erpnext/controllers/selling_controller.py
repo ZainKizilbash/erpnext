@@ -455,7 +455,7 @@ class SellingController(TransactionController):
 			packed_qty_map = dict(frappe.db.sql("""
 				select name, qty
 				from `tabPacking Slip Item`
-				where parent = %s and docstatus = 1
+				where parent = %s and docstatus = 1 and qty != 0
 			""", packing_slip))
 
 			if returned_qty_map != packed_qty_map:

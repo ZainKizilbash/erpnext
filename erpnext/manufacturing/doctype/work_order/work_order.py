@@ -742,7 +742,10 @@ class WorkOrder(StatusUpdaterERP):
 					max(ps.posting_date) as max_posting_date
 				from `tabPacking Slip Item` psi
 				inner join `tabPacking Slip` ps on ps.name = psi.parent
-				where psi.work_order = %s and ps.docstatus = 1 and ifnull(psi.source_packing_slip, '') = ''
+				where ps.docstatus = 1
+					and psi.work_order = %s
+					and ifnull(psi.source_packing_slip, '') = ''
+					and psi.qty != 0
 			""", self.name, as_dict=1)
 
 			self.packed_qty = flt(packing_data[0].packed_qty) if packing_data else 0
