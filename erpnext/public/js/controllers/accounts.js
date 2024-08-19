@@ -168,13 +168,16 @@ cur_frm.cscript.account_head = function(doc, cdt, cdn) {
 			args: {
 				account_head: d.account_head
 			},
-			callback: function(r) {
+			callback: (r) => {
 				if (r.message) {
 					frappe.model.set_value(cdt, cdn, "description", r.message.account_name);
 					frappe.model.set_value(cdt, cdn, "exclude_from_item_tax_amount", cint(r.message.exclude_from_item_tax_amount));
 
 					if (["Actual", "Manual"].includes(d.charge_type)) {
 						frappe.model.set_value(cdt, cdn, "rate", flt(r.message.tax_rate) || 0);
+					} else if (d.charge_type == "On HS Code") {
+						this.update_customs_tariff_table();
+						frappe.model.set_value(cdt, cdn, "rate", 0);
 					} else {
 						frappe.model.set_value(cdt, cdn, "rate", 0);
 					}
@@ -182,6 +185,100 @@ cur_frm.cscript.account_head = function(doc, cdt, cdn) {
 			}
 		});
 	}
+}
+
+// cur_frm.cscript.amount = function(doc, cdt, cdn){
+// // 	let row = frappe.get_doc(cdt, cdn);
+// // 	let tariff_tax_table = doc.customs_tariff_tax || [];
+// // 	let sum = 0;
+// // 	for (let i = 0; i < tariff_tax_table.length; i++){
+// // 		if (tariff_tax_table[i].account_head == row.account_head){
+// // 			let Index = doc.taxes.findIndex(item => item.account_head === tariff_tax_table[i].account_head && item.charge_type === "On HS Code");
+// // 			sum = sum + tariff_tax_table[i].amount;
+// // 			doc.taxes[Index].tax_amount = sum;
+// // 			cur_frm.debounced_refresh_fields();
+// // 		}
+// // 	}
+	
+// 	_calculate_taxes_and_totals();
+// 	console.log("called");
+// }
+
+
+// function update_customs_tariff_table(doc) {
+// 	let filteredTaxes = doc.taxes.filter(tax => tax.charge_type === "On HS Code");
+// 	let uniqueTaxes = Array.from(new Map(filteredTaxes.map(tax => [tax.account_head, tax])).values());
+// 	let tariff_tax_table = doc.customs_tariff_tax || [];
+
+// 	if (tariff_tax_table.length < uniqueTaxes.length * doc.items.length) {
+// 		for (let i = 0; i < uniqueTaxes.length; i++) {
+// 			for (let j = 0; j < doc.items.length; j++) {
+// 				if (tariff_tax_table.find(item => item.account_head === uniqueTaxes[i].account_head) === undefined || tariff_tax_table.find(item => item.customs_tariff_number === doc.items[j].customs_tariff_no) === undefined) {
+// 					cur_frm.toggle_display('customs_tariff_tax', true);
+// 					let rows = cur_frm.add_child('customs_tariff_tax', {
+// 						account_head: uniqueTaxes[i].account_head,
+// 						customs_tariff_number: doc.items[j].customs_tariff_no
+// 					});
+// 				}
+// 			}
+// 		}
+// 		cur_frm.debounced_refresh_fields();
+// 	} else if (tariff_tax_table.length > uniqueTaxes.length * doc.items.length) {
+// 		for (let i = 0; i < doc.customs_tariff_tax.length; i++) {
+// 			if (uniqueTaxes.find(item => item.account_head === doc.customs_tariff_tax[i].account_head) === undefined) {
+// 				console.log((uniqueTaxes.find(item => item.account_head === "GST - N") ));
+// 				cur_frm.doc.customs_tariff_tax = cur_frm.doc.customs_tariff_tax.filter(item => item.account_head !== doc.customs_tariff_tax[i].account_head);
+// 			}		
+// 		}
+// 	}
+// 	cur_frm.debounced_refresh_fields();
+	
+// }
+
+
+cur_frm.cscript.update_customs_tariff_table = function() {
+	let account_heads = (this.frm.doc.taxes || []).filter(tax => tax.charge_type === "On HS Code" && tax.account_head).map(tax => tax.account_head);
+	account_heads = [...new Set(account_heads)];
+
+	let customs_tariff_nos = (this.frm.doc.items || []).filter(d => d.customs_tariff_no).map(d => d.customs_tariff_no);
+	customs_tariff_nos = [...new Set(customs_tariff_nos)];
+
+	let item_account_tariff_nos = [];
+	for (let account_head of account_heads) {
+		for (let customs_tariff_no of customs_tariff_nos) {
+			item_account_tariff_nos.push({
+				account_head: account_head,
+				customs_tariff_no: customs_tariff_no,
+			});
+		}
+	}
+
+	let ui_account_tariff_nos = [];
+	for (let d of this.frm.doc.customs_tariff_tax || []) {
+		if (d.customs_tariff_no && d.account_head) {
+			ui_account_tariff_nos.push({
+				account_head: d.account_head,
+				customs_tariff_no: d.customs_tariff_no,
+			});
+		}
+	}
+
+	// Add missing
+	for (let item_data of item_account_tariff_nos) {
+		if (!ui_account_tariff_nos.find(ui_data => ui_data.account_head == item_data.account_head && ui_data.customs_tariff_no == item_data.customs_tariff_no)) {
+			let row = this.frm.add_child('customs_tariff_tax');
+			row.account_head = item_data.account_head;
+			row.customs_tariff_no = item_data.customs_tariff_no
+			this.frm.refresh_field('customs_tariff_tax');
+		}
+	}
+
+	// Remove extra
+	this.frm.doc.customs_tariff_tax = (this.frm.doc.customs_tariff_tax || []).filter(ui_data => {
+		return item_account_tariff_nos.find(item_data => ui_data.account_head == item_data.account_head && ui_data.customs_tariff_no == item_data.customs_tariff_no);
+	});
+
+	this.frm.refresh_field("customs_tariff_tax");
 }
 
 cur_frm.cscript.validate_taxes_and_charges = function(cdt, cdn) {

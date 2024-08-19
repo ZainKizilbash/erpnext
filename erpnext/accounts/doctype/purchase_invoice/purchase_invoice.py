@@ -6,6 +6,8 @@ import frappe, erpnext
 from frappe.utils import cint, cstr, formatdate, flt, getdate, nowdate
 from frappe import _, throw
 import frappe.defaults
+import json
+from six import string_types
 
 from erpnext.assets.doctype.asset_category.asset_category import get_asset_category_account
 from erpnext.controllers.buying_controller import BuyingController
@@ -1353,3 +1355,29 @@ def make_inter_company_sales_invoice(source_name, target_doc=None):
 
 def on_doctype_update():
 	frappe.db.add_index("Purchase Invoice", ["supplier", "is_return", "return_against"])
+
+@frappe.whitelist()
+def get_item_details(item_list, account_head):
+    if isinstance(item_list, string_types):
+        item_list = json.loads(item_list)
+		
+
+    out = frappe._dict({
+    	"customs_tariff_tax": [],
+    })
+
+    for item_data in item_list:
+        if isinstance(item_data, dict) and item_data.get('customs_tariff_number'):
+            customs_tariff_number = item_data['customs_tariff_number']
+            account_head_value = account_head
+
+            item_dict = frappe._dict()
+            item_dict.customs_tariff_number = customs_tariff_number
+            item_dict.account_head = account_head_value
+            item_dict.amount = 0
+
+            out.customs_tariff_tax.append(item_dict)
+
+    print(out)
+
+    return out

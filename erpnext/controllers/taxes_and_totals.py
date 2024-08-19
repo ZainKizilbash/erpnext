@@ -547,6 +547,23 @@ class calculate_taxes_and_totals(object):
 	def get_current_tax_amount(self, item, tax, item_tax_map, weighted_distrubution_tax_on_net_total):
 		tax_rate = self._get_tax_rate(tax, item_tax_map)
 		current_tax_amount = 0.0
+		items_net_total = []
+
+		if len(self.doc.get("customs_tariff_tax", [])) > 0:
+			for item in self.doc.get("items", []):
+				index = -1
+				for i, d in enumerate(items_net_total):
+					if d["customs_tariff_no"] == item.customs_tariff_no:
+						index = i
+						break
+				
+				if index != -1:
+					items_net_total[index]["total"] += item.amount
+				else:
+					items_net_total.append({
+						"customs_tariff_no": item.customs_tariff_no,
+						"total": item.amount,
+					})
 
 		if tax.charge_type in ["Actual", "Weighted Distribution"]:
 			# distribute the tax amount proportionally to each item row
@@ -583,6 +600,16 @@ class calculate_taxes_and_totals(object):
 			current_tax_amount = (tax_rate / 100.0) * taxable_amount
 		elif tax.charge_type == "On Item Quantity":
 			current_tax_amount = tax_rate * item.qty
+		elif tax.charge_type == "On HS Code":
+			print(item.customs_tariff_no)
+
+			for tariff_tax_table in self.doc.get("customs_tariff_tax", []):
+				if tariff_tax_table.account_head == tax.account_head and item.customs_tariff_no == tariff_tax_table.customs_tariff_no:
+					for i, d in enumerate(items_net_total):
+						if d["customs_tariff_no"] == item.customs_tariff_no:
+							current_tax_amount = (tariff_tax_table.amount / items_net_total[i]["total"]) * item.amount
+							break
+
 
 		self.set_item_wise_tax(item, tax, tax_rate, current_tax_amount)
 
