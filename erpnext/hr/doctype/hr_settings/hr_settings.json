@@ -22,14 +22,6 @@
   "consider_lwp_as_deduction",
   "show_upcoming_loans_in_salary_slips",
   "password_policy",
-  "employee_notifications",
-  "send_birthday_notification",
-  "birthday_notification_template",
-  "cc_birthday_notification_to_role",
-  "column_break_12",
-  "send_anniversary_notification",
-  "anniversary_notification_template",
-  "cc_anniversary_notification_to_role",
   "leave_settings",
   "leave_approval_notification_template",
   "leave_status_notification_template",
@@ -188,57 +180,6 @@
   },
   {
    "default": "0",
-   "fieldname": "send_birthday_notification",
-   "fieldtype": "Check",
-   "label": "Send Birthday Notification"
-  },
-  {
-   "depends_on": "send_birthday_notification",
-   "fieldname": "birthday_notification_template",
-   "fieldtype": "Link",
-   "label": "Birthday Notification Template",
-   "mandatory_depends_on": "send_birthday_notification",
-   "options": "Email Template"
-  },
-  {
-   "depends_on": "send_birthday_notification",
-   "fieldname": "cc_birthday_notification_to_role",
-   "fieldtype": "Link",
-   "label": "CC Birthday Email to Role",
-   "options": "Role"
-  },
-  {
-   "default": "0",
-   "fieldname": "send_anniversary_notification",
-   "fieldtype": "Check",
-   "label": "Send Anniversary Notification"
-  },
-  {
-   "depends_on": "send_anniversary_notification",
-   "fieldname": "anniversary_notification_template",
-   "fieldtype": "Link",
-   "label": "Anniversary Notification Template",
-   "mandatory_depends_on": "send_anniversary_notification",
-   "options": "Email Template"
-  },
-  {
-   "depends_on": "send_anniversary_notification",
-   "fieldname": "cc_anniversary_notification_to_role",
-   "fieldtype": "Link",
-   "label": "CC Anniversary Email to Role",
-   "options": "Role"
-  },
-  {
-   "fieldname": "employee_notifications",
-   "fieldtype": "Section Break",
-   "label": "Employee Notifications"
-  },
-  {
-   "fieldname": "column_break_12",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
    "fieldname": "allow_leave_allocation_cancellation",
    "fieldtype": "Check",
    "label": "Allow Cancelling Leave Allocation When Leave Applications Exists"
@@ -260,7 +201,7 @@
  "idx": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-01-04 13:34:51.930690",
+ "modified": "2024-08-15 17:46:22.981145",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "HR Settings",

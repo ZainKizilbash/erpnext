@@ -430,130 +430,81 @@ def get_employee_from_user(user):
 
 
 def send_employee_birthday_notification():
-	if not cint(frappe.db.get_single_value("HR Settings", "send_birthday_notification")):
-		return
+	today = getdate()
 
-	date_today = getdate()
-
-	email_template_name = frappe.db.get_single_value("HR Settings", "birthday_notification_template")
-	if not email_template_name:
-		frappe.throw(_("Birthday Notification Template is not set."))
-
-	employee_birthday_data = get_employees_who_have_birthday_today(date_today)
-	if not employee_birthday_data:
-		return
-
-	role_for_cc = frappe.db.get_single_value("HR Settings", "cc_birthday_notification_to_role")
-
-	notification_subject = "{0} employee(s) are celebrating their birthday today ({1})".format(
-		len(employee_birthday_data), format_date(date_today)
-	)
-
-	send_employee_notification(employee_birthday_data, email_template_name, role_for_cc, notification_subject, date_today)
+	employees = get_employees_who_have_birthday_today(today)
+	for name in employees:
+		doc = frappe.get_doc("Employee", name)
+		doc.run_method("send_birthday_notification")
 
 
 def get_employees_who_have_birthday_today(date_today=None):
 	date_today = getdate(date_today)
 
-	employee_birthday_data = frappe.db.sql("""
-		SELECT name, employee_name, prefered_email, personal_email, company_email, year(date_of_birth) as year_of_birth
+	employee_birthday_data = frappe.db.sql_list("""
+		SELECT name
 		FROM tabEmployee
 		WHERE day(date_of_birth) = %s
-		AND month(date_of_birth)= %s
+		AND month(date_of_birth) = %s
 		AND status = 'Active'
-	""", [date_today.day, date_today.month], as_dict=1)
+	""", [date_today.day, date_today.month])
 
 	return employee_birthday_data
 
 
 def send_employee_anniversary_notification():
-	if not cint(frappe.db.get_single_value("HR Settings", "send_anniversary_notification")):
-		return
+	today = getdate()
 
-	date_today = getdate()
-
-	email_template_name = frappe.db.get_single_value("HR Settings", "anniversary_notification_template")
-	if not email_template_name:
-		frappe.throw(_("Anniversary Notification Template is not set."))
-
-	employee_anniversary_data = get_employees_who_have_anniversary_today(date_today)
-	if not employee_anniversary_data:
-		return
-
-	for d in employee_anniversary_data:
-		d['number_of_years'] = date_today.year - d.year_of_joining
-
-	role_for_cc = frappe.db.get_single_value("HR Settings", "cc_anniversary_notification_to_role")
-
-	notification_subject = "{0} employee(s) are celebrating their Work Anniversary today ({1})".format(
-		len(employee_anniversary_data), format_date(date_today)
-	)
-
-	send_employee_notification(employee_anniversary_data, email_template_name, role_for_cc, notification_subject, date_today)
+	employees = get_employees_who_have_anniversary_today(today)
+	for names in employees:
+		doc = frappe.get_doc("Employee", names)
+		doc.run_method("send_anniversary_notification")
 
 
 def get_employees_who_have_anniversary_today(date_today=None):
 	date_today = getdate(date_today)
 
-	employee_anniversary_data = frappe.db.sql("""
-		SELECT name, employee_name, prefered_email, personal_email, company_email, year(date_of_joining) as year_of_joining
+	employee_anniversary_data = frappe.db.sql_list("""
+		SELECT name
 		FROM tabEmployee
 		WHERE day(date_of_joining) = %s
 		AND month(date_of_joining) = %s
 		AND year(date_of_joining) < %s
 		AND status = 'Active'
-	""", [date_today.day, date_today.month, date_today.year], as_dict=1)
+	""", [date_today.day, date_today.month, date_today.year])
 
 	return employee_anniversary_data
 
 
-def send_employee_notification(employee_data, email_template_name, role_for_cc, notification_subject, date_today):
-	from frappe.desk.doctype.notification_log.notification_log import make_notification_logs_for_role
-	from frappe.core.doctype.role.role import get_info_based_on_role
+def create_birthday_email_document():
+	if not frappe.db.exists("Notification",
+						 {"name": "Employee Birthday Email"}):
+		doc = frappe.new_doc('Notification')
+		doc.name = "Employee Birthday Email"
+		doc.subject = "Happy Birthday {{doc.employee_name}}"
+		doc.document_type = "Employee"
+		doc.channel = "Email"
+		doc.event = "Method"
+		doc.method = 'send_birthday_notification'
+		doc.message = 'Dear {{doc.employee_name}} Happy birthday! Cheers to you for another trip around the sun.'
+		doc.append('recipients',
+				{'receiver_by_document_field': 'prefered_email'})
+		doc.save()
+	return frappe.get_doc("Notification","Employee Birthday Email")
 
-	if not employee_data or not email_template_name:
-		return
 
-	date_today = getdate(date_today)
-	email_template = frappe.get_cached_doc("Email Template", email_template_name)
-
-	emails_for_cc = set()
-	if role_for_cc:
-		emails_for_cc = get_info_based_on_role(role_for_cc, "email", ignore_permissions=True)
-		emails_for_cc = set([email for email in emails_for_cc if validate_email_address(email)])
-
-	notification_content = []
-
-	for i, d in enumerate(employee_data):
-		recipient = d.get("prefered_email") or d.get("company_email") or d.get("personal_email")
-		if recipient:
-			if d.year_of_joining:
-				d['number_of_years'] = date_today.year - d.year_of_joining
-
-			if d.year_of_birth:
-				d['age'] = date_today.year - d.year_of_birth
-
-			formatted_template = email_template.get_formatted_email(d)
-
-			frappe.sendmail(
-				recipients=recipient,
-				cc=list(emails_for_cc - set([recipient])),
-				subject=formatted_template['subject'],
-				message=formatted_template['message']
-			)
-
-			notification_content.append("{0}. {1}: {2} - <span style='color: green;'>Mail Sent</span>".format(
-				i + 1, d.name, d.employee_name
-			))
-		else:
-			notification_content.append("{0}. {1}: {2} - <span style='color: red;'>Email Missing</span>".format(
-				i + 1, d.name, d.employee_name
-			))
-
-	if notification_subject:
-		notification_doc = {
-			"type": "Alert",
-			"subject": notification_subject,
-			"email_content": "\n".join(notification_content),
-		}
-		make_notification_logs_for_role(notification_doc, "HR Manager")
+def create_anniversary_email_document():
+	if not frappe.db.exists("Notification",
+						 {"name": "Employee Anniversary Email"}):
+		doc = frappe.new_doc('Notification')
+		doc.name = "Employee Anniversary Email"
+		doc.subject = "Happy Anniversary {{doc.employee_name}}"
+		doc.document_type = "Employee"
+		doc.channel = "Email"
+		doc.event = "Method"
+		doc.method = 'send_anniversary_notification'
+		doc.message = 'Dear {{doc.employee_name}} Happy work anniversary! Today, we celebrate your outstanding contributions to our company.'
+		doc.append('recipients',
+				{'receiver_by_document_field': 'prefered_email'})
+		doc.save()
+	return frappe.get_doc("Notification","Employee Anniversary Email")
