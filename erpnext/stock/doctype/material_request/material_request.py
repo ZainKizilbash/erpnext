@@ -133,9 +133,9 @@ class MaterialRequest(BuyingController):
 						select i.material_request_item, sum(i.stock_qty)
 						from `tabStock Entry Detail` i
 						inner join `tabStock Entry` p on p.name = i.parent
-						where p.docstatus = 1 and i.material_request_item in %s
+						where p.docstatus = 1 and i.material_request = %s and i.material_request_item in %s
 						group by i.material_request_item
-					""", [row_names]))
+					""", [self.name, row_names]))
 
 					data.received_qty_map = data.ordered_qty_map
 
@@ -277,19 +277,6 @@ class MaterialRequest(BuyingController):
 
 		self.set_missing_item_details(for_validate=True)
 		self.calculate_totals()
-
-
-def get_list_context(context=None):
-	from erpnext.controllers.website_list_for_contact import get_list_context
-	list_context = get_list_context(context)
-	list_context.update({
-		'show_sidebar': True,
-		'show_search': True,
-		'no_breadcrumbs': True,
-		'title': _('Material Request'),
-	})
-
-	return list_context
 
 
 def set_missing_values(source, target_doc):

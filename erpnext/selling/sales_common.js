@@ -1,36 +1,27 @@
 // Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 // License: GNU General Public License v3. See license.txt
 
-
-cur_frm.cscript.tax_table = "Sales Taxes and Charges";
 {% include 'erpnext/accounts/doctype/sales_taxes_and_charges_template/sales_taxes_and_charges_template.js' %}
 
-
-cur_frm.email_field = "contact_email";
-
 frappe.provide("erpnext.selling");
+
 erpnext.selling.SellingController = class SellingController extends erpnext.TransactionController {
 	setup() {
 		super.setup();
 		this.frm.add_fetch("sales_partner", "commission_rate", "commission_rate");
+		this.frm.email_field = "contact_email";
+		this.tax_table = "Sales Taxes and Charges";
 	}
 
 	onload() {
 		super.onload();
 		this.setup_queries();
-		this.frm.set_query('shipping_rule', function() {
-			return {
-				filters: {
-					"shipping_rule_type": "Selling"
-				}
-			};
-		});
 	}
 
 	setup_queries() {
-		var me = this;
+		let me = this;
 
-		var party_queries = [
+		let party_queries = [
 			["customer", "customer"],
 			["bill_to", "customer"],
 			["vehicle_owner", "customer"],
@@ -45,6 +36,20 @@ erpnext.selling.SellingController = class SellingController extends erpnext.Tran
 		me.frm.set_query('contact_person', erpnext.queries.contact_query);
 		me.frm.set_query('customer_address', erpnext.queries.address_query);
 		me.frm.set_query('shipping_address_name', erpnext.queries.address_query);
+
+		this.frm.set_query('company_address', () => {
+			if (!this.frm.doc.company) {
+				frappe.throw(__('Please set Company'));
+			}
+
+			return {
+				query: 'frappe.contacts.doctype.address.address.address_query',
+				filters: {
+					link_doctype: 'Company',
+					link_name: this.frm.doc.company
+				}
+			};
+		});
 
 		if(this.frm.fields_dict.selling_price_list) {
 			this.frm.set_query("selling_price_list", function() {
@@ -63,6 +68,14 @@ erpnext.selling.SellingController = class SellingController extends erpnext.Tran
 				return { filters: { selling: 1 } };
 			});
 		}
+
+		this.frm.set_query('shipping_rule', function() {
+			return {
+				filters: {
+					"shipping_rule_type": "Selling"
+				}
+			};
+		});
 
 		if(this.frm.fields_dict.insurance_company) {
 			this.frm.set_query("insurance_company", function(doc) {
@@ -201,10 +214,11 @@ erpnext.selling.SellingController = class SellingController extends erpnext.Tran
 		var item = frappe.get_doc(cdt, cdn);
 
 		// check if child doctype is Sales Order Item/Qutation Item and calculate the rate
-		if(in_list(["Quotation Item", "Sales Order Item", "Delivery Note Item", "Sales Invoice Item"]), cdt)
+		if (frappe.meta.has_field(cdt, 'margin_type')) {
 			this.apply_pricing_rule_on_item(item);
-		else
+		} else {
 			item.rate = flt(item.price_list_rate * (1 - item.discount_percentage / 100.0));
+		}
 
 		this.calculate_taxes_and_totals();
 	}

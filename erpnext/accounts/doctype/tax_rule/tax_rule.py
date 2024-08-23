@@ -25,7 +25,6 @@ class TaxRule(Document):
 		self.validate_tax_template()
 		self.validate_date()
 		self.validate_filters()
-		self.validate_use_for_shopping_cart()
 		self.set_title()
 
 	def set_title(self):
@@ -114,16 +113,6 @@ class TaxRule(Document):
 			if tax_rule[0].priority == self.priority:
 				frappe.throw(_("Tax Rule Conflicts with {0}".format(tax_rule[0].name)), ConflictingTaxRule)
 
-	def validate_use_for_shopping_cart(self):
-		'''If shopping cart is enabled and no tax rule exists for shopping cart, enable this one'''
-		if (
-			not self.use_for_shopping_cart
-			and cint(frappe.db.get_single_value('Shopping Cart Settings', 'enabled'))
-			and not frappe.db.get_value('Tax Rule', {'use_for_shopping_cart': 1, 'name': ['!=', self.name]})
-		):
-			self.use_for_shopping_cart = 1
-			frappe.msgprint(_("Enabling 'Use for Shopping Cart', as Shopping Cart is enabled and there should be at least one Tax Rule for Shopping Cart"))
-
 
 @frappe.whitelist()
 def get_party_details(party, party_type, args=None):
@@ -173,9 +162,7 @@ def get_tax_template(posting_date, args):
 	conditions = ["(from_date is null or from_date <= '{0}') and (to_date is null or to_date >= '{0}')".format(posting_date)]
 
 	for key, value in args.items():
-		if key == "use_for_shopping_cart":
-			conditions.append("use_for_shopping_cart = {0}".format(1 if value else 0))
-		elif key == 'customer_group':
+		if key == 'customer_group':
 			if not value:
 				value = get_root_of("Customer Group")
 			customer_group_condition = get_customer_group_condition(value)

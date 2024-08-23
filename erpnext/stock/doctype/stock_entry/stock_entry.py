@@ -201,9 +201,9 @@ class StockEntry(TransactionController):
 					select i.ste_detail, sum(i.qty)
 					from `tabStock Entry Detail` i
 					inner join `tabStock Entry` p on p.name = i.parent
-					where p.docstatus = 1 and i.ste_detail in %s
+					where p.docstatus = 1 and i.against_stock_entry = %s and i.ste_detail in %s
 					group by i.ste_detail
-				""", [row_names]))
+				""", [self.name, row_names]))
 
 		return transferred_qty_map
 
@@ -463,6 +463,25 @@ class StockEntry(TransactionController):
 		if self.purpose in ("Manufacture", "Material Consumption for Manufacture") or (self.purpose == "Material Transfer for Manufacture" and self.from_bom):
 			if not self.fg_completed_qty:
 				frappe.throw(_("Production Qty is mandatory"))
+
+		for d in self.items:
+			if self.work_order:
+				d.work_order = None
+
+			if d.get("work_order"):
+				wo_details = frappe.db.get_value("Work Order", d.work_order, [
+					"name", "production_item",
+				], as_dict=1)
+
+				if not wo_details:
+					frappe.throw(_("Row #{0}: Work Order {1} does not exist").format(d.idx, d.work_order))
+				if d.item_code != wo_details.production_item:
+					frappe.throw(_("Row #{0}: Item {1} does not match with {2}. Item Code must be {3}").format(
+						d.idx,
+						frappe.bold(d.item_code),
+						frappe.get_desk_link("Work Order", d.work_order),
+						frappe.bold(wo_details.production_item),
+					))
 
 	def set_incoming_rate(self):
 		for d in self.items:
@@ -853,6 +872,15 @@ class StockEntry(TransactionController):
 			self.pro_doc.run_method("update_status", from_doctype=self.doctype)
 			self.pro_doc.notify_update()
 
+		# Rejected / Loss Qty
+		if self.purpose in ("Material Issue", "Material Transfer"):
+			work_orders = list(set([d.work_order for d in self.items if d.get("work_order")]))
+			for name in work_orders:
+				work_order = frappe.get_doc("Work Order", name)
+				work_order.set_packing_status(update=True)
+				work_order.validate_overpacking(from_doctype=self.doctype)
+				work_order.notify_update()
+
 	@frappe.whitelist()
 	def get_item_details(self, args=None, for_update=False):
 		if isinstance(args, str):
@@ -1081,7 +1109,7 @@ class StockEntry(TransactionController):
 		self.get_work_order()
 
 		transferred_qty = flt(self.pro_doc.material_transferred_for_manufacturing)
-		completed_qty = flt(self.pro_doc.produced_qty) + flt(self.pro_doc.scrap_qty)
+		completed_qty = flt(self.pro_doc.produced_qty) + flt(self.pro_doc.process_loss_qty)
 		remaining_qty = max(transferred_qty - completed_qty, 0)
 
 		if not self.fg_completed_qty:
@@ -1218,7 +1246,7 @@ class StockEntry(TransactionController):
 
 		self.get_work_order()
 
-		fg_total_qty = flt(self.fg_completed_qty) + flt(self.scrap_qty)
+		fg_total_qty = flt(self.fg_completed_qty) + flt(self.process_loss_qty)
 		items_dict = self.get_bom_raw_materials(fg_total_qty)
 		wo_required_items_dict = self.pro_doc.get_required_items_dict() if self.pro_doc else frappe._dict()
 
@@ -1383,13 +1411,13 @@ class StockEntry(TransactionController):
 			}
 		}, bom_no=self.bom_no)
 
-	def get_bom_raw_materials(self, qty, scrap_qty=0):
+	def get_bom_raw_materials(self, qty, process_loss_qty=0):
 		from erpnext.manufacturing.doctype.bom.bom import get_bom_items_as_dict
 
 		self.get_work_order()
 
 		# item dict = { item_code: {qty, description, stock_uom} }
-		item_dict = get_bom_items_as_dict(self.bom_no, self.company, qty=qty + scrap_qty,
+		item_dict = get_bom_items_as_dict(self.bom_no, self.company, qty=qty + process_loss_qty,
 			fetch_exploded=self.use_multi_level_bom, fetch_qty_in_stock_uom=False)
 
 		used_alternative_items = get_used_alternative_items(work_order=self.work_order)

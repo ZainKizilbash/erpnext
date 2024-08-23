@@ -231,24 +231,6 @@ class SalesInvoice(SellingController):
 		if "Healthcare" in frappe.get_active_domains():
 			manage_invoice_submit_cancel(self, "on_cancel")
 
-	def set_indicator(self):
-		"""Set indicator for portal"""
-		if self.outstanding_amount < 0:
-			self.indicator_title = _("Credit Note Issued")
-			self.indicator_color = "grey"
-		elif self.outstanding_amount > 0 and getdate(self.due_date) >= getdate(nowdate()):
-			self.indicator_color = "orange"
-			self.indicator_title = _("Unpaid")
-		elif self.outstanding_amount > 0 and getdate(self.due_date) < getdate(nowdate()):
-			self.indicator_color = "red"
-			self.indicator_title = _("Overdue")
-		elif cint(self.is_return) == 1:
-			self.indicator_title = _("Return")
-			self.indicator_color = "light-gray"
-		else:
-			self.indicator_color = "green"
-			self.indicator_title = _("Paid")
-
 	def set_title(self):
 		if self.get('bill_to') and self.bill_to != self.customer:
 			self.title = "{0} ({1})".format(self.bill_to_name or self.bill_to, self.customer_name or self.customer)
@@ -1714,18 +1696,6 @@ def get_intercompany_ref_doctype(doctype):
 		frappe.throw(_("Inter Company Transaction for {0} not allowed").format(doctype))
 
 	return ref_doc
-
-
-def get_list_context(context=None):
-	from erpnext.controllers.website_list_for_contact import get_list_context
-	list_context = get_list_context(context)
-	list_context.update({
-		'show_sidebar': True,
-		'show_search': True,
-		'no_breadcrumbs': True,
-		'title': _('Invoices'),
-	})
-	return list_context
 
 
 @frappe.whitelist()

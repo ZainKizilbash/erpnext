@@ -220,7 +220,7 @@ erpnext.vehicles.VehicleBookingController = class VehicleBookingController exten
 	}
 
 	get_customer_details() {
-		var me = this;
+		let me = this;
 
 		if (me.frm.doc.company && (me.frm.doc.customer || me.frm.doc.customer_is_company || (me.frm.doc.quotation_to && me.frm.doc.party_name))) {
 			frappe.call({
@@ -238,7 +238,9 @@ erpnext.vehicles.VehicleBookingController = class VehicleBookingController exten
 						transaction_date: me.frm.doc.transaction_date,
 						delivery_date: me.frm.doc.delivery_date,
 						item_code: me.frm.doc.item_code,
-						do_not_apply_withholding_tax: cint(me.frm.doc.do_not_apply_withholding_tax)
+						do_not_apply_withholding_tax: cint(me.frm.doc.do_not_apply_withholding_tax),
+						vehicle_amount: cint(me.frm.doc.vehicle_amount),
+						fni_amount: cint(me.frm.doc.fni_amount),
 					}
 				},
 				callback: function (r) {
@@ -638,11 +640,14 @@ erpnext.vehicles.VehicleBookingController = class VehicleBookingController exten
 				tax_status = "Filer";
 			}
 
+			let taxable_amount = flt(me.frm.doc.vehicle_amount) + flt(me.frm.doc.fni_amount);
+
 			frappe.call({
 				method: "erpnext.vehicles.doctype.vehicle_withholding_tax_rule.vehicle_withholding_tax_rule.get_withholding_tax_amount",
 				args: {
 					date: cstr(me.frm.doc.delivery_date || me.frm.doc.transaction_date),
 					item_code: me.frm.doc.item_code,
+					taxable_amount: taxable_amount,
 					tax_status: tax_status,
 					company: me.frm.doc.company
 				},

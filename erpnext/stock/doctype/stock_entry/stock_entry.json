@@ -39,7 +39,7 @@
   "use_alternative_item",
   "column_break_qp2v9",
   "fg_completed_qty",
-  "scrap_qty",
+  "process_loss_qty",
   "get_items",
   "contact_section",
   "customer",
@@ -634,10 +634,10 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:doc.from_bom && cint(frappe.defaults.get_default('scrap_remaining_by_default'))",
-   "fieldname": "scrap_qty",
+   "depends_on": "eval:doc.from_bom && cint(frappe.defaults.get_default('process_loss_remaining_by_default'))",
+   "fieldname": "process_loss_qty",
    "fieldtype": "Float",
-   "label": "Scrap Qty"
+   "label": "Process Loss Qty"
   },
   {
    "default": "0",
@@ -752,7 +752,7 @@
  "idx": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-06-08 18:38:08.380604",
+ "modified": "2024-07-11 18:38:08.380604",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Stock Entry",

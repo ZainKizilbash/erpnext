@@ -14,6 +14,8 @@ import json
 
 
 class TransactionController(StockController):
+	selling_or_buying = None
+
 	force_party_fields = [
 		"customer_name", "bill_to_name", "supplier_name",
 		"customer_group", "supplier_group",
@@ -124,10 +126,6 @@ class TransactionController(StockController):
 		parent_dict = {}
 		for fieldname in self.meta.get_valid_columns():
 			parent_dict[fieldname] = self.get(fieldname)
-
-		if self.doctype in ["Quotation", "Sales Order", "Delivery Note", "Sales Invoice"]:
-			document_type = "{} Item".format(self.doctype)
-			parent_dict.update({"document_type": document_type})
 
 		if 'transaction_type' in parent_dict:
 			parent_dict['transaction_type_name'] = parent_dict.pop('transaction_type')
@@ -690,10 +688,6 @@ class TransactionController(StockController):
 		for fieldname in self.meta.get_valid_columns():
 			parent_dict[fieldname] = self.get(fieldname)
 
-		if self.doctype in ["Quotation", "Sales Order", "Delivery Note", "Sales Invoice"]:
-			document_type = "{} Item".format(self.doctype)
-			parent_dict.update({"document_type": document_type})
-
 		for item in self.get("items"):
 			if item.get("item_code"):
 				args = parent_dict.copy()
@@ -810,7 +804,7 @@ class TransactionController(StockController):
 
 		return {}
 
-	def set_price_list_currency(self, buying_or_selling):
+	def set_price_list_currency(self, selling_or_buying):
 		if self.meta.get_field("posting_date"):
 			transaction_date = self.posting_date
 		else:
@@ -818,7 +812,7 @@ class TransactionController(StockController):
 
 		if self.meta.get_field("currency"):
 			# price list part
-			if buying_or_selling.lower() == "selling":
+			if selling_or_buying.lower() == "selling":
 				fieldname = "selling_price_list"
 				args = "for_selling"
 			else:
@@ -919,6 +913,21 @@ def validate_inclusive_tax(tax, doc):
 			_on_previous_row_error("1 - %d" % (tax.row_id,))
 		elif tax.get("category") == "Valuation":
 			frappe.throw(_("Valuation type charges can not be marked as Inclusive"))
+
+
+def is_doctype_selling_or_buying(doctype):
+	from frappe.model.document import get_controller
+
+	if not doctype:
+		return None
+
+	try:
+		controller = get_controller(doctype)
+	except Exception:
+		return None
+
+	selling_or_buying = getattr(controller, "selling_or_buying", None)
+	return selling_or_buying
 
 
 def set_invoice_as_overdue():

@@ -117,20 +117,6 @@ class SalesOrder(SellingController):
 	def set_title(self):
 		self.title = self.customer_name or self.customer
 
-	def set_indicator(self):
-		"""Set indicator for portal"""
-		if self.billing_status == "To Bill" and self.delivery_status == "To Deliver":
-			self.indicator_color = "orange"
-			self.indicator_title = _("Not Paid and Not Delivered")
-
-		elif self.billing_status == "Billed" and self.delivery_status == "To Deliver":
-			self.indicator_color = "orange"
-			self.indicator_title = _("Paid and Not Delivered")
-
-		else:
-			self.indicator_color = "green"
-			self.indicator_title = _("Paid")
-
 	def update_status(self, status):
 		self.check_modified_date()
 		self.set_status(status=status)
@@ -549,9 +535,13 @@ class SalesOrder(SellingController):
 
 		return purchase_order_qty_map
 
-	def validate_delivered_qty(self, from_doctype=None, row_names=None):
-		self.validate_completed_qty('delivered_qty', 'qty', self.items,
-			allowance_type='qty', from_doctype=from_doctype, row_names=row_names)
+	def validate_delivered_qty(self, from_doctype=None, row_names=None, check_packed_qty=False):
+		if check_packed_qty:
+			self.validate_completed_qty('delivered_qty', 'packed_qty', self.items,
+				allowance_type=None, from_doctype=from_doctype, row_names=row_names)
+		else:
+			self.validate_completed_qty('delivered_qty', 'qty', self.items,
+				allowance_type='qty', from_doctype=from_doctype, row_names=row_names)
 
 	def validate_packed_qty(self, from_doctype=None, row_names=None):
 		self.validate_completed_qty('packed_qty', 'qty', self.items,
@@ -605,14 +595,16 @@ class SalesOrder(SellingController):
 		if not self.delivery_date:
 			self.delivery_date = max_delivery_date
 
+		warned = False
 		if self.delivery_date:
 			for d in self.get("items"):
 				if not d.delivery_date:
 					d.delivery_date = self.delivery_date
 
-				if getdate(self.transaction_date) > getdate(d.delivery_date):
+				if getdate(self.transaction_date) > getdate(d.delivery_date) and not warned:
 					frappe.msgprint(_("Expected Delivery Date should be after Sales Order Date"),
 						indicator='orange', title=_('Warning'))
+					warned = True
 
 			if getdate(self.delivery_date) != getdate(max_delivery_date):
 				self.delivery_date = max_delivery_date
@@ -837,19 +829,6 @@ class SalesOrder(SellingController):
 				frappe.throw(_("Cannot ensure delivery by Serial No as \
 				Item {0} is added with and without Ensure Delivery by \
 				Serial No.").format(item.item_code))
-
-
-def get_list_context(context=None):
-	from erpnext.controllers.website_list_for_contact import get_list_context
-	list_context = get_list_context(context)
-	list_context.update({
-		'show_sidebar': True,
-		'show_search': True,
-		'no_breadcrumbs': True,
-		'title': _('Orders'),
-	})
-
-	return list_context
 
 
 @frappe.whitelist()
@@ -1287,7 +1266,7 @@ def make_packing_slip(source_name, target_doc=None, warehouse=None):
 		undelivered_qty, unpacked_qty = get_remaining_qty(source)
 		return undelivered_qty > 0 and unpacked_qty > 0
 
-	def set_missing_values(source, target):
+	def postprocess(source, target):
 		# Target Warehouse
 		if not target.target_warehouse:
 			if warehouse:
@@ -1296,6 +1275,8 @@ def make_packing_slip(source_name, target_doc=None, warehouse=None):
 				target.determine_warehouse_from_sales_order()
 
 		update_mapped_items_based_on_purchase_and_production(source, target)
+
+		frappe.utils.call_hook_method("postprocess_sales_order_to_packing_slip", source, target)
 
 		target.run_method("set_missing_values")
 		target.run_method("calculate_totals")
@@ -1322,11 +1303,11 @@ def make_packing_slip(source_name, target_doc=None, warehouse=None):
 		work_order = work_order_details.name if work_order_details else None
 
 		if work_order:
-			completed_qty = flt(work_order_details.completed_qty)
-			completed_qty_order_uom = completed_qty / source.conversion_factor
+			packable_qty = flt(work_order_details.completed_qty) - flt(work_order_details.rejected_qty) - flt(work_order_details.reconciled_qty)
+			packable_qty_order_uom = packable_qty / source.conversion_factor
 
-			undelivered_qty = round_down(completed_qty_order_uom - flt(source.delivered_qty), source.precision("qty"))
-			unpacked_qty = round_down(completed_qty_order_uom - flt(source.packed_qty), source.precision("qty"))
+			undelivered_qty = round_down(packable_qty_order_uom - flt(source.delivered_qty), source.precision("qty"))
+			unpacked_qty = round_down(packable_qty_order_uom - flt(source.packed_qty), source.precision("qty"))
 		else:
 			undelivered_qty = flt(source.qty) - flt(source.delivered_qty)
 			unpacked_qty = flt(source.qty) - flt(source.packed_qty)
@@ -1341,7 +1322,8 @@ def make_packing_slip(source_name, target_doc=None, warehouse=None):
 				"docstatus": 1,
 				"packing_slip_required": 1,
 			}, fieldname=[
-				"name", "completed_qty", "fg_warehouse", "wip_warehouse", "produce_fg_in_wip_warehouse",
+				"name", "completed_qty", "rejected_qty", "reconciled_qty",
+				"fg_warehouse", "wip_warehouse", "produce_fg_in_wip_warehouse",
 			], as_dict=1)
 
 		return work_order_cache[source.name]
@@ -1364,10 +1346,15 @@ def make_packing_slip(source_name, target_doc=None, warehouse=None):
 				"name": "sales_order_item",
 				"parent": "sales_order",
 			},
+			"field_no_map": [
+				"net_weight_per_unit",
+				"tare_weight_per_unit",
+				"gross_weight_per_unit",
+			],
 			"postprocess": update_item,
 			"condition": item_condition,
 		},
-		"postprocess": set_missing_values,
+		"postprocess": postprocess,
 	}
 
 	frappe.utils.call_hook_method("update_packing_slip_from_sales_order_mapper", mapper, "Packing Slip")

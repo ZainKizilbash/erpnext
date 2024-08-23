@@ -225,7 +225,13 @@ class VehicleBookingController(AccountsController):
 		self.total_in_words = money_in_words(self.grand_total, self.company_currency)
 
 	def get_withholding_tax_amount(self, tax_status):
-		return get_withholding_tax_amount(self.delivery_date or self.transaction_date, self.item_code, tax_status, self.company)
+		return get_withholding_tax_amount(
+			self.delivery_date or self.transaction_date,
+			self.item_code,
+			flt(self.vehicle_amount) + flt(self.fni_amount),
+			tax_status,
+			self.company
+		)
 
 	@frappe.whitelist()
 	def get_party_tax_status(self):
@@ -309,8 +315,13 @@ def get_customer_details(args, get_withholding_tax=True):
 
 		out.exempt_from_vehicle_withholding_tax = cint(frappe.get_cached_value("Item", args.item_code, "exempt_from_vehicle_withholding_tax"))
 		if not cint(args.do_not_apply_withholding_tax):
-			out.withholding_tax_amount = get_withholding_tax_amount(args.delivery_date or args.transaction_date,
-				args.item_code, tax_status, args.company)
+			out.withholding_tax_amount = get_withholding_tax_amount(
+				args.delivery_date or args.transaction_date,
+				args.item_code,
+				flt(args.vehicle_amount) + flt(args.fni_amount),
+				tax_status,
+				args.company
+			)
 		else:
 			out.withholding_tax_amount = 0
 
@@ -634,11 +645,6 @@ def get_vehicle_price(company, item_code, vehicle_price_list, fni_price_list=Non
 	vehicle_item_price = vehicle_item_price.price_list_rate if vehicle_item_price else 0
 	out.vehicle_amount = flt(vehicle_item_price)
 
-	if not cint(do_not_apply_withholding_tax):
-		out.withholding_tax_amount = get_withholding_tax_amount(price_date, item_code, tax_status, company)
-	else:
-		out.withholding_tax_amount = 0
-
 	if fni_price_list:
 		fni_price_args = vehicle_price_args.copy()
 		fni_price_args['price_list'] = fni_price_list
@@ -647,6 +653,17 @@ def get_vehicle_price(company, item_code, vehicle_price_list, fni_price_list=Non
 		out.fni_amount = flt(fni_item_price)
 	else:
 		out.fni_amount = 0
+
+	if not cint(do_not_apply_withholding_tax):
+		out.withholding_tax_amount = get_withholding_tax_amount(
+			price_date,
+			item_code,
+			out.vehicle_amount + out.fni_amount,
+			tax_status,
+			company
+		)
+	else:
+		out.withholding_tax_amount = 0
 
 	return out
 

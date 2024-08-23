@@ -159,8 +159,6 @@
   "lubricants_item_group",
   "column_break_133",
   "percent_complete_method",
-  "users_section",
-  "users",
   "monitor_progress",
   "collect_progress",
   "holiday_list",
@@ -297,19 +295,6 @@
    "label": "Sales Order",
    "options": "Sales Order",
    "read_only": 1
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "users_section",
-   "fieldtype": "Section Break",
-   "label": "Users"
-  },
-  {
-   "description": "Project will be accessible on the website to these users",
-   "fieldname": "users",
-   "fieldtype": "Table",
-   "label": "Users",
-   "options": "Project User"
   },
   {
    "fieldname": "copied_from",
@@ -1389,7 +1374,7 @@
  "idx": 29,
  "image_field": "image",
  "links": [],
- "modified": "2023-10-31 15:22:02.538929",
+ "modified": "2024-03-31 10:13:55.064217",
  "modified_by": "Administrator",
  "module": "Projects",
  "name": "Project",

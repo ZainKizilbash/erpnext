@@ -27,6 +27,14 @@ class PackingSlip(TransactionController):
 		if self.docstatus == 0:
 			self.calculate_totals()
 
+	def before_print(self, print_settings=None):
+		# Hide 0 qty rows
+		self.items = [d for d in self.items if d.qty]
+		for i, d in enumerate(self.items):
+			d.idx = i + 1
+
+		super().before_print()
+
 	def validate(self):
 		self.validate_posting_time()
 		super(PackingSlip, self).validate()
@@ -80,6 +88,7 @@ class PackingSlip(TransactionController):
 			self.packed_items = self.packed_items[:137] + "..."
 
 	def set_missing_values(self, for_validate=False):
+		self.set_package_type_details()
 		self.set_missing_item_details(for_validate)
 		self.set_source_packing_slips()
 
@@ -99,20 +108,23 @@ class PackingSlip(TransactionController):
 						if f in self.force_item_fields or item.get(f) in ("", None):
 							item.set(f, item_details.get(f))
 
-	def set_package_type_details(self):
+	def set_package_type_details(self, force=False):
 		if not self.get("package_type"):
 			return
 
 		package_type_details = get_package_type_details(self.package_type, self.as_dict())
-		if package_type_details.weight_uom:
+		if package_type_details.weight_uom and (not self.weight_uom or force or self.is_new()):
 			self.weight_uom = package_type_details.weight_uom
 
 		if package_type_details.packaging_items:
-			self.set("packaging_items", [])
-			for d in package_type_details.packaging_items:
-				row = frappe.new_doc("Packing Slip Packaging Material")
-				row.update(d)
-				self.append("packaging_items", row)
+			if force:
+				self.set("packaging_items", [])
+
+			if not self.packaging_items:
+				for d in package_type_details.packaging_items:
+					row = frappe.new_doc("Packing Slip Packaging Material")
+					row.update(d)
+					self.append("packaging_items", row)
 
 	def set_source_packing_slips(self):
 		# Packing Slips from items table
@@ -228,8 +240,17 @@ class PackingSlip(TransactionController):
 				d.subcontracted_item_name = None
 
 	def validate_qty(self):
+		all_zero = True
+
 		for d in self.items:
-			if not flt(d.qty):
+			if self.is_unpack or d.get("source_packing_slip"):
+				d.rejected_qty = 0
+				d.stock_rejected_qty = 0
+
+			if flt(d.qty):
+				all_zero = False
+
+			if not flt(d.qty) and not flt(d.rejected_qty):
 				frappe.throw(_("Row #{0}: Item {1}, Quantity cannot be 0").format(d.idx, frappe.bold(d.item_code)))
 
 			if self.is_unpack:
@@ -240,6 +261,9 @@ class PackingSlip(TransactionController):
 				if flt(d.qty) < 0 or flt(d.rejected_qty) < 0:
 					frappe.throw(_("Row #{0}: Item {1}, quantity must be positive number")
 					.format(d.idx, frappe.bold(d.item_code)))
+
+		if all_zero:
+			frappe.throw(_("All items cannot have 0 quantity"))
 
 	def validate_weights(self):
 		weight_fields = ["net_weight", "tare_weight", "gross_weight"]
@@ -768,7 +792,7 @@ class PackingSlip(TransactionController):
 
 	def update_previous_doc_status(self):
 		sales_orders = set()
-		sales_order_row_names = set()
+		so_row_names_without_wos = set()
 		work_orders = set()
 		packing_slips = set()
 
@@ -777,8 +801,8 @@ class PackingSlip(TransactionController):
 			if not d.get("source_packing_slip"):
 				if d.sales_order:
 					sales_orders.add(d.sales_order)
-				if d.sales_order_item:
-					sales_order_row_names.add(d.sales_order_item)
+				if d.sales_order_item and not d.work_order:
+					so_row_names_without_wos.add(d.sales_order_item)
 				if d.work_order:
 					work_orders.add(d.work_order)
 
@@ -791,7 +815,7 @@ class PackingSlip(TransactionController):
 		for name in sales_orders:
 			doc = frappe.get_doc("Sales Order", name)
 			doc.set_production_packing_status(update=True)
-			doc.validate_packed_qty(from_doctype=self.doctype, row_names=sales_order_row_names)
+			doc.validate_packed_qty(from_doctype=self.doctype, row_names=so_row_names_without_wos)
 			doc.notify_update()
 
 		if self.is_unpack and self.unpack_against:
@@ -862,48 +886,50 @@ class PackingSlip(TransactionController):
 				"is_transfer": 1,
 			})
 
-			if d.get("source_packing_slip") and d.get("packing_slip_item") and self.docstatus == 1:
-				# Transfer Dependency
-				sle_out.dependencies = [{
-					"dependent_voucher_type": self.doctype,
-					"dependent_voucher_no": d.source_packing_slip,
-					"dependent_voucher_detail_no": d.packing_slip_item,
-					"dependency_type": "Amount",
-					"dependency_qty_filter": "Positive",
-				}]
+			# Disabled nesting dependency because cost may get updated during handling
+			# if d.get("source_packing_slip") and d.get("packing_slip_item") and self.docstatus == 1:
+			# 	# Nesting Dependency
+			# 	sle_out.dependencies = [{
+			# 		"dependent_voucher_type": self.doctype,
+			# 		"dependent_voucher_no": d.source_packing_slip,
+			# 		"dependent_voucher_detail_no": d.packing_slip_item,
+			# 		"dependency_type": "Rate",
+			# 		"dependency_qty_filter": "Negative",
+			# 	}]
 
 			sl_entries.append(sle_out)
 
 			# IN SLE for item contents to target warehouse
-			sle_in = self.get_sl_entries(d, {
-				"warehouse": self.target_warehouse,
-				"actual_qty": flt(d.stock_qty),
-				"packing_slip": self.name,
-				"is_transfer": 1,
-			})
+			if flt(d.stock_qty):
+				sle_in = self.get_sl_entries(d, {
+					"warehouse": self.target_warehouse,
+					"actual_qty": flt(d.stock_qty),
+					"packing_slip": self.name,
+					"is_transfer": 1,
+				})
 
-			if self.docstatus == 1:
-				# Transfer Dependency
-				sle_in.dependencies = [{
-					"dependent_voucher_type": self.doctype,
-					"dependent_voucher_no": self.name,
-					"dependent_voucher_detail_no": d.name,
-					"dependency_type": "Rate",
-					"dependency_qty_filter": "Negative"
-				}]
+				if self.docstatus == 1:
+					# Transfer Dependency
+					sle_in.dependencies = [{
+						"dependent_voucher_type": self.doctype,
+						"dependent_voucher_no": self.name,
+						"dependent_voucher_detail_no": d.name,
+						"dependency_type": "Rate",
+						"dependency_qty_filter": "Negative"
+					}]
 
-				# Include Consumed Packaging Material in Valaution
-				for dep_row in self.get("packaging_items"):
-					if flt(dep_row.stock_qty) and d.cost_percentage:
-						sle_in.dependencies.append({
-							"dependent_voucher_type": self.doctype,
-							"dependent_voucher_no": self.name,
-							"dependent_voucher_detail_no": dep_row.name,
-							"dependency_type": "Amount",
-							"dependency_percentage": d.cost_percentage
-						})
+					# Include Consumed Packaging Material in Valuation
+					for dep_row in self.get("packaging_items"):
+						if flt(dep_row.stock_qty) and d.cost_percentage:
+							sle_in.dependencies.append({
+								"dependent_voucher_type": self.doctype,
+								"dependent_voucher_no": self.name,
+								"dependent_voucher_detail_no": dep_row.name,
+								"dependency_type": "Amount",
+								"dependency_percentage": d.cost_percentage
+							})
 
-			sl_entries.append(sle_in)
+				sl_entries.append(sle_in)
 
 			# IN SLE for rejected qty
 			if d.rejected_qty:
@@ -937,15 +963,15 @@ class PackingSlip(TransactionController):
 				"is_transfer": 1,
 			})
 
-			# Unpack OUT at same rate
-			if self.docstatus == 1 and d.unpack_against_row:
-				sle_out.dependencies = [{
-					"dependent_voucher_type": self.doctype,
-					"dependent_voucher_no": self.unpack_against,
-					"dependent_voucher_detail_no": d.unpack_against_row,
-					"dependency_type": "Rate",
-					"dependency_qty_filter": "Negative",
-				}]
+			# Unpack OUT at same rate, disabled because cost may get updated
+			# if self.docstatus == 1 and d.unpack_against_row:
+			# 	sle_out.dependencies = [{
+			# 		"dependent_voucher_type": self.doctype,
+			# 		"dependent_voucher_no": self.unpack_against,
+			# 		"dependent_voucher_detail_no": d.unpack_against_row,
+			# 		"dependency_type": "Rate",
+			# 		"dependency_qty_filter": "Negative",
+			# 	}]
 
 			sl_entries.append(sle_out)
 
@@ -1059,6 +1085,15 @@ class PackingSlip(TransactionController):
 					packed_qty_map = qty_map["items"]
 					warehouse = qty_map["warehouses"][0]
 
+				# Unnesting
+				elif sl_entries[0].is_unnest:
+					qty_map = get_qty_map("nest_against_row", sl_entries, is_incoming=True)
+					if qty_map["items"] == packed_qty_map:
+						is_nested = 0
+						warehouse = qty_map["warehouses"][0]
+					elif validate and qty_map["items"]:
+						self.raise_incomplete_fulfilment("unpacked", "unpacking", voucher_type, voucher_no)
+
 				# Unpacking
 				elif sl_entries[0].is_unpack:
 					qty_map = get_qty_map("unpack_against_row", sl_entries, is_incoming=False)
@@ -1143,7 +1178,8 @@ class PackingSlip(TransactionController):
 				select
 					sle.voucher_type, sle.voucher_no, sle.voucher_detail_no,
 					sle.item_code, sle.warehouse, sle.actual_qty, sle.is_transfer,
-					ps.is_unpack, psi.unpack_against_row, psi.source_packing_slip, psi.packing_slip_item as nest_against_row,
+					ps.is_unpack, psi.unpack_against_row,
+					psi.source_packing_slip, psi.packing_slip_item as nest_against_row,
 					dn.is_return as dn_is_return, dni.packing_slip_item as deliver_against_row,
 					si.is_return as si_is_return, sii.packing_slip_item as invoice_against_row,
 					ste.purpose, sti.packing_slip_item as ste_against_row
@@ -1162,6 +1198,9 @@ class PackingSlip(TransactionController):
 
 		sle_map = {}
 		for sle in sl_entries:
+			if sle.is_unpack and sle.actual_qty > 0:
+				sle.is_unnest = 1
+
 			voucher_key = (sle.voucher_type, sle.voucher_no)
 			sle_map.setdefault(voucher_key, []).append(sle)
 
@@ -1169,7 +1208,7 @@ class PackingSlip(TransactionController):
 
 	def raise_incomplete_fulfilment(self, past, present, voucher_type, voucher_no):
 		frappe.throw(_(
-			"Some items from {0} are were not completely {1} by {2}. "
+			"Some items from {0} are not completely {1} by {2}. "
 			"Partial {3} of Package is not allowed. "
 			"Please select all items of Packing Slip."
 		).format(
@@ -1444,6 +1483,9 @@ def make_target_packing_slip(source_name, target_doc=None):
 
 @frappe.whitelist()
 def make_unpack_packing_slip(source_name, target_doc=None):
+	def item_condition(source, source_parent, target_parent):
+		return bool(flt(source.qty))
+
 	def update_item(source_doc, target_doc, source_parent, target_parent):
 		target_doc.qty = -1 * source_doc.qty
 
@@ -1487,7 +1529,8 @@ def make_unpack_packing_slip(source_name, target_doc=None):
 				"rejected_qty",
 				"stock_rejected_qty",
 			],
-			"postprocess": update_item
+			"condition": item_condition,
+			"postprocess": update_item,
 		},
 		"Packing Slip Packaging Material": {
 			"doctype": "Packing Slip Packaging Material",
@@ -1641,6 +1684,9 @@ def map_target_document(target_doctype, target_doc, packing_slip):
 
 
 def mapper_item_condition(ps_item, target_doc):
+	if not flt(ps_item.qty):
+		return False
+
 	if ps_item.name in [d.packing_slip_item for d in target_doc.get("items") if d.get("packing_slip_item")]:
 		return False
 

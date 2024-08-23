@@ -19,9 +19,15 @@
   "naming_series",
   "company",
   "transaction_date",
-  "quotation_validity_days",
-  "valid_till",
   "amended_from",
+  "section_break_hjdvg",
+  "quotation_validity_days",
+  "column_break_nqx4e",
+  "valid_till",
+  "column_break_eejsv",
+  "lead_time_days",
+  "column_break_4fafc",
+  "delivery_date",
   "section_break_15",
   "lost_reasons",
   "cb_4",
@@ -1446,13 +1452,40 @@
    "options": "Company:company:default_currency",
    "print_hide": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "section_break_hjdvg",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_nqx4e",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_eejsv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_4fafc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "lead_time_days",
+   "fieldtype": "Int",
+   "label": "Delivery Lead Time (Days)"
+  },
+  {
+   "fieldname": "delivery_date",
+   "fieldtype": "Date",
+   "label": "Expected Delivery Date",
+   "no_copy": 1
   }
  ],
  "icon": "fa fa-shopping-cart",
  "idx": 82,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-01-03 00:17:10.666135",
+ "modified": "2024-07-15 13:20:33.544351",
  "modified_by": "Administrator",
  "module": "Selling",
  "name": "Quotation",

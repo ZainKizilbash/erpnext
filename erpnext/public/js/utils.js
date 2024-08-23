@@ -426,15 +426,23 @@ $.extend(erpnext.utils, {
 		});
 	},
 
-	setup_remove_zero_qty_rows(frm) {
+	setup_remove_zero_qty_rows(frm, qty_fields) {
+		if (!qty_fields || !qty_fields.length) {
+			qty_fields = 'qty';
+		}
+		if (!Array.isArray(qty_fields)) {
+			qty_fields = [qty_fields];
+		}
+
 		if (frm.doc.docstatus === 0) {
 			frm.fields_dict.items.grid.add_custom_button(__("Remove 0 Qty Rows"), function () {
 				let actions = [];
-				$.each(frm.doc.items || [], function(i, d) {
-					if (!flt(d.qty, precision('qty', d))) {
+				for (let d of frm.doc.items || []) {
+					let qtys = qty_fields.map(f => flt(d[f], precision('qty', d)));
+					if (!qtys.some(Boolean)) {
 						actions.push(() => frm.fields_dict.items.grid.get_row(d.name).remove());
 					}
-				});
+				}
 
 				return frappe.run_serially(actions);
 			});

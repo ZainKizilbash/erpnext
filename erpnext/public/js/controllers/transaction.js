@@ -1152,8 +1152,6 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 			this.get_exchange_rate(transaction_date, this.frm.doc.currency, company_currency,
 				function(exchange_rate) {
 					if(exchange_rate != me.frm.doc.conversion_rate) {
-						// me.set_margin_amount_based_on_currency(exchange_rate);
-						// me.set_actual_charges_based_on_currency(exchange_rate);
 						me.frm.set_value("conversion_rate", exchange_rate);
 					}
 				});
@@ -1182,28 +1180,6 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 		}
 		// Make read only if Accounts Settings doesn't allow stale rates
 		this.frm.set_df_property("conversion_rate", "read_only", erpnext.stale_rate_allowed() ? 0 : 1);
-	}
-
-	set_margin_amount_based_on_currency(exchange_rate) {
-		if (in_list(["Quotation", "Sales Order", "Delivery Note", "Sales Invoice"], this.frm.doc.doctype)) {
-			var me = this;
-			$.each(this.frm.doc.items || [], function(i, d) {
-				if(d.margin_type == "Amount") {
-					frappe.model.set_value(d.doctype, d.name, "margin_rate_or_amount",
-						flt(d.margin_rate_or_amount) / flt(exchange_rate));
-				}
-			});
-		}
-	}
-
-	set_actual_charges_based_on_currency(exchange_rate) {
-		var me = this;
-		$.each(this.frm.doc.taxes || [], function(i, d) {
-			if(d.charge_type == "Actual") {
-				frappe.model.set_value(d.doctype, d.name, "tax_amount",
-					flt(d.tax_amount) / flt(exchange_rate));
-			}
-		});
 	}
 
 	set_actual_charges_based_on_company_currency() {
@@ -1802,7 +1778,7 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 				}
 
 				// if doctype is Quotation Item / Sales Order Iten then add Margin Type and rate in item_list
-				if (in_list(["Quotation Item", "Sales Order Item", "Delivery Note Item", "Sales Invoice Item"]), d.doctype){
+				if (frappe.meta.has_field(d.doctype, 'margin_type')) {
 					item_args["margin_type"] = d.margin_type;
 					item_args["margin_rate_or_amount"] = d.margin_rate_or_amount;
 				}

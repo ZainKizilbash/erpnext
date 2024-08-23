@@ -96,7 +96,8 @@
    "fieldname": "items",
    "fieldtype": "Table",
    "label": "Packed Items",
-   "options": "Packing Slip Item"
+   "options": "Packing Slip Item",
+   "reqd": 1
   },
   {
    "fieldname": "package_weight_details",
@@ -471,7 +472,7 @@
  "idx": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-07-05 03:32:18.163996",
+ "modified": "2024-08-16 17:47:25.477758",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Packing Slip",
