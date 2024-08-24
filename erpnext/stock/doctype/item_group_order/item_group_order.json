@@ -20,7 +20,7 @@
  "modified": "2020-03-03 15:37:01.836017",
  "modified_by": "Administrator",
  "module": "Stock",
- "name": "Price List Item Group",
+ "name": "Item Group Order",
  "owner": "Administrator",
  "permissions": [],
  "quick_entry": 1,
