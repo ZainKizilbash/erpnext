@@ -178,8 +178,7 @@
    "fieldname": "valid_from",
    "fieldtype": "Date",
    "in_list_view": 1,
-   "label": "Valid From",
-   "search_index": 1
+   "label": "Valid From"
   },
   {
    "default": "0",
@@ -235,7 +234,7 @@
  "icon": "fa fa-flag",
  "idx": 1,
  "links": [],
- "modified": "2024-01-23 18:11:30.536383",
+ "modified": "2024-08-25 03:32:22.132684",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Item Price",

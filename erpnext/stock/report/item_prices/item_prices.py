@@ -69,8 +69,15 @@ def get_item_price_data(filters, ignore_permissions=False, additional_conditions
 			ifnull(p.valid_from, '2000-01-01') as valid_from
 		from `tabItem Price` p
 		inner join `tabItem` item on item.name = p.item_code
-		where %(date)s between ifnull(p.valid_from, '2000-01-01') and ifnull(p.valid_upto, '2500-12-31')
-			and ifnull(p.customer, '') = '' and ifnull(p.supplier, '') = '' {0} {1}
+		where
+			(
+				%(date)s between p.valid_from and p.valid_upto
+				or (p.valid_upto is null and %(date)s >= p.valid_from)
+				or (p.valid_from is null and %(date)s <= p.valid_upto)
+				or (p.valid_from is null and p.valid_upto is null)
+			)
+			and ifnull(p.customer, '') = '' and ifnull(p.supplier, '') = ''
+			{0} {1}
 		order by p.uom
 	""".format(item_conditions, price_lists_cond), filters, as_dict=1)
 
@@ -142,7 +149,8 @@ def get_item_price_data(filters, ignore_permissions=False, additional_conditions
 	for item_prices in [item_price_data, previous_item_prices]:
 		for d in item_prices:
 			if d.item_code in items_map:
-				d.price_list_rate = convert_item_uom_for(d.price_list_rate, d.item_code, d.uom, items_map[d.item_code]['uom'],
+				d.price_list_rate = convert_item_uom_for(d.price_list_rate, d.item_code,
+					from_uom=d.uom or items_map[d.item_code]['stock_uom'], to_uom=items_map[d.item_code]['uom'],
 					null_if_not_convertible=True, is_rate=True)
 
 	item_price_map = {}
