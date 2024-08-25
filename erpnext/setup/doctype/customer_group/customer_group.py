@@ -34,5 +34,15 @@ def get_parent_customer_groups(customer_group):
 	""", (lft, rgt), as_dict=True)
 
 
+def get_customer_group_subtree(customer_group, cache=True):
+	def generator():
+		return frappe.get_all("Customer Group", filters=["subtree of", customer_group], pluck="name")
+
+	if cache:
+		return frappe.local_cache("get_customer_group_subtree", customer_group, generator)
+	else:
+		return generator()
+
+
 def on_doctype_update():
 	frappe.db.add_index("Customer Group", ["lft", "rgt"])

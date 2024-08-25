@@ -443,3 +443,7 @@ def get_item_uoms(doctype, txt, searchfield, start, page_len, filters):
 			'parent': ('in', items),
 			'uom': ("like", "{0}%".format(txt))
 		}, fields = ["distinct uom"], as_list=1)
+
+
+def on_doctype_update():
+	frappe.db.add_index("Pricing Rule", ["valid_from", "valid_upto"])
