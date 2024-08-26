@@ -36,7 +36,7 @@ def get_parent_customer_groups(customer_group):
 
 def get_customer_group_subtree(customer_group, cache=True):
 	def generator():
-		return frappe.get_all("Customer Group", filters=["subtree of", customer_group], pluck="name")
+		return frappe.get_all("Customer Group", filters={"name": ["subtree of", customer_group]}, pluck="name")
 
 	if cache:
 		return frappe.local_cache("get_customer_group_subtree", customer_group, generator)

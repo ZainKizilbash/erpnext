@@ -32,7 +32,7 @@ class ItemGroup(NestedSet):
 
 def get_item_group_subtree(item_group, cache=True):
 	def generator():
-		return frappe.get_all("Item Group", filters=["subtree of", item_group], pluck="name")
+		return frappe.get_all("Item Group", filters={"name": ["subtree of", item_group]}, pluck="name")
 
 	if cache:
 		return frappe.local_cache("get_item_group_subtree", item_group, generator)
