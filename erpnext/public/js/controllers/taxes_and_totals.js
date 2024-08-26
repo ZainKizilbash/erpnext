@@ -658,22 +658,6 @@ erpnext.taxes_and_totals = class TaxesAndTotals extends erpnext.payments {
 	get_current_tax_amount(item, tax, item_tax_map, weighted_distrubution_tax_on_net_total) {
 		var tax_rate = this._get_tax_rate(tax, item_tax_map);
 		var current_tax_amount = 0.0;
-		var items_net_total = []
-
-		if ((this.frm.doc["customs_tariff_tax"] || []).length > 0) {
-				(this.frm.doc["items"] || []).forEach((item) => {
-					let index = items_net_total.findIndex(d => d.customs_tariff_no === item.customs_tariff_no);
-					
-					if (index !== -1) {
-						items_net_total[index].total += item.amount;
-					} else {
-						items_net_total.push({
-							customs_tariff_no: item.customs_tariff_no,
-							total: item.amount,
-						});
-					}
-				});
-		}
 
 		if(tax.charge_type == "Actual" || tax.charge_type == "Weighted Distribution") {
 			// distribute the tax amount proportionally to each item row
@@ -713,10 +697,27 @@ erpnext.taxes_and_totals = class TaxesAndTotals extends erpnext.payments {
 		} else if (tax.charge_type == "On Item Quantity") {
 			current_tax_amount = tax_rate * item.qty;
 		} else if (tax.charge_type == "On HS Code") {
-			console.log(item.customs_tariff_no);
+			let items_net_total = [];
+			// totalling of items prices based on their HS codes
+			if ((this.frm.doc["customs_tariff_tax"] || []).length > 0) {
+					(this.frm.doc["items"] || []).forEach((item) => {
+						let index = items_net_total.findIndex(d => d.customs_tariff_number === item.customs_tariff_number);
+
+						if (index !== -1) {
+							items_net_total[index].total += item.amount;
+						} else {
+							items_net_total.push({
+								customs_tariff_number: item.customs_tariff_number,
+								total: item.amount,
+							});
+						}
+					});
+			}
+
+			// tax distribution according to the item qty & HS code
 			$.each(this.frm.doc["customs_tariff_tax"] || [], function(j, tariff_tax_table) {
-				if (tariff_tax_table.account_head == tax.account_head && item.customs_tariff_no == tariff_tax_table.customs_tariff_no) {
-					current_tax_amount = (tariff_tax_table.amount / items_net_total[items_net_total.findIndex(d => d.customs_tariff_no == item.customs_tariff_no)].total) * item.amount;
+				if (tariff_tax_table.account_head == tax.account_head && item.customs_tariff_number == tariff_tax_table.customs_tariff_number) {
+					current_tax_amount = (tariff_tax_table.amount / items_net_total[items_net_total.findIndex(d => d.customs_tariff_number == item.customs_tariff_number)].total) * item.amount;
 				}
 			});
 			this.frm.refresh_field("taxes");

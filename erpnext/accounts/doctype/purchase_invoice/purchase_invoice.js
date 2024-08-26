@@ -20,69 +20,6 @@ erpnext.accounts.PurchaseInvoice = class PurchaseInvoice extends erpnext.buying.
 		}
 	}
 
-	// item_code(doc, cdt, cdn) {
-	// 	let row = frappe.get_doc(cdt, cdn);
-	// 	console.log(row.customs_tariff_no);
-	// 	// this.get_item_details(row);
-
-	// }
-
-	// charge_type(doc, cdt, cdn) {
-	// 	let row = frappe.get_doc(cdt, cdn);
-	// 	this.populate_customs_tariff_number_table(cdt,cdn)
-	// }
-
-	// account_head(doc,cdt,cdn){
-	// 	let row = frappe.get_doc(cdt, cdn);
-	// 	this.populate_customs_tariff_number_table(cdt,cdn)
-	// }
-
-	// before_taxes_remove(doc, cdt, cdn){
-	// 	console.log("hello");
-	// 	let row = frappe.get_doc(cdt, cdn);
-	// 	console.log(row.account_head);
-	// 	this.delete_rows(cdt, cdn)
-	// }
-
-
-
-
-	populate_customs_tariff_number_table(cdt, cdn) {
-		let numberOfItems = this.frm.doc.items.length;
-		console.log(numberOfItems); // Output the number of items to the console
-		console.log(this.frm.doc.items[0])
-		let row = frappe.get_doc(cdt, cdn)
-		let customs_tariff_no = this.frm.doc.items[0].customs_tariff_no;
-		console.log(customs_tariff_no);
-		if (row.charge_type == "On HS Code" && row.account_head!==undefined && customs_tariff_no!==undefined){
-			for (let i = 0; i < this.frm.doc.items.length; i++){
-				console.log(i);
-				this.frm.toggle_display('customs_tariff_tax', true);
-				let rows = this.frm.add_child('customs_tariff_tax', {
-					account_head: row.account_head,
-					customs_tariff_number: this.frm.doc.items[i].customs_tariff_no
-				});
-		}
-			this.frm.debounced_refresh_fields();
-		}
-	}
-
-	// amount(doc, cdt, cdn){
-	// 	console.log("hello amount");
-	// 	let row = frappe.get_doc(cdt, cdn);
-	// 	let total_cost = this.frm.doc.items[0].amount;
-	// 	let qty = this.frm.doc.items[0].qty;
-	// 	this.frm.doc.total_taxes_and_charges = (row.amount/total_cost)*qty;
-	// 	console.log(this.frm.doc.total_taxes_and_charges)
-	// }
-
-
-
-	// this -> controller class
-	// this.frm -> form object
-	// this.frm.doc -> document object (data model)
-
-
 	refresh(doc) {
 		const me = this;
 		super.refresh();
