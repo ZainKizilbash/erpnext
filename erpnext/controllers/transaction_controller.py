@@ -159,34 +159,34 @@ class TransactionController(StockController):
 			parent_dict = self.get_item_details_parent_args()
 
 			for item in self.get("items"):
-				if item.get("item_code"):
-					args = self.get_item_details_child_args(item, parent_dict)
-					ret = get_item_details(args, self, for_validate=True, overwrite_warehouse=False)
+				if not item.get("item_code"):
+					continue
 
-					for fieldname, value in ret.items():
-						if item.meta.get_field(fieldname) and value is not None:
-							if item.get(fieldname) is None or fieldname in self.force_item_fields:
-								item.set(fieldname, value)
+				args = self.get_item_details_child_args(item, parent_dict)
+				ret = get_item_details(args, self, for_validate=True, overwrite_warehouse=False)
 
-							elif fieldname in ['cost_center', 'conversion_factor'] and not item.get(fieldname):
-								item.set(fieldname, value)
+				for fieldname, value in ret.items():
+					if not item.meta.get_field(fieldname) or value is None:
+						continue
 
-							elif fieldname == "serial_no":
-								# Ensure that serial numbers are matched against Stock UOM
-								item_conversion_factor = item.get("conversion_factor") or 1.0
-								item_qty = abs(item.get("qty")) * item_conversion_factor
+					if item.get(fieldname) is None or fieldname in self.force_item_fields:
+						item.set(fieldname, value)
+					elif fieldname in ['cost_center', 'conversion_factor'] and not item.get(fieldname):
+						item.set(fieldname, value)
+					elif fieldname == "serial_no":
+						# Ensure that serial numbers are matched against Stock UOM
+						item_conversion_factor = item.get("conversion_factor") or 1.0
+						item_qty = abs(item.get("qty")) * item_conversion_factor
+						if item_qty != len(get_serial_nos(item.get('serial_no'))):
+							item.set(fieldname, value)
 
-								if item_qty != len(get_serial_nos(item.get('serial_no'))):
-									item.set(fieldname, value)
-
-					if ret.get("pricing_rules"):
-						self.apply_pricing_rule_on_items(item, ret)
+				if ret.get("pricing_rules"):
+					self.apply_pricing_rule_on_items(item, ret)
 
 		self.set_missing_applies_to_details()
 
 	def apply_pricing_rule_on_items(self, item, pricing_rule_args):
-		if not pricing_rule_args.get("validate_applied_rule", 0):
-			# if user changed the discount percentage then set user's discount percentage ?
+		if not pricing_rule_args.get("validate_applied_rule"):
 			if pricing_rule_args.get("price_or_product_discount") == 'Price':
 				item.set("pricing_rules", pricing_rule_args.get("pricing_rules"))
 				item.set("discount_percentage", pricing_rule_args.get("discount_percentage"))
@@ -195,8 +195,8 @@ class TransactionController(StockController):
 					item.set("price_list_rate", pricing_rule_args.get("price_list_rate"))
 
 				if item.get("price_list_rate"):
-					item.rate = flt(item.price_list_rate *
-						(1.0 - (flt(item.discount_percentage) / 100.0)), item.precision("rate"))
+					item.rate = flt(item.price_list_rate * (1.0 - (flt(item.discount_percentage) / 100.0)),
+						item.precision("rate"))
 
 					if item.get('discount_amount'):
 						item.rate = item.price_list_rate - item.discount_amount
@@ -204,7 +204,11 @@ class TransactionController(StockController):
 			elif pricing_rule_args.get('free_item_data'):
 				apply_pricing_rule_for_free_items(self, pricing_rule_args.get('free_item_data'))
 
-		elif pricing_rule_args.get("validate_applied_rule"):
+			if item.meta.has_field("margin_type"):
+				item.set("margin_type", pricing_rule_args.get("margin_type"))
+				item.set("margin_rate_or_amount", pricing_rule_args.get("margin_rate_or_amount"))
+
+		else:
 			for pricing_rule in get_applied_pricing_rules(item.get('pricing_rules')):
 				pricing_rule_doc = frappe.get_cached_doc("Pricing Rule", pricing_rule)
 				for field in ['discount_percentage', 'discount_amount', 'rate']:
