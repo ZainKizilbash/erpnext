@@ -116,10 +116,11 @@ class MaintenanceSchedule(TransactionBase):
 
 		return sms_args
 
-@frappe.whitelist()
+
 def auto_schedule_next_project_templates():
 	for_date = getdate()
 	target_date = add_to_date(date=for_date, days=-1)
+	target_date = "2024-08-25"
 
 	schedule_data = frappe.db.sql("""
 		select msd.project_template, ms.serial_no
@@ -156,7 +157,8 @@ def schedule_next_project_template(project_template, serial_no, args=None, overw
 	})
 	schedule.scheduled_date = schedule.reference_date + relativedelta(months=template_details.next_due_after)
 
-	existing_row = [d for d in doc.get('schedules') if d.get("project_template") == template_details.next_project_template]
+	existing_row = [d for d in doc.get('schedules')\
+		if d.get("scheduled_date") >= getdate() and d.get("project_template") == template_details.next_project_template]
 	existing_row = existing_row[0] if existing_row else None
 	if existing_row and not overwrite_existing:
 		return
