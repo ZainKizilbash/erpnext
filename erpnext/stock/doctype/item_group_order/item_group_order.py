@@ -5,5 +5,5 @@
 import frappe
 from frappe.model.document import Document
 
-class PriceListItemGroup(Document):
+class ItemGroupOrder(Document):
 	pass

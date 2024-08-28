@@ -1808,9 +1808,18 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 		for (let d of children) {
 			let existing_pricing_rule = frappe.model.get_value(d.doctype, d.name, "pricing_rules");
 			for (let [k, v] of Object.entries(d)) {
-				if (!["doctype", "name", "parent", "parenttype"].includes(k) && frappe.meta.has_field(d.doctype, k)) {
+				if (
+					!["doctype", "name", "parent", "parenttype", "discount_amount", "discount_percentage"].includes(k)
+					&& frappe.meta.has_field(d.doctype, k)
+				) {
 					frappe.model.set_value(d.doctype, d.child_docname || d.name, k, v);
 				}
+			}
+
+			if (d.pricing_rule_for == "Discount Amount") {
+				frappe.model.set_value(d.doctype, d.child_docname || d.name, "discount_amount", d.discount_amount);
+			} else {
+				frappe.model.set_value(d.doctype, d.child_docname || d.name, "discount_percentage", d.discount_percentage);
 			}
 
 			// if pricing rule set as blank from an existing value, apply price_list

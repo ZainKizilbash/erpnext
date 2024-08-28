@@ -7,6 +7,9 @@ from frappe.utils import flt, nowdate, getdate, cstr, cint
 from erpnext.stock.report.stock_ledger.stock_ledger import get_item_group_condition
 from erpnext.stock.utils import has_valuation_read_permission
 from erpnext.stock.doctype.item.item import convert_item_uom_for
+from erpnext.setup.doctype.item_group.item_group import get_item_group_subtree
+from erpnext.setup.doctype.customer_group.customer_group import get_customer_group_subtree
+from crm.crm.doctype.territory.territory import get_territory_subtree
 from frappe.model.meta import get_field_precision
 from frappe.desk.reportview import build_match_conditions
 import json
@@ -51,62 +54,14 @@ def process_filters(filters):
 
 
 def get_item_price_data(filters, ignore_permissions=False, additional_conditions=None):
-	conditions = get_item_conditions(filters, for_item_dt=False)
-	item_conditions = get_item_conditions(filters, for_item_dt=True, additional_conditions=additional_conditions)
-
 	price_lists, selected_price_list = get_price_lists(filters, ignore_permissions=ignore_permissions)
-	price_lists_cond = " and p.price_list in ({0})".format(", ".join([frappe.db.escape(d) for d in price_lists or ['']]))
 
-	item_data = frappe.db.sql("""
-		select item.name as item_code, item.item_name, item.item_group, item.stock_uom, item.sales_uom, item.alt_uom, item.alt_uom_size,
-			item.hide_in_price_list
-		from tabItem item
-		where disabled != 1 {0}
-	""".format(item_conditions), filters, as_dict=1)
-
-	item_price_data = frappe.db.sql("""
-		select p.name, p.price_list, p.item_code, p.price_list_rate, p.currency, p.uom,
-			ifnull(p.valid_from, '2000-01-01') as valid_from
-		from `tabItem Price` p
-		inner join `tabItem` item on item.name = p.item_code
-		where %(date)s between ifnull(p.valid_from, '2000-01-01') and ifnull(p.valid_upto, '2500-12-31')
-			and ifnull(p.customer, '') = '' and ifnull(p.supplier, '') = '' {0} {1}
-		order by p.uom
-	""".format(item_conditions, price_lists_cond), filters, as_dict=1)
-
-	if filters.only_prices:
-		po_data = []
-		bin_data = []
-		previous_item_prices = []
-	else:
-		po_data = frappe.db.sql("""
-			select
-				item.item_code,
-				sum(if(item.qty - item.received_qty < 0, 0, item.qty - item.received_qty) * item.conversion_factor) as po_qty,
-				sum(if(item.qty - item.received_qty < 0, 0, item.qty - item.received_qty) * item.conversion_factor * item.base_net_rate) as po_lc_amount
-			from `tabPurchase Order Item` item
-			inner join `tabPurchase Order` po on po.name = item.parent
-			where item.docstatus = 1 and po.status != 'Closed' {0}
-			group by item.item_code
-		""".format(conditions), filters, as_dict=1) # TODO add valuation rate in PO and use that
-
-		bin_data = frappe.db.sql("""
-			select
-				bin.item_code,
-				sum(bin.actual_qty) as actual_qty,
-				sum(bin.stock_value) as stock_value
-			from tabBin bin, tabItem item
-			where item.name = bin.item_code {0}
-			group by bin.item_code
-		""".format(item_conditions), filters, as_dict=1)
-
-		previous_item_prices = frappe.db.sql("""
-			select p.price_list, p.item_code, p.price_list_rate, ifnull(p.valid_from, '2000-01-01') as valid_from, p.uom
-			from `tabItem Price` as p
-			inner join `tabItem` item on item.name = p.item_code
-			where p.valid_upto is not null and p.valid_upto < %(date)s {0} {1}
-			order by p.valid_upto desc
-		""".format(item_conditions, price_lists_cond), filters, as_dict=1)
+	item_data = get_items(filters, additional_conditions)
+	item_price_data = get_current_item_prices(filters, price_lists, additional_conditions)
+	previous_item_prices = get_previous_item_prices(filters, price_lists, additional_conditions)
+	pricing_rule_map = get_pricing_rule_map(filters)
+	bin_data = get_bin_data(filters, additional_conditions)
+	po_data = get_po_data(filters)
 
 	items_map = {}
 	for d in item_data:
@@ -142,7 +97,8 @@ def get_item_price_data(filters, ignore_permissions=False, additional_conditions
 	for item_prices in [item_price_data, previous_item_prices]:
 		for d in item_prices:
 			if d.item_code in items_map:
-				d.price_list_rate = convert_item_uom_for(d.price_list_rate, d.item_code, d.uom, items_map[d.item_code]['uom'],
+				d.price_list_rate = convert_item_uom_for(d.price_list_rate, d.item_code,
+					from_uom=d.uom or items_map[d.item_code]['stock_uom'], to_uom=items_map[d.item_code]['uom'],
 					null_if_not_convertible=True, is_rate=True)
 
 	item_price_map = {}
@@ -197,6 +153,8 @@ def get_item_price_data(filters, ignore_permissions=False, additional_conditions
 			if price.valid_from:
 				d["valid_from_" + scrub(price_list)] = price.valid_from
 
+		apply_pricing_rules(d, pricing_rule_map, price_lists)
+
 		if filters.standard_price_list and filters.price_list_1:
 			standard_rate = d.get("rate_" + scrub(filters.standard_price_list))
 			comparison_rate = d.get("rate_" + scrub(filters.price_list_1))
@@ -204,7 +162,25 @@ def get_item_price_data(filters, ignore_permissions=False, additional_conditions
 				ratio_field = get_comparison_ratio_field(filters.standard_price_list, filters.price_list_1)
 				d[ratio_field] = standard_rate / comparison_rate
 
-		d['print_rate'] = d.get("rate_" + scrub(selected_price_list)) if selected_price_list else d.standard_rate
+		using_price_list = selected_price_list or filters.standard_price_list
+		if using_price_list:
+			d.price_list_rate = d.get("rate_" + scrub(using_price_list))
+			d.rate_with_margin = d.get("pr_rate_with_margin" + scrub(using_price_list))
+			d.discount_percentage = d.get("pr_discount_percentage_" + scrub(using_price_list))
+			d.discount_amount = d.get("pr_discount_amount_" + scrub(using_price_list))
+			d.pricing_rule_rate = d.get("pr_rate_" + scrub(using_price_list))
+		else:
+			d.price_list_rate = d.standard_rate
+			d.rate_with_margin = None
+			d.discount_percentage = None
+			d.discount_amount = None
+			d.pricing_rule_rate = None
+
+		d.print_price_list_rate = d.rate_with_margin or d.price_list_rate
+		if flt(d.pricing_rule_rate) and flt(d.pricing_rule_rate) > flt(d.print_price_list_rate):
+			d.print_price_list_rate = flt(d.pricing_rule_rate)
+
+		d.print_rate = d.pricing_rule_rate or d.print_price_list_rate
 
 	if filters.filter_items_without_price:
 		to_remove = []
@@ -278,6 +254,224 @@ def get_price_lists(filters, ignore_permissions=False):
 		""".format(conditions)))
 
 	return price_lists, filters.selected_price_list
+
+
+def get_items(filters, additional_conditions):
+	item_conditions = get_item_conditions(filters, for_item_dt=True, additional_conditions=additional_conditions)
+
+	return frappe.db.sql("""
+		select item.name as item_code, item.item_name, item.item_group, item.brand,
+			item.stock_uom, item.sales_uom, item.purchase_uom, item.alt_uom, item.alt_uom_size,
+			item.hide_in_price_list
+		from tabItem item
+		where disabled != 1 {0}
+	""".format(item_conditions), filters, as_dict=1)
+
+
+def get_current_item_prices(filters, price_lists, additional_conditions):
+	item_conditions = get_item_conditions(filters, for_item_dt=True, additional_conditions=additional_conditions)
+	price_lists_cond = " and p.price_list in ({0})".format(", ".join([frappe.db.escape(d) for d in price_lists or ['']]))
+
+	return frappe.db.sql("""
+		select p.name, p.price_list, p.item_code, p.price_list_rate, p.currency, p.uom,
+			ifnull(p.valid_from, '2000-01-01') as valid_from
+		from `tabItem Price` p
+		inner join `tabItem` item on item.name = p.item_code
+		where
+			(
+				%(date)s between p.valid_from and p.valid_upto
+				or (p.valid_upto is null and %(date)s >= p.valid_from)
+				or (p.valid_from is null and %(date)s <= p.valid_upto)
+				or (p.valid_from is null and p.valid_upto is null)
+			)
+			and ifnull(p.customer, '') = '' and ifnull(p.supplier, '') = ''
+			{0} {1}
+		order by p.uom
+	""".format(item_conditions, price_lists_cond), filters, as_dict=1)
+
+
+def get_previous_item_prices(filters, price_lists, additional_conditions):
+	if filters.only_prices:
+		return []
+
+	item_conditions = get_item_conditions(filters, for_item_dt=True, additional_conditions=additional_conditions)
+	price_lists_cond = " and p.price_list in ({0})".format(", ".join([frappe.db.escape(d) for d in price_lists or ['']]))
+
+	return frappe.db.sql("""
+		select p.price_list, p.item_code, p.price_list_rate, ifnull(p.valid_from, '2000-01-01') as valid_from, p.uom
+		from `tabItem Price` as p
+		inner join `tabItem` item on item.name = p.item_code
+		where p.valid_upto is not null and p.valid_upto < %(date)s {0} {1}
+		order by p.valid_upto desc
+	""".format(item_conditions, price_lists_cond), filters, as_dict=1)
+
+
+def get_pricing_rule_map(filters):
+	pricing_rule_map = frappe._dict({
+		"items": {},
+		"item_groups": {},
+		"brands": {},
+	})
+
+	if filters.get('customer'):
+		customer_details = frappe.db.get_value("Customer", filters.customer,
+			["customer_group", "territory"], as_dict=True) or frappe._dict()
+	else:
+		customer_details = frappe._dict()
+
+	pricing_rule_data = frappe.db.sql("""
+		select pr.name, pr.for_price_list, pr.priority,
+			pr.apply_on, pr_item.item_code, pr_group.item_group, pr_brand.brand,
+			pr.applicable_for, pr.customer, pr.customer_group, pr.territory,
+			pr.margin_type, pr.margin_rate_or_amount,
+			pr.rate_or_discount, pr.rate, pr.discount_percentage, pr.discount_amount
+		from `tabPricing Rule` pr
+		left join `tabPricing Rule Item Code` pr_item on pr_item.parent = pr.name
+		left join `tabPricing Rule Item Group` pr_group on pr_group.parent = pr.name
+		left join `tabPricing Rule Brand` pr_brand on pr_brand.parent = pr.name
+		where
+			pr.disable = 0
+			and pr.selling = 1
+			and pr.apply_on in ('Item Code', 'Item Group', 'Brand')
+			and pr.price_or_product_discount = 'Price'
+			and (
+				%(date)s between pr.valid_from and pr.valid_upto
+				or (pr.valid_upto is null and %(date)s >= pr.valid_from)
+				or (pr.valid_from is null and %(date)s <= pr.valid_upto)
+				or (pr.valid_from is null and pr.valid_upto is null)
+			)
+	""", filters, as_dict=1)
+
+	for d in pricing_rule_data:
+		if d.applicable_for == "Customer":
+			if not filters.customer or filters.customer != d.customer:
+				continue
+		elif d.applicable_for == "Customer Group":
+			customer_groups = get_customer_group_subtree(d.customer_group, cache=True)
+			if not customer_details.customer_group or customer_details.customer_group not in customer_groups:
+				continue
+		elif d.applicable_for == "Territory":
+			territories = get_territory_subtree(d.territory, cache=True)
+			if not customer_details.territory or customer_details.territory not in territories:
+				continue
+
+		if d.apply_on == "Item Code":
+			pricing_rule_map['items'].setdefault(d.item_code, {}).setdefault(cstr(d.for_price_list), []).append(d)
+		elif d.apply_on == "Brand":
+			pricing_rule_map['brands'].setdefault(d.brand, {}).setdefault(cstr(d.for_price_list), []).append(d)
+		elif d.apply_on == "Item Group":
+			item_groups = get_item_group_subtree(d.item_group, cache=True)
+			for item_group in item_groups:
+				pricing_rule_map['item_groups'].setdefault(item_group, {}).setdefault(cstr(d.for_price_list), []).append(d)
+
+	for key, entity_dict in pricing_rule_map.items():
+		for entity, price_list_dict in entity_dict.items():
+			for price_list, pricing_rules in price_list_dict.items():
+				pricing_rules.sort(key=lambda d: (
+					d.priority,
+					3 if d.applicable_for == 'Customer' else (2 if d.applicable_for == 'Customer Group' else (1 if d.applicable_for == 'Territory' else 0)),
+					d.valid_from,
+				), reverse=True)
+
+	return pricing_rule_map
+
+
+def apply_pricing_rules(row, pricing_rule_map, price_lists):
+	pricing_rule_all_price_lists = pricing_rule_map['items'].get(row.item_code, {}).get('')
+	if not pricing_rule_all_price_lists and row.item_group:
+		pricing_rule_all_price_lists = pricing_rule_map['item_groups'].get(row.item_group, {}).get('')
+	if not pricing_rule_all_price_lists and row.brand:
+		pricing_rule_all_price_lists = pricing_rule_map['brands'].get(row.brand, {}).get('')
+
+	if pricing_rule_all_price_lists:
+		for price_list in price_lists:
+			apply_pricing_rule_to_price_list(row, price_list, pricing_rule_all_price_lists[0])
+
+	for price_list, pricing_rule in pricing_rule_map['brands'].get(row.brand, {}).items():
+		if price_list and pricing_rule:
+			apply_pricing_rule_to_price_list(row, price_list, pricing_rule[0])
+
+	for price_list, pricing_rule in pricing_rule_map['item_groups'].get(row.item_group, {}).items():
+		if price_list and pricing_rule:
+			apply_pricing_rule_to_price_list(row, price_list, pricing_rule[0])
+
+	for price_list, pricing_rule in pricing_rule_map['items'].get(row.item_code, {}).items():
+		if price_list and pricing_rule:
+			apply_pricing_rule_to_price_list(row, price_list, pricing_rule[0])
+
+
+def apply_pricing_rule_to_price_list(row, price_list, pricing_rule):
+	price_precision = get_field_precision(frappe.get_meta("Item Price").get_field('price_list_rate'))
+
+	row['pricing_rule_' + scrub(price_list)] = pricing_rule.name
+
+	price_list_rate = flt(row.get('rate_' + scrub(price_list)))
+
+	if pricing_rule.margin_type == "Percentage":
+		rate_with_margin = price_list_rate * (1 + flt(pricing_rule.margin_rate_or_amount) / 100)
+	elif pricing_rule.margin_type == "Amount":
+		rate_with_margin = price_list_rate + flt(pricing_rule.margin_rate_or_amount)
+	else:
+		rate_with_margin = price_list_rate
+
+	discount_percentage = None
+
+	if pricing_rule.rate_or_discount == "Rate":
+		pricing_rule_rate = pricing_rule.rate
+	elif pricing_rule.rate_or_discount == "Discount Percentage":
+		discount_percentage = flt(pricing_rule.discount_percentage)
+		pricing_rule_rate = rate_with_margin * (1 - discount_percentage / 100)
+	elif pricing_rule.rate_or_discount == "Discount Amount":
+		pricing_rule_rate = rate_with_margin - flt(pricing_rule.discount_amount)
+	else:
+		pricing_rule_rate = rate_with_margin
+
+	rate_with_margin = flt(rate_with_margin, price_precision)
+	row['pr_rate_with_margin' + scrub(price_list)] = rate_with_margin
+
+	pricing_rule_rate = flt(max(0.0, flt(pricing_rule_rate)), price_precision)
+	row['pr_rate_' + scrub(price_list)] = pricing_rule_rate
+
+	if flt(discount_percentage) > 0:
+		row['pr_discount_percentage_' + scrub(price_list)] = flt(discount_percentage)
+	elif flt(pricing_rule_rate) and flt(pricing_rule_rate) < rate_with_margin:
+		discount_amount = flt(rate_with_margin - pricing_rule_rate, price_precision)
+		row['pr_discount_amount_' + scrub(price_list)] = discount_amount
+
+
+def get_po_data(filters):
+	if filters.only_prices:
+		return []
+
+	item_conditions = get_item_conditions(filters, for_item_dt=False)
+
+	return frappe.db.sql("""
+		select
+			item.item_code,
+			sum(if(item.qty - item.received_qty < 0, 0, item.qty - item.received_qty) * item.conversion_factor) as po_qty,
+			sum(if(item.qty - item.received_qty < 0, 0, item.qty - item.received_qty) * item.conversion_factor * item.base_net_rate) as po_lc_amount
+		from `tabPurchase Order Item` item
+		inner join `tabPurchase Order` po on po.name = item.parent
+		where item.docstatus = 1 and po.status != 'Closed' {0}
+		group by item.item_code
+	""".format(item_conditions), filters, as_dict=1)  # TODO add valuation rate in PO and use that
+
+
+def get_bin_data(filters, additional_conditions):
+	if filters.only_prices:
+		return []
+
+	item_conditions = get_item_conditions(filters, for_item_dt=True, additional_conditions=additional_conditions)
+
+	return frappe.db.sql("""
+		select
+			bin.item_code,
+			sum(bin.actual_qty) as actual_qty,
+			sum(bin.stock_value) as stock_value
+		from tabBin bin, tabItem item
+		where item.name = bin.item_code {0}
+		group by bin.item_code
+	""".format(item_conditions), filters, as_dict=1)
 
 
 def get_item_conditions(filters, for_item_dt, additional_conditions=None):

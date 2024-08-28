@@ -30,14 +30,14 @@ class ItemGroup(NestedSet):
 			frappe.throw(frappe._("An item exists with same name ({0}), please change the item group name or rename the item").format(self.name), frappe.NameError)
 
 
-def get_child_item_groups(item_group_name):
-	item_group = frappe.get_cached_value("Item Group",
-		item_group_name, ["lft", "rgt"], as_dict=1)
+def get_item_group_subtree(item_group, cache=True):
+	def generator():
+		return frappe.get_all("Item Group", filters={"name": ["subtree of", item_group]}, pluck="name")
 
-	child_item_groups = [d.name for d in frappe.get_all('Item Group',
-		filters= {'lft': ('>=', item_group.lft),'rgt': ('<=', item_group.rgt)})]
-
-	return child_item_groups or {}
+	if cache:
+		return frappe.local_cache("get_item_group_subtree", item_group, generator)
+	else:
+		return generator()
 
 
 def get_item_group_print_heading(item_group):

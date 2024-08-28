@@ -9,6 +9,7 @@ import copy
 from frappe import throw, _
 from frappe.utils import flt, getdate
 from frappe.model.document import Document
+from erpnext.stock.doctype.item.item import convert_item_uom_for
 from six import string_types
 
 apply_on_dict = {"Item Code": "items",
@@ -337,6 +338,10 @@ def apply_price_discount_rule(pricing_rule, item_details, args):
 			or (pricing_rule.margin_type == 'Percentage')):
 		item_details.margin_type = pricing_rule.margin_type
 		item_details.margin_rate_or_amount = pricing_rule.margin_rate_or_amount
+
+		if pricing_rule.margin_type == "Amount" and args.item_code and args.uom:
+			item_details.margin_rate_or_amount = convert_item_uom_for(item_details.margin_rate_or_amount, args.item_code,
+				args.stock_uom, args.uom, conversion_factor=args.conversion_factor, is_rate=True)
 	else:
 		item_details.margin_type = None
 		item_details.margin_rate_or_amount = 0.0
@@ -361,8 +366,12 @@ def apply_price_discount_rule(pricing_rule, item_details, args):
 			if field not in item_details:
 				item_details.setdefault(field, 0)
 
-			item_details[field] += (pricing_rule.get(field, 0)
-				if pricing_rule else args.get(field, 0))
+			rule_value = pricing_rule.get(field, 0) if pricing_rule else args.get(field, 0)
+			if apply_on == "Discount Amount" and args.item_code and args.uom:
+				rule_value = convert_item_uom_for(rule_value, args.item_code,
+					args.stock_uom, args.uom, conversion_factor=args.conversion_factor, is_rate=True)
+
+			item_details[field] += rule_value
 
 def set_discount_amount(rate, item_details):
 	for field in ['discount_percentage_on_rate', 'discount_amount_on_rate']:
@@ -443,3 +452,7 @@ def get_item_uoms(doctype, txt, searchfield, start, page_len, filters):
 			'parent': ('in', items),
 			'uom': ("like", "{0}%".format(txt))
 		}, fields = ["distinct uom"], as_list=1)
+
+
+def on_doctype_update():
+	frappe.db.add_index("Pricing Rule", ["valid_from", "valid_upto"])

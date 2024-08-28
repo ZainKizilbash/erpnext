@@ -907,8 +907,12 @@ def get_item_price(args, item_code, ignore_party=False):
 			conditions += """ and ifnull(valid_from, '2000-01-01') > %(transaction_date)s and ifnull(uom, '') = %(uom)s"""
 			order_by = "order by valid_from asc "
 		else:
-			conditions += """ and %(transaction_date)s between
-				ifnull(valid_from, '2000-01-01') and ifnull(valid_upto, '2500-12-31')"""
+			conditions += """ and (
+				%(transaction_date)s between valid_from and valid_upto
+				or (valid_upto is null and %(transaction_date)s >= valid_from)
+				or (valid_from is null and %(transaction_date)s <= valid_upto)
+				or (valid_from is null and valid_upto is null)
+			)"""
 
 	prices = frappe.db.sql("""
 		select name,

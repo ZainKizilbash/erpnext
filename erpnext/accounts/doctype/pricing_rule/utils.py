@@ -2,7 +2,7 @@
 # MIT License. See license.txt
 
 import frappe
-from erpnext.setup.doctype.item_group.item_group import get_child_item_groups
+from erpnext.setup.doctype.item_group.item_group import get_item_group_subtree
 from erpnext.stock.doctype.warehouse.warehouse import get_child_warehouses
 from erpnext.stock.get_item_details import get_conversion_factor, get_default_income_account, determine_selling_or_buying
 from frappe import _
@@ -549,7 +549,7 @@ def get_pricing_rule_items(pr_doc):
 
 	for d in pr_doc.get(pricing_rule_apply_on):
 		if apply_on == 'item_group':
-			apply_on_data.extend(get_child_item_groups(d.get(apply_on)))
+			apply_on_data.extend(get_item_group_subtree(d.get(apply_on)))
 		else:
 			apply_on_data.append(d.get(apply_on))
 
