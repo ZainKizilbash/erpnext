@@ -480,31 +480,3 @@ def get_employees_who_have_anniversary_today(date_today=None):
 	""", [date_today.day, date_today.month, date_today.year])
 
 	return employee_anniversary_data
-
-
-def create_birthday_email_document():
-	if not frappe.db.exists("Notification", "Employee Birthday Email"):
-		doc = frappe.new_doc('Notification')
-		doc.name = "Employee Birthday Email"
-		doc.subject = "Happy Birthday {{doc.employee_name}}"
-		doc.document_type = "Employee"
-		doc.channel = "Email"
-		doc.event = "Method"
-		doc.method = 'send_birthday_notification'
-		doc.message = 'Dear {{doc.employee_name}} Happy birthday! Cheers to you for another trip around the sun.'
-		doc.append('recipients', {'receiver_by_document_field': 'prefered_email'})
-		doc.save()
-
-
-def create_anniversary_email_document():
-	if not frappe.db.exists("Notification", "Employee Anniversary Email"):
-		doc = frappe.new_doc('Notification')
-		doc.name = "Employee Anniversary Email"
-		doc.subject = "Happy Anniversary {{doc.employee_name}}"
-		doc.document_type = "Employee"
-		doc.channel = "Email"
-		doc.event = "Method"
-		doc.method = 'send_anniversary_notification'
-		doc.message = 'Dear {{doc.employee_name}} Happy work anniversary! Today, we celebrate your outstanding contributions to our company.'
-		doc.append('recipients', {'receiver_by_document_field': 'prefered_email'})
-		doc.save()
