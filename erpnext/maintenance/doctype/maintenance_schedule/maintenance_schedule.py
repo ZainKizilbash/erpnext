@@ -116,6 +116,7 @@ class MaintenanceSchedule(TransactionBase):
 
 		return sms_args
 
+@frappe.whitelist()
 def auto_schedule_next_project_templates():
 	for_date = getdate()
 	target_date = add_to_date(date=for_date, days=-1)
@@ -139,10 +140,7 @@ def schedule_next_project_template(project_template, serial_no, args=None, overw
 	if not project_template:
 		return
 
-	if args is None:
-		args = {}
-
-	args = frappe._dict(args)
+	args = frappe._dict(args or {})
 
 	template_details = frappe.db.get_value("Project Template", project_template, ["next_due_after", "next_project_template"], as_dict=1)
 	if not template_details or not template_details.next_due_after or not template_details.next_project_template:
