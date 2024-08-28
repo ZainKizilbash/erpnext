@@ -120,7 +120,6 @@ class MaintenanceSchedule(TransactionBase):
 def auto_schedule_next_project_templates():
 	for_date = getdate()
 	target_date = add_to_date(date=for_date, days=-1)
-	target_date = "2024-08-25"
 
 	schedule_data = frappe.db.sql("""
 		select msd.project_template, ms.serial_no
