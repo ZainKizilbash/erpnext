@@ -350,6 +350,10 @@ erpnext.patches.v14_0.install_crm_app
 erpnext.patches.v14_0.set_packing_slip_target_warehouse #1
 erpnext.patches.v14_0.rename_scrap_to_process_loss
 erpnext.patches.v14_0.fix_expense_entry_currency_fields
+execute:frappe.delete_doc_if_exists("Notification", "Material Request Receipt Notification")
+execute:frappe.delete_doc_if_exists("Notification", "Retention Bonus")
+execute:frappe.delete_doc_if_exists("Notification", "Training Scheduled")
+execute:frappe.delete_doc_if_exists("Notification", "Training Feedback")
 
 [post_model_sync]
 erpnext.patches.v12_0.update_salary_slip_leave_with_pay
