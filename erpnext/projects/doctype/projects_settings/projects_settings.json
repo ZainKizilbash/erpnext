@@ -16,28 +16,15 @@
   "appointment_required",
   "validate_ready_to_close",
   "validate_tasks_completed",
-  "ignore_workstation_time_overlap",
-  "ignore_user_time_overlap",
-  "ignore_employee_time_overlap"
+  "ignore_employee_time_overlap",
+  "auto_schedule_next_project_templates"
  ],
  "fields": [
   {
    "default": "0",
-   "fieldname": "ignore_workstation_time_overlap",
-   "fieldtype": "Check",
-   "label": "Ignore Workstation Time Overlap"
-  },
-  {
-   "default": "0",
-   "fieldname": "ignore_user_time_overlap",
-   "fieldtype": "Check",
-   "label": "Ignore User Time Overlap"
-  },
-  {
-   "default": "0",
    "fieldname": "ignore_employee_time_overlap",
    "fieldtype": "Check",
-   "label": "Ignore Employee Time Overlap"
+   "label": "Ignore Employee Time Overlap in Timesheets"
   },
   {
    "default": "Project Name",
@@ -104,11 +91,17 @@
    "fieldtype": "Link",
    "label": "Default Sales Transaction Type",
    "options": "Transaction Type"
+  },
+  {
+   "default": "0",
+   "fieldname": "auto_schedule_next_project_templates",
+   "fieldtype": "Check",
+   "label": "Auto Schedule Next Maintenance Template if Missed"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2023-10-21 01:22:43.015204",
+ "modified": "2024-09-01 23:39:52.575222",
  "modified_by": "Administrator",
  "module": "Projects",
  "name": "Projects Settings",

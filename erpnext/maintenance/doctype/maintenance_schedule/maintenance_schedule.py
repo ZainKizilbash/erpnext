@@ -118,22 +118,31 @@ class MaintenanceSchedule(TransactionBase):
 
 
 def auto_schedule_next_project_templates():
-	for_date = getdate()
-	target_date = add_to_date(date=for_date, days=-1)
+	if not frappe.db.get_single_value("Projects Settings", "auto_schedule_next_project_templates"):
+		return
+
+	run_date = getdate()
+	schedule_date = add_to_date(date=run_date, days=-1)
 
 	schedule_data = frappe.db.sql("""
 		select msd.project_template, ms.serial_no
 		from `tabMaintenance Schedule Detail` msd
 		inner join `tabMaintenance Schedule` ms on ms.name = msd.parent
+		inner join `tabProject Template` pt on pt.name = msd.project_template
 		where
 			msd.scheduled_date = %s
 			and ms.status = 'Active'
 			and ifnull(ms.serial_no, '') != ''
-			and ifnull(msd.project_template, '') != ''
-	""", target_date, as_dict=1)
+			and ifnull(pt.next_project_template, '') != ''
+	""", schedule_date, as_dict=1)
 
 	for schedule in schedule_data:
-		schedule_next_project_template(schedule.project_template, schedule.serial_no, overwrite_existing=False)
+		schedule_next_project_template(
+			schedule.project_template,
+			schedule.serial_no,
+			args={"reference_date": schedule_date},
+			overwrite_existing=False
+		)
 
 
 def schedule_next_project_template(project_template, serial_no, args=None, overwrite_existing=True):
@@ -142,7 +151,7 @@ def schedule_next_project_template(project_template, serial_no, args=None, overw
 
 	args = frappe._dict(args or {})
 
-	template_details = frappe.db.get_value("Project Template", project_template, ["next_due_after", "next_project_template"], as_dict=1)
+	template_details = frappe.get_cached_value("Project Template", project_template, ["next_due_after", "next_project_template"], as_dict=1)
 	if not template_details or not template_details.next_due_after or not template_details.next_project_template:
 		return
 
@@ -156,8 +165,11 @@ def schedule_next_project_template(project_template, serial_no, args=None, overw
 	})
 	schedule.scheduled_date = schedule.reference_date + relativedelta(months=template_details.next_due_after)
 
-	existing_row = [d for d in doc.get('schedules')\
-		if d.get("scheduled_date") >= getdate() and d.get("project_template") == template_details.next_project_template]
+	existing_row = [
+		d for d in doc.get('schedules')
+		if d.get("project_template") == template_details.next_project_template
+		and d.get("scheduled_date") >= schedule.reference_date
+	]
 	existing_row = existing_row[0] if existing_row else None
 	if existing_row and not overwrite_existing:
 		return
