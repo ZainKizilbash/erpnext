@@ -517,6 +517,9 @@ def calculate_service_end_date(args, item=None):
 
 
 def get_default_income_account(item, args):
+	if isinstance(item, str):
+		item = frappe.get_cached_doc("Item", item)
+
 	default_values = get_item_default_values(item, args)
 
 	account = default_values.get("income_account")
@@ -527,6 +530,9 @@ def get_default_income_account(item, args):
 
 
 def get_default_expense_account(item, args):
+	if isinstance(item, str):
+		item = frappe.get_cached_doc("Item", item)
+
 	default_values = get_item_default_values(item, args)
 
 	account = default_values.get("expense_account")
@@ -550,6 +556,9 @@ def get_default_deferred_account(args, item, fieldname=None):
 
 
 def get_default_cost_center(item, args, selling_or_buying=None):
+	if isinstance(item, str):
+		item = frappe.get_cached_doc("Item", item)
+
 	cost_center = None
 
 	determine_selling_or_buying(args)
