@@ -943,7 +943,8 @@ class calculate_taxes_and_totals(object):
 
 		if flt(item.price_list_rate):
 			if not item.pricing_rules:
-				discount_reversed_rate = flt(flt(item.rate) / (1 - flt(item.discount_percentage) / 100), 9)
+				discount_reversed_rate = flt(flt(item.rate) / (1 - flt(item.discount_percentage) / 100), 9) if \
+					flt(item.discount_percentage) != 100 else flt(item.price_list_rate)
 				if discount_reversed_rate > flt(item.price_list_rate):
 					margin_amount = discount_reversed_rate - flt(item.price_list_rate)
 
