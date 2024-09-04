@@ -471,22 +471,24 @@ $.extend(erpnext.utils, {
 				continue;
 			}
 
-			let bar_width = flt(completed_qty / total_qty * 100, 2);
-			bar_width -= added_min;
-			added_min = 0;
+			if (!d.description_only) {
+				let bar_width = flt(completed_qty / total_qty * 100, 2);
+				bar_width -= added_min;
+				added_min = 0;
 
-			bar_width = Math.max(bar_width, 0)
-			if (bar_width == 0 && d.add_min_width) {
-				added_min += flt(d.add_min_width);
-				bar_width += flt(d.add_min_width);
+				bar_width = Math.max(bar_width, 0)
+				if (bar_width == 0 && d.add_min_width) {
+					added_min += flt(d.add_min_width);
+					bar_width += flt(d.add_min_width);
+				}
+
+				bars.push({
+					"title": strip_html(title),
+					"bar_width": bar_width,
+					"width": bar_width + "%",
+					"progress_class": d.progress_class || "progress-bar-success",
+				});
 			}
-
-			bars.push({
-				"title": strip_html(title),
-				"bar_width": bar_width,
-				"width": bar_width + "%",
-				"progress_class": d.progress_class || "progress-bar-success",
-			});
 
 			if (title) {
 				description.push(title);

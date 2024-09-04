@@ -853,7 +853,7 @@ class WorkOrder(StatusUpdaterERP):
 			self.precision("qty"))
 
 		if pack_reconcile_qty > completed_qty:
-			frappe.throw(_("Packed + Reconciled Qty {0} {1} cannot be more than the Completed Qty {2} {1} in {3}").format(
+			frappe.throw(_("Packed + Rejected Qty {0} {1} cannot be more than the Completed Qty {2} {1} in {3}").format(
 				frappe.bold(frappe.format(pack_reconcile_qty)),
 				self.stock_uom,
 				frappe.bold(self.get_formatted("completed_qty")),

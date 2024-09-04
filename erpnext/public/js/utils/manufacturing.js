@@ -757,7 +757,7 @@ $.extend(erpnext.manufacturing, {
 		dialog.show();
 	},
 
-	show_progress_for_production: function(doc, frm) {
+	show_progress_for_production: function(doc, frm, show_rejection_reconciliation) {
 		let qty_precision = erpnext.manufacturing.get_work_order_precision();
 
 		let pending_production;
@@ -770,6 +770,9 @@ $.extend(erpnext.manufacturing, {
 
 		let pending_subcontract = flt(doc.subcontract_order_qty - doc.subcontract_received_qty, qty_precision);
 		pending_subcontract = Math.max(pending_subcontract, 0);
+
+		let rejected_qty = show_rejection_reconciliation ? flt(doc.rejected_qty) : 0;
+		let reconciled_qty = show_rejection_reconciliation ? flt(doc.reconciled_qty) : 0;
 
 		return erpnext.utils.show_progress_for_qty({
 			frm: frm,
@@ -796,6 +799,24 @@ $.extend(erpnext.manufacturing, {
 					]),
 					completed_qty: doc.process_loss_qty,
 					progress_class: "progress-bar-info",
+				},
+				{
+					title: __("<b>Rejected:</b> {0} {1} ({2}%)", [
+						frappe.format(rejected_qty, {'fieldtype': 'Float'}, { inline: 1 }),
+						"Meter",
+						format_number(rejected_qty / doc.qty * 100, null, 1),
+					]),
+					completed_qty: rejected_qty,
+					description_only: true,
+				},
+				{
+					title: __("<b>Reconciled:</b> {0} {1} ({2}%)", [
+						frappe.format(reconciled_qty, {'fieldtype': 'Float'}, { inline: 1 }),
+						"Meter",
+						format_number(reconciled_qty / doc.qty * 100, null, 1),
+					]),
+					completed_qty: reconciled_qty,
+					description_only: true,
 				},
 				{
 					title: __("<b>Production Remaining:</b> {0} {1}", [frappe.format(pending_production, {'fieldtype': 'Float'}, { inline: 1 }), doc.stock_uom]),

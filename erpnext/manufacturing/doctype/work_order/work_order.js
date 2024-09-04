@@ -325,7 +325,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 	}
 
 	show_progress_for_production() {
-		erpnext.manufacturing.show_progress_for_production(this.frm.doc, this.frm);
+		erpnext.manufacturing.show_progress_for_production(this.frm.doc, this.frm, !this.frm.doc.packing_slip_required);
 	}
 
 	show_progress_for_packing() {
