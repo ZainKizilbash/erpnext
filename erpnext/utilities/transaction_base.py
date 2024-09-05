@@ -167,7 +167,7 @@ class TransactionBase(StatusUpdaterERP):
 			self.quotation_validity_days = date_diff(self.valid_till, self.transaction_date) + 1
 
 		if self.valid_till and getdate(self.valid_till) < getdate(self.transaction_date):
-			frappe.throw(_("Valid till date cannot be before transaction date"))
+			frappe.throw(_("Valid Till Date cannot be before transaction date"))
 
 	def calculate_sales_team_contribution(self, net_total):
 		if not self.meta.get_field("sales_team"):

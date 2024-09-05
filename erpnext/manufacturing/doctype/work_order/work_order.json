@@ -91,7 +91,7 @@
   "column_break_jnb92",
   "material_transferred_for_manufacturing",
   "produced_qty",
-  "scrap_qty",
+  "process_loss_qty",
   "column_break_dilvt",
   "per_material_transferred",
   "per_produced",
@@ -105,6 +105,9 @@
   "packing_status",
   "column_break_rjokj",
   "packed_qty",
+  "column_break_qjsmi",
+  "rejected_qty",
+  "reconciled_qty",
   "column_break_kvrqf",
   "per_packed",
   "section_break_phsji",
@@ -525,10 +528,10 @@
   },
   {
    "default": "0",
-   "depends_on": "scrap_qty",
-   "fieldname": "scrap_qty",
+   "depends_on": "process_loss_qty",
+   "fieldname": "process_loss_qty",
    "fieldtype": "Float",
-   "label": "Scrapped Qty",
+   "label": "Process Loss Qty",
    "read_only": 1
   },
   {
@@ -872,6 +875,26 @@
    "fieldname": "produce_fg_in_wip_warehouse",
    "fieldtype": "Check",
    "label": "Produce Finished Goods in Work in Progress Warehouse"
+  },
+  {
+   "default": "0",
+   "depends_on": "reconciled_qty",
+   "fieldname": "reconciled_qty",
+   "fieldtype": "Float",
+   "label": "Reconciled Qty",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_qjsmi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "depends_on": "rejected_qty",
+   "fieldname": "rejected_qty",
+   "fieldtype": "Float",
+   "label": "Rejected Qty",
+   "read_only": 1
   }
  ],
  "icon": "fa fa-cogs",
@@ -880,7 +903,7 @@
  "is_calendar_and_gantt": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-07-05 13:58:01.685726",
+ "modified": "2024-07-23 10:15:58.391307",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Work Order",

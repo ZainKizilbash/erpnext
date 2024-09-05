@@ -2,10 +2,9 @@
 # License: GNU General Public License v3. See license.txt
 
 import frappe
-from frappe import _, throw
+from frappe import _
 from frappe.utils import flt, cint, add_days, cstr, add_months, getdate
-import json
-from erpnext.accounts.doctype.pricing_rule.pricing_rule import get_pricing_rule_for_item, set_transaction_type
+from erpnext.accounts.doctype.pricing_rule.pricing_rule import get_pricing_rule_for_item
 from erpnext.setup.utils import get_exchange_rate
 from frappe.model.meta import get_field_precision
 from erpnext import get_company_currency
@@ -15,11 +14,7 @@ from erpnext.stock.doctype.price_list.price_list import get_price_list_details
 from erpnext.stock.doctype.item_manufacturer.item_manufacturer import get_item_manufacturer_part_no
 from erpnext.selling.doctype.sales_commission_category.sales_commission_category import get_commission_rate
 from erpnext.vehicles.doctype.vehicle.vehicle import get_vehicle_from_serial_no
-
-from six import string_types, iteritems
-
-sales_doctypes = ['Quotation', 'Sales Order', 'Delivery Note', 'Sales Invoice']
-purchase_doctypes = ['Material Request', 'Supplier Quotation', 'Purchase Order', 'Purchase Receipt', 'Purchase Invoice']
+import json
 
 
 @frappe.whitelist()
@@ -52,7 +47,7 @@ def get_item_details(args, doc=None, for_validate=False, overwrite_warehouse=Tru
 
 	out = get_basic_details(args, item, overwrite_warehouse)
 
-	if isinstance(doc, string_types):
+	if isinstance(doc, str):
 		doc = json.loads(doc)
 
 	if doc and doc.get('doctype') == 'Purchase Invoice':
@@ -81,7 +76,7 @@ def get_item_details(args, doc=None, for_validate=False, overwrite_warehouse=Tru
 		out.update(get_bin_details(args.item_code, out.warehouse))
 
 	# update args with out, if key or value not exists
-	for key, value in iteritems(out):
+	for key, value in out.items():
 		if args.get(key) is None:
 			args[key] = value
 
@@ -130,7 +125,7 @@ def update_stock(args, out):
 
 
 def process_args(args):
-	if isinstance(args, string_types):
+	if isinstance(args, str):
 		args = json.loads(args)
 
 	args = frappe._dict(args)
@@ -145,8 +140,19 @@ def process_args(args):
 	elif not args.item_code and args.serial_no:
 		args.item_code = get_item_code(serial_no=args.serial_no)
 
-	set_transaction_type(args)
+	determine_selling_or_buying(args)
 	return args
+
+
+def determine_selling_or_buying(args):
+	from erpnext.controllers.transaction_controller import is_doctype_selling_or_buying
+
+	if args.selling_or_buying:
+		return
+
+	args.selling_or_buying = is_doctype_selling_or_buying(args.doctype)
+	if not args.selling_or_buying:
+		args.selling_or_buying = "selling" if args.customer else "buying"
 
 
 @frappe.whitelist()
@@ -169,7 +175,7 @@ def get_item_code(barcode=None, serial_no=None, vehicle=None):
 
 def validate_item_details(args, item):
 	if not args.company:
-		throw(_("Please specify Company"))
+		frappe.throw(_("Please specify Company"))
 
 
 def get_basic_details(args, item, overwrite_warehouse=True):
@@ -224,11 +230,17 @@ def get_basic_details(args, item, overwrite_warehouse=True):
 			args.get('name'), 'material_request_type', cache=True)
 
 	# Set the UOM to the Default Sales UOM or Default Purchase UOM if configured in the Item Master
-	if args.get('doctype') in sales_doctypes:
-		default_uom = item.sales_uom if item.sales_uom else item.stock_uom
-	elif (args.get('doctype') in ['Purchase Order', 'Purchase Receipt', 'Purchase Invoice']) or \
-			(args.get('doctype') == 'Material Request' and args.get('material_request_type') == 'Purchase'):
-		default_uom = item.purchase_uom if item.purchase_uom else item.stock_uom
+	determine_selling_or_buying(args)
+
+	if args.get('doctype') == 'Material Request':
+		if args.get('material_request_type') == 'Purchase':
+			default_uom = item.purchase_uom or item.stock_uom
+		else:
+			default_uom = item.stock_uom
+	elif args.get('selling_or_buying') == "selling":
+		default_uom = item.sales_uom or item.stock_uom
+	elif args.get('selling_or_buying') == "buying":
+		default_uom = item.purchase_uom or item.stock_uom
 	else:
 		default_uom = item.stock_uom
 
@@ -313,7 +325,7 @@ def get_basic_details(args, item, overwrite_warehouse=True):
 	out.commission_rate = get_commission_rate(out.sales_commission_category)
 
 	# calculate last purchase rate
-	if args.get('doctype') in purchase_doctypes:
+	if args.get('selling_or_buying') == "buying":
 		from erpnext.buying.doctype.purchase_order.purchase_order import item_last_purchase_rate
 		out.last_purchase_rate = item_last_purchase_rate(args.name, args.conversion_rate, item.name, out.conversion_factor)
 
@@ -506,6 +518,9 @@ def calculate_service_end_date(args, item=None):
 
 
 def get_default_income_account(item, args):
+	if isinstance(item, str):
+		item = frappe.get_cached_doc("Item", item)
+
 	default_values = get_item_default_values(item, args)
 
 	account = default_values.get("income_account")
@@ -516,6 +531,9 @@ def get_default_income_account(item, args):
 
 
 def get_default_expense_account(item, args):
+	if isinstance(item, str):
+		item = frappe.get_cached_doc("Item", item)
+
 	default_values = get_item_default_values(item, args)
 
 	account = default_values.get("expense_account")
@@ -539,23 +557,24 @@ def get_default_deferred_account(args, item, fieldname=None):
 
 
 def get_default_cost_center(item, args, selling_or_buying=None):
+	if isinstance(item, str):
+		item = frappe.get_cached_doc("Item", item)
+
 	cost_center = None
+
+	determine_selling_or_buying(args)
+	selling_or_buying = selling_or_buying or args.get("selling_or_buying")
 
 	if not cost_center and args.get('project'):
 		cost_center = frappe.db.get_value("Project", args.get("project"), "cost_center", cache=True)
 
+	if not cost_center and item.get("cost_center"):
+		cost_center = item.get("cost_center")
+
 	if not cost_center:
 		default_values = get_item_default_values(item, args)
 
-		if selling_or_buying == 'selling':
-			default_fieldname = 'selling_cost_center'
-		elif selling_or_buying == 'buying':
-			default_fieldname = 'buying_cost_center'
-		elif args.get('doctype') in sales_doctypes or args.get('customer'):
-			default_fieldname = 'selling_cost_center'
-		else:
-			default_fieldname = 'buying_cost_center'
-
+		default_fieldname = 'selling_cost_center' if selling_or_buying == 'selling' else 'buying_cost_center'
 		if default_fieldname:
 			cost_center = default_values.get(default_fieldname)
 
@@ -568,7 +587,7 @@ def get_default_cost_center(item, args, selling_or_buying=None):
 
 
 def get_default_supplier(item, args):
-	if isinstance(item, string_types):
+	if isinstance(item, str):
 		item = frappe.get_cached_doc("Item", item)
 
 	default_values = get_item_default_values(item, args)
@@ -581,9 +600,10 @@ def get_default_terms(item, args):
 
 
 def get_default_apply_taxes_on_retail(item, args):
+	determine_selling_or_buying(args)
+
 	default_values = get_item_default_values(item, args)
-	fieldname = "selling_apply_taxes_on_retail" if args.get('doctype') in sales_doctypes or args.get('customer') \
-		else "buying_apply_taxes_on_retail"
+	fieldname = "selling_apply_taxes_on_retail" if args.get('selling_or_buying') == "selling" else "buying_apply_taxes_on_retail"
 
 	apply_taxes_on_retail = default_values.get(fieldname)
 
@@ -644,8 +664,8 @@ def get_item_defaults_info(args, items, set_warehouse=True):
 	:return: dict
 	"""
 
-	args = json.loads(args) if isinstance(args, string_types) else args
-	items = json.loads(items) if isinstance(items, string_types) else items
+	args = json.loads(args) if isinstance(args, str) else args
+	items = json.loads(items) if isinstance(items, str) else items
 
 	if not args.get('company'):
 		return {}
@@ -729,6 +749,8 @@ def get_claim_customer_from_project(project):
 
 
 def get_price_list_data(args, item_doc, out):
+	determine_selling_or_buying(args)
+
 	meta = frappe.get_meta(args.parenttype or args.doctype)
 
 	if meta.get_field("currency") or args.get('currency'):
@@ -766,7 +788,7 @@ def get_price_list_data(args, item_doc, out):
 
 			out.retail_rate = flt(retail_rate)
 
-		if not out.price_list_rate and args.transaction_type=="buying":
+		if not out.price_list_rate and args.selling_or_buying == "buying":
 			from erpnext.stock.doctype.item.item import get_last_purchase_details
 			out.update(get_last_purchase_details(item_doc.name,
 				args.name, args.conversion_rate))
@@ -898,8 +920,12 @@ def get_item_price(args, item_code, ignore_party=False):
 			conditions += """ and ifnull(valid_from, '2000-01-01') > %(transaction_date)s and ifnull(uom, '') = %(uom)s"""
 			order_by = "order by valid_from asc "
 		else:
-			conditions += """ and %(transaction_date)s between
-				ifnull(valid_from, '2000-01-01') and ifnull(valid_upto, '2500-12-31')"""
+			conditions += """ and (
+				%(transaction_date)s between valid_from and valid_upto
+				or (valid_upto is null and %(transaction_date)s >= valid_from)
+				or (valid_from is null and %(transaction_date)s <= valid_upto)
+				or (valid_from is null and valid_upto is null)
+			)"""
 
 	prices = frappe.db.sql("""
 		select name,
@@ -975,7 +1001,7 @@ def validate_conversion_rate(args, meta):
 
 		# validate price list currency conversion rate
 		if not args.get("price_list_currency"):
-			throw(_("Price List Currency not selected"))
+			frappe.throw(_("Price List Currency not selected"))
 		else:
 			validate_conversion_rate(args.price_list_currency, args.plc_conversion_rate,
 				meta.get_label("plc_conversion_rate"), args.company)
@@ -987,7 +1013,9 @@ def validate_conversion_rate(args, meta):
 
 
 def get_party_item_code(args, item_doc, out):
-	if args.transaction_type=="selling" and args.customer:
+	determine_selling_or_buying(args)
+
+	if args.selling_or_buying == "selling" and args.customer:
 		out.customer_item_code = None
 
 		if args.quotation_to and args.quotation_to != 'Customer':
@@ -1003,7 +1031,7 @@ def get_party_item_code(args, item_doc, out):
 			if customer_group_item_code and not customer_group_item_code[0].customer_name:
 				out.customer_item_code = customer_group_item_code[0].ref_code
 
-	if args.transaction_type=="buying" and args.supplier:
+	if args.selling_or_buying == "buying" and args.supplier:
 		item_supplier = item_doc.get("supplier_items", {"supplier": args.supplier})
 		out.supplier_part_no = item_supplier[0].supplier_part_no if item_supplier else None
 
@@ -1111,7 +1139,7 @@ def get_weight_per_unit(item_code, weight_uom=None, weight_field="net_weight_per
 		else:
 			return item_weight
 
-	elif weight_uom and weight_field == "net_weight_per_unit":
+	elif weight_uom and (weight_field == "net_weight_per_unit" or item.is_packaging_material):
 		weight_conversion_factor = get_conversion_factor(item.name, weight_uom)
 		if not weight_conversion_factor.get("not_convertible"):
 			return 1 / flt(weight_conversion_factor.get("conversion_factor"))
@@ -1290,9 +1318,11 @@ def get_price_list_currency_and_exchange_rate(args):
 	if not args.price_list:
 		return {}
 
-	if args.doctype in ['Quotation', 'Sales Order', 'Delivery Note', 'Sales Invoice']:
+	determine_selling_or_buying(args)
+
+	if args.selling_or_buying == "selling":
 		args.update({"exchange_rate": "for_selling"})
-	elif args.doctype in ['Purchase Order', 'Purchase Receipt', 'Purchase Invoice']:
+	elif args.selling_or_buying == "buying":
 		args.update({"exchange_rate": "for_buying"})
 
 	price_list_details = get_price_list_details(args.price_list)
@@ -1398,7 +1428,7 @@ def get_gross_profit(out):
 @frappe.whitelist()
 def get_serial_no(args, serial_nos=None, sales_order=None):
 	serial_no = None
-	if isinstance(args, string_types):
+	if isinstance(args, str):
 		args = json.loads(args)
 		args = frappe._dict(args)
 	if args.get('doctype') == 'Sales Invoice' and not args.get('update_stock'):
@@ -1427,7 +1457,7 @@ def update_party_blanket_order(args, out):
 
 @frappe.whitelist()
 def get_blanket_order_details(args):
-	if isinstance(args, string_types):
+	if isinstance(args, str):
 		args = frappe._dict(json.loads(args))
 
 	blanket_order_details = None
@@ -1513,7 +1543,7 @@ def get_reserved_qty_for_so(sales_order, item_code):
 
 @frappe.whitelist()
 def get_applies_to_details(args, for_validate=False):
-	if isinstance(args, string_types):
+	if isinstance(args, str):
 		args = json.loads(args)
 
 	args = frappe._dict(args)

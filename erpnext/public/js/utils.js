@@ -426,15 +426,23 @@ $.extend(erpnext.utils, {
 		});
 	},
 
-	setup_remove_zero_qty_rows(frm) {
+	setup_remove_zero_qty_rows(frm, qty_fields) {
+		if (!qty_fields || !qty_fields.length) {
+			qty_fields = 'qty';
+		}
+		if (!Array.isArray(qty_fields)) {
+			qty_fields = [qty_fields];
+		}
+
 		if (frm.doc.docstatus === 0) {
 			frm.fields_dict.items.grid.add_custom_button(__("Remove 0 Qty Rows"), function () {
 				let actions = [];
-				$.each(frm.doc.items || [], function(i, d) {
-					if (!flt(d.qty, precision('qty', d))) {
+				for (let d of frm.doc.items || []) {
+					let qtys = qty_fields.map(f => flt(d[f], precision('qty', d)));
+					if (!qtys.some(Boolean)) {
 						actions.push(() => frm.fields_dict.items.grid.get_row(d.name).remove());
 					}
-				});
+				}
 
 				return frappe.run_serially(actions);
 			});
@@ -463,22 +471,24 @@ $.extend(erpnext.utils, {
 				continue;
 			}
 
-			let bar_width = flt(completed_qty / total_qty * 100, 2);
-			bar_width -= added_min;
-			added_min = 0;
+			if (!d.description_only) {
+				let bar_width = flt(completed_qty / total_qty * 100, 2);
+				bar_width -= added_min;
+				added_min = 0;
 
-			bar_width = Math.max(bar_width, 0)
-			if (bar_width == 0 && d.add_min_width) {
-				added_min += flt(d.add_min_width);
-				bar_width += flt(d.add_min_width);
+				bar_width = Math.max(bar_width, 0)
+				if (bar_width == 0 && d.add_min_width) {
+					added_min += flt(d.add_min_width);
+					bar_width += flt(d.add_min_width);
+				}
+
+				bars.push({
+					"title": strip_html(title),
+					"bar_width": bar_width,
+					"width": bar_width + "%",
+					"progress_class": d.progress_class || "progress-bar-success",
+				});
 			}
-
-			bars.push({
-				"title": strip_html(title),
-				"bar_width": bar_width,
-				"width": bar_width + "%",
-				"progress_class": d.progress_class || "progress-bar-success",
-			});
 
 			if (title) {
 				description.push(title);

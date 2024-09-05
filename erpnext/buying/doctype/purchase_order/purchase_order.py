@@ -465,8 +465,11 @@ class PurchaseOrder(BuyingController):
 						sum(i.stock_qty) as packed_qty
 					from `tabPacking Slip Item` i
 					inner join `tabPacking Slip` ps on ps.name = i.parent
-					where ps.docstatus = 1 and ifnull(i.source_packing_slip, '') = ''
-						and ps.purchase_order = %s and i.subcontracted_item in %s
+					where ps.docstatus = 1
+						and ps.purchase_order = %s
+						and ifnull(i.source_packing_slip, '') = ''
+						and i.subcontracted_item in %s
+						and i.qty != 0
 					group by rm_item_code, main_item_code
 				""", (self.name, subcontract_item_codes), as_dict=1)
 
@@ -937,18 +940,6 @@ def get_pending_raw_materials_to_transfer(purchase_order):
 		frappe.throw(_("No raw materials to transfer"))
 
 	return supplied_items
-
-
-def get_list_context(context=None):
-	from erpnext.controllers.website_list_for_contact import get_list_context
-	list_context = get_list_context(context)
-	list_context.update({
-		'show_sidebar': True,
-		'show_search': True,
-		'no_breadcrumbs': True,
-		'title': _('Purchase Orders'),
-	})
-	return list_context
 
 
 @frappe.whitelist()

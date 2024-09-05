@@ -9,7 +9,6 @@
  "field_order": [
   "title",
   "tax_type",
-  "use_for_shopping_cart",
   "column_break_0v8l9",
   "priority",
   "column_break_1",
@@ -60,12 +59,6 @@
    "in_standard_filter": 1,
    "label": "Tax Type",
    "options": "Sales\nPurchase"
-  },
-  {
-   "default": "0",
-   "fieldname": "use_for_shopping_cart",
-   "fieldtype": "Check",
-   "label": "Use for Shopping Cart"
   },
   {
    "fieldname": "column_break_1",
@@ -303,7 +296,7 @@
   }
  ],
  "links": [],
- "modified": "2023-09-01 12:52:31.053700",
+ "modified": "2024-03-31 10:44:25.430175",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Tax Rule",

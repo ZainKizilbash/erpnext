@@ -7,7 +7,6 @@ from frappe import _, scrub
 from frappe.utils import cint, flt, round_based_on_smallest_currency_fraction
 from erpnext.controllers.accounts_controller import validate_conversion_rate
 from erpnext.controllers.transaction_controller import validate_taxes_and_charges, validate_inclusive_tax
-from erpnext.accounts.doctype.pricing_rule.utils import get_applied_pricing_rules
 from frappe.utils import money_in_words
 import json
 
@@ -66,7 +65,7 @@ class calculate_taxes_and_totals(object):
 	def calculate_item_values(self):
 		if not self.discount_amount_applied:
 			for item in self.doc.get("items"):
-				has_margin_field = item.doctype in ['Quotation Item', 'Sales Order Item', 'Delivery Note Item', 'Sales Invoice Item']
+				has_margin_field = item.meta.has_field("margin_type")
 
 				exclude_round_fieldnames = ['rate', 'price_list_rate', 'discount_percentage', 'discount_amount',
 					'margin_rate_or_amount', 'rate_with_margin', 'net_weight_per_unit']
@@ -75,18 +74,22 @@ class calculate_taxes_and_totals(object):
 				if item.discount_percentage == 100:
 					item.rate = 0.0
 				elif item.price_list_rate:
-					if not item.rate or (item.pricing_rules and item.discount_percentage > 0):
-						item.rate = flt(item.price_list_rate * (1.0 - (item.discount_percentage / 100.0)))
-						item.discount_amount = item.price_list_rate * (item.discount_percentage / 100.0)
-					elif item.discount_amount and item.pricing_rules:
+					if item.discount_amount and item.pricing_rules:
 						item.rate = item.price_list_rate - item.discount_amount
+					elif not item.rate or (item.pricing_rules and item.discount_percentage > 0):
+						item.rate = flt(item.price_list_rate * (1.0 - (item.discount_percentage / 100.0)))
 
 				if has_margin_field:
 					self.calculate_margin(item)
 
 				if has_margin_field and flt(item.rate_with_margin):
 					rate_before_discount = item.rate_with_margin
-					item.rate = flt(item.rate_with_margin * (1.0 - (item.discount_percentage / 100.0)))
+
+					if item.discount_amount and item.pricing_rules:
+						item.rate = item.rate_with_margin - item.discount_amount
+					else:
+						item.rate = flt(item.rate_with_margin * (1.0 - (item.discount_percentage / 100.0)))
+
 					item.discount_amount = item.rate_with_margin - item.rate
 					item.discount_percentage = item.discount_amount / item.rate_with_margin * 100
 				elif flt(item.price_list_rate):
@@ -245,7 +248,7 @@ class calculate_taxes_and_totals(object):
 			return
 
 		for item in self.doc.get("items"):
-			has_margin_field = item.doctype in ['Quotation Item', 'Sales Order Item', 'Delivery Note Item', 'Sales Invoice Item']
+			has_margin_field = item.meta.has_field("margin_type")
 			item_tax_map = self._load_item_tax_rate(item.item_tax_rate)
 
 			for i, tax in enumerate(self.doc.get("taxes")):
@@ -684,7 +687,7 @@ class calculate_taxes_and_totals(object):
 		self._set_in_company_currency(self.doc, ["total_taxes_and_charges", "rounding_adjustment"],
 			not self.should_round_transaction_currency())
 
-		if self.doc.doctype in ["Quotation", "Sales Order", "Delivery Note", "Sales Invoice"]:
+		if not self.doc.meta.has_field("taxes_and_charges_deducted"):
 			self.doc.base_total_after_taxes = flt(self.doc.total_after_taxes * self.doc.conversion_rate) \
 				if self.doc.total_taxes_and_charges else self.doc.base_taxable_total
 		else:
@@ -968,30 +971,19 @@ class calculate_taxes_and_totals(object):
 		base_rate_with_margin = 0.0
 
 		if flt(item.price_list_rate):
-			if item.pricing_rules and not self.doc.ignore_pricing_rule:
-				for d in get_applied_pricing_rules(item.pricing_rules):
-					pricing_rule = frappe.get_cached_doc('Pricing Rule', d)
+			if not item.pricing_rules:
+				discount_reversed_rate = flt(flt(item.rate) / (1 - flt(item.discount_percentage) / 100), 9) if \
+					flt(item.discount_percentage) != 100 else flt(item.price_list_rate)
+				if discount_reversed_rate > flt(item.price_list_rate):
+					margin_amount = discount_reversed_rate - flt(item.price_list_rate)
 
-					if (pricing_rule.margin_type == 'Amount' and pricing_rule.currency == self.doc.currency)\
-							or (pricing_rule.margin_type == 'Percentage'):
-						item.margin_type = pricing_rule.margin_type
-						item.margin_rate_or_amount = pricing_rule.margin_rate_or_amount
-					else:
-						item.margin_type = None
-						item.margin_rate_or_amount = 0.0
+					if not item.margin_type:
+						item.margin_type = "Amount"
 
-			discount_amount = flt(item.price_list_rate) * flt(item.discount_percentage) / 100
-			rate_before_discount = flt(flt(item.rate) + discount_amount, 9)
-			if rate_before_discount > flt(item.price_list_rate):
-				margin_amount = rate_before_discount - flt(item.price_list_rate)
-
-				if not item.margin_type:
-					item.margin_type = "Amount"
-
-				if item.margin_type == "Amount":
-					item.margin_rate_or_amount = margin_amount
-				elif item.margin_type == "Percentage":
-					item.margin_rate_or_amount = margin_amount / flt(item.price_list_rate) * 100
+					if item.margin_type == "Amount":
+						item.margin_rate_or_amount = margin_amount
+					elif item.margin_type == "Percentage":
+						item.margin_rate_or_amount = margin_amount / flt(item.price_list_rate) * 100
 
 			if item.margin_type and item.margin_rate_or_amount:
 				margin_value = item.margin_rate_or_amount if item.margin_type == 'Amount' else flt(item.price_list_rate) * flt(item.margin_rate_or_amount) / 100

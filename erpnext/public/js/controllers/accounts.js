@@ -434,7 +434,7 @@ if(!erpnext.taxes.flags[cur_frm.cscript.tax_table]) {
 		}
 	});
 
-	frappe.ui.form.on(cur_frm.cscript.tax_table, "taxes_row_focused", function(frm, cdt, cdn) {
+	frappe.ui.form.on(cur_frm.cscript.tax_table, "taxes_before_row_focused", function(frm, cdt, cdn) {
 		var row = frappe.get_doc(cdt, cdn);
 		frm.focused_tax_dn = cdn;
 		frm.fields_dict.taxes.grid.custom_buttons[__("Set Manual Distribution")].toggleClass('hidden', row.charge_type !== 'Manual');
@@ -460,11 +460,11 @@ erpnext.taxes.set_conditional_mandatory_rate_or_amount = function(grid_row) {
 		let amount_editable = doc.charge_type === "Actual" || doc.charge_type === "Weighted Distribution";
 		let rate_editable = doc.charge_type !== "Actual" && doc.charge_type !== "Manual"
 
-		grid_row.toggle_editable("tax_amount", amount_editable);
-		grid_row.toggle_editable("base_tax_amount", amount_editable);
-		grid_row.toggle_reqd("tax_amount", amount_editable);
+		grid_row.toggle_editable("tax_amount", amount_editable, true);
+		grid_row.toggle_editable("base_tax_amount", amount_editable, true);
+		grid_row.toggle_reqd("tax_amount", amount_editable, true);
 
-		grid_row.toggle_editable("rate", rate_editable);
-		grid_row.toggle_reqd("rate", rate_editable);
+		grid_row.toggle_editable("rate", rate_editable, true);
+		grid_row.toggle_reqd("rate", rate_editable, true);
 	}
 }

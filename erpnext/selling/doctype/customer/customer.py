@@ -384,6 +384,7 @@ class Customer(TransactionBase):
 	def send_customer_birthday_notification(self):
 		enqueue_template_sms(self, notification_type="Customer Birthday", allow_if_already_sent=1)
 
+
 @frappe.whitelist()
 def make_quotation(source_name, target_doc=None):
 
@@ -410,6 +411,7 @@ def make_quotation(source_name, target_doc=None):
 		target_doc.currency = currency
 
 	return target_doc
+
 
 @frappe.whitelist()
 def make_opportunity(source_name, target_doc=None):
@@ -445,6 +447,7 @@ def _set_missing_values(source, target):
 
 	if contact:
 		target.contact_person = contact[0].parent
+
 
 @frappe.whitelist()
 def get_loyalty_programs(doc):
@@ -483,6 +486,7 @@ def check_credit_limit(customer, company, ignore_outstanding_sales_order=False, 
 		if not credit_controller or credit_controller not in frappe.get_roles():
 			throw(_("Please contact to the user who have Sales Master Manager {0} role")
 				.format(" / " + credit_controller if credit_controller else ""))
+
 
 def get_customer_outstanding(customer, company, ignore_outstanding_sales_order=False, cost_center=None):
 	# Outstanding based on GL Entries
@@ -559,6 +563,7 @@ def get_credit_limit(customer, company):
 
 	return flt(credit_limit)
 
+
 def make_contact(args, is_primary_contact=1):
 	contact = frappe.new_doc("Contact")
 	contact.update({
@@ -589,6 +594,7 @@ def make_contact(args, is_primary_contact=1):
 	contact.insert()
 
 	return contact
+
 
 def make_address(args, is_primary_address=1):
 	reqd_fields = []
@@ -644,6 +650,7 @@ def get_primary_address_details(address_name):
 		out[field['customer_field']] = doc.get(field['address_field'])
 
 	return out
+
 
 @frappe.whitelist()
 def get_primary_contact_details(contact_name):

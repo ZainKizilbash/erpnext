@@ -59,12 +59,6 @@ erpnext.projects.ProjectController = class ProjectController extends crm.QuickCo
 			});
 		}
 
-		me.frm.set_query("user", "users", function () {
-			return {
-				query: "erpnext.projects.doctype.project.project.get_users_for_project"
-			};
-		});
-
 		// sales order
 		me.frm.set_query('sales_order', function () {
 			var filters = {

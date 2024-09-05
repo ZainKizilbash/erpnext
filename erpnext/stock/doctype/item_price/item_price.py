@@ -80,3 +80,4 @@ class ItemPrice(Document):
 
 def on_doctype_update():
 	frappe.db.add_index("Item Price", ["item_code", "price_list"])
+	frappe.db.add_index("Item Price", ["valid_from", "valid_upto"])

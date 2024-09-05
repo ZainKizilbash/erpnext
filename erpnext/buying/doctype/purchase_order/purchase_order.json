@@ -33,6 +33,9 @@
   "party_account_currency",
   "more_info_cb_3",
   "inter_company_reference",
+  "tax_id",
+  "tax_cnic",
+  "tax_strn",
   "sec_applies_to",
   "applies_to_variant_of",
   "applies_to_variant_of_name",
@@ -1635,13 +1638,37 @@
    "options": "To Bill\nBilled\nNot Applicable",
    "print_hide": 1,
    "read_only": 1
+  },
+  {
+   "fetch_from": "supplier.tax_id",
+   "fieldname": "tax_id",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Tax Id",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "supplier.tax_cnic",
+   "fieldname": "tax_cnic",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "CNIC",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "supplier.tax_strn",
+   "fieldname": "tax_strn",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "STRN",
+   "read_only": 1
   }
  ],
  "icon": "fa fa-file-text",
  "idx": 105,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-03-21 17:06:34.496059",
+ "modified": "2024-08-07 13:11:11.013340",
  "modified_by": "Administrator",
  "module": "Buying",
  "name": "Purchase Order",

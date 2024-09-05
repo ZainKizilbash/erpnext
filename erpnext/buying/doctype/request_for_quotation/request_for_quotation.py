@@ -195,17 +195,6 @@ def check_portal_enabled(reference_doctype):
 		{'reference_doctype': reference_doctype}, 'enabled'):
 		frappe.throw(_("The Access to Request for Quotation From Portal is Disabled. To Allow Access, Enable it in Portal Settings."))
 
-def get_list_context(context=None):
-	from erpnext.controllers.website_list_for_contact import get_list_context
-	list_context = get_list_context(context)
-	list_context.update({
-		'show_sidebar': True,
-		'show_search': True,
-		'no_breadcrumbs': True,
-		'title': _('Request for Quotation'),
-	})
-	return list_context
-
 @frappe.whitelist()
 @frappe.validate_and_sanitize_search_inputs
 def get_supplier_contacts(doctype, txt, searchfield, start, page_len, filters):

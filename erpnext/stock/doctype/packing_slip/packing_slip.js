@@ -112,7 +112,7 @@ erpnext.stock.PackingSlipController = class PackingSlipController extends erpnex
 			}
 		}
 
-		erpnext.utils.setup_remove_zero_qty_rows(this.frm);
+		erpnext.utils.setup_remove_zero_qty_rows(this.frm, ['qty', 'rejected_qty']);
 	}
 
 	set_default_rejected_warehouse() {

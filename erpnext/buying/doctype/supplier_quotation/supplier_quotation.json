@@ -24,6 +24,9 @@
   "is_subcontracted",
   "more_info_cb_2",
   "opportunity",
+  "tax_id",
+  "tax_cnic",
+  "tax_strn",
   "currency_and_price_list",
   "currency",
   "conversion_rate",
@@ -1148,13 +1151,37 @@
    "options": "Company:company:default_currency",
    "print_hide": 1,
    "read_only": 1
+  },
+  {
+   "fetch_from": "supplier.tax_id",
+   "fieldname": "tax_id",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Tax Id",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "supplier.tax_cnic",
+   "fieldname": "tax_cnic",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "CNIC",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "supplier.tax_strn",
+   "fieldname": "tax_strn",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "STRN",
+   "read_only": 1
   }
  ],
  "icon": "fa fa-shopping-cart",
  "idx": 29,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-09-25 14:48:23.128708",
+ "modified": "2024-08-07 13:09:50.856408",
  "modified_by": "Administrator",
  "module": "Buying",
  "name": "Supplier Quotation",

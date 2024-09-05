@@ -128,8 +128,7 @@
    "fieldname": "warehouse",
    "fieldtype": "Link",
    "label": "Warehouse",
-   "options": "Warehouse",
-   "search_index": 1
+   "options": "Warehouse"
   },
   {
    "fieldname": "column_break_7",
@@ -333,7 +332,8 @@
   {
    "fieldname": "valid_upto",
    "fieldtype": "Date",
-   "label": "Valid Upto"
+   "label": "Valid Upto",
+   "search_index": 1
   },
   {
    "fieldname": "col_break1",
@@ -585,7 +585,7 @@
  "icon": "fa fa-gift",
  "idx": 1,
  "links": [],
- "modified": "2023-12-23 13:54:58.135869",
+ "modified": "2024-08-25 06:53:01.253504",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Pricing Rule",
@@ -676,5 +676,6 @@
  "show_name_in_global_search": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "track_changes": 1
 }

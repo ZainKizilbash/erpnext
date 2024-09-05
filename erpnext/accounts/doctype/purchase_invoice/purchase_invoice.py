@@ -1201,18 +1201,6 @@ class PurchaseInvoice(BuyingController):
 		self.calculate_taxes_and_totals()
 
 
-def get_list_context(context=None):
-	from erpnext.controllers.website_list_for_contact import get_list_context
-	list_context = get_list_context(context)
-	list_context.update({
-		'show_sidebar': True,
-		'show_search': True,
-		'no_breadcrumbs': True,
-		'title': _('Purchase Invoices'),
-	})
-	return list_context
-
-
 @erpnext.allow_regional
 def make_regional_gl_entries(gl_entries, doc):
 	return gl_entries

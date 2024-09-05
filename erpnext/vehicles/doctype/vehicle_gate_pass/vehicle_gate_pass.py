@@ -23,6 +23,7 @@ class VehicleGatePass(VehicleTransactionController):
 		self.validate_opportunity()
 		self.validate_vehicle_received()
 		self.validate_sales_invoice()
+		self.set_invoice_is_unpaid()
 		self.validate_project_ready_to_close()
 		self.set_title()
 
@@ -287,6 +288,17 @@ class VehicleGatePass(VehicleTransactionController):
 	def remove_vehicle_maintenance_schedule(self, reference_doctype=None, reference_name=None):
 		if self.get("project"):
 			return super().remove_vehicle_maintenance_schedule("Project", self.project)
+	
+	def set_invoice_is_unpaid(self):
+		if self.get("sales_invoice"):
+			sales_invoice = frappe.db.get_value("Sales Invoice", self.sales_invoice, ['outstanding_amount', 'docstatus'],
+				as_dict=1)
+			if sales_invoice.outstanding_amount > 0 and sales_invoice.docstatus == 1:
+				self.invoice_is_unpaid = 1
+			else:
+				self.invoice_is_unpaid = 0
+		else:
+			self.invoice_is_unpaid = 0
 
 
 @frappe.whitelist()

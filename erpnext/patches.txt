@@ -348,6 +348,13 @@ erpnext.patches.v14_0.rename_ste_transfer_qty_stock_qty
 erpnext.patches.v14_0.set_new_fields_in_salary_slip_loan_and_employee_advance
 erpnext.patches.v14_0.install_crm_app
 erpnext.patches.v14_0.set_packing_slip_target_warehouse #1
+erpnext.patches.v14_0.rename_scrap_to_process_loss
+erpnext.patches.v14_0.fix_expense_entry_currency_fields
+execute:frappe.rename_doc("DocType", "Price List Item Group", "Item Group Order", force=1)
+execute:frappe.delete_doc_if_exists("Notification", "Material Request Receipt Notification")
+execute:frappe.delete_doc_if_exists("Notification", "Retention Bonus")
+execute:frappe.delete_doc_if_exists("Notification", "Training Scheduled")
+execute:frappe.delete_doc_if_exists("Notification", "Training Feedback")
 
 [post_model_sync]
 erpnext.patches.v12_0.update_salary_slip_leave_with_pay
@@ -372,5 +379,9 @@ erpnext.patches.v14_0.set_sales_person_employee_details
 erpnext.patches.v14_0.set_appointment_type_company
 erpnext.patches.v14_0.set_navbar_app_name
 erpnext.patches.v14_0.set_stock_entry_total_fields
+erpnext.patches.v14_0.delete_website_doctypes
 erpnext.patches.v14_0.set_sle_is_transfer
 execute:frappe.db.set_single_value("Buying Settings", "update_buying_prices_based_on", "Price List Rate", update_modified=False)
+execute:frappe.db.sql("update tabItem set gross_weight_per_unit = tare_weight_per_unit where is_packaging_material = 1")
+erpnext.patches.v14_0.delete_standard_portal_menu_items
+erpnext.patches.v14_0.set_work_order_rejected_qty

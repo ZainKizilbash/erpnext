@@ -35,7 +35,9 @@
   "incoterms",
   "more_info_cb_3",
   "inter_company_reference",
-  "other_details",
+  "tax_id",
+  "tax_cnic",
+  "tax_strn",
   "sec_applies_to",
   "applies_to_variant_of",
   "applies_to_variant_of_name",
@@ -1014,14 +1016,6 @@
    "print_hide": 1
   },
   {
-   "fieldname": "other_details",
-   "fieldtype": "HTML",
-   "hidden": 1,
-   "label": "Other Details",
-   "options": "<div class=\"columnHeading\">Other Details</div>",
-   "print_hide": 1
-  },
-  {
    "fieldname": "instructions",
    "fieldtype": "Small Text",
    "label": "Instructions"
@@ -1580,13 +1574,37 @@
    "options": "To Bill\nBilled\nNot Applicable",
    "print_hide": 1,
    "read_only": 1
+  },
+  {
+   "fetch_from": "supplier.tax_id",
+   "fieldname": "tax_id",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Tax Id",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "supplier.tax_cnic",
+   "fieldname": "tax_cnic",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "CNIC",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "supplier.tax_strn",
+   "fieldname": "tax_strn",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "STRN",
+   "read_only": 1
   }
  ],
  "icon": "fa fa-truck",
  "idx": 261,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-12 16:23:13.067424",
+ "modified": "2024-08-07 13:12:31.753584",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Purchase Receipt",

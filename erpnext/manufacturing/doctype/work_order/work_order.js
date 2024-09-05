@@ -196,9 +196,15 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 
 		if (doc.docstatus == 1 && doc.status != "Stopped") {
 			// Packing Slip
-			if (doc.packing_status == "To Pack" && frappe.model.can_create("Packing Slip")) {
+			let packing_completion = flt(doc.packed_qty) + flt(doc.rejected_qty) + flt(doc.reconciled_qty);
+
+			if (
+				frappe.model.can_create("Packing Slip")
+				&& doc.packing_slip_required
+				&& flt(packing_completion, precision("qty")) < flt(doc.completed_qty, precision("qty"))
+			) {
 				this.frm.add_custom_button(__("Packing Slip"), () => {
-					this.make_packing_slip("Material Transfer for Manufacture");
+					this.make_packing_slip();
 				}, __("Create"));
 			}
 
@@ -319,7 +325,7 @@ erpnext.manufacturing.WorkOrderController = class WorkOrderController extends fr
 	}
 
 	show_progress_for_production() {
-		erpnext.manufacturing.show_progress_for_production(this.frm.doc, this.frm);
+		erpnext.manufacturing.show_progress_for_production(this.frm.doc, this.frm, !this.frm.doc.packing_slip_required);
 	}
 
 	show_progress_for_packing() {

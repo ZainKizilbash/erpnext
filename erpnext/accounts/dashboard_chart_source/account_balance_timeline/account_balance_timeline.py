@@ -3,7 +3,7 @@
 
 import frappe
 from frappe import _
-from frappe.utils import add_to_date, formatdate, get_link_to_form, getdate, nowdate, cint
+from frappe.utils import add_to_date, formatdate, get_link_to_form, getdate, cint
 from frappe.utils.dashboard import cache_source
 from frappe.utils.dateutils import get_from_date_from_timespan, get_period_ending, get_period_beginning
 from frappe.utils.nestedset import get_descendants_of
@@ -67,9 +67,9 @@ class AccountBalanceTimeline(object):
 			self.to_date = self.to_date or self.chart.to_date
 
 		if not self.to_date:
-			self.to_date = nowdate()
+			self.to_date = getdate()
 		if not self.from_date:
-			self.from_date = get_from_date_from_timespan(self.to_date, self.timespan)
+			self.from_date = getdate(get_from_date_from_timespan(self.to_date, self.timespan))
 
 	def get_accounts(self):
 		accounts_filters = {}
@@ -257,6 +257,8 @@ def get_dates_from_timegrain(from_date, to_date, timegrain):
 		months = 1
 	elif timegrain == "Quarterly":
 		months = 3
+	elif timegrain == "Yearly":
+		years = 1
 
 	dates = [get_period_ending(from_date, timegrain)]
 	while getdate(dates[-1]) < getdate(to_date):
