@@ -717,7 +717,9 @@ erpnext.taxes_and_totals = class TaxesAndTotals extends erpnext.payments {
 			// tax distribution according to the item qty & HS code
 			$.each(this.frm.doc["customs_tariff_tax"] || [], function(j, tariff_tax_table) {
 				if (tariff_tax_table.account_head == tax.account_head && item.customs_tariff_number == tariff_tax_table.customs_tariff_number) {
-					current_tax_amount = (tariff_tax_table.amount / items_net_total[items_net_total.findIndex(d => d.customs_tariff_number == item.customs_tariff_number)].total) * item.amount;
+					let HS_code_tax_amount = tariff_tax_table.amount;
+					let HS_code_net_total = items_net_total[items_net_total.findIndex(d => d.customs_tariff_number == item.customs_tariff_number)].total
+					current_tax_amount = (HS_code_tax_amount / HS_code_net_total) * item.amount;
 				}
 			});
 			this.frm.refresh_field("taxes");

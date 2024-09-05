@@ -607,7 +607,9 @@ class calculate_taxes_and_totals(object):
 				if tariff_tax_table.account_head == tax.account_head and item.customs_tariff_number == tariff_tax_table.customs_tariff_number:
 					for i, sel_item in enumerate(items_net_total):
 						if sel_item["customs_tariff_number"] == item.customs_tariff_number:
-							current_tax_amount = (tariff_tax_table.amount / items_net_total[i]["total"]) * item.amount
+							HS_code_tax_amount = tariff_tax_table.amount
+							HS_code_net_total = items_net_total[i]["total"]
+							current_tax_amount = (HS_code_tax_amount / HS_code_net_total) * item.amount
 							break
 
 
